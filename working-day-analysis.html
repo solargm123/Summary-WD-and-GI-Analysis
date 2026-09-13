@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FusionSolar Working Days Calculator - Pro Edition (Rev.14)</title>
+    <title>FusionSolar Working Days Calculator - Pro Edition (Rev.15)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -24,7 +24,33 @@
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style> 
-        body { font-family: 'Bai Jamjuree', sans-serif; } 
+        html, body, button, input, select, textarea, table, th, td {
+            font-family: 'Bai Jamjuree', Tahoma, Arial, sans-serif !important;
+        }
+        body { font-size: 14px; line-height: 1.5; }
+        button, input, select, textarea { font-size: 12.5px; line-height: 1.45; }
+        table { min-width: 2050px; }
+        table th { font-size: 11.5px; line-height: 1.4; white-space: normal; }
+        table td { font-size: 12px; line-height: 1.45; }
+        table th:nth-child(2), table td:nth-child(2) { min-width: 300px; }
+        table th:nth-child(3), table td:nth-child(3),
+        table th:nth-child(4), table td:nth-child(4) { min-width: 155px; }
+        table th:nth-child(8), table td:nth-child(8) { min-width: 230px; }
+        table th:nth-child(9), table td:nth-child(9),
+        table th:nth-child(10), table td:nth-child(10) { min-width: 155px; }
+        .sticky-col-1 { position: sticky; left: 0; min-width: 56px; width: 56px; }
+        .sticky-col-2 { position: sticky; left: 56px; min-width: 300px; width: 300px; }
+        .sticky-col-3 { position: sticky; left: 356px; min-width: 155px; width: 155px; }
+        .sticky-col-4 { position: sticky; left: 511px; min-width: 155px; width: 155px; }
+        thead .sticky-col-1, thead .sticky-col-2, thead .sticky-col-3, thead .sticky-col-4 { z-index: 35; }
+        tbody .sticky-col-1, tbody .sticky-col-2, tbody .sticky-col-3, tbody .sticky-col-4 { z-index: 15; background: white; }
+        .dark tbody .sticky-col-1, .dark tbody .sticky-col-2, .dark tbody .sticky-col-3, .dark tbody .sticky-col-4 { background: #0f172a; }
+        .sticky-divider { box-shadow: 5px 0 8px -6px rgba(15, 23, 42, 0.55); }
+        #topTableScroll { overflow-x: auto; overflow-y: hidden; height: 16px; }
+        #topTableScrollInner { width: 2050px; height: 1px; }
+        #tableScrollContainer { scrollbar-width: none; }
+        #tableScrollContainer::-webkit-scrollbar { display: none; }
+        #statusMessage, #fileList, #formulaModalBody, #lossModal { font-size: 12.5px; }
         .has-tooltip:hover .tooltip { display: block; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         .dark ::-webkit-scrollbar-track { background: #0f172a; }
@@ -37,7 +63,7 @@
 
     <!-- Header Navigation -->
     <header class="border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md sticky top-0 z-40 shadow-sm transition-colors duration-200">
-        <div class="max-w-[1500px] mx-auto px-6 py-3.5 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="max-w-[2200px] mx-auto px-3 xl:px-5 py-3.5 flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="flex items-center space-x-3.5">
                 <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                     <i class="fa-solid fa-solar-panel text-xl"></i>
@@ -45,7 +71,7 @@
                 <div>
                     <div class="flex items-center gap-2">
                         <h1 class="text-base font-bold text-blue-900 dark:text-slate-100">FusionSolar Working Days Calculator</h1>
-                        <span class="bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[10px] px-2 py-0.5 rounded uppercase font-semibold">Solar Engineer Pro Rev.14</span>
+                        <span class="bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[10px] px-2 py-0.5 rounded uppercase font-semibold">Solar Engineer Pro Rev.15</span>
                     </div>
                     <p class="text-xs text-slate-500 dark:text-slate-400">ระบบประมวลผลประสิทธิภาพและคำนวณวันทำงานสำหรับวิศวกรโซลาร์</p>
                 </div>
@@ -53,6 +79,9 @@
             
             <!-- Quick Actions & Theme Switcher -->
             <div class="flex items-center gap-3">
+                <button id="languageButton" onclick="toggleLanguage()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-lg transition border border-slate-300 dark:border-slate-700" title="Change language">
+                    EN
+                </button>
                 <button onclick="toggleTheme()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium px-3.5 py-2 rounded-lg transition flex items-center gap-2 border border-slate-300 dark:border-slate-700">
                     <i id="themeIcon" class="fa-solid fa-moon text-amber-500"></i>
                     <span id="themeText">Dark Mode</span>
@@ -65,7 +94,7 @@
         </div>
     </header>
 
-    <main class="max-w-[1500px] mx-auto px-6 mt-6 space-y-6">
+    <main class="max-w-[2200px] mx-auto px-3 xl:px-5 mt-6 space-y-6">
 
         <!-- Top Workstation Panel -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
@@ -114,7 +143,7 @@
                         </div>
                         <div>
                             <span class="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">Loss Factor Coefficient</span>
-                            <input type="number" id="inputLossFactor" step="0.05" value="0.9" oninput="calculateAndRender()" class="w-full bg-amber-50/60 dark:bg-amber-950/20 border-2 border-amber-300 dark:border-amber-700/60 text-amber-900 dark:text-amber-200 rounded-lg px-2.5 py-1.5 font-mono font-bold text-center text-xs focus:outline-none focus:border-amber-500">
+                            <input type="number" id="inputLossFactor" min="0" max="1" step="0.05" value="0.9" oninput="calculateAndRender()" class="w-full bg-amber-50/60 dark:bg-amber-950/20 border-2 border-amber-300 dark:border-amber-700/60 text-amber-900 dark:text-amber-200 rounded-lg px-2.5 py-1.5 font-mono font-bold text-center text-xs focus:outline-none focus:border-amber-500">
                         </div>
                     </div>
 
@@ -141,7 +170,7 @@
                                     <input type="radio" name="sunHoursMode" value="custom" checked onchange="toggleSunHoursMode()" class="text-blue-600 focus:ring-0">
                                     <span class="text-slate-700 dark:text-slate-300 font-medium">1.1 ค่ามาตรฐาน Default (4.0 ชม.)</span>
                                 </div>
-                                <input type="number" id="inputSunHoursCustom" step="0.1" value="4.0" oninput="calculateAndRender()" class="w-16 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-700 rounded px-2 py-0.5 text-amber-900 dark:text-amber-200 font-mono font-bold text-center text-xs">
+                                <input type="number" id="inputSunHoursCustom" min="0.1" max="24" step="0.1" value="4.0" oninput="calculateAndRender()" class="w-16 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-700 rounded px-2 py-0.5 text-amber-900 dark:text-amber-200 font-mono font-bold text-center text-xs">
                             </label>
 
                             <!-- 1.2 Monthly Avg from Specific Energy -->
@@ -222,25 +251,39 @@
 
         <!-- Main Engineering Data Table -->
         <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors duration-200">
-            <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50/50 dark:bg-slate-950/50">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col xl:flex-row justify-between items-center gap-4 bg-slate-50/50 dark:bg-slate-950/50">
                 <div class="flex items-center gap-2">
                     <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                         ตารางแสดงผลโครงการและการคำนวณวันทำงาน (Solar Projects Analytics)
                     </h2>
                 </div>
-                <!-- Search Box -->
-                <div class="relative w-full md:w-72">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
-                    <input type="text" id="searchInput" oninput="calculateAndRender()" placeholder="ค้นหาชื่อโครงการ (Search Plant)..." class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-blue-500">
+                <div class="flex flex-wrap items-center justify-end gap-2">
+                    <button id="method1FilterButton" onclick="setMethodFilter('m1')" class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg px-3 py-2 flex items-center gap-2 transition">
+                        <i class="fa-solid fa-calculator"></i><span>วิธีที่ 1</span><strong id="method1ProjectCount" class="bg-blue-600 text-white rounded-full px-2 py-0.5">0</strong>
+                    </button>
+                    <button id="method2FilterButton" onclick="setMethodFilter('m2')" class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-lg px-3 py-2 flex items-center gap-2 transition">
+                        <i class="fa-solid fa-chart-line"></i><span>วิธีที่ 2</span><strong id="method2ProjectCount" class="bg-emerald-600 text-white rounded-full px-2 py-0.5">0</strong>
+                    </button>
+                    <button onclick="openFormulaGuideModal()" class="bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-300 rounded-lg px-3 py-2 flex items-center gap-2">
+                        <i class="fa-solid fa-square-root-variable"></i><span>ดูสมการ</span>
+                    </button>
+                    <button onclick="openProjectSelector()" class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg px-3 py-2 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-blue-500"></i><span>เลือกโครงการ</span><strong id="selectedProjectCount" class="text-blue-600">0</strong>
+                    </button>
+                    <input type="hidden" id="searchInput" value="">
                 </div>
             </div>
 
-            <div class="overflow-x-auto">
+            <div id="topTableScroll" class="border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950"><div id="topTableScrollInner"></div></div>
+            <div id="tableScrollContainer" class="overflow-x-auto">
                 <table class="w-full text-left text-xs border-collapse">
                     <thead>
                         <tr class="bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold">
-                            <th class="p-3 text-center w-12">เลือก</th>
-                            <th class="p-3">ชื่อโครงการ (Plant Name)</th>
+                            <th class="p-3 text-center sticky-col-1 bg-slate-100 dark:bg-slate-950">เลือก</th>
+                            <th class="p-3 sticky-col-2 bg-slate-100 dark:bg-slate-950">ชื่อโครงการ (Plant Name)</th>
+
+                            <th class="p-3 text-right sticky-col-3 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/80 font-bold">วันทำงาน (วิธีที่ 1)</th>
+                            <th class="p-3 text-right sticky-col-4 sticky-divider text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/80 font-bold">วันทำงาน (วิธีที่ 2)</th>
 
                             <th class="p-3 text-right bg-amber-50/40 dark:bg-amber-950/20 text-amber-900 dark:text-amber-300">
                                 <i class="fa-solid fa-pen text-amber-500 mr-1"></i> Capacity (kWp)
@@ -254,45 +297,17 @@
                                 <i class="fa-solid fa-pen-to-square text-amber-500 mr-1"></i> วันที่เกิด Loss Due
                             </th>
                             
+                            <th id="thSelectedLossEnergy" class="p-3 text-right">Loss Due Export<br><span class="text-[10px] font-normal text-slate-400">(kWh)</span></th>
+                            <th id="thSelectedPvYield" class="p-3 text-right">PV Yield วัน Loss<br><span class="text-[10px] font-normal text-slate-400">(kWh)</span></th>
                             <th class="p-3 text-right">Specific Energy<br><span class="text-[10px] font-normal text-slate-400">(kWh/kWp)</span></th>
                             <th class="p-3 text-right">Sun Hours<br><span class="text-[10px] font-normal text-amber-500">(คำนวณจริง)</span></th>
                             
-                            <!-- Header Method 1 -->
-                            <th class="p-3 text-right text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border-l border-blue-200 dark:border-blue-900/60 has-tooltip relative font-bold">
-                                <div class="flex items-center justify-end gap-1.5 cursor-pointer">
-                                    <span>วันทำงาน (วิธีที่ 1)</span>
-                                    <i class="fa-solid fa-circle-info text-blue-500 text-xs"></i>
-                                </div>
-                                <div class="tooltip hidden absolute z-50 bottom-full right-0 mb-2 w-80 p-3 bg-slate-900 text-white text-[11px] rounded-lg shadow-xl border border-slate-700 normal-case font-normal leading-relaxed text-left">
-                                    <strong class="text-blue-400 block mb-1">📌 สูตรการคำนวณ (วิธีที่ 1)</strong>
-                                    <code class="bg-slate-950 px-2 py-1.5 rounded text-blue-300 block my-1 font-mono text-[10px] leading-normal border border-slate-800">
-                                        (Days - Loss Days) + [ (PV Yield วัน Loss / Capacity) / Sun Hours ]
-                                    </code>
-                                    <span class="text-slate-400 text-[10px] block mt-1">* คิดวันทำงานจริงจากวันที่ไม่มี Loss บวกด้วยสัดส่วนพลังงานที่ผลิตได้ในวันที่มี Loss</span>
-                                </div>
-                            </th>
-
-                            <!-- Header Method 2 -->
-                            <th class="p-3 text-right text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border-l border-emerald-200 dark:border-emerald-900/60 has-tooltip relative font-bold">
-                                <div class="flex items-center justify-end gap-1.5 cursor-pointer">
-                                    <span>วันทำงาน (วิธีที่ 2)</span>
-                                    <i class="fa-solid fa-circle-info text-emerald-500 text-xs"></i>
-                                </div>
-                                <div class="tooltip hidden absolute z-50 bottom-full right-0 mb-2 w-80 p-3 bg-slate-900 text-white text-[11px] rounded-lg shadow-xl border border-slate-700 normal-case font-normal leading-relaxed text-left">
-                                    <strong class="text-emerald-400 block mb-1">📌 สูตรการคำนวณ (วิธีที่ 2)</strong>
-                                    <code class="bg-slate-950 px-2 py-1.5 rounded text-emerald-300 block my-1 font-mono text-[10px] leading-normal border border-slate-800">
-                                        Days - [ (Loss Energy × Loss Factor) / (Capacity × Sun Hours) ]
-                                    </code>
-                                    <span class="text-slate-400 text-[10px] block mt-1">* คำนวณหักลบจำนวนวันที่สูญเสียไปจากพลังงาน Loss Energy รวมทั้งเดือน</span>
-                                </div>
-                            </th>
-
-                            <th class="p-3 text-center w-12">ลบ</th>
+                            <th class="p-3 text-center min-w-[220px]">วิธีที่เลือก / Note</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody" class="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300 font-normal">
                         <tr>
-                            <td colspan="11" class="text-center py-14 text-slate-400">
+                            <td colspan="13" class="text-center py-14 text-slate-400">
                                 <i class="fa-solid fa-solar-panel text-4xl mb-3 block opacity-30"></i>
                                 กรุณาอัปโหลดไฟล์รายงาน FusionSolar (.xlsx) เพื่อเริ่มประมวลผล
                             </td>
@@ -312,6 +327,9 @@
                     <i class="fa-solid fa-calendar-days text-amber-500"></i> เลือกวันที่เกิด Loss Due to Export Limit
                 </h3>
                 <div class="flex items-center gap-2">
+                    <button id="restoreLossButton" onclick="restoreOriginalPlantLossDays()" class="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 font-semibold bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 px-2 py-1 rounded transition flex items-center gap-1">
+                        <i class="fa-solid fa-clock-rotate-left"></i> คืนค่าเดิม
+                    </button>
                     <button onclick="clearAllPlantLossDays()" class="text-xs text-red-600 hover:text-red-700 dark:text-red-400 font-semibold bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 px-2 py-1 rounded transition flex items-center gap-1">
                         <i class="fa-solid fa-rotate-left"></i> เคลียร์ทั้งหมด
                     </button>
@@ -334,14 +352,306 @@
         </div>
     </div>
 
+    <!-- Formula details modal -->
+    <div id="formulaModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm hidden">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 w-full max-w-2xl shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+                <h3 id="formulaModalTitle" class="text-sm font-bold text-blue-800 dark:text-blue-400"></h3>
+                <button onclick="closeFormulaModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <div id="formulaModalBody" class="space-y-3 text-xs text-slate-700 dark:text-slate-200"></div>
+            <div class="flex justify-end pt-3 border-t border-slate-200 dark:border-slate-800">
+                <button id="formulaCloseButton" onclick="closeFormulaModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-4 py-2 rounded-lg transition">ปิด</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project selector modal -->
+    <div id="projectSelectorModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm hidden">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 w-full max-w-2xl shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+                <h3 class="text-sm font-bold text-blue-800 dark:text-blue-400"><i class="fa-solid fa-list-check mr-2"></i><span id="projectSelectorTitle">เลือกโครงการที่ต้องการแสดง</span></h3>
+                <button onclick="closeProjectSelector()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <input id="projectPopupSearch" type="text" oninput="renderProjectSelectorList()" placeholder="ค้นหาชื่อโครงการ..." class="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded-lg px-3 py-2">
+            <div class="flex gap-2">
+                <button onclick="setAllProjectsVisible(true)" class="text-xs px-3 py-1.5 rounded bg-blue-50 text-blue-700 border border-blue-200">เลือกทั้งหมด</button>
+                <button onclick="setAllProjectsVisible(false)" class="text-xs px-3 py-1.5 rounded bg-slate-50 text-slate-700 border border-slate-200">ไม่เลือกทั้งหมด</button>
+            </div>
+            <div id="projectSelectorList" class="max-h-[55vh] overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-lg divide-y divide-slate-100 dark:divide-slate-800"></div>
+            <div class="flex justify-end pt-3 border-t border-slate-200 dark:border-slate-800"><button onclick="closeProjectSelector()" class="bg-blue-600 text-white px-4 py-2 rounded-lg">ยืนยัน</button></div>
+        </div>
+    </div>
+
+    <!-- General formula guide modal -->
+    <div id="formulaGuideModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm hidden">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 w-full max-w-3xl shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+                <h3 class="text-sm font-bold text-violet-800 dark:text-violet-400"><i class="fa-solid fa-square-root-variable mr-2"></i><span id="formulaGuideTitle">สมการคำนวณ Working Days</span></h3>
+                <button onclick="closeFormulaGuideModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="formulaGuideBody" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            <div class="flex justify-end"><button onclick="closeFormulaGuideModal()" class="bg-violet-600 text-white px-4 py-2 rounded-lg">ปิด</button></div>
+        </div>
+    </div>
+
+    <!-- Method project list modal -->
+    <div id="methodProjectsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm hidden">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 w-full max-w-xl shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+                <h3 id="methodProjectsTitle" class="text-sm font-bold"></h3>
+                <button onclick="closeMethodProjectsModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="methodProjectsList" class="max-h-[55vh] overflow-y-auto space-y-2"></div>
+            <div class="flex justify-end"><button onclick="closeMethodProjectsModal()" class="bg-slate-700 text-white px-4 py-2 rounded-lg">ปิด</button></div>
+        </div>
+    </div>
+
+    <!-- Project note modal -->
+    <div id="noteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm hidden">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 w-full max-w-xl shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+                <h3 id="noteModalTitle" class="text-sm font-bold text-amber-700 dark:text-amber-400"></h3>
+                <button onclick="closeNoteModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <textarea id="noteTextarea" rows="6" class="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded-lg p-3" placeholder="บันทึกหมายเหตุของโครงการ..."></textarea>
+            <div class="flex justify-end gap-2"><button onclick="clearProjectNote()" class="border border-red-200 text-red-600 px-4 py-2 rounded-lg">ล้าง Note</button><button onclick="saveProjectNote()" class="bg-amber-500 text-white px-4 py-2 rounded-lg">บันทึก</button></div>
+        </div>
+    </div>
+
     <script>
         let rawRecordsByFile = []; 
         let plantData = [];  
         let currentDaysInMonth = 31;
         let detectedMonths = [];
         let currentEditingPlantId = null;
+        let currentLanguage = 'th';
+        let lastFormulaContext = null;
+        let currentNotePlantId = null;
+        let currentMethodFilter = 'all';
 
         const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+        const englishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+        const uiText = {
+            th: {
+                subtitle: 'ระบบประมวลผลประสิทธิภาพและคำนวณวันทำงานสำหรับวิศวกรโซลาร์', import: 'นำเข้าไฟล์รายงาน (Import Reports)', clearFiles: 'ล้างข้อมูลไฟล์',
+                drop: 'ลากไฟล์มาวางในบริเวณนี้ หรือ', click: 'คลิกเพื่อเลือกไฟล์', parameters: 'พารามิเตอร์การคำนวณ (Solar Parameters)', month: 'เลือก รอบเดือน/ปี ประมวลผล', waiting: '-- รอการอัปโหลดไฟล์ --',
+                sunMode: 'กำหนดรูปแบบ Sun Hours (ชม./วัน)', applyTo: 'นำไปใช้กับ:', both: 'ทั้งวิธีที่ 1 และ 2', m1Only: 'เฉพาะวิธีที่ 1', m2Only: 'เฉพาะวิธีที่ 2',
+                custom: '1.1 ค่ามาตรฐาน Default (4.0 ชม.)', monthly: '1.2 เฉลี่ยทั้งเดือน (Specific Energy รายโครงการ)', nonLoss: '1.3 เฉลี่ยเฉพาะวันไม่มี Loss (Specific Energy รายโครงการ)',
+                plants: 'โครงการทั้งหมด', avgM1: 'เฉลี่ยวันทำงาน (วิธีที่ 1)', avgM2: 'เฉลี่ยวันทำงาน (วิธีที่ 2)', tableTitle: 'ตารางแสดงผลโครงการและการคำนวณวันทำงาน (Solar Projects Analytics)',
+                search: 'ค้นหาชื่อโครงการ (Search Plant)...', select: 'เลือก', plantName: 'ชื่อโครงการ (Plant Name)', days: 'วันในเดือน', lossDays: 'Loss (วัน)', lossDates: 'วันที่เกิด Loss Due',
+                selectedLoss: 'Loss Due Export', selectedPv: 'PV Yield วัน Loss', calculated: '(คำนวณจริง)', working1: 'วันทำงาน (วิธีที่ 1)', working2: 'วันทำงาน (วิธีที่ 2)', remove: 'ลบ',
+                uploadPrompt: 'กรุณาอัปโหลดไฟล์รายงาน FusionSolar (.xlsx) เพื่อเริ่มประมวลผล', lossTitle: 'เลือกวันที่เกิด Loss Due to Export Limit', restore: 'คืนค่าเดิม', clearAll: 'เคลียร์ทั้งหมด',
+                chooseDays: 'คลิกเลือกปุ่มวันที่ต้องการกำหนดเป็นวันเกิด Loss Due:', confirm: 'ยืนยันการบันทึก', close: 'ปิด', noLoss: 'ไม่มี Loss', dayPrefix: 'วัน', daysUnit: 'วัน', hours: 'ชม.', overall: '(เฉลี่ยภาพรวม)',
+                readOk: 'อ่านไฟล์สำเร็จ! โหลดข้อมูลโครงการเรียบร้อยแล้ว', noTable: 'ไม่พบตารางข้อมูลที่ถูกต้อง กรุณาตรวจสอบรูปแบบและชื่อไฟล์ Excel', readError: 'เกิดข้อผิดพลาดในการอ่านไฟล์', invalidMonth: 'ไม่สามารถระบุเดือนจากชื่อไฟล์',
+                noData: 'ไม่พบข้อมูลสำหรับแสดงผล', exportNoData: 'ไม่มีข้อมูลสำหรับ Export กรุณาอัปโหลดไฟล์ก่อนครับ', project: 'โครงการ', formula: 'รายละเอียดสูตรคำนวณ', formulaLabel: 'สูตร', substitution: 'การแทนค่า', excelExport: 'Export เป็น Excel (2 ชีท)',
+                formulaTitle1: '📌 สูตรการคำนวณ (วิธีที่ 1)', formulaTitle2: '📌 สูตรการคำนวณ (วิธีที่ 2)', formulaCode1: '(Days - Loss Days) + [ (PV Yield วัน Loss / Capacity) / Sun Hours ]',
+                formulaDesc1: '* คิดวันทำงานจริงจากวันที่ไม่มี Loss บวกด้วยสัดส่วนพลังงานที่ผลิตได้ในวันที่มี Loss', formulaDesc2: '* คำนวณหักลบจำนวนวันที่สูญเสียไปจากพลังงาน Loss Energy ของวันที่เลือก',
+                method1Short: 'วิธีที่ 1', method2Short: 'วิธีที่ 2', viewFormula: 'ดูสมการ', selectProjects: 'เลือกโครงการ', selectedMethodNote: 'วิธีที่เลือก / Note',
+                selectorTitle: 'เลือกโครงการที่ต้องการแสดง', searchProjects: 'ค้นหาชื่อโครงการ...', selectAll: 'เลือกทั้งหมด', clearSelection: 'ไม่เลือกทั้งหมด', formulaGuide: 'สมการคำนวณ Working Days', other: 'อื่นๆ', notePlaceholder: 'บันทึกหมายเหตุของโครงการ...', clearNote: 'ล้าง Note', save: 'บันทึก'
+            },
+            en: {
+                subtitle: 'Performance processing and working-days calculation for solar engineers', import: 'Import Reports', clearFiles: 'Clear Files',
+                drop: 'Drag files here or', click: 'click to browse', parameters: 'Solar Parameters', month: 'Select processing month/year', waiting: '-- Waiting for file upload --',
+                sunMode: 'Sun Hours Mode (hours/day)', applyTo: 'Apply to:', both: 'Both methods', m1Only: 'Method 1 only', m2Only: 'Method 2 only',
+                custom: '1.1 Default value (4.0 hr)', monthly: '1.2 Monthly average (project Specific Energy)', nonLoss: '1.3 Non-loss-day average (project Specific Energy)',
+                plants: 'Total Projects', avgM1: 'Average Working Days (Method 1)', avgM2: 'Average Working Days (Method 2)', tableTitle: 'Solar Projects and Working-Days Calculation',
+                search: 'Search plant...', select: 'Select', plantName: 'Plant Name', days: 'Days in Month', lossDays: 'Loss (days)', lossDates: 'Loss Due Dates',
+                selectedLoss: 'Loss Due Export', selectedPv: 'PV Yield on Loss Days', calculated: '(calculated)', working1: 'Working Days (Method 1)', working2: 'Working Days (Method 2)', remove: 'Remove',
+                uploadPrompt: 'Upload FusionSolar report files (.xlsx) to begin', lossTitle: 'Select Loss Due to Export Limit Dates', restore: 'Restore Original', clearAll: 'Clear All',
+                chooseDays: 'Click the dates to mark as Loss Due days:', confirm: 'Confirm', close: 'Close', noLoss: 'No Loss', dayPrefix: 'Day', daysUnit: 'days', hours: 'hr', overall: '(overall average)',
+                readOk: 'Files read successfully. Project data loaded.', noTable: 'No valid data table found. Check the Excel format and filenames.', readError: 'Error reading file', invalidMonth: 'Month could not be detected from filename',
+                noData: 'No data to display', exportNoData: 'No data to export. Please upload files first.', project: 'Project', formula: 'Calculation Formula Details', formulaLabel: 'Formula', substitution: 'Substitution', excelExport: 'Export to Excel (2 sheets)',
+                formulaTitle1: '📌 Calculation Formula (Method 1)', formulaTitle2: '📌 Calculation Formula (Method 2)', formulaCode1: '(Days - Loss Days) + [ (Loss-Day PV Yield / Capacity) / Sun Hours ]',
+                formulaDesc1: '* Adds equivalent production on selected loss days to the non-loss-day count.', formulaDesc2: '* Deducts equivalent lost days using Loss Energy from the selected dates.',
+                method1Short: 'Method 1', method2Short: 'Method 2', viewFormula: 'View Formulas', selectProjects: 'Select Projects', selectedMethodNote: 'Selected Method / Note',
+                selectorTitle: 'Select projects to display', searchProjects: 'Search projects...', selectAll: 'Select All', clearSelection: 'Clear All', formulaGuide: 'Working Days Formulas', other: 'Other', notePlaceholder: 'Enter a project note...', clearNote: 'Clear Note', save: 'Save'
+            }
+        };
+
+        function t(key) { return uiText[currentLanguage][key] || key; }
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
+        }
+
+        function syncTableScrollbars() {
+            const top = document.getElementById('topTableScroll');
+            const table = document.getElementById('tableScrollContainer');
+            if (!top || !table || top.dataset.synced) return;
+            let syncing = false;
+            top.addEventListener('scroll', () => { if (!syncing) { syncing = true; table.scrollLeft = top.scrollLeft; syncing = false; } });
+            table.addEventListener('scroll', () => { if (!syncing) { syncing = true; top.scrollLeft = table.scrollLeft; syncing = false; } });
+            top.dataset.synced = 'true';
+        }
+
+        function openProjectSelector() {
+            document.getElementById('projectPopupSearch').value = '';
+            renderProjectSelectorList();
+            document.getElementById('projectSelectorModal').classList.remove('hidden');
+        }
+
+        function closeProjectSelector() { document.getElementById('projectSelectorModal').classList.add('hidden'); }
+
+        function renderProjectSelectorList() {
+            const query = (document.getElementById('projectPopupSearch').value || '').toLowerCase().trim();
+            const list = document.getElementById('projectSelectorList');
+            list.innerHTML = '';
+            plantData.filter(p => p.name.toLowerCase().includes(query)).forEach(plant => {
+                const label = document.createElement('label');
+                label.className = 'flex items-center gap-3 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer';
+                label.innerHTML = `<input type="checkbox" ${plant.visible ? 'checked' : ''} onchange="togglePlantFromPopup(${plant.id}, this.checked)" class="rounded text-blue-600"><span>${escapeHtml(plant.name)}</span>`;
+                list.appendChild(label);
+            });
+        }
+
+        function togglePlantFromPopup(id, checked) {
+            const plant = plantData.find(p => p.id === id);
+            if (plant) plant.visible = checked;
+            calculateAndRender();
+        }
+
+        function setAllProjectsVisible(visible) {
+            const query = (document.getElementById('projectPopupSearch').value || '').toLowerCase().trim();
+            plantData.filter(p => p.name.toLowerCase().includes(query)).forEach(p => p.visible = visible);
+            renderProjectSelectorList();
+            calculateAndRender();
+        }
+
+        function updateCalculationMethod(id, method) {
+            const plant = plantData.find(p => p.id === id);
+            if (!plant || !['m1', 'm2', 'other'].includes(method)) return;
+            plant.calculationMethod = method;
+            calculateAndRender();
+        }
+
+        function setMethodFilter(method) {
+            currentMethodFilter = currentMethodFilter === method ? 'all' : method;
+            calculateAndRender();
+        }
+
+        function updateMethodSummary() {
+            const visiblePlants = plantData.filter(p => p.visible);
+            document.getElementById('method1ProjectCount').textContent = visiblePlants.filter(p => p.calculationMethod === 'm1').length;
+            document.getElementById('method2ProjectCount').textContent = visiblePlants.filter(p => p.calculationMethod === 'm2').length;
+            document.getElementById('selectedProjectCount').textContent = `${visiblePlants.length}/${plantData.length}`;
+            const m1Button = document.getElementById('method1FilterButton');
+            const m2Button = document.getElementById('method2FilterButton');
+            m1Button.classList.toggle('ring-2', currentMethodFilter === 'm1');
+            m1Button.classList.toggle('ring-blue-500', currentMethodFilter === 'm1');
+            m1Button.classList.toggle('ring-offset-2', currentMethodFilter === 'm1');
+            m2Button.classList.toggle('ring-2', currentMethodFilter === 'm2');
+            m2Button.classList.toggle('ring-emerald-500', currentMethodFilter === 'm2');
+            m2Button.classList.toggle('ring-offset-2', currentMethodFilter === 'm2');
+            m1Button.setAttribute('aria-pressed', currentMethodFilter === 'm1');
+            m2Button.setAttribute('aria-pressed', currentMethodFilter === 'm2');
+        }
+
+        function openMethodProjectsModal(method) {
+            const isM1 = method === 'm1';
+            const plants = plantData.filter(p => p.visible && p.calculationMethod === method);
+            const title = currentLanguage === 'th' ? `โครงการที่เลือกใช้วิธีที่ ${isM1 ? '1' : '2'} (${plants.length})` : `Projects using Method ${isM1 ? '1' : '2'} (${plants.length})`;
+            const titleEl = document.getElementById('methodProjectsTitle');
+            titleEl.textContent = title;
+            titleEl.className = `text-sm font-bold ${isM1 ? 'text-blue-700 dark:text-blue-400' : 'text-emerald-700 dark:text-emerald-400'}`;
+            const list = document.getElementById('methodProjectsList');
+            list.innerHTML = plants.length ? plants.map((p, i) => `<div class="border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2"><span class="text-slate-400 mr-2">${i + 1}.</span>${escapeHtml(p.name)}</div>`).join('') : `<div class="text-center text-slate-400 py-8">${currentLanguage === 'th' ? 'ยังไม่มีโครงการในวิธีนี้' : 'No projects assigned to this method'}</div>`;
+            document.getElementById('methodProjectsModal').classList.remove('hidden');
+        }
+
+        function closeMethodProjectsModal() { document.getElementById('methodProjectsModal').classList.add('hidden'); }
+
+        function openFormulaGuideModal() {
+            const th = currentLanguage === 'th';
+            document.getElementById('formulaGuideTitle').textContent = th ? 'สมการคำนวณ Working Days' : 'Working Days Formulas';
+            document.getElementById('formulaGuideBody').innerHTML = `
+                <div class="border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 rounded-xl p-4 space-y-3">
+                    <h4 class="font-bold text-blue-700 dark:text-blue-400">${th ? 'วิธีที่ 1' : 'Method 1'}</h4>
+                    <code class="block bg-white dark:bg-slate-950 border border-blue-100 dark:border-blue-900 rounded p-3 text-xs">(Days − Loss Days) + [(PV Yield on Loss Days ÷ Capacity) ÷ Sun Hours]</code>
+                    <div class="text-xs"><strong>${th ? 'ตัวอย่าง' : 'Example'}:</strong><br>(31 − 2) + [(5,000 ÷ 1,000) ÷ 4.0]<br><strong class="text-blue-700">= 30.25 ${th ? 'วัน' : 'days'}</strong></div>
+                </div>
+                <div class="border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl p-4 space-y-3">
+                    <h4 class="font-bold text-emerald-700 dark:text-emerald-400">${th ? 'วิธีที่ 2' : 'Method 2'}</h4>
+                    <code class="block bg-white dark:bg-slate-950 border border-emerald-100 dark:border-emerald-900 rounded p-3 text-xs">Days − [(Loss Due Export × Loss Factor) ÷ Capacity ÷ Sun Hours]</code>
+                    <div class="text-xs"><strong>${th ? 'ตัวอย่าง' : 'Example'}:</strong><br>31 − [(1,500 × 0.9) ÷ 1,000 ÷ 4.0]<br><strong class="text-emerald-700">= 30.6625 ${th ? 'วัน' : 'days'}</strong></div>
+                </div>`;
+            document.getElementById('formulaGuideModal').classList.remove('hidden');
+        }
+
+        function closeFormulaGuideModal() { document.getElementById('formulaGuideModal').classList.add('hidden'); }
+
+        function openNoteModal(id) {
+            const plant = plantData.find(p => p.id === id);
+            if (!plant) return;
+            currentNotePlantId = id;
+            document.getElementById('noteModalTitle').textContent = `${currentLanguage === 'th' ? 'หมายเหตุ' : 'Note'} – ${plant.name}`;
+            document.getElementById('noteTextarea').value = plant.note || '';
+            document.getElementById('noteModal').classList.remove('hidden');
+        }
+
+        function closeNoteModal() { document.getElementById('noteModal').classList.add('hidden'); currentNotePlantId = null; }
+
+        function saveProjectNote() {
+            const plant = plantData.find(p => p.id === currentNotePlantId);
+            if (plant) plant.note = document.getElementById('noteTextarea').value.trim();
+            closeNoteModal();
+            calculateAndRender();
+        }
+
+        function clearProjectNote() {
+            document.getElementById('noteTextarea').value = '';
+            saveProjectNote();
+        }
+
+        function toggleLanguage() {
+            currentLanguage = currentLanguage === 'th' ? 'en' : 'th';
+            document.documentElement.lang = currentLanguage;
+            applyLanguage();
+            renderMonthSelectOptions(document.getElementById('monthSelect').value, false);
+            calculateAndRender();
+            if (!document.getElementById('lossModal').classList.contains('hidden') && currentEditingPlantId !== null) openLossModal(currentEditingPlantId);
+            if (!document.getElementById('formulaModal').classList.contains('hidden') && lastFormulaContext) openFormulaModal(lastFormulaContext.id, lastFormulaContext.method);
+        }
+
+        function applyLanguage() {
+            document.getElementById('languageButton').textContent = currentLanguage === 'th' ? 'EN' : 'ไทย';
+            document.getElementById('searchInput').placeholder = t('search');
+            document.getElementById('projectPopupSearch').placeholder = t('searchProjects');
+            document.getElementById('noteTextarea').placeholder = t('notePlaceholder');
+            document.getElementById('formulaCloseButton').textContent = t('close');
+            document.getElementById('thSelectedLossEnergy').innerHTML = `${t('selectedLoss')}<br><span class="text-[10px] font-normal text-slate-400">(kWh)</span>`;
+            document.getElementById('thSelectedPvYield').innerHTML = `${t('selectedPv')}<br><span class="text-[10px] font-normal text-slate-400">(kWh)</span>`;
+
+            const pairs = [
+                ['ระบบประมวลผลประสิทธิภาพและคำนวณวันทำงานสำหรับวิศวกรโซลาร์','subtitle'], ['นำเข้าไฟล์รายงาน (Import Reports)','import'], ['ล้างข้อมูลไฟล์','clearFiles'],
+                ['ลากไฟล์มาวางในบริเวณนี้ หรือ','drop'], ['คลิกเพื่อเลือกไฟล์','click'], ['Export เป็น Excel (2 ชีท)','excelExport'],
+                ['พารามิเตอร์การคำนวณ (Solar Parameters)','parameters'], ['เลือก รอบเดือน/ปี ประมวลผล','month'], ['กำหนดรูปแบบ Sun Hours (ชม./วัน)','sunMode'], ['นำไปใช้กับ:','applyTo'],
+                ['ทั้งวิธีที่ 1 และ 2','both'], ['เฉพาะวิธีที่ 1','m1Only'], ['เฉพาะวิธีที่ 2','m2Only'], ['1.1 ค่ามาตรฐาน Default (4.0 ชม.)','custom'],
+                ['1.2 เฉลี่ยทั้งเดือน (Specific Energy รายโครงการ)','monthly'], ['1.3 เฉลี่ยเฉพาะวันไม่มี Loss (Specific Energy รายโครงการ)','nonLoss'], ['โครงการทั้งหมด','plants'],
+                ['เฉลี่ยวันทำงาน (วิธีที่ 1)','avgM1'], ['เฉลี่ยวันทำงาน (วิธีที่ 2)','avgM2'], ['ตารางแสดงผลโครงการและการคำนวณวันทำงาน (Solar Projects Analytics)','tableTitle'],
+                ['เลือก','select'], ['ชื่อโครงการ (Plant Name)','plantName'], ['วันในเดือน','days'], ['Loss (วัน)','lossDays'], ['วันที่เกิด Loss Due','lossDates'],
+                ['วันทำงาน (วิธีที่ 1)','working1'], ['วันทำงาน (วิธีที่ 2)','working2'], ['ลบ','remove'], ['เลือกวันที่เกิด Loss Due to Export Limit','lossTitle'],
+                ['คืนค่าเดิม','restore'], ['เคลียร์ทั้งหมด','clearAll'], ['คลิกเลือกปุ่มวันที่ต้องการกำหนดเป็นวันเกิด Loss Due:','chooseDays'], ['ยืนยันการบันทึก','confirm'],
+                ['กรุณาอัปโหลดไฟล์รายงาน FusionSolar (.xlsx) เพื่อเริ่มประมวลผล','uploadPrompt'], ['(คำนวณจริง)','calculated'],
+                ['📌 สูตรการคำนวณ (วิธีที่ 1)','formulaTitle1'], ['📌 สูตรการคำนวณ (วิธีที่ 2)','formulaTitle2'],
+                ['(Days - Loss Days) + [ (PV Yield วัน Loss / Capacity) / Sun Hours ]','formulaCode1'],
+                ['* คิดวันทำงานจริงจากวันที่ไม่มี Loss บวกด้วยสัดส่วนพลังงานที่ผลิตได้ในวันที่มี Loss','formulaDesc1'],
+                ['* คำนวณหักลบจำนวนวันที่สูญเสียไปจากพลังงาน Loss Energy ของวันที่เลือก','formulaDesc2'],
+                ['วิธีที่ 1','method1Short'], ['วิธีที่ 2','method2Short'], ['ดูสมการ','viewFormula'], ['เลือกโครงการ','selectProjects'], ['วิธีที่เลือก / Note','selectedMethodNote'],
+                ['เลือกโครงการที่ต้องการแสดง','selectorTitle'], ['ค้นหาชื่อโครงการ...','searchProjects'], ['เลือกทั้งหมด','selectAll'], ['ไม่เลือกทั้งหมด','clearSelection'],
+                ['สมการคำนวณ Working Days','formulaGuide'], ['อื่นๆ','other'], ['ล้าง Note','clearNote'], ['บันทึก','save'], ['ปิด','close']
+            ];
+            const reverse = Object.fromEntries(pairs.map(([th,key]) => [uiText.en[key], key]));
+            const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+            while (walker.nextNode()) {
+                const node = walker.currentNode;
+                const value = node.nodeValue.trim();
+                const entry = pairs.find(([th]) => th === value);
+                const key = entry ? entry[1] : reverse[value];
+                if (key) node.nodeValue = node.nodeValue.replace(value, t(key));
+            }
+        }
 
         function toggleTheme() {
             const html = document.documentElement;
@@ -365,8 +675,9 @@
             rawRecordsByFile = [];
             plantData = [];
             detectedMonths = [];
+            currentMethodFilter = 'all';
             document.getElementById('fileList').innerHTML = '';
-            document.getElementById('monthSelect').innerHTML = '<option value="">-- รอการอัปโหลดไฟล์ --</option>';
+            document.getElementById('monthSelect').innerHTML = `<option value="">${t('waiting')}</option>`;
             document.getElementById('autoDetectBadge').classList.add('hidden');
             document.getElementById('excelFileInput').value = '';
             document.getElementById('statusMessage').classList.add('hidden');
@@ -375,13 +686,19 @@
             calculateAndRender();
         }
 
-        function renderMonthSelectOptions(selectedKey) {
+        function renderMonthSelectOptions(selectedKey, reaggregate = true) {
             const selectEl = document.getElementById('monthSelect');
             selectEl.innerHTML = '';
 
+            if (detectedMonths.length === 0) {
+                selectEl.innerHTML = `<option value="">${t('waiting')}</option>`;
+                return;
+            }
+
             detectedMonths.forEach(mKey => {
                 const [year, month] = mKey.split('-').map(Number);
-                const label = `${thaiMonths[month - 1]} ${year}`;
+                const monthNames = currentLanguage === 'th' ? thaiMonths : englishMonths;
+                const label = `${monthNames[month - 1]} ${year}`;
                 const option = document.createElement('option');
                 option.value = mKey;
                 option.innerText = label;
@@ -389,12 +706,13 @@
                 selectEl.appendChild(option);
             });
 
-            onMonthSelectChange();
+            if (reaggregate) onMonthSelectChange();
         }
 
         function onMonthSelectChange() {
             const val = document.getElementById('monthSelect').value;
             if (val) {
+                currentMethodFilter = 'all';
                 const [year, month] = val.split('-').map(Number);
                 currentDaysInMonth = new Date(year, month, 0).getDate();
                 
@@ -419,21 +737,33 @@
         }
 
         function extractMonthFromFilename(fileName) {
-            const match = fileName.match(/(\d{4})[-_](\d{2})/);
-            if (match) {
-                const year = parseInt(match[1]);
-                const month = parseInt(match[2]);
+            const ymdMatch = fileName.match(/(?:^|\D)(\d{4})[-_](\d{1,2})(?:[-_](\d{1,2}))?(?:\D|$)/);
+            if (ymdMatch) {
+                const year = parseInt(ymdMatch[1]);
+                const month = parseInt(ymdMatch[2]);
                 if (month >= 1 && month <= 12) {
                     return `${year}-${String(month).padStart(2, '0')}`;
                 }
             }
-            return "2026-08";
+
+            // FusionSolar also exports filenames as DD-MM-YYYY, e.g. Plant Report_02-10-2025.xlsx.
+            const dmyMatch = fileName.match(/(?:^|\D)(\d{1,2})[-_](\d{1,2})[-_](\d{4})(?:\D|$)/);
+            if (dmyMatch) {
+                const month = parseInt(dmyMatch[2]);
+                const year = parseInt(dmyMatch[3]);
+                if (month >= 1 && month <= 12) {
+                    return `${year}-${String(month).padStart(2, '0')}`;
+                }
+            }
+            return null;
         }
 
         function extractDayFromFilename(fileName) {
-            const match = fileName.match(/[-_](\d{2})\.xlsx$/i) || fileName.match(/[-_](\d{1,2})\./);
+            const ymdMatch = fileName.match(/(?:^|\D)\d{4}[-_]\d{1,2}[-_](\d{1,2})(?:\D|$)/i);
+            const dmyMatch = fileName.match(/(?:^|\D)(\d{1,2})[-_]\d{1,2}[-_]\d{4}(?:\D|$)/i);
+            const match = ymdMatch || dmyMatch || fileName.match(/[-_](\d{1,2})\./);
             if (match) {
-                let d = parseInt(match[1]);
+                const d = parseInt(match[1]);
                 if (d >= 1 && d <= 31) return d;
             }
             return null;
@@ -454,19 +784,75 @@
             return num;
         }
 
+        function normalizeHeader(value) {
+            return String(value ?? '')
+                .toLowerCase()
+                .replace(/\u00a0/g, ' ')
+                .replace(/[\r\n]+/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function worksheetToRows(worksheet) {
+            // Some FusionSolar files contain valid cells in rows 1-3, but their
+            // saved !ref starts at A4. sheet_to_json would otherwise omit the title,
+            // header, and first project row, causing "No valid data found".
+            const cellAddresses = Object.keys(worksheet).filter(key => /^[A-Z]+\d+$/.test(key));
+            if (cellAddresses.length === 0) return [];
+
+            let minRow = Infinity, minCol = Infinity, maxRow = -1, maxCol = -1;
+            cellAddresses.forEach(address => {
+                const cell = XLSX.utils.decode_cell(address);
+                minRow = Math.min(minRow, cell.r);
+                minCol = Math.min(minCol, cell.c);
+                maxRow = Math.max(maxRow, cell.r);
+                maxCol = Math.max(maxCol, cell.c);
+            });
+
+            const actualRange = XLSX.utils.encode_range({
+                s: { r: minRow, c: minCol },
+                e: { r: maxRow, c: maxCol }
+            });
+            return XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '', range: actualRange });
+        }
+
         function handleFiles(files) {
             if (!files || !files.length) return;
 
             rawRecordsByFile = [];
             detectedMonths = [];
             let filesRead = 0;
+            let fileErrors = [];
+            const parsedKeys = new Set();
             document.getElementById('fileList').innerHTML = '';
 
+            const finishFile = () => {
+                filesRead++;
+                if (filesRead !== files.length) return;
+                if (rawRecordsByFile.length > 0) {
+                    document.getElementById('autoDetectBadge').classList.remove('hidden');
+                    renderMonthSelectOptions(detectedMonths[0]);
+                    showStatus(`${t('readOk')}${fileErrors.length ? ` (${fileErrors.length} error)` : ''}`, fileErrors.length === files.length);
+                } else {
+                    showStatus(fileErrors.length ? fileErrors.join('<br>') : t('noTable'), true);
+                }
+            };
+
             Array.from(files).forEach(file => {
-                document.getElementById('fileList').innerHTML += `<span class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-1 rounded border border-slate-200 dark:border-slate-700 flex items-center gap-1.5"><i class="fa-solid fa-file-excel text-emerald-600"></i> ${file.name}</span>`;
+                const fileBadge = document.createElement('span');
+                fileBadge.className = 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-1 rounded border border-slate-200 dark:border-slate-700 flex items-center gap-1.5';
+                const icon = document.createElement('i');
+                icon.className = 'fa-solid fa-file-excel text-emerald-600';
+                fileBadge.append(icon, document.createTextNode(` ${file.name}`));
+                document.getElementById('fileList').appendChild(fileBadge);
 
                 let fileMonthKey = extractMonthFromFilename(file.name);
                 let fileDay = extractDayFromFilename(file.name);
+                if (!fileMonthKey) {
+                    fileErrors.push(`${t('invalidMonth')}: ${file.name}`);
+                    finishFile();
+                    return;
+                }
 
                 const reader = new FileReader();
                 reader.onload = function(evt) {
@@ -474,57 +860,54 @@
                         const data = new Uint8Array(evt.target.result);
                         const workbook = XLSX.read(data, { type: 'array' });
                         
+                        let acceptedSheet = false;
                         workbook.SheetNames.forEach(sheetName => {
                             const worksheet = workbook.Sheets[sheetName];
-                            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
-                            parseSheetRecords(rows, fileMonthKey, fileDay, file.name);
+                            const rows = worksheetToRows(worksheet);
+                            if (!acceptedSheet && parseSheetRecords(rows, fileMonthKey, fileDay, file.name, parsedKeys)) acceptedSheet = true;
                         });
-                        
-                        filesRead++;
-                        if (filesRead === files.length) {
-                            if (rawRecordsByFile.length > 0) {
-                                document.getElementById('autoDetectBadge').classList.remove('hidden');
-                                renderMonthSelectOptions(detectedMonths[0] || fileMonthKey);
-                                showStatus(`อ่านไฟล์สำเร็จ! โหลดข้อมูลโครงการเรียบร้อยแล้ว`, false);
-                            } else {
-                                showStatus(`ไม่พบตารางข้อมูล กรุณาตรวจสอบรูปแบบไฟล์ Excel อีกครั้ง`, true);
-                            }
-                        }
+                        if (!acceptedSheet) fileErrors.push(`${t('noTable')}: ${file.name}`);
                     } catch (err) {
-                        showStatus(`เกิดข้อผิดพลาดในการอ่านไฟล์: ${err.message}`, true);
+                        fileErrors.push(`${t('readError')}: ${file.name} (${err.message})`);
                     }
+                    finishFile();
+                };
+                reader.onerror = () => {
+                    fileErrors.push(`${t('readError')}: ${file.name}`);
+                    finishFile();
                 };
                 reader.readAsArrayBuffer(file);
             });
         }
 
-        function parseSheetRecords(rows, monthKey, fileDay, fileName) {
-            if (!rows || rows.length < 1) return;
+        function parseSheetRecords(rows, monthKey, fileDay, fileName, parsedKeys) {
+            if (!rows || rows.length < 2) return false;
 
-            if (!detectedMonths.includes(monthKey)) {
-                detectedMonths.push(monthKey);
-            }
+            let plantIdx = -1, capIdx = -1, pvIdx = -1, specEnergyIdx = -1, lossIdx = -1, startRow = -1;
 
-            let plantIdx = 0, capIdx = 2, pvIdx = 7, specEnergyIdx = -1, lossIdx = 13, startRow = 0;
-
-            for (let i = 0; i < Math.min(rows.length, 10); i++) {
+            for (let i = 0; i < Math.min(rows.length, 30); i++) {
                 const row = rows[i];
                 if (!Array.isArray(row)) continue;
-
+                let foundPlant = -1, foundCap = -1, foundPv = -1, foundSpec = -1, foundLoss = -1;
                 row.forEach((cell, colIdx) => {
-                    const text = String(cell).toLowerCase().trim();
-                    if (text.includes('plant name') || text.includes('station') || text.includes('ชื่อสถานี')) plantIdx = colIdx;
-                    if (text.includes('total string capacity') || text.includes('string capacity')) capIdx = colIdx;
-                    if (text.includes('pv yield') || text.includes('yield (kwh)')) pvIdx = colIdx;
-                    if (text.includes('specific energy')) specEnergyIdx = colIdx;
-                    if (text.includes('loss due to export limitation') && text.includes('kwh')) lossIdx = colIdx;
+                    const text = normalizeHeader(cell);
+                    if (foundPlant < 0 && (text.includes('plant name') || text === 'station' || text.includes('ชื่อสถานี') || text.includes('ชื่อโครงการ'))) foundPlant = colIdx;
+                    if (foundCap < 0 && (text.includes('total string capacity') || text.includes('string capacity') || text.includes('installed capacity'))) foundCap = colIdx;
+                    // Match PV Yield specifically. Do not let Theoretical/Inverter/Total Yield overwrite it.
+                    if (foundPv < 0 && (text === 'pv yield (kwh)' || text.startsWith('pv yield') || text.includes('พลังงาน pv'))) foundPv = colIdx;
+                    if (foundSpec < 0 && text.includes('specific energy')) foundSpec = colIdx;
+                    if (foundLoss < 0 && (text.includes('loss due to export limitation') || text.includes('loss due export') || text.includes('พลังงานสูญเสียจากการจำกัดการส่งออก'))) foundLoss = colIdx;
                 });
-
-                if (textMatchRow(row)) {
+                if (foundPlant >= 0 && foundCap >= 0 && foundPv >= 0) {
+                    plantIdx = foundPlant; capIdx = foundCap; pvIdx = foundPv; specEnergyIdx = foundSpec; lossIdx = foundLoss;
                     startRow = i + 1;
                     break;
                 }
             }
+
+            if (startRow < 0) return false;
+
+            let added = 0;
 
             for (let i = startRow; i < rows.length; i++) {
                 const row = rows[i];
@@ -536,12 +919,22 @@
                 let cap = cleanNumberStrict(row[capIdx]);
                 let pv = cleanNumberStrict(row[pvIdx]);
                 let specEnergy = specEnergyIdx !== -1 ? cleanNumberStrict(row[specEnergyIdx]) : (cap > 0 ? (pv / cap) : 0);
-                let loss = cleanNumberStrict(row[lossIdx]);
+                let loss = lossIdx >= 0 ? cleanNumberStrict(row[lossIdx]) : 0;
                 
-                rawRecordsByFile.push({ fileName, name, cap, pv, specEnergy, loss, recordDay: fileDay, monthKey });
+                const normalizedName = name.replace(/\s+/g, ' ').trim();
+                const recordKey = `${monthKey}|${fileDay ?? 'none'}|${normalizedName.toLowerCase()}`;
+                if (parsedKeys && parsedKeys.has(recordKey)) continue;
+                if (parsedKeys) parsedKeys.add(recordKey);
+                rawRecordsByFile.push({ fileName, name: normalizedName, cap, pv, specEnergy, loss, recordDay: fileDay, monthKey });
+                added++;
             }
 
             detectedMonths.sort().reverse();
+            if (added > 0 && !detectedMonths.includes(monthKey)) {
+                detectedMonths.push(monthKey);
+                detectedMonths.sort().reverse();
+            }
+            return added > 0;
         }
 
         function textMatchRow(row) {
@@ -552,13 +945,13 @@
             plantData = [];
             const aggregated = {};
 
-            const filteredRecords = rawRecordsByFile.filter(r => r.monthKey === targetMonthKey);
-            const recordsToUse = filteredRecords.length > 0 ? filteredRecords : rawRecordsByFile;
+            const recordsToUse = rawRecordsByFile.filter(r => r.monthKey === targetMonthKey);
 
             recordsToUse.forEach(rec => {
-                const name = rec.name;
-                if (!aggregated[name]) {
-                    aggregated[name] = { 
+                const key = rec.name.toLowerCase();
+                if (!aggregated[key]) {
+                    aggregated[key] = {
+                        name: rec.name,
                         cap: rec.cap, 
                         lossDueEnergy: 0, 
                         specEnergySum: 0,
@@ -566,12 +959,12 @@
                     };
                 }
                 
-                if (rec.cap > 0) aggregated[name].cap = rec.cap;
-                aggregated[name].lossDueEnergy += rec.loss; 
-                aggregated[name].specEnergySum += rec.specEnergy;
+                if (rec.cap > 0) aggregated[key].cap = rec.cap;
+                aggregated[key].lossDueEnergy += rec.loss;
+                aggregated[key].specEnergySum += rec.specEnergy;
 
                 if (rec.recordDay !== null) {
-                    aggregated[name].dailyMap[rec.recordDay] = {
+                    aggregated[key].dailyMap[rec.recordDay] = {
                         pv: rec.pv,
                         specEnergy: rec.specEnergy,
                         loss: rec.loss,
@@ -580,8 +973,8 @@
                 }
             });
 
-            Object.keys(aggregated).forEach((name, idx) => {
-                const plantObj = aggregated[name];
+            Object.keys(aggregated).forEach((key, idx) => {
+                const plantObj = aggregated[key];
                 let initialLossDays = [];
                 Object.keys(plantObj.dailyMap).forEach(dStr => {
                     let d = parseInt(dStr);
@@ -592,13 +985,16 @@
 
                 plantData.push({
                     id: idx,
-                    name: name,
+                    name: plantObj.name,
                     cap: plantObj.cap,
                     customDaysInMonth: currentDaysInMonth,
                     lossDueEnergy: plantObj.lossDueEnergy,
                     specificEnergyTotal: plantObj.specEnergySum,
                     dailyMap: plantObj.dailyMap,
                     lossDaysArray: initialLossDays.sort((a,b) => a - b),
+                    originalLossDaysArray: [...initialLossDays].sort((a,b) => a - b),
+                    calculationMethod: 'other',
+                    note: '',
                     visible: true
                 });
             });
@@ -607,7 +1003,8 @@
         function updatePlantCapacity(id, value) {
             const plant = plantData.find(p => p.id === id);
             if (plant) {
-                plant.cap = parseFloat(value) || 0;
+                const parsed = parseFloat(value);
+                plant.cap = Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
                 calculateAndRender();
             }
         }
@@ -615,7 +1012,9 @@
         function updatePlantDays(id, value) {
             const plant = plantData.find(p => p.id === id);
             if (plant) {
-                plant.customDaysInMonth = parseInt(value) || currentDaysInMonth;
+                const parsed = parseInt(value);
+                plant.customDaysInMonth = Number.isFinite(parsed) ? Math.min(currentDaysInMonth, Math.max(1, parsed)) : currentDaysInMonth;
+                plant.lossDaysArray = plant.lossDaysArray.filter(d => d <= plant.customDaysInMonth);
                 calculateAndRender();
             }
         }
@@ -630,7 +1029,7 @@
             const plant = plantData.find(p => p.id === id);
             if (!plant) return;
 
-            document.getElementById('modalPlantName').innerText = `โครงการ: ${plant.name}`;
+            document.getElementById('modalPlantName').innerText = `${t('project')}: ${plant.name}`;
             const grid = document.getElementById('modalDaysGrid');
             grid.innerHTML = '';
 
@@ -667,6 +1066,28 @@
             }
         }
 
+        function restoreOriginalPlantLossDays() {
+            if (currentEditingPlantId === null) return;
+            const plant = plantData.find(p => p.id === currentEditingPlantId);
+            if (!plant) return;
+            const daysLimit = plant.customDaysInMonth || currentDaysInMonth;
+            plant.lossDaysArray = [...plant.originalLossDaysArray].filter(d => d <= daysLimit);
+            openLossModal(currentEditingPlantId);
+            calculateAndRender();
+        }
+
+        function getSelectedLossValues(plant) {
+            let pvYield = 0;
+            let lossEnergy = 0;
+            plant.lossDaysArray.forEach(day => {
+                const daily = plant.dailyMap[day];
+                if (!daily) return;
+                pvYield += Number(daily.pv) || 0;
+                lossEnergy += Number(daily.loss) || 0;
+            });
+            return { pvYield, lossEnergy };
+        }
+
         function togglePlantLossDay(id, day) {
             const plant = plantData.find(p => p.id === id);
             if (!plant) return;
@@ -687,7 +1108,8 @@
         // Logic การคำนวณ Sun Hours 3 รูปแบบ (อิง Specific Energy แยกตามโครงการ)
         function getCalculatedSunHours(plant) {
             const mode = document.querySelector('input[name="sunHoursMode"]:checked')?.value || 'custom';
-            const customVal = parseFloat(document.getElementById('inputSunHoursCustom').value) || 4.0;
+            const customInput = parseFloat(document.getElementById('inputSunHoursCustom').value);
+            const customVal = Number.isFinite(customInput) && customInput > 0 ? customInput : 4.0;
             const days = plant.customDaysInMonth || currentDaysInMonth;
 
             // Specific Energy รวม
@@ -706,11 +1128,9 @@
             let nonLossDaysCount = 0;
 
             for (let d = 1; d <= days; d++) {
-                if (!plant.lossDaysArray.includes(d)) {
+                if (!plant.lossDaysArray.includes(d) && plant.dailyMap[d]) {
                     nonLossDaysCount++;
-                    if (plant.dailyMap[d]) {
-                        nonLossSpecEnergySum += (plant.dailyMap[d].specEnergy || (plant.dailyMap[d].pv / plant.cap) || 0);
-                    }
+                    nonLossSpecEnergySum += (plant.dailyMap[d].specEnergy || (plant.cap > 0 ? plant.dailyMap[d].pv / plant.cap : 0) || 0);
                 }
             }
 
@@ -729,26 +1149,81 @@
             };
         }
 
+        function calculatePlantMetrics(item) {
+            const cap = Number(item.cap);
+            const daysInMonth = item.customDaysInMonth || currentDaysInMonth;
+            const shObj = getCalculatedSunHours(item);
+            const lossInput = parseFloat(document.getElementById('inputLossFactor').value);
+            const lossFactor = Number.isFinite(lossInput) ? Math.min(1, Math.max(0, lossInput)) : 0.9;
+            const customInput = parseFloat(document.getElementById('inputSunHoursCustom').value);
+            const customVal = Number.isFinite(customInput) && customInput > 0 ? customInput : 4.0;
+            const targetMethod = document.getElementById('sunHoursTarget').value;
+            let shM1 = shObj.chosenSH;
+            let shM2 = shObj.chosenSH;
+            if (targetMethod === 'm1') shM2 = customVal;
+            if (targetMethod === 'm2') shM1 = customVal;
+            const selected = getSelectedLossValues(item);
+            const lossDaysCount = item.lossDaysArray.length;
+            if (!Number.isFinite(cap) || cap <= 0 || shM1 <= 0 || shM2 <= 0) {
+                return { valid: false, cap, daysInMonth, shObj, shM1, shM2, lossFactor, selected, lossDaysCount, method1Days: 0, method2Days: 0 };
+            }
+            const equivalentDaysFromLossPv = (selected.pvYield / cap) / shM1;
+            const method1Days = Math.min(daysInMonth, Math.max(0, (daysInMonth - lossDaysCount) + equivalentDaysFromLossPv));
+            const lossDaysEquivalent = (selected.lossEnergy * lossFactor / cap) / shM2;
+            const method2Days = Math.min(daysInMonth, Math.max(0, daysInMonth - lossDaysEquivalent));
+            return { valid: true, cap, daysInMonth, shObj, shM1, shM2, lossFactor, selected, lossDaysCount, equivalentDaysFromLossPv, lossDaysEquivalent, method1Days, method2Days };
+        }
+
+        function openFormulaModal(id, method) {
+            const item = plantData.find(p => p.id === id);
+            if (!item) return;
+            lastFormulaContext = { id, method };
+            const m = calculatePlantMetrics(item);
+            const n = value => Number(value).toLocaleString(undefined, { maximumFractionDigits: 4 });
+            const isM1 = method === 1;
+            document.getElementById('formulaModalTitle').textContent = `${t('formula')} – ${item.name} – ${isM1 ? t('working1') : t('working2')}`;
+            const formula = isM1
+                ? '(Days − Loss Days) + [(PV Yield on Loss Days ÷ Capacity) ÷ Sun Hours]'
+                : 'Days − [(Loss Due Export × Loss Factor) ÷ Capacity ÷ Sun Hours]';
+            const substitution = isM1
+                ? `(${n(m.daysInMonth)} − ${n(m.lossDaysCount)}) + [(${n(m.selected.pvYield)} ÷ ${n(m.cap)}) ÷ ${n(m.shM1)}]`
+                : `${n(m.daysInMonth)} − [(${n(m.selected.lossEnergy)} × ${n(m.lossFactor)}) ÷ ${n(m.cap)} ÷ ${n(m.shM2)}]`;
+            const result = isM1 ? m.method1Days : m.method2Days;
+            document.getElementById('formulaModalBody').innerHTML = `
+                <div><span class="font-semibold">${t('formulaLabel')}:</span><code class="block mt-1 p-3 bg-slate-100 dark:bg-slate-950 rounded font-mono">${formula}</code></div>
+                <div><span class="font-semibold">${t('substitution')}:</span><code class="block mt-1 p-3 bg-slate-100 dark:bg-slate-950 rounded font-mono">${substitution}</code></div>
+                <div class="text-base font-bold ${isM1 ? 'text-blue-600' : 'text-emerald-600'}">= ${n(result)} ${t('daysUnit')}</div>`;
+            document.getElementById('formulaModal').classList.remove('hidden');
+        }
+
+        function closeFormulaModal() {
+            document.getElementById('formulaModal').classList.add('hidden');
+            lastFormulaContext = null;
+        }
+
         function calculateAndRender() {
             const tbody = document.getElementById('tableBody');
-            const lossFactor = parseFloat(document.getElementById('inputLossFactor').value) || 0.9;
             const searchText = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
-            const targetMethod = document.getElementById('sunHoursTarget').value;
 
-            const filteredData = plantData.filter(p => p.name.toLowerCase().includes(searchText));
+            const filteredData = plantData.filter(p =>
+                p.visible &&
+                p.name.toLowerCase().includes(searchText) &&
+                (currentMethodFilter === 'all' || p.calculationMethod === currentMethodFilter)
+            );
 
             if (filteredData.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="11" class="text-center py-12 text-slate-400">
+                        <td colspan="13" class="text-center py-12 text-slate-400">
                             <i class="fa-solid fa-folder-open text-3xl mb-2 block opacity-30"></i>
-                            ไม่พบข้อมูลสำหรับแสดงผล
+                            ${t('noData')}
                         </td>
                     </tr>`;
                 document.getElementById('statPlantCount').innerText = '0';
                 document.getElementById('statTotalCap').innerHTML = '0 <span class="text-xs font-normal text-slate-400">kWp</span>';
                 document.getElementById('statAvgM1').innerHTML = '0.0 <span class="text-xs font-normal text-blue-400">วัน</span>';
                 document.getElementById('statAvgM2').innerHTML = '0.0 <span class="text-xs font-normal text-emerald-400">วัน</span>';
+                updateMethodSummary();
                 return;
             }
 
@@ -757,60 +1232,41 @@
             let avgMonthlySHSum = 0, avgNonLossSHSum = 0;
 
             filteredData.forEach(item => {
-                const cap = item.cap || 1;
-                const daysInMonth = item.customDaysInMonth || currentDaysInMonth;
-                const shObj = getCalculatedSunHours(item);
+                const metrics = calculatePlantMetrics(item);
+                const { cap, daysInMonth, shObj, shM1, shM2, selected, lossDaysCount, method1Days, method2Days } = metrics;
 
                 avgMonthlySHSum += shObj.monthlyAvgSH;
                 avgNonLossSHSum += shObj.nonLossAvgSH;
 
-                const customVal = parseFloat(document.getElementById('inputSunHoursCustom').value) || 4.0;
-                let shM1 = shObj.chosenSH;
-                let shM2 = shObj.chosenSH;
-
-                if (targetMethod === 'm1') shM2 = customVal;
-                if (targetMethod === 'm2') shM1 = customVal;
-
-                let lossDayPvSum = 0;
-                item.lossDaysArray.forEach(d => {
-                    if (item.dailyMap[d]) {
-                        lossDayPvSum += (item.dailyMap[d].pv || 0);
-                    }
-                });
-
-                const lossDaysCount = item.lossDaysArray.length;
-                const equivalentDaysFromLossPv = ((lossDayPvSum / cap) / shM1);
-                const method1Days = Math.min(daysInMonth, Math.max(0, (daysInMonth - lossDaysCount) + equivalentDaysFromLossPv));
-
-                const lossDaysEquivalent = ((item.lossDueEnergy * lossFactor) / cap) / shM2;
-                const method2Days = Math.max(0, daysInMonth - lossDaysEquivalent);
-
-                if (item.visible) {
+                if (metrics.valid) {
                     totalCap += item.cap;
                     sumM1 += method1Days;
                     sumM2 += method2Days;
                     count++;
                 }
 
-                let lossDatesDisplay = '<span class="text-slate-400 italic">ไม่มี Loss</span>';
+                let lossDatesDisplay = `<span class="text-slate-400 italic">${t('noLoss')}</span>`;
                 if (lossDaysCount > 0) {
-                    lossDatesDisplay = `<span class="bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800 px-1.5 py-0.5 rounded font-mono text-[10px] font-semibold">วัน ${item.lossDaysArray.join(', ')}</span>`;
+                    lossDatesDisplay = `<span class="bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800 px-1.5 py-0.5 rounded font-mono text-[10px] font-semibold">${t('dayPrefix')} ${item.lossDaysArray.join(', ')}</span>`;
                 }
 
                 const tr = document.createElement('tr');
                 tr.className = `hover:bg-slate-50 dark:hover:bg-slate-800/40 transition border-b border-slate-200 dark:border-slate-800/60 ${!item.visible ? 'opacity-40' : ''}`;
                 tr.innerHTML = `
-                    <td class="p-3 text-center">
+                    <td class="p-3 text-center sticky-col-1">
                         <input type="checkbox" ${item.visible ? 'checked' : ''} onchange="togglePlant(${item.id}, this.checked)" class="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-0 w-4 h-4 cursor-pointer">
                     </td>
-                    <td class="p-3 font-semibold text-slate-800 dark:text-slate-200">${item.name}</td>
+                    <td class="p-3 font-semibold text-slate-800 dark:text-slate-200 sticky-col-2">${escapeHtml(item.name)}</td>
+
+                    <td class="p-3 text-right font-mono text-blue-700 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/70 font-bold sticky-col-3"><button onclick="openFormulaModal(${item.id}, 1)" class="underline decoration-dotted underline-offset-4" title="${t('formula')}">${metrics.valid ? method1Days.toFixed(2) : 'Invalid'}</button></td>
+                    <td class="p-3 text-right font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/70 font-bold sticky-col-4 sticky-divider"><button onclick="openFormulaModal(${item.id}, 2)" class="underline decoration-dotted underline-offset-4" title="${t('formula')}">${metrics.valid ? method2Days.toFixed(2) : 'Invalid'}</button></td>
                     
                     <td class="p-3 text-right bg-amber-50/20 dark:bg-amber-950/10">
-                        <input type="number" step="0.1" value="${item.cap}" onchange="updatePlantCapacity(${item.id}, this.value)" class="w-20 bg-amber-50/60 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 rounded px-1.5 py-0.5 font-mono text-right font-bold text-amber-900 dark:text-amber-200 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500">
+                        <input type="number" min="0.1" step="0.1" value="${item.cap}" onchange="updatePlantCapacity(${item.id}, this.value)" class="w-20 bg-amber-50/60 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 rounded px-1.5 py-0.5 font-mono text-right font-bold text-amber-900 dark:text-amber-200 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500">
                     </td>
 
                     <td class="p-3 text-center bg-amber-50/20 dark:bg-amber-950/10">
-                        <input type="number" value="${daysInMonth}" onchange="updatePlantDays(${item.id}, this.value)" class="w-12 bg-amber-50/60 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 rounded px-1.5 py-0.5 font-mono text-center font-bold text-amber-900 dark:text-amber-200 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500">
+                        <input type="number" min="1" max="${currentDaysInMonth}" value="${daysInMonth}" onchange="updatePlantDays(${item.id}, this.value)" class="w-12 bg-amber-50/60 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 rounded px-1.5 py-0.5 font-mono text-center font-bold text-amber-900 dark:text-amber-200 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500">
                     </td>
 
                     <td class="p-3 text-center font-mono font-semibold text-slate-800 dark:text-slate-200">${lossDaysCount}</td>
@@ -824,33 +1280,35 @@
                         </div>
                     </td>
 
+                    <td class="p-3 text-right font-mono font-semibold text-red-600 dark:text-red-400">${selected.lossEnergy.toLocaleString(undefined, {maximumFractionDigits: 2})}</td>
+                    <td class="p-3 text-right font-mono font-semibold text-indigo-600 dark:text-indigo-400">${selected.pvYield.toLocaleString(undefined, {maximumFractionDigits: 2})}</td>
                     <td class="p-3 text-right font-mono text-slate-600 dark:text-slate-300">${shObj.specificEnergyTotal.toFixed(2)}</td>
-                    <td class="p-3 text-right font-mono font-bold text-amber-600 dark:text-amber-400 bg-amber-50/30 dark:bg-amber-950/20">${shObj.chosenSH.toFixed(2)}</td>
-                    
-                    <!-- Method 1 Result -->
-                    <td class="p-3 text-right font-mono text-blue-700 dark:text-blue-400 bg-blue-50/40 dark:bg-blue-950/20 border-l border-blue-200 dark:border-blue-900/40 font-bold">${method1Days.toFixed(2)}</td>
-                    
-                    <!-- Method 2 Result -->
-                    <td class="p-3 text-right font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-50/40 dark:bg-emerald-950/20 border-l border-emerald-200 dark:border-emerald-900/40 font-bold">${method2Days.toFixed(2)}</td>
+                    <td class="p-3 text-right font-mono font-bold text-amber-600 dark:text-amber-400 bg-amber-50/30 dark:bg-amber-950/20" title="M1: ${shM1.toFixed(2)} | M2: ${shM2.toFixed(2)}">${shM1.toFixed(2)} / ${shM2.toFixed(2)}</td>
                     
                     <td class="p-3 text-center">
-                        <button onclick="removeRow(${item.id})" class="text-slate-400 hover:text-red-500 p-1 transition">
-                            <i class="fa-solid fa-trash-can"></i>
-                        </button>
+                        <div class="flex items-center justify-center gap-2">
+                            <select onchange="updateCalculationMethod(${item.id}, this.value)" class="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded px-2 py-1.5 text-xs">
+                                <option value="m1" ${item.calculationMethod === 'm1' ? 'selected' : ''}>${currentLanguage === 'th' ? 'วิธีที่ 1' : 'Method 1'}</option>
+                                <option value="m2" ${item.calculationMethod === 'm2' ? 'selected' : ''}>${currentLanguage === 'th' ? 'วิธีที่ 2' : 'Method 2'}</option>
+                                <option value="other" ${item.calculationMethod === 'other' ? 'selected' : ''}>${currentLanguage === 'th' ? 'อื่นๆ' : 'Other'}</option>
+                            </select>
+                            <button onclick="openNoteModal(${item.id})" class="${item.note ? 'bg-amber-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'} border border-slate-300 dark:border-slate-700 rounded px-2 py-1.5" title="Note"><i class="fa-solid fa-note-sticky"></i></button>
+                        </div>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
 
             if (filteredData.length > 0) {
-                document.getElementById('valMonthlyAvg').innerText = (avgMonthlySHSum / filteredData.length).toFixed(2) + " ชม. (เฉลี่ยภาพรวม)";
-                document.getElementById('valNonLossAvg').innerText = (avgNonLossSHSum / filteredData.length).toFixed(2) + " ชม. (เฉลี่ยภาพรวม)";
+                document.getElementById('valMonthlyAvg').innerText = (avgMonthlySHSum / filteredData.length).toFixed(2) + ` ${t('hours')} ${t('overall')}`;
+                document.getElementById('valNonLossAvg').innerText = (avgNonLossSHSum / filteredData.length).toFixed(2) + ` ${t('hours')} ${t('overall')}`;
             }
 
             document.getElementById('statPlantCount').innerText = count;
             document.getElementById('statTotalCap').innerHTML = `${totalCap.toLocaleString(undefined, {maximumFractionDigits: 2})} <span class="text-xs font-normal text-slate-400">kWp</span>`;
             document.getElementById('statAvgM1').innerHTML = `${count > 0 ? (sumM1 / count).toFixed(2) : '0.0'} <span class="text-xs font-normal text-blue-400">วัน</span>`;
             document.getElementById('statAvgM2').innerHTML = `${count > 0 ? (sumM2 / count).toFixed(2) : '0.0'} <span class="text-xs font-normal text-emerald-400">วัน</span>`;
+            updateMethodSummary();
         }
 
         function togglePlant(id, isChecked) {
@@ -863,56 +1321,58 @@
 
         function exportToExcel() {
             if (plantData.length === 0) {
-                alert("ไม่มีข้อมูลสำหรับ Export กรุณาอัปโหลดไฟล์ก่อนครับ");
+                alert(t('exportNoData'));
                 return;
             }
 
-            const lossFactor = parseFloat(document.getElementById('inputLossFactor').value) || 0.9;
-            const targetMethod = document.getElementById('sunHoursTarget').value;
-            const customVal = parseFloat(document.getElementById('inputSunHoursCustom').value) || 4.0;
+            const th = currentLanguage === 'th';
+            const headers = {
+                plant: th ? 'ชื่อโครงการ (Plant Name)' : 'Plant Name', cap: 'Capacity (kWp)', days: th ? 'จำนวนวันในเดือน' : 'Days in Month',
+                specific: 'Specific Energy (kWh/kWp)', sh1: th ? 'Sun Hours วิธี 1 (ชม.)' : 'Sun Hours Method 1 (hr)', sh2: th ? 'Sun Hours วิธี 2 (ชม.)' : 'Sun Hours Method 2 (hr)',
+                lossFactor: 'Loss Factor', lossCount: th ? 'เกิด Loss Due (วัน)' : 'Loss Due (days)', lossDates: th ? 'วันที่เกิด Loss Due' : 'Loss Due Dates',
+                lossEnergy: th ? 'Loss Due Export ที่เลือก (kWh)' : 'Selected Loss Due Export (kWh)', pv: th ? 'PV Yield วัน Loss ที่เลือก (kWh)' : 'Selected Loss-Day PV Yield (kWh)',
+                m1: th ? 'วันทำงาน (วิธีที่ 1)' : 'Working Days (Method 1)', m1Formula: th ? 'สูตร Excel วิธีที่ 1' : 'Excel Formula Method 1', m1Explain: th ? 'การแทนค่า วิธีที่ 1' : 'Substitution Method 1',
+                m2: th ? 'วันทำงาน (วิธีที่ 2)' : 'Working Days (Method 2)', m2Formula: th ? 'สูตร Excel วิธีที่ 2' : 'Excel Formula Method 2', m2Explain: th ? 'การแทนค่า วิธีที่ 2' : 'Substitution Method 2',
+                selectedMethod: th ? 'วิธีคำนวณที่เลือก' : 'Selected Calculation Method', note: th ? 'หมายเหตุ' : 'Note'
+            };
 
-            const resultsRows = plantData.map(item => {
-                const cap = item.cap || 1;
-                const daysInMonth = item.customDaysInMonth || currentDaysInMonth;
-                const shObj = getCalculatedSunHours(item);
-
-                let shM1 = shObj.chosenSH;
-                let shM2 = shObj.chosenSH;
-                if (targetMethod === 'm1') shM2 = customVal;
-                if (targetMethod === 'm2') shM1 = customVal;
-
-                let lossDayPvSum = 0;
-                item.lossDaysArray.forEach(d => {
-                    if (item.dailyMap[d]) lossDayPvSum += (item.dailyMap[d].pv || 0);
-                });
-                const lossDaysCount = item.lossDaysArray.length;
-                const equivalentDaysFromLossPv = ((lossDayPvSum / cap) / shM1);
-                const method1Days = Math.min(daysInMonth, Math.max(0, (daysInMonth - lossDaysCount) + equivalentDaysFromLossPv));
-                const lossDaysEquivalent = ((item.lossDueEnergy * lossFactor) / cap) / shM2;
-                const method2Days = Math.max(0, daysInMonth - lossDaysEquivalent);
-
+            const selectedPlants = plantData.filter(item => item.visible);
+            if (selectedPlants.length === 0) {
+                alert(t('exportNoData'));
+                return;
+            }
+            const resultsRows = selectedPlants.map(item => {
+                const m = calculatePlantMetrics(item);
+                const n = value => Number(value).toLocaleString('en-US', { maximumFractionDigits: 4, useGrouping: false });
                 return {
-                    "สถานะการแสดงผล": item.visible ? "แสดง" : "ซ่อน",
-                    "ชื่อโครงการ (Plant Name)": item.name,
-                    "Capacity (kWp)": item.cap,
-                    "จำนวนวันในเดือน": daysInMonth,
-                    "Specific Energy (kWh/kWp)": parseFloat(shObj.specificEnergyTotal.toFixed(2)),
-                    "Sun Hours วิธี 1 (ชม.)": parseFloat(shM1.toFixed(2)),
-                    "Sun Hours วิธี 2 (ชม.)": parseFloat(shM2.toFixed(2)),
-                    "เกิด Loss Due (วัน)": lossDaysCount,
-                    "วันที่เกิด Loss Due": item.lossDaysArray.join(', '),
-                    "PV Yield วัน Loss (kWh)": lossDayPvSum,
-                    "Loss Energy รวม (kWh)": item.lossDueEnergy,
-                    "วันทำงาน (วิธีที่ 1)": parseFloat(method1Days.toFixed(2)),
-                    "วันทำงาน (วิธีที่ 2)": parseFloat(method2Days.toFixed(2))
+                    [headers.plant]: item.name,
+                    [headers.cap]: item.cap,
+                    [headers.days]: m.daysInMonth,
+                    [headers.specific]: parseFloat(m.shObj.specificEnergyTotal.toFixed(2)),
+                    [headers.sh1]: parseFloat(m.shM1.toFixed(4)),
+                    [headers.sh2]: parseFloat(m.shM2.toFixed(4)),
+                    [headers.lossFactor]: m.lossFactor,
+                    [headers.lossCount]: m.lossDaysCount,
+                    [headers.lossDates]: item.lossDaysArray.join(', '),
+                    [headers.lossEnergy]: parseFloat(m.selected.lossEnergy.toFixed(4)),
+                    [headers.pv]: parseFloat(m.selected.pvYield.toFixed(4)),
+                    [headers.m1]: parseFloat(m.method1Days.toFixed(4)),
+                    [headers.m1Formula]: '=MIN(Days,MAX(0,(Days-LossDays)+((SelectedPV/Capacity)/SunHoursM1)))',
+                    [headers.m1Explain]: `(${n(m.daysInMonth)}-${n(m.lossDaysCount)})+((${n(m.selected.pvYield)}/${n(m.cap)})/${n(m.shM1)}) = ${n(m.method1Days)}`,
+                    [headers.m2]: parseFloat(m.method2Days.toFixed(4)),
+                    [headers.m2Formula]: '=MIN(Days,MAX(0,Days-((SelectedLoss*LossFactor)/Capacity/SunHoursM2)))',
+                    [headers.m2Explain]: `${n(m.daysInMonth)}-((${n(m.selected.lossEnergy)}*${n(m.lossFactor)})/${n(m.cap)}/${n(m.shM2)}) = ${n(m.method2Days)}`,
+                    [headers.selectedMethod]: item.calculationMethod === 'm1' ? (th ? 'วิธีที่ 1' : 'Method 1') : item.calculationMethod === 'm2' ? (th ? 'วิธีที่ 2' : 'Method 2') : (th ? 'อื่นๆ' : 'Other'),
+                    [headers.note]: item.note || ''
                 };
             });
 
-            const sourceRows = rawRecordsByFile.map(rec => ({
-                "ชื่อไฟล์รายงาน": rec.fileName,
-                "เดือน/ปี": rec.monthKey,
-                "วันที่ในรายงาน": rec.recordDay || "-",
-                "ชื่อโครงการ (Plant Name)": rec.name,
+            const selectedMonthKey = document.getElementById('monthSelect').value;
+            const sourceRows = rawRecordsByFile.filter(rec => !selectedMonthKey || rec.monthKey === selectedMonthKey).map(rec => ({
+                [th ? "ชื่อไฟล์รายงาน" : "Source File"]: rec.fileName,
+                [th ? "เดือน/ปี" : "Month/Year"]: rec.monthKey,
+                [th ? "วันที่ในรายงาน" : "Report Day"]: rec.recordDay || "-",
+                [th ? "ชื่อโครงการ (Plant Name)" : "Plant Name"]: rec.name,
                 "Capacity (kWp)": rec.cap,
                 "Specific Energy (kWh/kWp)": rec.specEnergy,
                 "PV Yield (kWh)": rec.pv,
@@ -923,12 +1383,23 @@
             const wsResults = XLSX.utils.json_to_sheet(resultsRows);
             const wsSource = XLSX.utils.json_to_sheet(sourceRows);
 
+            // Replace result cells with live Excel formulas while keeping readable formula columns.
+            selectedPlants.forEach((item, index) => {
+                const row = index + 2;
+                const m = calculatePlantMetrics(item);
+                wsResults[`L${row}`] = { t: 'n', f: `IFERROR(MIN(C${row},MAX(0,(C${row}-H${row})+((K${row}/B${row})/E${row}))),0)`, v: m.method1Days };
+                wsResults[`O${row}`] = { t: 'n', f: `IFERROR(MIN(C${row},MAX(0,C${row}-((J${row}*G${row})/B${row}/F${row}))),0)`, v: m.method2Days };
+            });
+            wb.Workbook = { CalcPr: { fullCalcOnLoad: true, forceFullCalc: true, calcMode: 'auto' } };
+
             XLSX.utils.book_append_sheet(wb, wsResults, "Calculation_Results");
             XLSX.utils.book_append_sheet(wb, wsSource, "Source_Data");
 
             const selectedMonth = document.getElementById('monthSelect').value || "Report";
             XLSX.writeFile(wb, `FusionSolar_Working_Days_${selectedMonth}.xlsx`);
         }
+
+        syncTableScrollbars();
     </script>
 </body>
 </html>
