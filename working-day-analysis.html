@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="th" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FusionSolar Working Days Calculator - Pro Edition (Rev.14)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            blue: '#1e40af',
+                            green: '#059669',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style> 
+        body { font-family: 'Bai Jamjuree', sans-serif; } 
+        .has-tooltip:hover .tooltip { display: block; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        .dark ::-webkit-scrollbar-track { background: #0f172a; }
+        .dark ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen pb-16 transition-colors duration-200">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md sticky top-0 z-40 shadow-sm transition-colors duration-200">
+        <div class="max-w-[1500px] mx-auto px-6 py-3.5 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3.5">
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                    <i class="fa-solid fa-solar-panel text-xl"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-base font-bold text-blue-900 dark:text-slate-100">FusionSolar Working Days Calculator</h1>
+                        <span class="bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[10px] px-2 py-0.5 rounded uppercase font-semibold">Solar Engineer Pro Rev.14</span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">ระบบประมวลผลประสิทธิภาพและคำนวณวันทำงานสำหรับวิศวกรโซลาร์</p>
+                </div>
+            </div>
+            
+            <!-- Quick Actions & Theme Switcher -->
+            <div class="flex items-center gap-3">
+                <button onclick="toggleTheme()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium px-3.5 py-2 rounded-lg transition flex items-center gap-2 border border-slate-300 dark:border-slate-700">
+                    <i id="themeIcon" class="fa-solid fa-moon text-amber-500"></i>
+                    <span id="themeText">Dark Mode</span>
+                </button>
+
+                <button onclick="exportToExcel()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-4 py-2 rounded-lg transition flex items-center gap-2 border border-blue-500 shadow-sm active:scale-95">
+                    <i class="fa-solid fa-file-excel text-sm"></i> Export เป็น Excel (2 ชีท)
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-[1500px] mx-auto px-6 mt-6 space-y-6">
+
+        <!-- Top Workstation Panel -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            
+            <!-- File Uploader (6 Cols) -->
+            <div class="lg:col-span-6 bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between transition-colors duration-200">
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="text-xs font-bold uppercase tracking-wider text-blue-900 dark:text-blue-400 flex items-center gap-2">
+                            <i class="fa-solid fa-cloud-arrow-up text-blue-600 dark:text-blue-400"></i> นำเข้าไฟล์รายงาน (Import Reports)
+                        </label>
+                        <button onclick="clearAllData()" class="text-xs text-red-600 hover:text-red-700 dark:text-red-400 font-semibold flex items-center gap-1 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 px-2.5 py-1 rounded transition">
+                            <i class="fa-solid fa-trash-arrow-up"></i> ล้างข้อมูลไฟล์
+                        </button>
+                    </div>
+                    <div id="dropZone" class="border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 rounded-xl p-4 text-center transition bg-slate-50/50 dark:bg-slate-950/50 cursor-pointer flex flex-col items-center justify-center min-h-[100px]" onclick="document.getElementById('excelFileInput').click()">
+                        <div class="w-8 h-8 rounded-full bg-blue-50 dark:bg-slate-800 flex items-center justify-center mb-1 text-blue-600 dark:text-blue-400">
+                            <i class="fa-solid fa-file-csv text-lg"></i>
+                        </div>
+                        <p class="text-xs text-slate-600 dark:text-slate-300">ลากไฟล์มาวางในบริเวณนี้ หรือ <span class="text-blue-600 dark:text-blue-400 underline underline-offset-4 font-semibold">คลิกเพื่อเลือกไฟล์</span></p>
+                        <input type="file" id="excelFileInput" multiple accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFileUpload(event)">
+                    </div>
+                </div>
+                <div id="fileList" class="mt-2 text-xs text-slate-500 flex flex-wrap gap-2 max-h-16 overflow-y-auto"></div>
+                <div id="statusMessage" class="mt-2 text-xs hidden p-2.5 rounded-lg font-medium"></div>
+            </div>
+
+            <!-- Engineering Parameters (6 Cols) -->
+            <div class="lg:col-span-6 bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between transition-colors duration-200">
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400 flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-emerald-600 dark:text-emerald-400"></i> พารามิเตอร์การคำนวณ (Solar Parameters)
+                        </label>
+                        <span id="autoDetectBadge" class="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded hidden flex items-center gap-1">
+                            <i class="fa-solid fa-circle-check text-emerald-500"></i> Auto-Detected
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 mb-3">
+                        <div>
+                            <span class="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">เลือก รอบเดือน/ปี ประมวลผล</span>
+                            <select id="monthSelect" class="w-full bg-amber-50/60 dark:bg-amber-950/20 border-2 border-amber-300 dark:border-amber-700/60 text-amber-900 dark:text-amber-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:border-amber-500" onchange="onMonthSelectChange()">
+                                <option value="">-- รอการอัปโหลดไฟล์ --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <span class="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">Loss Factor Coefficient</span>
+                            <input type="number" id="inputLossFactor" step="0.05" value="0.9" oninput="calculateAndRender()" class="w-full bg-amber-50/60 dark:bg-amber-950/20 border-2 border-amber-300 dark:border-amber-700/60 text-amber-900 dark:text-amber-200 rounded-lg px-2.5 py-1.5 font-mono font-bold text-center text-xs focus:outline-none focus:border-amber-500">
+                        </div>
+                    </div>
+
+                    <!-- ตัวเลือก Sun Hours แบบ Dynamic Choose (อิงรายโครงการ) -->
+                    <div class="bg-slate-50 dark:bg-slate-950/60 p-3 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2">
+                        <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-2">
+                            <span class="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                <i class="fa-solid fa-sun text-amber-500"></i> กำหนดรูปแบบ Sun Hours (ชม./วัน)
+                            </span>
+                            <div class="flex items-center gap-1 text-[10px]">
+                                <span class="text-slate-400">นำไปใช้กับ:</span>
+                                <select id="sunHoursTarget" onchange="calculateAndRender()" class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-1.5 py-0.5 text-slate-700 dark:text-slate-200 font-semibold focus:outline-none">
+                                    <option value="both">ทั้งวิธีที่ 1 และ 2</option>
+                                    <option value="m1">เฉพาะวิธีที่ 1</option>
+                                    <option value="m2">เฉพาะวิธีที่ 2</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5 text-xs">
+                            <!-- 1.1 Custom Value -->
+                            <label class="flex items-center justify-between cursor-pointer p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-900">
+                                <div class="flex items-center gap-2">
+                                    <input type="radio" name="sunHoursMode" value="custom" checked onchange="toggleSunHoursMode()" class="text-blue-600 focus:ring-0">
+                                    <span class="text-slate-700 dark:text-slate-300 font-medium">1.1 ค่ามาตรฐาน Default (4.0 ชม.)</span>
+                                </div>
+                                <input type="number" id="inputSunHoursCustom" step="0.1" value="4.0" oninput="calculateAndRender()" class="w-16 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-700 rounded px-2 py-0.5 text-amber-900 dark:text-amber-200 font-mono font-bold text-center text-xs">
+                            </label>
+
+                            <!-- 1.2 Monthly Avg from Specific Energy -->
+                            <label class="flex items-center justify-between cursor-pointer p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-900">
+                                <div class="flex items-center gap-2">
+                                    <input type="radio" name="sunHoursMode" value="monthlyAvg" onchange="toggleSunHoursMode()" class="text-blue-600 focus:ring-0">
+                                    <span class="text-slate-700 dark:text-slate-300">1.2 เฉลี่ยทั้งเดือน (Specific Energy รายโครงการ)</span>
+                                </div>
+                                <span id="valMonthlyAvg" class="font-mono font-bold text-blue-600 dark:text-blue-400 text-xs">Auto-calc</span>
+                            </label>
+
+                            <!-- 1.3 Non-Loss Avg from Specific Energy -->
+                            <label class="flex items-center justify-between cursor-pointer p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-900">
+                                <div class="flex items-center gap-2">
+                                    <input type="radio" name="sunHoursMode" value="nonLossAvg" onchange="toggleSunHoursMode()" class="text-blue-600 focus:ring-0">
+                                    <span class="text-slate-700 dark:text-slate-300">1.3 เฉลี่ยเฉพาะวันไม่มี Loss (Specific Energy รายโครงการ)</span>
+                                </div>
+                                <span id="valNonLossAvg" class="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs">Auto-calc</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metric KPI Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">โครงการทั้งหมด</p>
+                        <h3 id="statPlantCount" class="text-xl font-bold text-slate-800 dark:text-slate-100 font-mono mt-1">0</h3>
+                    </div>
+                    <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
+                        <i class="fa-solid fa-solar-panel text-sm"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Capacity</p>
+                        <h3 id="statTotalCap" class="text-xl font-bold text-slate-800 dark:text-slate-100 font-mono mt-1">0 <span class="text-xs font-normal text-slate-400">kWp</span></h3>
+                    </div>
+                    <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
+                        <i class="fa-solid fa-bolt text-sm"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPI Method 1 (Blue) -->
+            <div class="bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/50 rounded-xl p-4 shadow-sm">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-[11px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">เฉลี่ยวันทำงาน (วิธีที่ 1)</p>
+                        <h3 id="statAvgM1" class="text-xl font-bold text-blue-600 dark:text-blue-400 font-mono mt-1">0.0 <span class="text-xs font-normal text-blue-400">วัน</span></h3>
+                    </div>
+                    <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                        <i class="fa-solid fa-calculator text-sm"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPI Method 2 (Green) -->
+            <div class="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/50 rounded-xl p-4 shadow-sm">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">เฉลี่ยวันทำงาน (วิธีที่ 2)</p>
+                        <h3 id="statAvgM2" class="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-mono mt-1">0.0 <span class="text-xs font-normal text-emerald-400">วัน</span></h3>
+                    </div>
+                    <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                        <i class="fa-solid fa-chart-line text-sm"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Engineering Data Table -->
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors duration-200">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50/50 dark:bg-slate-950/50">
+                <div class="flex items-center gap-2">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        ตารางแสดงผลโครงการและการคำนวณวันทำงาน (Solar Projects Analytics)
+                    </h2>
+                </div>
+                <!-- Search Box -->
+                <div class="relative w-full md:w-72">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                    <input type="text" id="searchInput" oninput="calculateAndRender()" placeholder="ค้นหาชื่อโครงการ (Search Plant)..." class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-blue-500">
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold">
+                            <th class="p-3 text-center w-12">เลือก</th>
+                            <th class="p-3">ชื่อโครงการ (Plant Name)</th>
+
+                            <th class="p-3 text-right bg-amber-50/40 dark:bg-amber-950/20 text-amber-900 dark:text-amber-300">
+                                <i class="fa-solid fa-pen text-amber-500 mr-1"></i> Capacity (kWp)
+                            </th>
+                            <th class="p-3 text-center bg-amber-50/40 dark:bg-amber-950/20 text-amber-900 dark:text-amber-300">
+                                <i class="fa-solid fa-pen text-amber-500 mr-1"></i> วันในเดือน
+                            </th>
+
+                            <th class="p-3 text-center w-20">Loss (วัน)</th>
+                            <th class="p-3 text-center min-w-[180px] bg-amber-50/40 dark:bg-amber-950/20 text-amber-900 dark:text-amber-300">
+                                <i class="fa-solid fa-pen-to-square text-amber-500 mr-1"></i> วันที่เกิด Loss Due
+                            </th>
+                            
+                            <th class="p-3 text-right">Specific Energy<br><span class="text-[10px] font-normal text-slate-400">(kWh/kWp)</span></th>
+                            <th class="p-3 text-right">Sun Hours<br><span class="text-[10px] font-normal text-amber-500">(คำนวณจริง)</span></th>
+                            
+                            <!-- Header Method 1 -->
+                            <th class="p-3 text-right text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border-l border-blue-200 dark:border-blue-900/60 has-tooltip relative font-bold">
+                                <div class="flex items-center justify-end gap-1.5 cursor-pointer">
+                                    <span>วันทำงาน (วิธีที่ 1)</span>
+                                    <i class="fa-solid fa-circle-info text-blue-500 text-xs"></i>
+                                </div>
+                                <div class="tooltip hidden absolute z-50 bottom-full right-0 mb-2 w-80 p-3 bg-slate-900 text-white text-[11px] rounded-lg shadow-xl border border-slate-700 normal-case font-normal leading-relaxed text-left">
+                                    <strong class="text-blue-400 block mb-1">📌 สูตรการคำนวณ (วิธีที่ 1)</strong>
+                                    <code class="bg-slate-950 px-2 py-1.5 rounded text-blue-300 block my-1 font-mono text-[10px] leading-normal border border-slate-800">
+                                        (Days - Loss Days) + [ (PV Yield วัน Loss / Capacity) / Sun Hours ]
+                                    </code>
+                                    <span class="text-slate-400 text-[10px] block mt-1">* คิดวันทำงานจริงจากวันที่ไม่มี Loss บวกด้วยสัดส่วนพลังงานที่ผลิตได้ในวันที่มี Loss</span>
+                                </div>
+                            </th>
+
+                            <!-- Header Method 2 -->
+                            <th class="p-3 text-right text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border-l border-emerald-200 dark:border-emerald-900/60 has-tooltip relative font-bold">
+                                <div class="flex items-center justify-end gap-1.5 cursor-pointer">
+                                    <span>วันทำงาน (วิธีที่ 2)</span>
+                                    <i class="fa-solid fa-circle-info text-emerald-500 text-xs"></i>
+                                </div>
+                                <div class="tooltip hidden absolute z-50 bottom-full right-0 mb-2 w-80 p-3 bg-slate-900 text-white text-[11px] rounded-lg shadow-xl border border-slate-700 normal-case font-normal leading-relaxed text-left">
+                                    <strong class="text-emerald-400 block mb-1">📌 สูตรการคำนวณ (วิธีที่ 2)</strong>
+                                    <code class="bg-slate-950 px-2 py-1.5 rounded text-emerald-300 block my-1 font-mono text-[10px] leading-normal border border-slate-800">
+                                        Days - [ (Loss Energy × Loss Factor) / (Capacity × Sun Hours) ]
+                                    </code>
+                                    <span class="text-slate-400 text-[10px] block mt-1">* คำนวณหักลบจำนวนวันที่สูญเสียไปจากพลังงาน Loss Energy รวมทั้งเดือน</span>
+                                </div>
+                            </th>
+
+                            <th class="p-3 text-center w-12">ลบ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300 font-normal">
+                        <tr>
+                            <td colspan="11" class="text-center py-14 text-slate-400">
+                                <i class="fa-solid fa-solar-panel text-4xl mb-3 block opacity-30"></i>
+                                กรุณาอัปโหลดไฟล์รายงาน FusionSolar (.xlsx) เพื่อเริ่มประมวลผล
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal for Editing Loss Days -->
+    <div id="lossModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm hidden">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 w-full max-w-md shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400 flex items-center gap-2">
+                    <i class="fa-solid fa-calendar-days text-amber-500"></i> เลือกวันที่เกิด Loss Due to Export Limit
+                </h3>
+                <div class="flex items-center gap-2">
+                    <button onclick="clearAllPlantLossDays()" class="text-xs text-red-600 hover:text-red-700 dark:text-red-400 font-semibold bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 px-2 py-1 rounded transition flex items-center gap-1">
+                        <i class="fa-solid fa-rotate-left"></i> เคลียร์ทั้งหมด
+                    </button>
+                    <button onclick="closeLossModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white transition"><i class="fa-solid fa-xmark text-base"></i></button>
+                </div>
+            </div>
+            <div>
+                <p id="modalPlantName" class="text-xs font-semibold text-blue-900 dark:text-blue-400 mb-1"></p>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-3">คลิกเลือกปุ่มวันที่ต้องการกำหนดเป็นวันเกิด Loss Due:</p>
+                
+                <div id="modalDaysGrid" class="grid grid-cols-7 gap-2 max-h-64 overflow-y-auto p-2 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
+                    <!-- Dynamic Days Rendered Here -->
+                </div>
+            </div>
+            <div class="flex justify-end pt-3 border-t border-slate-200 dark:border-slate-800">
+                <button onclick="closeLossModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-4 py-2 rounded-lg transition">
+                    ยืนยันการบันทึก
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let rawRecordsByFile = []; 
+        let plantData = [];  
+        let currentDaysInMonth = 31;
+        let detectedMonths = [];
+        let currentEditingPlantId = null;
+
+        const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('themeIcon');
+            const text = document.getElementById('themeText');
+            
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                html.classList.add('light');
+                icon.className = 'fa-solid fa-moon text-slate-600';
+                text.innerText = 'Dark Mode';
+            } else {
+                html.classList.remove('light');
+                html.classList.add('dark');
+                icon.className = 'fa-solid fa-sun text-amber-400';
+                text.innerText = 'Light Mode';
+            }
+        }
+
+        function clearAllData() {
+            rawRecordsByFile = [];
+            plantData = [];
+            detectedMonths = [];
+            document.getElementById('fileList').innerHTML = '';
+            document.getElementById('monthSelect').innerHTML = '<option value="">-- รอการอัปโหลดไฟล์ --</option>';
+            document.getElementById('autoDetectBadge').classList.add('hidden');
+            document.getElementById('excelFileInput').value = '';
+            document.getElementById('statusMessage').classList.add('hidden');
+            document.getElementById('valMonthlyAvg').innerText = 'Auto-calc';
+            document.getElementById('valNonLossAvg').innerText = 'Auto-calc';
+            calculateAndRender();
+        }
+
+        function renderMonthSelectOptions(selectedKey) {
+            const selectEl = document.getElementById('monthSelect');
+            selectEl.innerHTML = '';
+
+            detectedMonths.forEach(mKey => {
+                const [year, month] = mKey.split('-').map(Number);
+                const label = `${thaiMonths[month - 1]} ${year}`;
+                const option = document.createElement('option');
+                option.value = mKey;
+                option.innerText = label;
+                if (mKey === selectedKey) option.selected = true;
+                selectEl.appendChild(option);
+            });
+
+            onMonthSelectChange();
+        }
+
+        function onMonthSelectChange() {
+            const val = document.getElementById('monthSelect').value;
+            if (val) {
+                const [year, month] = val.split('-').map(Number);
+                currentDaysInMonth = new Date(year, month, 0).getDate();
+                
+                aggregateDataByMonth(val);
+                calculateAndRender();
+            }
+        }
+
+        const dropZone = document.getElementById('dropZone');
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eName => {
+            dropZone.addEventListener(eName, e => { e.preventDefault(); e.stopPropagation(); }, false);
+        });
+        dropZone.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files));
+
+        function handleFileUpload(e) { handleFiles(e.target.files); }
+
+        function showStatus(msg, isError = false) {
+            const el = document.getElementById('statusMessage');
+            el.classList.remove('hidden', 'bg-red-50', 'border-red-200', 'text-red-700', 'bg-emerald-50', 'border-emerald-200', 'text-emerald-800');
+            el.classList.add(isError ? 'bg-red-50' : 'bg-emerald-50', 'border', isError ? 'border-red-200' : 'border-emerald-200', isError ? 'text-red-700' : 'text-emerald-800');
+            el.innerHTML = msg;
+        }
+
+        function extractMonthFromFilename(fileName) {
+            const match = fileName.match(/(\d{4})[-_](\d{2})/);
+            if (match) {
+                const year = parseInt(match[1]);
+                const month = parseInt(match[2]);
+                if (month >= 1 && month <= 12) {
+                    return `${year}-${String(month).padStart(2, '0')}`;
+                }
+            }
+            return "2026-08";
+        }
+
+        function extractDayFromFilename(fileName) {
+            const match = fileName.match(/[-_](\d{2})\.xlsx$/i) || fileName.match(/[-_](\d{1,2})\./);
+            if (match) {
+                let d = parseInt(match[1]);
+                if (d >= 1 && d <= 31) return d;
+            }
+            return null;
+        }
+
+        function cleanNumberStrict(val) {
+            if (val === null || val === undefined || val === '') return 0;
+            if (typeof val === 'number') return isNaN(val) ? 0 : val;
+            
+            let str = String(val).replace(/,/g, '').trim();
+            let isMW = str.toLowerCase().includes('mwp') || str.toLowerCase().includes('mw');
+            
+            const match = str.match(/[-+]?[0-9]*\.?[0-9]+/);
+            if (!match) return 0;
+            
+            let num = parseFloat(match[0]);
+            if (isMW) num = num * 1000;
+            return num;
+        }
+
+        function handleFiles(files) {
+            if (!files || !files.length) return;
+
+            rawRecordsByFile = [];
+            detectedMonths = [];
+            let filesRead = 0;
+            document.getElementById('fileList').innerHTML = '';
+
+            Array.from(files).forEach(file => {
+                document.getElementById('fileList').innerHTML += `<span class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-1 rounded border border-slate-200 dark:border-slate-700 flex items-center gap-1.5"><i class="fa-solid fa-file-excel text-emerald-600"></i> ${file.name}</span>`;
+
+                let fileMonthKey = extractMonthFromFilename(file.name);
+                let fileDay = extractDayFromFilename(file.name);
+
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    try {
+                        const data = new Uint8Array(evt.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        
+                        workbook.SheetNames.forEach(sheetName => {
+                            const worksheet = workbook.Sheets[sheetName];
+                            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+                            parseSheetRecords(rows, fileMonthKey, fileDay, file.name);
+                        });
+                        
+                        filesRead++;
+                        if (filesRead === files.length) {
+                            if (rawRecordsByFile.length > 0) {
+                                document.getElementById('autoDetectBadge').classList.remove('hidden');
+                                renderMonthSelectOptions(detectedMonths[0] || fileMonthKey);
+                                showStatus(`อ่านไฟล์สำเร็จ! โหลดข้อมูลโครงการเรียบร้อยแล้ว`, false);
+                            } else {
+                                showStatus(`ไม่พบตารางข้อมูล กรุณาตรวจสอบรูปแบบไฟล์ Excel อีกครั้ง`, true);
+                            }
+                        }
+                    } catch (err) {
+                        showStatus(`เกิดข้อผิดพลาดในการอ่านไฟล์: ${err.message}`, true);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        function parseSheetRecords(rows, monthKey, fileDay, fileName) {
+            if (!rows || rows.length < 1) return;
+
+            if (!detectedMonths.includes(monthKey)) {
+                detectedMonths.push(monthKey);
+            }
+
+            let plantIdx = 0, capIdx = 2, pvIdx = 7, specEnergyIdx = -1, lossIdx = 13, startRow = 0;
+
+            for (let i = 0; i < Math.min(rows.length, 10); i++) {
+                const row = rows[i];
+                if (!Array.isArray(row)) continue;
+
+                row.forEach((cell, colIdx) => {
+                    const text = String(cell).toLowerCase().trim();
+                    if (text.includes('plant name') || text.includes('station') || text.includes('ชื่อสถานี')) plantIdx = colIdx;
+                    if (text.includes('total string capacity') || text.includes('string capacity')) capIdx = colIdx;
+                    if (text.includes('pv yield') || text.includes('yield (kwh)')) pvIdx = colIdx;
+                    if (text.includes('specific energy')) specEnergyIdx = colIdx;
+                    if (text.includes('loss due to export limitation') && text.includes('kwh')) lossIdx = colIdx;
+                });
+
+                if (textMatchRow(row)) {
+                    startRow = i + 1;
+                    break;
+                }
+            }
+
+            for (let i = startRow; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length === 0) continue;
+
+                let name = row[plantIdx] ? String(row[plantIdx]).trim() : '';
+                if (!name || name.toLowerCase().includes('total') || name.toLowerCase().includes('รวม') || name.toLowerCase().includes('plant name')) continue;
+
+                let cap = cleanNumberStrict(row[capIdx]);
+                let pv = cleanNumberStrict(row[pvIdx]);
+                let specEnergy = specEnergyIdx !== -1 ? cleanNumberStrict(row[specEnergyIdx]) : (cap > 0 ? (pv / cap) : 0);
+                let loss = cleanNumberStrict(row[lossIdx]);
+                
+                rawRecordsByFile.push({ fileName, name, cap, pv, specEnergy, loss, recordDay: fileDay, monthKey });
+            }
+
+            detectedMonths.sort().reverse();
+        }
+
+        function textMatchRow(row) {
+            return row.some(c => String(c).toLowerCase().includes('plant') || String(c).toLowerCase().includes('yield'));
+        }
+
+        function aggregateDataByMonth(targetMonthKey) {
+            plantData = [];
+            const aggregated = {};
+
+            const filteredRecords = rawRecordsByFile.filter(r => r.monthKey === targetMonthKey);
+            const recordsToUse = filteredRecords.length > 0 ? filteredRecords : rawRecordsByFile;
+
+            recordsToUse.forEach(rec => {
+                const name = rec.name;
+                if (!aggregated[name]) {
+                    aggregated[name] = { 
+                        cap: rec.cap, 
+                        lossDueEnergy: 0, 
+                        specEnergySum: 0,
+                        dailyMap: {} 
+                    };
+                }
+                
+                if (rec.cap > 0) aggregated[name].cap = rec.cap;
+                aggregated[name].lossDueEnergy += rec.loss; 
+                aggregated[name].specEnergySum += rec.specEnergy;
+
+                if (rec.recordDay !== null) {
+                    aggregated[name].dailyMap[rec.recordDay] = {
+                        pv: rec.pv,
+                        specEnergy: rec.specEnergy,
+                        loss: rec.loss,
+                        hasLoss: rec.loss > 0
+                    };
+                }
+            });
+
+            Object.keys(aggregated).forEach((name, idx) => {
+                const plantObj = aggregated[name];
+                let initialLossDays = [];
+                Object.keys(plantObj.dailyMap).forEach(dStr => {
+                    let d = parseInt(dStr);
+                    if (plantObj.dailyMap[d].hasLoss) {
+                        initialLossDays.push(d);
+                    }
+                });
+
+                plantData.push({
+                    id: idx,
+                    name: name,
+                    cap: plantObj.cap,
+                    customDaysInMonth: currentDaysInMonth,
+                    lossDueEnergy: plantObj.lossDueEnergy,
+                    specificEnergyTotal: plantObj.specEnergySum,
+                    dailyMap: plantObj.dailyMap,
+                    lossDaysArray: initialLossDays.sort((a,b) => a - b),
+                    visible: true
+                });
+            });
+        }
+
+        function updatePlantCapacity(id, value) {
+            const plant = plantData.find(p => p.id === id);
+            if (plant) {
+                plant.cap = parseFloat(value) || 0;
+                calculateAndRender();
+            }
+        }
+
+        function updatePlantDays(id, value) {
+            const plant = plantData.find(p => p.id === id);
+            if (plant) {
+                plant.customDaysInMonth = parseInt(value) || currentDaysInMonth;
+                calculateAndRender();
+            }
+        }
+
+        function removeRow(id) {
+            plantData = plantData.filter(p => p.id !== id);
+            calculateAndRender();
+        }
+
+        function openLossModal(id) {
+            currentEditingPlantId = id;
+            const plant = plantData.find(p => p.id === id);
+            if (!plant) return;
+
+            document.getElementById('modalPlantName').innerText = `โครงการ: ${plant.name}`;
+            const grid = document.getElementById('modalDaysGrid');
+            grid.innerHTML = '';
+
+            const daysLimit = plant.customDaysInMonth || currentDaysInMonth;
+            for (let d = 1; d <= daysLimit; d++) {
+                const isSelected = plant.lossDaysArray.includes(d);
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `py-1.5 rounded text-xs font-mono font-semibold transition border ${isSelected ? 'bg-amber-500 text-white border-amber-600 shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'}`;
+                btn.innerText = d;
+                btn.onclick = () => {
+                    togglePlantLossDay(id, d);
+                    openLossModal(id);
+                    calculateAndRender();
+                };
+                grid.appendChild(btn);
+            }
+
+            document.getElementById('lossModal').classList.remove('hidden');
+        }
+
+        function closeLossModal() {
+            document.getElementById('lossModal').classList.add('hidden');
+        }
+
+        function clearAllPlantLossDays() {
+            if (currentEditingPlantId !== null) {
+                const plant = plantData.find(p => p.id === currentEditingPlantId);
+                if (plant) {
+                    plant.lossDaysArray = [];
+                    openLossModal(currentEditingPlantId);
+                    calculateAndRender();
+                }
+            }
+        }
+
+        function togglePlantLossDay(id, day) {
+            const plant = plantData.find(p => p.id === id);
+            if (!plant) return;
+
+            const idx = plant.lossDaysArray.indexOf(day);
+            if (idx > -1) {
+                plant.lossDaysArray.splice(idx, 1);
+            } else {
+                plant.lossDaysArray.push(day);
+            }
+            plant.lossDaysArray.sort((a,b) => a - b);
+        }
+
+        function toggleSunHoursMode() {
+            calculateAndRender();
+        }
+
+        // Logic การคำนวณ Sun Hours 3 รูปแบบ (อิง Specific Energy แยกตามโครงการ)
+        function getCalculatedSunHours(plant) {
+            const mode = document.querySelector('input[name="sunHoursMode"]:checked')?.value || 'custom';
+            const customVal = parseFloat(document.getElementById('inputSunHoursCustom').value) || 4.0;
+            const days = plant.customDaysInMonth || currentDaysInMonth;
+
+            // Specific Energy รวม
+            let specEnergyTotal = plant.specificEnergyTotal;
+            if (!specEnergyTotal || specEnergyTotal <= 0) {
+                let pvTotal = 0;
+                Object.values(plant.dailyMap).forEach(d => pvTotal += (d.pv || 0));
+                specEnergyTotal = plant.cap > 0 ? (pvTotal / plant.cap) : 0;
+            }
+
+            // 1.2 Monthly Avg Sun Hours
+            const monthlyAvgSH = days > 0 ? (specEnergyTotal / days) : customVal;
+
+            // 1.3 Non-Loss Days Avg Sun Hours (ปรับแก้ให้ Fallback เป็น Default Custom หากเกิด Loss ทุกวัน)
+            let nonLossSpecEnergySum = 0;
+            let nonLossDaysCount = 0;
+
+            for (let d = 1; d <= days; d++) {
+                if (!plant.lossDaysArray.includes(d)) {
+                    nonLossDaysCount++;
+                    if (plant.dailyMap[d]) {
+                        nonLossSpecEnergySum += (plant.dailyMap[d].specEnergy || (plant.dailyMap[d].pv / plant.cap) || 0);
+                    }
+                }
+            }
+
+            // Fallback ไปใช้ customVal หากไม่มีวันไหนที่ไม่มี Loss (nonLossDaysCount === 0)
+            const nonLossAvgSH = nonLossDaysCount > 0 ? (nonLossSpecEnergySum / nonLossDaysCount) : customVal;
+
+            let chosenSH = customVal;
+            if (mode === 'monthlyAvg') chosenSH = monthlyAvgSH;
+            if (mode === 'nonLossAvg') chosenSH = nonLossAvgSH;
+
+            return {
+                chosenSH: chosenSH <= 0 ? customVal : chosenSH,
+                monthlyAvgSH: monthlyAvgSH,
+                nonLossAvgSH: nonLossAvgSH,
+                specificEnergyTotal: specEnergyTotal
+            };
+        }
+
+        function calculateAndRender() {
+            const tbody = document.getElementById('tableBody');
+            const lossFactor = parseFloat(document.getElementById('inputLossFactor').value) || 0.9;
+            const searchText = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+            const targetMethod = document.getElementById('sunHoursTarget').value;
+
+            const filteredData = plantData.filter(p => p.name.toLowerCase().includes(searchText));
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="11" class="text-center py-12 text-slate-400">
+                            <i class="fa-solid fa-folder-open text-3xl mb-2 block opacity-30"></i>
+                            ไม่พบข้อมูลสำหรับแสดงผล
+                        </td>
+                    </tr>`;
+                document.getElementById('statPlantCount').innerText = '0';
+                document.getElementById('statTotalCap').innerHTML = '0 <span class="text-xs font-normal text-slate-400">kWp</span>';
+                document.getElementById('statAvgM1').innerHTML = '0.0 <span class="text-xs font-normal text-blue-400">วัน</span>';
+                document.getElementById('statAvgM2').innerHTML = '0.0 <span class="text-xs font-normal text-emerald-400">วัน</span>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            let totalCap = 0, sumM1 = 0, sumM2 = 0, count = 0;
+            let avgMonthlySHSum = 0, avgNonLossSHSum = 0;
+
+            filteredData.forEach(item => {
+                const cap = item.cap || 1;
+                const daysInMonth = item.customDaysInMonth || currentDaysInMonth;
+                const shObj = getCalculatedSunHours(item);
+
+                avgMonthlySHSum += shObj.monthlyAvgSH;
+                avgNonLossSHSum += shObj.nonLossAvgSH;
+
+                const customVal = parseFloat(document.getElementById('inputSunHoursCustom').value) || 4.0;
+                let shM1 = shObj.chosenSH;
+                let shM2 = shObj.chosenSH;
+
+                if (targetMethod === 'm1') shM2 = customVal;
+                if (targetMethod === 'm2') shM1 = customVal;
+
+                let lossDayPvSum = 0;
+                item.lossDaysArray.forEach(d => {
+                    if (item.dailyMap[d]) {
+                        lossDayPvSum += (item.dailyMap[d].pv || 0);
+                    }
+                });
+
+                const lossDaysCount = item.lossDaysArray.length;
+                const equivalentDaysFromLossPv = ((lossDayPvSum / cap) / shM1);
+                const method1Days = Math.min(daysInMonth, Math.max(0, (daysInMonth - lossDaysCount) + equivalentDaysFromLossPv));
+
+                const lossDaysEquivalent = ((item.lossDueEnergy * lossFactor) / cap) / shM2;
+                const method2Days = Math.max(0, daysInMonth - lossDaysEquivalent);
+
+                if (item.visible) {
+                    totalCap += item.cap;
+                    sumM1 += method1Days;
+                    sumM2 += method2Days;
+                    count++;
+                }
+
+                let lossDatesDisplay = '<span class="text-slate-400 italic">ไม่มี Loss</span>';
+                if (lossDaysCount > 0) {
+                    lossDatesDisplay = `<span class="bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800 px-1.5 py-0.5 rounded font-mono text-[10px] font-semibold">วัน ${item.lossDaysArray.join(', ')}</span>`;
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = `hover:bg-slate-50 dark:hover:bg-slate-800/40 transition border-b border-slate-200 dark:border-slate-800/60 ${!item.visible ? 'opacity-40' : ''}`;
+                tr.innerHTML = `
+                    <td class="p-3 text-center">
+                        <input type="checkbox" ${item.visible ? 'checked' : ''} onchange="togglePlant(${item.id}, this.checked)" class="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-0 w-4 h-4 cursor-pointer">
+                    </td>
+                    <td class="p-3 font-semibold text-slate-800 dark:text-slate-200">${item.name}</td>
+                    
+                    <td class="p-3 text-right bg-amber-50/20 dark:bg-amber-950/10">
+                        <input type="number" step="0.1" value="${item.cap}" onchange="updatePlantCapacity(${item.id}, this.value)" class="w-20 bg-amber-50/60 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 rounded px-1.5 py-0.5 font-mono text-right font-bold text-amber-900 dark:text-amber-200 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500">
+                    </td>
+
+                    <td class="p-3 text-center bg-amber-50/20 dark:bg-amber-950/10">
+                        <input type="number" value="${daysInMonth}" onchange="updatePlantDays(${item.id}, this.value)" class="w-12 bg-amber-50/60 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 rounded px-1.5 py-0.5 font-mono text-center font-bold text-amber-900 dark:text-amber-200 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500">
+                    </td>
+
+                    <td class="p-3 text-center font-mono font-semibold text-slate-800 dark:text-slate-200">${lossDaysCount}</td>
+                    
+                    <td class="p-3 text-center font-mono text-[11px] bg-amber-50/20 dark:bg-amber-950/10">
+                        <div class="flex items-center justify-center gap-1.5">
+                            <span>${lossDatesDisplay}</span>
+                            <button onclick="openLossModal(${item.id})" class="bg-amber-500 hover:bg-amber-600 text-white px-1.5 py-0.5 rounded text-[10px] font-medium transition shadow-sm" title="แก้ไขวันที่เกิด Loss">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                        </div>
+                    </td>
+
+                    <td class="p-3 text-right font-mono text-slate-600 dark:text-slate-300">${shObj.specificEnergyTotal.toFixed(2)}</td>
+                    <td class="p-3 text-right font-mono font-bold text-amber-600 dark:text-amber-400 bg-amber-50/30 dark:bg-amber-950/20">${shObj.chosenSH.toFixed(2)}</td>
+                    
+                    <!-- Method 1 Result -->
+                    <td class="p-3 text-right font-mono text-blue-700 dark:text-blue-400 bg-blue-50/40 dark:bg-blue-950/20 border-l border-blue-200 dark:border-blue-900/40 font-bold">${method1Days.toFixed(2)}</td>
+                    
+                    <!-- Method 2 Result -->
+                    <td class="p-3 text-right font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-50/40 dark:bg-emerald-950/20 border-l border-emerald-200 dark:border-emerald-900/40 font-bold">${method2Days.toFixed(2)}</td>
+                    
+                    <td class="p-3 text-center">
+                        <button onclick="removeRow(${item.id})" class="text-slate-400 hover:text-red-500 p-1 transition">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            if (filteredData.length > 0) {
+                document.getElementById('valMonthlyAvg').innerText = (avgMonthlySHSum / filteredData.length).toFixed(2) + " ชม. (เฉลี่ยภาพรวม)";
+                document.getElementById('valNonLossAvg').innerText = (avgNonLossSHSum / filteredData.length).toFixed(2) + " ชม. (เฉลี่ยภาพรวม)";
+            }
+
+            document.getElementById('statPlantCount').innerText = count;
+            document.getElementById('statTotalCap').innerHTML = `${totalCap.toLocaleString(undefined, {maximumFractionDigits: 2})} <span class="text-xs font-normal text-slate-400">kWp</span>`;
+            document.getElementById('statAvgM1').innerHTML = `${count > 0 ? (sumM1 / count).toFixed(2) : '0.0'} <span class="text-xs font-normal text-blue-400">วัน</span>`;
+            document.getElementById('statAvgM2').innerHTML = `${count > 0 ? (sumM2 / count).toFixed(2) : '0.0'} <span class="text-xs font-normal text-emerald-400">วัน</span>`;
+        }
+
+        function togglePlant(id, isChecked) {
+            const plant = plantData.find(p => p.id === id);
+            if (plant) {
+                plant.visible = isChecked;
+                calculateAndRender();
+            }
+        }
+
+        function exportToExcel() {
+            if (plantData.length === 0) {
+                alert("ไม่มีข้อมูลสำหรับ Export กรุณาอัปโหลดไฟล์ก่อนครับ");
+                return;
+            }
+
+            const lossFactor = parseFloat(document.getElementById('inputLossFactor').value) || 0.9;
+            const targetMethod = document.getElementById('sunHoursTarget').value;
+            const customVal = parseFloat(document.getElementById('inputSunHoursCustom').value) || 4.0;
+
+            const resultsRows = plantData.map(item => {
+                const cap = item.cap || 1;
+                const daysInMonth = item.customDaysInMonth || currentDaysInMonth;
+                const shObj = getCalculatedSunHours(item);
+
+                let shM1 = shObj.chosenSH;
+                let shM2 = shObj.chosenSH;
+                if (targetMethod === 'm1') shM2 = customVal;
+                if (targetMethod === 'm2') shM1 = customVal;
+
+                let lossDayPvSum = 0;
+                item.lossDaysArray.forEach(d => {
+                    if (item.dailyMap[d]) lossDayPvSum += (item.dailyMap[d].pv || 0);
+                });
+                const lossDaysCount = item.lossDaysArray.length;
+                const equivalentDaysFromLossPv = ((lossDayPvSum / cap) / shM1);
+                const method1Days = Math.min(daysInMonth, Math.max(0, (daysInMonth - lossDaysCount) + equivalentDaysFromLossPv));
+                const lossDaysEquivalent = ((item.lossDueEnergy * lossFactor) / cap) / shM2;
+                const method2Days = Math.max(0, daysInMonth - lossDaysEquivalent);
+
+                return {
+                    "สถานะการแสดงผล": item.visible ? "แสดง" : "ซ่อน",
+                    "ชื่อโครงการ (Plant Name)": item.name,
+                    "Capacity (kWp)": item.cap,
+                    "จำนวนวันในเดือน": daysInMonth,
+                    "Specific Energy (kWh/kWp)": parseFloat(shObj.specificEnergyTotal.toFixed(2)),
+                    "Sun Hours วิธี 1 (ชม.)": parseFloat(shM1.toFixed(2)),
+                    "Sun Hours วิธี 2 (ชม.)": parseFloat(shM2.toFixed(2)),
+                    "เกิด Loss Due (วัน)": lossDaysCount,
+                    "วันที่เกิด Loss Due": item.lossDaysArray.join(', '),
+                    "PV Yield วัน Loss (kWh)": lossDayPvSum,
+                    "Loss Energy รวม (kWh)": item.lossDueEnergy,
+                    "วันทำงาน (วิธีที่ 1)": parseFloat(method1Days.toFixed(2)),
+                    "วันทำงาน (วิธีที่ 2)": parseFloat(method2Days.toFixed(2))
+                };
+            });
+
+            const sourceRows = rawRecordsByFile.map(rec => ({
+                "ชื่อไฟล์รายงาน": rec.fileName,
+                "เดือน/ปี": rec.monthKey,
+                "วันที่ในรายงาน": rec.recordDay || "-",
+                "ชื่อโครงการ (Plant Name)": rec.name,
+                "Capacity (kWp)": rec.cap,
+                "Specific Energy (kWh/kWp)": rec.specEnergy,
+                "PV Yield (kWh)": rec.pv,
+                "Loss Due to Export Limitation (kWh)": rec.loss
+            }));
+
+            const wb = XLSX.utils.book_new();
+            const wsResults = XLSX.utils.json_to_sheet(resultsRows);
+            const wsSource = XLSX.utils.json_to_sheet(sourceRows);
+
+            XLSX.utils.book_append_sheet(wb, wsResults, "Calculation_Results");
+            XLSX.utils.book_append_sheet(wb, wsSource, "Source_Data");
+
+            const selectedMonth = document.getElementById('monthSelect').value || "Report";
+            XLSX.writeFile(wb, `FusionSolar_Working_Days_${selectedMonth}.xlsx`);
+        }
+    </script>
+</body>
+</html>

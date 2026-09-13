@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FusionSolar Analysis Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f172a; --card:#1e293b; --border:#334155;
+  --text:#f8fafc; --muted:#94a3b8; --blue:#38bdf8;
+  --green:#34d399; --yellow:#fbbf24;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  min-height:100vh; font-family:'Bai Jamjuree',sans-serif;
+  background:radial-gradient(circle at top,#1e3a5f 0%,var(--bg) 48%);
+  color:var(--text); display:flex; align-items:center; justify-content:center;
+  padding:24px;
+}
+.container{width:min(1050px,100%)}
+.header{text-align:center;margin-bottom:32px}
+.logo{
+  width:68px;height:68px;margin:0 auto 16px;border-radius:18px;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#fbbf24,#f97316);
+  font-size:32px;box-shadow:0 12px 35px rgba(0,0,0,.28)
+}
+h1{font-size:clamp(1.7rem,4vw,2.5rem);font-weight:700}
+.subtitle{color:var(--muted);margin-top:7px;font-size:.95rem}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.card{
+  display:block;text-decoration:none;color:inherit;
+  background:rgba(30,41,59,.9);border:1px solid var(--border);
+  border-radius:18px;padding:28px;min-height:245px;
+  transition:.22s ease;position:relative;overflow:hidden
+}
+.card:before{
+  content:"";position:absolute;inset:0;opacity:0;transition:.22s;
+  background:linear-gradient(135deg,rgba(56,189,248,.10),transparent 60%)
+}
+.card:hover{transform:translateY(-5px);border-color:var(--blue);box-shadow:0 18px 45px rgba(0,0,0,.25)}
+.card:hover:before{opacity:1}
+.icon{
+  width:52px;height:52px;border-radius:14px;display:flex;
+  align-items:center;justify-content:center;font-size:25px;margin-bottom:20px
+}
+.working .icon{background:rgba(52,211,153,.14);color:var(--green)}
+.irr .icon{background:rgba(56,189,248,.14);color:var(--blue)}
+.card h2{font-size:1.2rem;margin-bottom:8px;position:relative}
+.card p{color:var(--muted);font-size:.86rem;line-height:1.65;position:relative}
+.open{margin-top:22px;font-size:.8rem;font-weight:600;position:relative}
+.working .open{color:var(--green)} .irr .open{color:var(--blue)}
+.footer{text-align:center;color:#64748b;font-size:.72rem;margin-top:25px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}.card{min-height:210px}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="logo">☀</div>
+    <h1>FusionSolar Analysis Center</h1>
+    <div class="subtitle">Solar PV Analysis & Performance Monitoring System</div>
+  </div>
+
+  <div class="grid">
+    <a class="card working" href="working-day-analysis.html">
+      <div class="icon">📅</div>
+      <h2>Working Day Analysis</h2>
+      <p>
+        วิเคราะห์วันทำงานจากข้อมูล FusionSolar พร้อมคำนวณ Loss Days,
+        Working Days และผลการคำนวณที่เกี่ยวข้อง
+      </p>
+      <div class="open">Open Working Day Analysis →</div>
+    </a>
+
+    <a class="card irr" href="global-irradiance-analysis.html">
+      <div class="icon">☀️</div>
+      <h2>Global Irradiance Analysis</h2>
+      <p>
+        วิเคราะห์ Global Irradiance รายวัน เปรียบเทียบแต่ละ Plant,
+        ตรวจสอบ Normal / Abnormal และดูแนวโน้ม Irradiation
+      </p>
+      <div class="open">Open Global Irradiance Analysis →</div>
+    </a>
+  </div>
+
+  <div class="footer">FusionSolar Multi-Plant Analysis • BGPL</div>
+</div>
+</body>
+</html>
