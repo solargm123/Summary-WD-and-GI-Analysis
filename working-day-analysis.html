@@ -24,30 +24,66 @@
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style> 
-        html, body, button, input, select, textarea, table, th, td {
+        html, body, body *:not(i), button, input, select, option, textarea, table, th, td, code {
             font-family: 'Bai Jamjuree', Tahoma, Arial, sans-serif !important;
+        }
+        :root {
+            --app-bg: #f3f6fa;
+            --app-surface: #fbfcfe;
+            --app-surface-muted: #eef3f8;
+            --app-border: #d9e2ec;
+            --app-text: #334155;
+        }
+        .dark {
+            --app-bg: #1e293b;
+            --app-surface: #334155;
+            --app-surface-muted: #263449;
+            --app-border: #475569;
+            --app-text: #e2e8f0;
+        }
+        body { background: var(--app-bg) !important; color: var(--app-text) !important; }
+        header { background: color-mix(in srgb, var(--app-surface) 94%, transparent) !important; border-color: var(--app-border) !important; }
+        body .bg-white.dark\:bg-slate-900 { background-color: var(--app-surface) !important; border-color: var(--app-border) !important; }
+        .dark .dark\:bg-slate-950 { background-color: #0f172a !important; }
+        .dark .dark\:bg-slate-950\/50, .dark .dark\:bg-slate-950\/60 { background-color: #263449 !important; }
+        #topTableScroll { background: var(--app-surface-muted) !important; border-color: var(--app-border) !important; }
+        body, header, body .bg-white.dark\:bg-slate-900, #topTableScroll { transition: background-color .2s ease, color .2s ease, border-color .2s ease; }
+        button > i.fa-solid {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 1.45rem; height: 1.45rem; flex: 0 0 1.45rem;
+            border-radius: .45rem; background: rgba(56, 189, 248, .12);
+            box-shadow: inset 0 0 0 1px rgba(56, 189, 248, .22), 0 2px 5px rgba(15, 23, 42, .10);
+        }
+        .dark button > i.fa-solid { background: rgba(56, 189, 248, .16); box-shadow: inset 0 0 0 1px rgba(125, 211, 252, .22); }
+        h2 > i.fa-solid, h3 > i.fa-solid, th > i.fa-solid {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 1.35rem; height: 1.35rem; border-radius: .4rem;
+            background: rgba(56, 189, 248, .13); box-shadow: inset 0 0 0 1px rgba(56, 189, 248, .18);
         }
         body { font-size: 14px; line-height: 1.5; }
         button, input, select, textarea { font-size: 12.5px; line-height: 1.45; }
-        table { min-width: 2050px; }
+        table { min-width: 1990px; }
         table th { font-size: 11.5px; line-height: 1.4; white-space: normal; }
         table td { font-size: 12px; line-height: 1.45; }
         table th:nth-child(2), table td:nth-child(2) { min-width: 300px; }
         table th:nth-child(3), table td:nth-child(3),
-        table th:nth-child(4), table td:nth-child(4) { min-width: 155px; }
+        table th:nth-child(4), table td:nth-child(4) { min-width: 125px; width: 125px; }
         table th:nth-child(8), table td:nth-child(8) { min-width: 230px; }
         table th:nth-child(9), table td:nth-child(9),
         table th:nth-child(10), table td:nth-child(10) { min-width: 155px; }
         .sticky-col-1 { position: sticky; left: 0; min-width: 56px; width: 56px; }
         .sticky-col-2 { position: sticky; left: 56px; min-width: 300px; width: 300px; }
-        .sticky-col-3 { position: sticky; left: 356px; min-width: 155px; width: 155px; }
-        .sticky-col-4 { position: sticky; left: 511px; min-width: 155px; width: 155px; }
+        .sticky-col-3 { position: sticky; left: 356px; min-width: 125px; width: 125px; }
+        .sticky-col-4 { position: sticky; left: 481px; min-width: 125px; width: 125px; }
         thead .sticky-col-1, thead .sticky-col-2, thead .sticky-col-3, thead .sticky-col-4 { z-index: 35; }
-        tbody .sticky-col-1, tbody .sticky-col-2, tbody .sticky-col-3, tbody .sticky-col-4 { z-index: 15; background: white; }
-        .dark tbody .sticky-col-1, .dark tbody .sticky-col-2, .dark tbody .sticky-col-3, .dark tbody .sticky-col-4 { background: #0f172a; }
+        tbody .sticky-col-1, tbody .sticky-col-2, tbody .sticky-col-3, tbody .sticky-col-4 { z-index: 15; background: var(--app-surface); }
+        thead .sticky-col-3, tbody .sticky-col-3 { background: #eaf3ff !important; }
+        thead .sticky-col-4, tbody .sticky-col-4 { background: #e8f7f1 !important; }
+        .dark thead .sticky-col-3, .dark tbody .sticky-col-3 { background: #253754 !important; }
+        .dark thead .sticky-col-4, .dark tbody .sticky-col-4 { background: #21433f !important; }
         .sticky-divider { box-shadow: 5px 0 8px -6px rgba(15, 23, 42, 0.55); }
         #topTableScroll { overflow-x: auto; overflow-y: hidden; height: 16px; }
-        #topTableScrollInner { width: 2050px; height: 1px; }
+        #topTableScrollInner { width: 1990px; height: 1px; }
         #tableScrollContainer { scrollbar-width: none; }
         #tableScrollContainer::-webkit-scrollbar { display: none; }
         #statusMessage, #fileList, #formulaModalBody, #lossModal { font-size: 12.5px; }
@@ -264,6 +300,9 @@
                     <button id="method2FilterButton" onclick="setMethodFilter('m2')" class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-lg px-3 py-2 flex items-center gap-2 transition">
                         <i class="fa-solid fa-chart-line"></i><span>วิธีที่ 2</span><strong id="method2ProjectCount" class="bg-emerald-600 text-white rounded-full px-2 py-0.5">0</strong>
                     </button>
+                    <button id="otherFilterButton" onclick="setMethodFilter('other')" class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/70 text-amber-700 dark:text-amber-300 rounded-lg px-3 py-2 flex items-center gap-2 transition">
+                        <i class="fa-solid fa-layer-group"></i><span>อื่นๆ</span><strong id="otherProjectCount" class="bg-amber-500 text-white rounded-full px-2 py-0.5">0</strong>
+                    </button>
                     <button onclick="openFormulaGuideModal()" class="bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-300 rounded-lg px-3 py-2 flex items-center gap-2">
                         <i class="fa-solid fa-square-root-variable"></i><span>ดูสมการ</span>
                     </button>
@@ -449,7 +488,7 @@
                 formulaTitle1: '📌 สูตรการคำนวณ (วิธีที่ 1)', formulaTitle2: '📌 สูตรการคำนวณ (วิธีที่ 2)', formulaCode1: '(Days - Loss Days) + [ (PV Yield วัน Loss / Capacity) / Sun Hours ]',
                 formulaDesc1: '* คิดวันทำงานจริงจากวันที่ไม่มี Loss บวกด้วยสัดส่วนพลังงานที่ผลิตได้ในวันที่มี Loss', formulaDesc2: '* คำนวณหักลบจำนวนวันที่สูญเสียไปจากพลังงาน Loss Energy ของวันที่เลือก',
                 method1Short: 'วิธีที่ 1', method2Short: 'วิธีที่ 2', viewFormula: 'ดูสมการ', selectProjects: 'เลือกโครงการ', selectedMethodNote: 'วิธีที่เลือก / Note',
-                selectorTitle: 'เลือกโครงการที่ต้องการแสดง', searchProjects: 'ค้นหาชื่อโครงการ...', selectAll: 'เลือกทั้งหมด', clearSelection: 'ไม่เลือกทั้งหมด', formulaGuide: 'สมการคำนวณ Working Days', other: 'อื่นๆ', notePlaceholder: 'บันทึกหมายเหตุของโครงการ...', clearNote: 'ล้าง Note', save: 'บันทึก'
+                selectorTitle: 'เลือกโครงการที่ต้องการแสดง', searchProjects: 'ค้นหาชื่อโครงการ...', selectAll: 'เลือกทั้งหมด', clearSelection: 'ไม่เลือกทั้งหมด', formulaGuide: 'สมการคำนวณ Working Days', other: 'อื่นๆ', notePlaceholder: 'บันทึกหมายเหตุของโครงการ...', clearNote: 'ล้าง Note', save: 'บันทึก', darkMode: 'โหมดมืด', lightMode: 'โหมดสว่าง'
             },
             en: {
                 subtitle: 'Performance processing and working-days calculation for solar engineers', import: 'Import Reports', clearFiles: 'Clear Files',
@@ -466,7 +505,7 @@
                 formulaTitle1: '📌 Calculation Formula (Method 1)', formulaTitle2: '📌 Calculation Formula (Method 2)', formulaCode1: '(Days - Loss Days) + [ (Loss-Day PV Yield / Capacity) / Sun Hours ]',
                 formulaDesc1: '* Adds equivalent production on selected loss days to the non-loss-day count.', formulaDesc2: '* Deducts equivalent lost days using Loss Energy from the selected dates.',
                 method1Short: 'Method 1', method2Short: 'Method 2', viewFormula: 'View Formulas', selectProjects: 'Select Projects', selectedMethodNote: 'Selected Method / Note',
-                selectorTitle: 'Select projects to display', searchProjects: 'Search projects...', selectAll: 'Select All', clearSelection: 'Clear All', formulaGuide: 'Working Days Formulas', other: 'Other', notePlaceholder: 'Enter a project note...', clearNote: 'Clear Note', save: 'Save'
+                selectorTitle: 'Select projects to display', searchProjects: 'Search projects...', selectAll: 'Select All', clearSelection: 'Clear All', formulaGuide: 'Working Days Formulas', other: 'Other', notePlaceholder: 'Enter a project note...', clearNote: 'Clear Note', save: 'Save', darkMode: 'Dark Mode', lightMode: 'Light Mode'
             }
         };
 
@@ -535,17 +574,23 @@
             const visiblePlants = plantData.filter(p => p.visible);
             document.getElementById('method1ProjectCount').textContent = visiblePlants.filter(p => p.calculationMethod === 'm1').length;
             document.getElementById('method2ProjectCount').textContent = visiblePlants.filter(p => p.calculationMethod === 'm2').length;
+            document.getElementById('otherProjectCount').textContent = visiblePlants.filter(p => p.calculationMethod === 'other').length;
             document.getElementById('selectedProjectCount').textContent = `${visiblePlants.length}/${plantData.length}`;
             const m1Button = document.getElementById('method1FilterButton');
             const m2Button = document.getElementById('method2FilterButton');
+            const otherButton = document.getElementById('otherFilterButton');
             m1Button.classList.toggle('ring-2', currentMethodFilter === 'm1');
             m1Button.classList.toggle('ring-blue-500', currentMethodFilter === 'm1');
             m1Button.classList.toggle('ring-offset-2', currentMethodFilter === 'm1');
             m2Button.classList.toggle('ring-2', currentMethodFilter === 'm2');
             m2Button.classList.toggle('ring-emerald-500', currentMethodFilter === 'm2');
             m2Button.classList.toggle('ring-offset-2', currentMethodFilter === 'm2');
+            otherButton.classList.toggle('ring-2', currentMethodFilter === 'other');
+            otherButton.classList.toggle('ring-amber-500', currentMethodFilter === 'other');
+            otherButton.classList.toggle('ring-offset-2', currentMethodFilter === 'other');
             m1Button.setAttribute('aria-pressed', currentMethodFilter === 'm1');
             m2Button.setAttribute('aria-pressed', currentMethodFilter === 'm2');
+            otherButton.setAttribute('aria-pressed', currentMethodFilter === 'other');
         }
 
         function openMethodProjectsModal(method) {
@@ -616,6 +661,7 @@
 
         function applyLanguage() {
             document.getElementById('languageButton').textContent = currentLanguage === 'th' ? 'EN' : 'ไทย';
+            document.getElementById('themeText').textContent = document.documentElement.classList.contains('dark') ? t('lightMode') : t('darkMode');
             document.getElementById('searchInput').placeholder = t('search');
             document.getElementById('projectPopupSearch').placeholder = t('searchProjects');
             document.getElementById('noteTextarea').placeholder = t('notePlaceholder');
@@ -640,7 +686,7 @@
                 ['* คำนวณหักลบจำนวนวันที่สูญเสียไปจากพลังงาน Loss Energy ของวันที่เลือก','formulaDesc2'],
                 ['วิธีที่ 1','method1Short'], ['วิธีที่ 2','method2Short'], ['ดูสมการ','viewFormula'], ['เลือกโครงการ','selectProjects'], ['วิธีที่เลือก / Note','selectedMethodNote'],
                 ['เลือกโครงการที่ต้องการแสดง','selectorTitle'], ['ค้นหาชื่อโครงการ...','searchProjects'], ['เลือกทั้งหมด','selectAll'], ['ไม่เลือกทั้งหมด','clearSelection'],
-                ['สมการคำนวณ Working Days','formulaGuide'], ['อื่นๆ','other'], ['ล้าง Note','clearNote'], ['บันทึก','save'], ['ปิด','close']
+                ['สมการคำนวณ Working Days','formulaGuide'], ['อื่นๆ','other'], ['ล้าง Note','clearNote'], ['บันทึก','save'], ['ปิด','close'], ['โหมดมืด','darkMode'], ['โหมดสว่าง','lightMode']
             ];
             const reverse = Object.fromEntries(pairs.map(([th,key]) => [uiText.en[key], key]));
             const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -662,12 +708,12 @@
                 html.classList.remove('dark');
                 html.classList.add('light');
                 icon.className = 'fa-solid fa-moon text-slate-600';
-                text.innerText = 'Dark Mode';
+                text.innerText = t('darkMode');
             } else {
                 html.classList.remove('light');
                 html.classList.add('dark');
                 icon.className = 'fa-solid fa-sun text-amber-400';
-                text.innerText = 'Light Mode';
+                text.innerText = t('lightMode');
             }
         }
 
@@ -1221,8 +1267,8 @@
                     </tr>`;
                 document.getElementById('statPlantCount').innerText = '0';
                 document.getElementById('statTotalCap').innerHTML = '0 <span class="text-xs font-normal text-slate-400">kWp</span>';
-                document.getElementById('statAvgM1').innerHTML = '0.0 <span class="text-xs font-normal text-blue-400">วัน</span>';
-                document.getElementById('statAvgM2').innerHTML = '0.0 <span class="text-xs font-normal text-emerald-400">วัน</span>';
+                document.getElementById('statAvgM1').innerHTML = `0.0 <span class="text-xs font-normal text-blue-400">${t('daysUnit')}</span>`;
+                document.getElementById('statAvgM2').innerHTML = `0.0 <span class="text-xs font-normal text-emerald-400">${t('daysUnit')}</span>`;
                 updateMethodSummary();
                 return;
             }
@@ -1306,8 +1352,8 @@
 
             document.getElementById('statPlantCount').innerText = count;
             document.getElementById('statTotalCap').innerHTML = `${totalCap.toLocaleString(undefined, {maximumFractionDigits: 2})} <span class="text-xs font-normal text-slate-400">kWp</span>`;
-            document.getElementById('statAvgM1').innerHTML = `${count > 0 ? (sumM1 / count).toFixed(2) : '0.0'} <span class="text-xs font-normal text-blue-400">วัน</span>`;
-            document.getElementById('statAvgM2').innerHTML = `${count > 0 ? (sumM2 / count).toFixed(2) : '0.0'} <span class="text-xs font-normal text-emerald-400">วัน</span>`;
+            document.getElementById('statAvgM1').innerHTML = `${count > 0 ? (sumM1 / count).toFixed(2) : '0.0'} <span class="text-xs font-normal text-blue-400">${t('daysUnit')}</span>`;
+            document.getElementById('statAvgM2').innerHTML = `${count > 0 ? (sumM2 / count).toFixed(2) : '0.0'} <span class="text-xs font-normal text-emerald-400">${t('daysUnit')}</span>`;
             updateMethodSummary();
         }
 
