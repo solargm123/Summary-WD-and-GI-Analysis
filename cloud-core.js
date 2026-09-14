@@ -100,23 +100,26 @@
   async function attachDataset(dataset,alreadyLoaded=false){
     if(!currentProject||!dataset)return;const payload=currentProject.analysis_type==='pr_report'?dataset.normalized_data:dataset.normalized_data?.[currentProject.analysis_type];if(!payload||!Object.keys(payload).length)throw new Error('ชุดข้อมูลนี้ไม่มีข้อมูลสำหรับหน้าวิเคราะห์ปัจจุบัน');
     if(!alreadyLoaded)await adapter.restore(payload,currentProject.user_state||{});
-    const {data,error}=await getClient().rpc('attach_dataset_to_project',{p_project_id:currentProject.id,p_dataset_id:dataset.id});if(error)throw error;currentProject=data;dirty=false;conflict=false;setStatus(`Shared: ${dataset.name}`,'ok');
+    const {data,error}=await getClient().rpc('attach_dataset_to_project',{p_project_id:currentProject.id,p_dataset_id:dataset.id});if(error)throw error;currentProject=data;dirty=false;setConflictState(false);setStatus(`Shared: ${dataset.name}`,'ok');
   }
   function setStatus(text,state='ok'){
     const node=$('solarCloudStatus');if(!node)return;node.textContent=text;node.dataset.state=state;
     const dot=$('solarCloudDot');if(dot)dot.dataset.state=state;
   }
+  function setConflictState(value){
+    conflict=!!value;const button=$('solarConflictButton');if(button)button.style.display=conflict?'inline-block':'none';
+  }
   function injectDock(){
     if($('solarCloudDock'))return;
     const style=document.createElement('style');style.textContent=`
       #solarCloudDock{position:fixed;right:16px;bottom:16px;z-index:9998;display:flex;align-items:center;gap:7px;padding:7px 9px;background:#102432ee;color:#e8f3f5;border:1px solid #426171;border-radius:12px;box-shadow:0 12px 30px #0004;font:500 11px 'Bai Jamjuree',sans-serif;backdrop-filter:blur(10px)}
-      #solarCloudDock button{border:1px solid #ffffff22;background:#ffffff0c;color:#e8f3f5;border-radius:8px;padding:6px 8px;font:600 11px 'Bai Jamjuree',sans-serif;cursor:pointer}#solarCloudDock button:hover{background:#ffffff1d}
+      #solarCloudDock button{border:1px solid #ffffff22;background:#ffffff0c;color:#e8f3f5;border-radius:8px;padding:6px 8px;font:600 11px 'Bai Jamjuree',sans-serif;cursor:pointer}#solarCloudDock button:hover{background:#ffffff1d}#solarConflictButton{border-color:#fb7185!important;color:#fecdd3!important;background:#fb71851c!important}
       #solarCloudDot{width:8px;height:8px;border-radius:50%;background:#34d399;box-shadow:0 0 0 4px #34d39922}#solarCloudDot[data-state=busy]{background:#fbbf24}#solarCloudDot[data-state=error],#solarCloudDot[data-state=conflict]{background:#fb7185}
       #solarCloudStatus[data-state=error],#solarCloudStatus[data-state=conflict]{color:#fecdd3}.solar-cloud-viewer{color:#fbbf24;font-weight:700}
       #solarCloudModal{position:fixed;inset:0;z-index:10000;background:#07151db3;display:none;place-items:center;padding:20px;font-family:'Bai Jamjuree',sans-serif}#solarCloudModal.open{display:grid}
       #solarCloudModalBox{width:min(700px,100%);max-height:80vh;overflow:auto;background:#fff;color:#1e293b;border-radius:14px;padding:18px;box-shadow:0 25px 70px #0007}#solarCloudModalBox h3{margin:0 0 12px}#solarCloudModalBox .log{padding:10px 0;border-bottom:1px solid #e2e8f0;font-size:12px}#solarCloudModalBox time{color:#64748b;font-size:10px;display:block;margin-top:3px}
     `;document.head.appendChild(style);
-    const dock=document.createElement('div');dock.id='solarCloudDock';dock.innerHTML=`<button onclick="SolarCloud.back()">← Workspace</button><span id="solarCloudDot"></span><span id="solarCloudStatus">กำลังเชื่อมต่อ...</span><span class="solar-cloud-viewer">${editLockLabel()}</span><button onclick="SolarCloud.datasets()">Shared Data</button><button onclick="SolarCloud.history()">History</button><button onclick="location.reload()">Reload</button><button onclick="SolarCloud.saveNow()" ${roleCanEdit()?'':'disabled'}>Save</button>`;document.body.appendChild(dock);
+    const dock=document.createElement('div');dock.id='solarCloudDock';dock.innerHTML=`<button onclick="SolarCloud.back()">← Workspace</button><span id="solarCloudDot"></span><span id="solarCloudStatus">กำลังเชื่อมต่อ...</span><span class="solar-cloud-viewer">${editLockLabel()}</span><button id="solarConflictButton" style="display:none" onclick="SolarCloud.resolveConflict()">จัดการ Conflict</button><button onclick="SolarCloud.datasets()">Shared Data</button><button onclick="SolarCloud.history()">History</button><button onclick="location.reload()">Reload</button><button onclick="SolarCloud.saveNow()" ${roleCanEdit()?'':'disabled'}>Save</button>`;document.body.appendChild(dock);
     const modal=document.createElement('div');modal.id='solarCloudModal';modal.innerHTML='<div id="solarCloudModalBox"><button style="float:right" onclick="document.getElementById(\'solarCloudModal\').classList.remove(\'open\')">✕</button><h3>Activity History</h3><div id="solarCloudLogs">Loading...</div></div>';document.body.appendChild(modal);
   }
   function applyViewerLock(){
@@ -134,13 +137,14 @@
       const payload=adapter.capture();
       const baseChanged=!currentProject.dataset_id&&JSON.stringify(payload.baseData??{})!==JSON.stringify(currentProject.base_data??{});
       const {data,error}=await getClient().rpc('save_analysis_project',{p_project_id:currentProject.id,p_expected_version:currentProject.version,p_base_data:baseChanged?(payload.baseData??{}):null,p_user_state:payload.userState??{},p_period_key:payload.periodKey??null,p_source_files:payload.sourceFiles??[],p_change_summary:{source:reason,analysis_type:currentProject.analysis_type,base_changed:baseChanged}});
-      if(error)throw error;currentProject=data;dirty=false;conflict=false;setStatus('บันทึกแล้ว','ok');
+      if(error)throw error;currentProject=data;dirty=false;setConflictState(false);setStatus('บันทึกแล้ว','ok');
     }catch(error){
-      if(/version_conflict|40001/i.test(error.message||'')){conflict=true;setStatus('มีเวอร์ชันใหม่ — กด Reload','conflict')}else setStatus('บันทึกไม่สำเร็จ','error');
+      if(/version_conflict|40001/i.test(error.message||'')){setConflictState(true);setStatus('มีข้อมูลใหม่จากผู้ใช้อื่น — จัดการ Conflict','conflict')}else setStatus('บันทึกไม่สำเร็จ','error');
       console.error('Cloud save failed:',error);
     }finally{saving=false}
   }
   function installAutoSave(){
+    global.addEventListener('beforeunload',event=>{if(dirty||conflict){event.preventDefault();event.returnValue=''}});
     document.addEventListener('change',event=>{if(event.target.closest('#solarCloudDock,#solarCloudModal'))return;scheduleSave('field_change')},true);
     document.addEventListener('click',event=>{const target=event.target.closest('button');if(target&&!target.closest('#solarCloudDock,#solarCloudModal'))setTimeout(()=>scheduleSave('action'),50)},true);
     const fileInput=$('excelFileInput')||$('fileInput');if(fileInput)fileInput.addEventListener('change',event=>{const files=Array.from(event.target.files||[]);[2500,5000,10000].forEach(ms=>setTimeout(()=>scheduleSave('file_import'),ms));if(files.length&&roleCanEdit())setTimeout(()=>saveSharedDataset(files).catch(error=>{console.error(error);setStatus('สร้าง Shared Data ไม่สำเร็จ','error');alert(`Shared Data: ${error.message}`)}),300)});
@@ -148,7 +152,7 @@
   function subscribe(){
     if(channel)client.removeChannel(channel);
     channel=getClient().channel(`project:${currentProject.id}`).on('postgres_changes',{event:'UPDATE',schema:'public',table:'analysis_projects',filter:`id=eq.${currentProject.id}`},payload=>{
-      if(payload.new.version>currentProject.version&&!saving){if(dirty){conflict=true;setStatus('Conflict — มีผู้แก้ไขงานนี้','conflict')}else{conflict=true;setStatus('มีข้อมูลใหม่ — กด Reload','busy')}}
+      if(payload.new.version>currentProject.version&&!saving){setConflictState(true);setStatus(dirty?'ข้อมูลชนกัน — กรุณาจัดการ Conflict':'มีข้อมูลใหม่ — กรุณา Reload','conflict')}
     }).subscribe();
   }
   async function initAnalysis(expectedType,projectAdapter){
@@ -162,6 +166,30 @@
       document.title=`${currentProject.name} — ${document.title}`;
     }catch(error){console.error(error);alert(`Cloud workspace error: ${error.message}`);if(/Authentication|required|Project ID/.test(error.message))location.replace(indexUrl())}
   }
+  function localDraft(){
+    if(!currentProject||!adapter)throw new Error('Project is not ready.');
+    return {draft_version:1,exported_at:new Date().toISOString(),project:{id:currentProject.id,name:currentProject.name,analysis_type:currentProject.analysis_type,expected_version:currentProject.version},payload:adapter.capture()};
+  }
+  function downloadLocalDraft(){
+    try{
+      const draft=localDraft(),blob=new Blob([JSON.stringify(draft,null,2)],{type:'application/json'});
+      const url=URL.createObjectURL(blob),link=document.createElement('a'),safeName=String(currentProject.name||'project').replace(/[^a-zA-Z0-9ก-๙_-]+/g,'-').slice(0,80);
+      link.href=url;link.download=`${safeName}-local-draft-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;
+      document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
+      setStatus('เก็บ Local Draft แล้ว — พร้อมโหลดข้อมูลล่าสุด','conflict');
+    }catch(error){alert(`ดาวน์โหลด Local Draft ไม่สำเร็จ: ${error.message}`)}
+  }
+  function reloadLatest(){
+    // FINAL POLISH TODO: replace native confirm with the shared styled pop-up.
+    if(!confirm('โหลดข้อมูลล่าสุดจากระบบหรือไม่? ข้อมูลที่ยังไม่บันทึกในหน้านี้จะหายไป'))return;
+    dirty=false;setConflictState(false);location.reload();
+  }
+  function resolveConflict(){
+    if(!currentProject)return;
+    $('solarCloudModalBox').querySelector('h3').textContent='จัดการข้อมูลที่แก้ไขพร้อมกัน';
+    $('solarCloudModal').classList.add('open');
+    $('solarCloudLogs').innerHTML=`<div class="log"><b>พบข้อมูลเวอร์ชันใหม่ในระบบ</b><div>แนะนำให้ดาวน์โหลดข้อมูลที่กำลังแก้ไขเก็บไว้ก่อน แล้วจึงโหลดข้อมูลล่าสุด</div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button onclick="SolarCloud.downloadLocalDraft()">ดาวน์โหลดข้อมูลที่ยังไม่บันทึก</button><button onclick="SolarCloud.reloadLatest()">โหลดข้อมูลล่าสุด</button></div>`;
+  }
   async function history(){
     if(!currentProject)return;$('solarCloudModalBox').querySelector('h3').textContent='Activity History';$('solarCloudModal').classList.add('open');$('solarCloudLogs').textContent='Loading...';
     const {data,error}=await getClient().from('activity_logs').select('action,details,created_at,profiles!activity_logs_actor_id_fkey(display_name,email)').eq('project_id',currentProject.id).order('created_at',{ascending:false}).limit(50);
@@ -172,5 +200,5 @@
     try{const rows=await listDatasets();$('solarCloudLogs').innerHTML=rows.map(ds=>`<div class="log"><b>${esc(ds.name)}</b><div>${esc((ds.source_files||[]).join(', '))}</div><time>${new Date(ds.updated_at).toLocaleString()}</time>${roleCanEdit()?`<button onclick="SolarCloud.useDataset('${ds.id}')">ใช้กับงานนี้</button>`:''}</div>`).join('')||'<div>ยังไม่มี Shared Data — อัปโหลด Excel ในหน้าวิเคราะห์หนึ่งครั้งเพื่อสร้าง</div>'}catch(error){$('solarCloudLogs').textContent=error.message}
   }
   async function useDataset(id){try{const rows=await listDatasets(),ds=rows.find(item=>item.id===id);await attachDataset(ds);$('solarCloudModal').classList.remove('open')}catch(error){alert(error.message)}}
-  global.SolarCloud={CONFIG,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,datasets,useDataset,back:()=>location.assign(indexUrl()),roleCanEdit,roleCanAdmin};
+  global.SolarCloud={CONFIG,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,datasets,useDataset,resolveConflict,downloadLocalDraft,reloadLatest,back:()=>location.assign(indexUrl()),roleCanEdit,roleCanAdmin};
 })(window);
