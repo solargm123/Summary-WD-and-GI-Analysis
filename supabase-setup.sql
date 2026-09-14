@@ -1036,6 +1036,106 @@ $restore$;
 revoke all on function public.admin_restore_workspace_backup_missing(uuid,jsonb) from public,anon;
 grant execute on function public.admin_restore_workspace_backup_missing(uuid,jsonb) to authenticated;
 
+
+-- ============================================================
+-- ADMIN SYSTEM HEALTH CHECK
+-- Read-only checks for RLS, RPC permissions and Realtime setup.
+-- ============================================================
+
+create or replace function public.admin_system_health(p_workspace uuid)
+returns jsonb
+language plpgsql security definer set search_path=public
+as $health$
+declare
+  v_rls_enabled boolean;
+  v_direct_writes_blocked boolean;
+  v_required_rpcs boolean;
+  v_realtime_enabled boolean;
+  v_admin_membership boolean;
+  v_active_projects bigint;
+  v_archived_projects bigint;
+  v_datasets bigint;
+  v_members bigint;
+begin
+  if auth.uid() is null then raise exception 'authentication_required' using errcode='42501'; end if;
+  if not public.is_workspace_admin(p_workspace) then raise exception 'permission_denied' using errcode='42501'; end if;
+
+  select bool_and(c.relrowsecurity) into v_rls_enabled
+  from pg_class c
+  join pg_namespace n on n.oid=c.relnamespace
+  where n.nspname='public'
+    and c.relname in ('profiles','workspaces','workspace_members','shared_datasets','analysis_projects','activity_logs');
+
+  v_direct_writes_blocked=
+    not has_table_privilege('authenticated','public.analysis_projects','INSERT')
+    and not has_table_privilege('authenticated','public.analysis_projects','UPDATE')
+    and not has_table_privilege('authenticated','public.shared_datasets','INSERT')
+    and not has_table_privilege('authenticated','public.shared_datasets','UPDATE')
+    and not has_table_privilege('authenticated','public.shared_datasets','DELETE')
+    and not has_table_privilege('authenticated','public.workspace_members','INSERT')
+    and not has_table_privilege('authenticated','public.workspace_members','UPDATE')
+    and not has_table_privilege('authenticated','public.workspace_members','DELETE');
+
+  v_required_rpcs=
+    to_regprocedure('public.create_analysis_project(uuid,text,text)') is not null
+    and to_regprocedure('public.upsert_shared_dataset(uuid,text,text,text[],jsonb)') is not null
+    and to_regprocedure('public.save_analysis_project(uuid,bigint,jsonb,jsonb,text,text[],jsonb)') is not null
+    and to_regprocedure('public.admin_export_workspace_backup(uuid)') is not null
+    and to_regprocedure('public.admin_validate_workspace_backup(uuid,jsonb)') is not null
+    and to_regprocedure('public.admin_restore_workspace_backup_missing(uuid,jsonb)') is not null;
+
+  select exists(
+    select 1 from pg_publication_tables
+    where pubname='supabase_realtime' and schemaname='public' and tablename='analysis_projects'
+  ) into v_realtime_enabled;
+
+  select exists(
+    select 1 from public.workspace_members
+    where workspace_id=p_workspace and user_id=auth.uid() and role='admin'
+  ) into v_admin_membership;
+
+  select count(*) filter(where deleted_at is null),
+         count(*) filter(where deleted_at is not null)
+  into v_active_projects,v_archived_projects
+  from public.analysis_projects where workspace_id=p_workspace;
+  select count(*) into v_datasets from public.shared_datasets where workspace_id=p_workspace;
+  select count(*) into v_members from public.workspace_members where workspace_id=p_workspace;
+
+  insert into public.activity_logs(workspace_id,actor_id,action,details)
+  values(p_workspace,auth.uid(),'system_health_check',
+    jsonb_build_object(
+      'rls_enabled',v_rls_enabled,
+      'direct_writes_blocked',v_direct_writes_blocked,
+      'required_rpcs',v_required_rpcs,
+      'realtime_enabled',v_realtime_enabled
+    ));
+
+  return jsonb_build_object(
+    'healthy',coalesce(v_rls_enabled,false)
+      and v_direct_writes_blocked and v_required_rpcs
+      and v_realtime_enabled and v_admin_membership,
+    'schema_version','2026.09.14-health-1',
+    'checked_at',now(),
+    'checks',jsonb_build_object(
+      'rls_enabled',coalesce(v_rls_enabled,false),
+      'direct_browser_writes_blocked',v_direct_writes_blocked,
+      'required_rpcs_available',v_required_rpcs,
+      'analysis_realtime_enabled',v_realtime_enabled,
+      'admin_membership_valid',v_admin_membership
+    ),
+    'counts',jsonb_build_object(
+      'active_projects',v_active_projects,
+      'archived_projects',v_archived_projects,
+      'shared_datasets',v_datasets,
+      'workspace_members',v_members
+    )
+  );
+end;
+$health$;
+
+revoke all on function public.admin_system_health(uuid) from public,anon;
+grant execute on function public.admin_system_health(uuid) to authenticated;
+
 notify pgrst, 'reload schema';
 
 -- Setup verification: this final query must return five TRUE values and the
@@ -1063,4 +1163,5 @@ select
   to_regprocedure('public.admin_export_workspace_backup(uuid)') is not null as backup_rpc_ok,
   to_regprocedure('public.admin_validate_workspace_backup(uuid,jsonb)') is not null as restore_preview_rpc_ok,
   to_regprocedure('public.admin_restore_workspace_backup_missing(uuid,jsonb)') is not null as restore_missing_rpc_ok,
+  to_regprocedure('public.admin_system_health(uuid)') is not null as system_health_rpc_ok,
   'solargm123@gmail.com'::text as configured_admin;
