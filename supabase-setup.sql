@@ -318,7 +318,7 @@ declare v_project public.analysis_projects;
 begin
   if auth.uid() is null then raise exception 'authentication_required' using errcode='42501'; end if;
   if not public.can_edit_workspace(p_workspace) then raise exception 'permission_denied' using errcode='42501'; end if;
-  if p_analysis_type not in ('working_day','global_irradiance') then raise exception 'invalid_analysis_type'; end if;
+  if p_analysis_type not in ('working_day','global_irradiance','pr_report') then raise exception 'invalid_analysis_type'; end if;
   if length(trim(coalesce(p_name,''))) not between 1 and 120 then raise exception 'invalid_project_name'; end if;
 
   insert into public.analysis_projects(workspace_id,analysis_type,name,created_by,updated_by)
@@ -655,6 +655,19 @@ grant execute on function public.admin_list_archived_projects(uuid) to authentic
 grant execute on function public.admin_list_datasets(uuid) to authenticated;
 grant execute on function public.restore_analysis_project(uuid) to authenticated;
 grant execute on function public.delete_shared_dataset(uuid) to authenticated;
+
+
+-- ============================================================
+-- PR REPORT FOUNDATION
+-- Adds the project/data link only. PR formulas and guarantee rules
+-- will be defined in a later phase.
+-- ============================================================
+
+alter table public.analysis_projects
+  drop constraint if exists analysis_projects_analysis_type_check;
+alter table public.analysis_projects
+  add constraint analysis_projects_analysis_type_check
+  check (analysis_type in ('working_day','global_irradiance','pr_report'));
 
 notify pgrst, 'reload schema';
 
