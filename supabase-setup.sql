@@ -26,6 +26,25 @@ create table if not exists public.workspace_members (
   primary key (workspace_id,user_id)
 );
 
+-- A compact, normalized copy of uploaded report data. The original Excel
+-- binary is intentionally not stored. One dataset can feed both analyses and
+-- be reused by every project in the same workspace.
+create table if not exists public.shared_datasets (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references public.workspaces(id) on delete cascade,
+  name text not null,
+  fingerprint text not null,
+  source_files text[] not null default '{}',
+  normalized_data jsonb not null default '{}'::jsonb,
+  created_by uuid not null references public.profiles(id),
+  updated_by uuid not null references public.profiles(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique(workspace_id,fingerprint)
+);
+
+create index if not exists shared_datasets_workspace_idx on public.shared_datasets(workspace_id,updated_at desc);
+
 create or replace function public.protect_workspace_owner()
 returns trigger language plpgsql set search_path=public
 as $$
@@ -59,6 +78,9 @@ create table if not exists public.analysis_projects (
   updated_at timestamptz not null default now(),
   deleted_at timestamptz
 );
+
+alter table public.analysis_projects
+  add column if not exists dataset_id uuid references public.shared_datasets(id) on delete set null;
 
 create index if not exists analysis_projects_workspace_idx on public.analysis_projects(workspace_id,updated_at desc) where deleted_at is null;
 create index if not exists analysis_projects_type_idx on public.analysis_projects(analysis_type,period_key) where deleted_at is null;
@@ -113,6 +135,7 @@ as $$ select coalesce(public.workspace_role(p_workspace)='admin',false) $$;
 alter table public.profiles enable row level security;
 alter table public.workspaces enable row level security;
 alter table public.workspace_members enable row level security;
+alter table public.shared_datasets enable row level security;
 alter table public.analysis_projects enable row level security;
 alter table public.activity_logs enable row level security;
 
@@ -134,6 +157,19 @@ drop policy if exists members_admin_update on public.workspace_members;
 create policy members_admin_update on public.workspace_members for update to authenticated using(public.is_workspace_admin(workspace_id)) with check(public.is_workspace_admin(workspace_id));
 drop policy if exists members_admin_delete on public.workspace_members;
 create policy members_admin_delete on public.workspace_members for delete to authenticated using(public.is_workspace_admin(workspace_id));
+
+drop policy if exists datasets_member_select on public.shared_datasets;
+create policy datasets_member_select on public.shared_datasets for select to authenticated
+using(public.is_workspace_member(workspace_id));
+drop policy if exists datasets_editor_insert on public.shared_datasets;
+create policy datasets_editor_insert on public.shared_datasets for insert to authenticated
+with check(public.can_edit_workspace(workspace_id) and created_by=auth.uid() and updated_by=auth.uid());
+drop policy if exists datasets_editor_update on public.shared_datasets;
+create policy datasets_editor_update on public.shared_datasets for update to authenticated
+using(public.can_edit_workspace(workspace_id)) with check(public.can_edit_workspace(workspace_id));
+drop policy if exists datasets_admin_delete on public.shared_datasets;
+create policy datasets_admin_delete on public.shared_datasets for delete to authenticated
+using(public.is_workspace_admin(workspace_id));
 
 drop policy if exists projects_member_select on public.analysis_projects;
 create policy projects_member_select on public.analysis_projects for select to authenticated using(public.is_workspace_member(workspace_id));
@@ -206,6 +242,25 @@ begin
 end;
 $$;
 
+create or replace function public.attach_dataset_to_project(p_project_id uuid,p_dataset_id uuid)
+returns public.analysis_projects language plpgsql security definer set search_path=public
+as $$
+declare v_project public.analysis_projects; v_dataset public.shared_datasets;
+begin
+  select * into v_project from public.analysis_projects where id=p_project_id and deleted_at is null;
+  if not found then raise exception 'project_not_found'; end if;
+  if not public.can_edit_workspace(v_project.workspace_id) then raise exception 'permission_denied' using errcode='42501'; end if;
+  select * into v_dataset from public.shared_datasets where id=p_dataset_id and workspace_id=v_project.workspace_id;
+  if not found then raise exception 'dataset_not_found'; end if;
+  update public.analysis_projects set dataset_id=p_dataset_id,base_data='{}'::jsonb,
+    source_files=v_dataset.source_files,updated_by=auth.uid(),updated_at=now(),version=version+1
+  where id=p_project_id returning * into v_project;
+  insert into public.activity_logs(workspace_id,project_id,actor_id,action,details)
+  values(v_project.workspace_id,v_project.id,auth.uid(),'attach_dataset',jsonb_build_object('dataset_id',p_dataset_id,'dataset_name',v_dataset.name));
+  return v_project;
+end;
+$$;
+
 do $$
 declare v_admin uuid; v_workspace uuid;
 begin
@@ -220,13 +275,15 @@ begin
 end $$;
 
 grant usage on schema public to authenticated;
-grant select on public.profiles,public.workspaces,public.workspace_members,public.analysis_projects,public.activity_logs to authenticated;
+grant select on public.profiles,public.workspaces,public.workspace_members,public.shared_datasets,public.analysis_projects,public.activity_logs to authenticated;
 grant insert,update on public.analysis_projects to authenticated;
+grant insert,update,delete on public.shared_datasets to authenticated;
 grant insert,update,delete on public.workspace_members to authenticated;
 grant usage,select on sequence public.activity_logs_id_seq to authenticated;
 grant execute on function public.workspace_role(uuid),public.is_workspace_member(uuid),public.can_edit_workspace(uuid),public.is_workspace_admin(uuid) to authenticated;
 grant execute on function public.save_analysis_project(uuid,bigint,jsonb,jsonb,text,text[],jsonb) to authenticated;
 grant execute on function public.soft_delete_project(uuid),public.add_workspace_member_by_email(uuid,text,text) to authenticated;
+grant execute on function public.attach_dataset_to_project(uuid,uuid) to authenticated;
 
 do $$
 begin
@@ -234,3 +291,20 @@ begin
     alter publication supabase_realtime add table public.analysis_projects;
   end if;
 end $$;
+
+notify pgrst, 'reload schema';
+
+-- Setup verification: this final query must return five TRUE values and the
+-- configured admin email. If it does not, the script was run in the wrong
+-- Supabase project or stopped before completion.
+select
+  to_regclass('public.workspace_members') is not null as workspace_members_ok,
+  to_regclass('public.shared_datasets') is not null as shared_datasets_ok,
+  to_regclass('public.analysis_projects') is not null as analysis_projects_ok,
+  exists(select 1 from public.profiles where lower(email)='solargm123@gmail.com') as admin_profile_ok,
+  exists(
+    select 1 from public.workspace_members wm
+    join public.profiles p on p.id=wm.user_id
+    where lower(p.email)='solargm123@gmail.com' and wm.role='admin'
+  ) as admin_membership_ok,
+  'solargm123@gmail.com'::text as configured_admin;
