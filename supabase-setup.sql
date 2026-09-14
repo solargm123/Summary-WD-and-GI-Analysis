@@ -1136,6 +1136,51 @@ $health$;
 revoke all on function public.admin_system_health(uuid) from public,anon;
 grant execute on function public.admin_system_health(uuid) to authenticated;
 
+
+-- ============================================================
+-- ADMIN WORKSPACE ACTIVITY
+-- Centralized read-only audit history for Admin Control.
+-- ============================================================
+
+create or replace function public.admin_list_activity_logs(
+  p_workspace uuid,
+  p_limit integer default 50,
+  p_action text default null
+)
+returns table(
+  log_id bigint,
+  action text,
+  details jsonb,
+  created_at timestamptz,
+  project_id uuid,
+  project_name text,
+  actor_id uuid,
+  actor_name text,
+  actor_email text
+)
+language plpgsql security definer set search_path=public
+as $activity$
+begin
+  if auth.uid() is null then raise exception 'authentication_required' using errcode='42501'; end if;
+  if not public.is_workspace_admin(p_workspace) then raise exception 'permission_denied' using errcode='42501'; end if;
+
+  return query
+    select
+      l.id,l.action,l.details,l.created_at,l.project_id,pr.name,
+      l.actor_id,coalesce(p.display_name,p.email),p.email
+    from public.activity_logs l
+    join public.profiles p on p.id=l.actor_id
+    left join public.analysis_projects pr on pr.id=l.project_id
+    where l.workspace_id=p_workspace
+      and (p_action is null or l.action=p_action)
+    order by l.created_at desc
+    limit greatest(1,least(coalesce(p_limit,50),200));
+end;
+$activity$;
+
+revoke all on function public.admin_list_activity_logs(uuid,integer,text) from public,anon;
+grant execute on function public.admin_list_activity_logs(uuid,integer,text) to authenticated;
+
 notify pgrst, 'reload schema';
 
 -- Setup verification: this final query must return five TRUE values and the
@@ -1164,4 +1209,5 @@ select
   to_regprocedure('public.admin_validate_workspace_backup(uuid,jsonb)') is not null as restore_preview_rpc_ok,
   to_regprocedure('public.admin_restore_workspace_backup_missing(uuid,jsonb)') is not null as restore_missing_rpc_ok,
   to_regprocedure('public.admin_system_health(uuid)') is not null as system_health_rpc_ok,
+  to_regprocedure('public.admin_list_activity_logs(uuid,integer,text)') is not null as activity_log_rpc_ok,
   'solargm123@gmail.com'::text as configured_admin;
