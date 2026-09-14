@@ -230,7 +230,7 @@ $$;
 
 create or replace function public.add_workspace_member_by_email(p_workspace uuid,p_email text,p_role text)
 returns void language plpgsql security definer set search_path=public
-as $
+as $member$
 declare v_user uuid;
 begin
   if auth.uid() is null then raise exception 'authentication_required' using errcode='42501'; end if;
@@ -246,7 +246,7 @@ begin
   insert into public.activity_logs(workspace_id,actor_id,action,details)
   values(p_workspace,auth.uid(),'member_add_or_update',jsonb_build_object('user_id',v_user,'role',p_role));
 end;
-$;
+$member$;
 
 create or replace function public.attach_dataset_to_project(p_project_id uuid,p_dataset_id uuid)
 returns public.analysis_projects language plpgsql security definer set search_path=public
