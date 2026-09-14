@@ -122,7 +122,7 @@ h1{font-size:clamp(1.7rem,4vw,2.5rem);font-weight:700}
   <div class="footer">FusionSolar Multi-Plant Analysis • BGPL</div>
 </div>
 
-<div id="adminDataModal" class="workspace-modal hidden"><div class="workspace-modal-card"><div class="modal-head"><div><h2>Admin Control</h2><div class="subtitle">จัดการงาน Archive และ Shared Dataset</div></div><button class="small-btn" onclick="closeAdminData()">✕</button></div><div class="admin-section"><h3>งานที่ Archive</h3><div id="archivedRows"><div class="empty">กำลังโหลด...</div></div></div><div class="admin-section"><h3>Shared Dataset</h3><p class="subtitle">ลบได้เฉพาะ Dataset ที่ไม่มีงานใดใช้งานอยู่</p><div id="adminDatasetRows"><div class="empty">กำลังโหลด...</div></div></div></div></div>
+<div id="adminDataModal" class="workspace-modal hidden"><div class="workspace-modal-card"><div class="modal-head"><div><h2>Admin Control</h2><div class="subtitle">จัดการงาน Archive, Shared Dataset และ Backup</div></div><div class="workspace-actions"><button class="small-btn" onclick="downloadWorkspaceBackup()">Download Backup</button><button class="small-btn" onclick="closeAdminData()">✕</button></div></div><div id="adminBackupMessage" class="subtitle" style="margin-bottom:10px"></div><div class="admin-section"><h3>งานที่ Archive</h3><div id="archivedRows"><div class="empty">กำลังโหลด...</div></div></div><div class="admin-section"><h3>Shared Dataset</h3><p class="subtitle">ลบได้เฉพาะ Dataset ที่ไม่มีงานใดใช้งานอยู่</p><div id="adminDatasetRows"><div class="empty">กำลังโหลด...</div></div></div></div></div>
 
 <div id="membersModal" class="workspace-modal hidden"><div class="workspace-modal-card"><div class="modal-head"><h2>สมาชิกและสิทธิ์</h2><button class="small-btn" onclick="closeMembers()">✕</button></div><p class="subtitle" style="margin-bottom:12px">ผู้ใช้ต้องถูกสร้างใน Authentication → Users ก่อน จึงจะเพิ่มเข้า Workspace ได้</p><form class="member-form" onsubmit="addMember(event)"><input id="memberEmail" type="email" placeholder="member@company.com" required><select id="memberRole"><option value="editor">Editor</option><option value="viewer">Viewer</option><option value="admin">Admin</option></select><button class="primary" style="width:auto">เพิ่มสมาชิก</button></form><div id="memberMessage" class="auth-error"></div><div id="memberRows"></div></div></div>
 <script>
@@ -164,6 +164,19 @@ async function createAnalysis(type){
 }
 async function resetPassword(){const email=byId('loginEmail').value.trim();if(!email){byId('loginError').textContent='กรุณากรอก Email ก่อน';return}const {error}=await SolarCloud.getClient().auth.resetPasswordForEmail(email,{redirectTo:SolarCloud.CONFIG.siteRoot});byId('loginError').textContent=error?error.message:'ส่งลิงก์ Reset Password แล้ว กรุณาตรวจสอบ Email'}
 async function archiveProject(event,id){event.stopPropagation();if(!confirm('Archive งานนี้หรือไม่?'))return;const {error}=await SolarCloud.getClient().rpc('soft_delete_project',{p_project_id:id});if(error)alert(error.message);else renderProjects()}
+async function downloadWorkspaceBackup(){
+  if(activeMembership?.role!=='admin'){alert('Admin only');return}
+  const message=byId('adminBackupMessage');message.textContent='กำลังจัดเตรียม Backup...';
+  try{
+    const {data,error}=await SolarCloud.getClient().rpc('admin_export_workspace_backup',{p_workspace:activeMembership.workspace_id});
+    if(error)throw error;
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob),link=document.createElement('a');
+    link.href=url;link.download=`fusionsolar-workspace-backup-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;
+    document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
+    message.textContent='ดาวน์โหลด Backup แล้ว — กรุณาเก็บไฟล์ในพื้นที่ที่ปลอดภัย';
+  }catch(error){message.textContent=`Backup ไม่สำเร็จ: ${error.message}`}
+}
 async function openAdminData(){
   if(activeMembership?.role!=='admin'){alert('Admin only');return}
   byId('adminDataModal').classList.remove('hidden');await renderAdminData();
