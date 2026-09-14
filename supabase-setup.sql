@@ -735,6 +735,106 @@ $backup$;
 revoke all on function public.admin_export_workspace_backup(uuid) from public,anon;
 grant execute on function public.admin_export_workspace_backup(uuid) to authenticated;
 
+
+-- ============================================================
+-- RESTORE PREVIEW
+-- Validates a backup and reports conflicts. It never restores,
+-- updates or deletes workspace data.
+-- ============================================================
+
+create or replace function public.admin_validate_workspace_backup(
+  p_workspace uuid,
+  p_backup jsonb
+)
+returns jsonb
+language plpgsql security definer set search_path=public
+as $preview$
+declare
+  v_workspace_match boolean;
+  v_member_count bigint;
+  v_dataset_count bigint;
+  v_project_count bigint;
+  v_log_count bigint;
+  v_missing_members bigint;
+  v_dataset_conflicts bigint;
+  v_project_conflicts bigint;
+  v_invalid_project_types bigint;
+begin
+  if auth.uid() is null then raise exception 'authentication_required' using errcode='42501'; end if;
+  if not public.is_workspace_admin(p_workspace) then raise exception 'permission_denied' using errcode='42501'; end if;
+  if p_backup is null or jsonb_typeof(p_backup)<>'object' then raise exception 'invalid_backup_object'; end if;
+  if coalesce((p_backup->>'backup_version')::integer,0)<>1 then raise exception 'unsupported_backup_version'; end if;
+  if octet_length(p_backup::text)>52428800 then raise exception 'backup_too_large'; end if;
+  if coalesce(jsonb_typeof(p_backup->'workspace'),'')<>'object'
+    or coalesce(jsonb_typeof(p_backup->'members'),'')<>'array'
+    or coalesce(jsonb_typeof(p_backup->'shared_datasets'),'')<>'array'
+    or coalesce(jsonb_typeof(p_backup->'analysis_projects'),'')<>'array'
+    or coalesce(jsonb_typeof(p_backup->'activity_logs'),'')<>'array'
+  then raise exception 'invalid_backup_structure'; end if;
+
+  v_workspace_match=coalesce(p_backup#>>'{workspace,id}','')=p_workspace::text;
+  v_member_count=jsonb_array_length(p_backup->'members');
+  v_dataset_count=jsonb_array_length(p_backup->'shared_datasets');
+  v_project_count=jsonb_array_length(p_backup->'analysis_projects');
+  v_log_count=jsonb_array_length(p_backup->'activity_logs');
+
+  select count(*) into v_missing_members
+  from jsonb_array_elements(p_backup->'members') b
+  where coalesce(trim(b->>'email'),'')=''
+    or not exists(
+      select 1 from public.profiles p where lower(p.email)=lower(trim(b->>'email'))
+    );
+
+  select count(*) into v_dataset_conflicts
+  from jsonb_array_elements(p_backup->'shared_datasets') b
+  where exists(
+    select 1 from public.shared_datasets d
+    where d.workspace_id=p_workspace
+      and (d.id::text=b->>'id' or d.fingerprint=b->>'fingerprint')
+  );
+
+  select count(*) into v_project_conflicts
+  from jsonb_array_elements(p_backup->'analysis_projects') b
+  where exists(
+    select 1 from public.analysis_projects p
+    where p.workspace_id=p_workspace and p.id::text=b->>'id'
+  );
+
+  select count(*) into v_invalid_project_types
+  from jsonb_array_elements(p_backup->'analysis_projects') b
+  where coalesce(b->>'analysis_type','') not in ('working_day','global_irradiance','pr_report');
+
+  insert into public.activity_logs(workspace_id,actor_id,action,details)
+  values(p_workspace,auth.uid(),'workspace_backup_preview',
+    jsonb_build_object(
+      'workspace_match',v_workspace_match,
+      'project_count',v_project_count,
+      'dataset_count',v_dataset_count,
+      'project_conflicts',v_project_conflicts,
+      'dataset_conflicts',v_dataset_conflicts
+    ));
+
+  return jsonb_build_object(
+    'valid',v_workspace_match and v_invalid_project_types=0,
+    'backup_version',p_backup->>'backup_version',
+    'exported_at',p_backup->>'exported_at',
+    'workspace_match',v_workspace_match,
+    'members',v_member_count,
+    'missing_member_accounts',v_missing_members,
+    'datasets',v_dataset_count,
+    'dataset_conflicts',v_dataset_conflicts,
+    'projects',v_project_count,
+    'project_conflicts',v_project_conflicts,
+    'invalid_project_types',v_invalid_project_types,
+    'activity_logs',v_log_count,
+    'writes_performed',false
+  );
+end;
+$preview$;
+
+revoke all on function public.admin_validate_workspace_backup(uuid,jsonb) from public,anon;
+grant execute on function public.admin_validate_workspace_backup(uuid,jsonb) to authenticated;
+
 notify pgrst, 'reload schema';
 
 -- Setup verification: this final query must return five TRUE values and the
@@ -760,4 +860,5 @@ select
     and not has_table_privilege('authenticated','public.workspace_members','UPDATE')
     as direct_browser_writes_blocked,
   to_regprocedure('public.admin_export_workspace_backup(uuid)') is not null as backup_rpc_ok,
+  to_regprocedure('public.admin_validate_workspace_backup(uuid,jsonb)') is not null as restore_preview_rpc_ok,
   'solargm123@gmail.com'::text as configured_admin;
