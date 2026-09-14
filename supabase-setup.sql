@@ -230,17 +230,23 @@ $$;
 
 create or replace function public.add_workspace_member_by_email(p_workspace uuid,p_email text,p_role text)
 returns void language plpgsql security definer set search_path=public
-as $$
+as $
 declare v_user uuid;
 begin
+  if auth.uid() is null then raise exception 'authentication_required' using errcode='42501'; end if;
   if not public.is_workspace_admin(p_workspace) then raise exception 'permission_denied' using errcode='42501'; end if;
   if p_role not in ('admin','editor','viewer') then raise exception 'invalid_role'; end if;
+  if length(trim(coalesce(p_email,''))) not between 3 and 320 then raise exception 'invalid_email'; end if;
   select id into v_user from public.profiles where lower(email)=lower(trim(p_email));
   if v_user is null then raise exception 'user_not_found'; end if;
+  if exists(select 1 from public.workspaces where id=p_workspace and owner_id=v_user) and p_role<>'admin'
+    then raise exception 'workspace_owner_must_remain_admin'; end if;
   insert into public.workspace_members(workspace_id,user_id,role) values(p_workspace,v_user,p_role)
   on conflict(workspace_id,user_id) do update set role=excluded.role;
+  insert into public.activity_logs(workspace_id,actor_id,action,details)
+  values(p_workspace,auth.uid(),'member_add_or_update',jsonb_build_object('user_id',v_user,'role',p_role));
 end;
-$$;
+$;
 
 create or replace function public.attach_dataset_to_project(p_project_id uuid,p_dataset_id uuid)
 returns public.analysis_projects language plpgsql security definer set search_path=public
@@ -292,6 +298,253 @@ begin
   end if;
 end $$;
 
+
+-- ============================================================
+-- DATABASE SAFETY HARDENING v2
+-- All browser writes go through audited SECURITY DEFINER RPCs.
+-- The publishable key may remain in the browser; authorization is
+-- enforced here with auth.uid(), workspace membership and RLS.
+-- ============================================================
+
+create or replace function public.create_analysis_project(
+  p_workspace uuid,
+  p_analysis_type text,
+  p_name text
+)
+returns public.analysis_projects
+language plpgsql security definer set search_path=public
+as $$
+declare v_project public.analysis_projects;
+begin
+  if auth.uid() is null then raise exception 'authentication_required' using errcode='42501'; end if;
+  if not public.can_edit_workspace(p_workspace) then raise exception 'permission_denied' using errcode='42501'; end if;
+  if p_analysis_type not in ('working_day','global_irradiance') then raise exception 'invalid_analysis_type'; end if;
+  if length(trim(coalesce(p_name,''))) not between 1 and 120 then raise exception 'invalid_project_name'; end if;
+
+  insert into public.analysis_projects(workspace_id,analysis_type,name,created_by,updated_by)
+  values(p_workspace,p_analysis_type,trim(p_name),auth.uid(),auth.uid())
+  returning * into v_project;
+
+  insert into public.activity_logs(workspace_id,project_id,actor_id,action,details)
+  values(p_workspace,v_project.id,auth.uid(),'create',jsonb_build_object('analysis_type',p_analysis_type));
+  return v_project;
+end;
+$$;
+
+create or replace function public.upsert_shared_dataset(
+  p_workspace uuid,
+  p_name text,
+  p_fingerprint text,
+  p_source_files text[],
+  p_normalized_data jsonb
+)
+returns public.shared_datasets
+language plpgsql security definer set search_path=public
+as $$
+declare v_dataset public.shared_datasets;
+begin
+  if auth.uid() is null then raise exception 'authentication_required' using errcode='42501'; end if;
+  if not public.can_edit_workspace(p_workspace) then raise exception 'permission_denied' using errcode='42501'; end if;
+  if length(trim(coalesce(p_name,''))) not between 1 and 180 then raise exception 'invalid_dataset_name'; end if;
+  if length(trim(coalesce(p_fingerprint,''))) not between 1 and 2000 then raise exception 'invalid_fingerprint'; end if;
+  if jsonb_typeof(coalesce(p_normalized_data,'{}'::jsonb)) <> 'object' then raise exception 'invalid_dataset_payload'; end if;
+  if octet_length(coalesce(p_normalized_data,'{}'::jsonb)::text) > 15728640 then raise exception 'dataset_too_large'; end if;
+  if coalesce(array_length(p_source_files,1),0) > 100 then raise exception 'too_many_source_files'; end if;
+
+  insert into public.shared_datasets(
+    workspace_id,name,fingerprint,source_files,normalized_data,created_by,updated_by
+  )
+  values(
+    p_workspace,trim(p_name),trim(p_fingerprint),coalesce(p_source_files,'{}'),coalesce(p_normalized_data,'{}'),auth.uid(),auth.uid()
+  )
+  on conflict(workspace_id,fingerprint) do update set
+    name=excluded.name,
+    source_files=excluded.source_files,
+    normalized_data=excluded.normalized_data,
+    updated_by=auth.uid(),
+    updated_at=now()
+  returning * into v_dataset;
+
+  insert into public.activity_logs(workspace_id,actor_id,action,details)
+  values(p_workspace,auth.uid(),'dataset_upsert',
+    jsonb_build_object('dataset_id',v_dataset.id,'dataset_name',v_dataset.name));
+  return v_dataset;
+end;
+$$;
+
+create or replace function public.save_analysis_project(
+  p_project_id uuid,
+  p_expected_version bigint,
+  p_base_data jsonb,
+  p_user_state jsonb,
+  p_period_key text,
+  p_source_files text[],
+  p_change_summary jsonb default '{}'::jsonb
+)
+returns public.analysis_projects
+language plpgsql security definer set search_path=public
+as $$
+declare v_project public.analysis_projects;
+begin
+  if auth.uid() is null then raise exception 'authentication_required' using errcode='42501'; end if;
+  select * into v_project from public.analysis_projects where id=p_project_id and deleted_at is null;
+  if not found then raise exception 'project_not_found' using errcode='P0002'; end if;
+  if not public.can_edit_workspace(v_project.workspace_id) then raise exception 'permission_denied' using errcode='42501'; end if;
+  if v_project.version<>p_expected_version then raise exception 'version_conflict' using errcode='40001'; end if;
+  if p_base_data is not null and jsonb_typeof(p_base_data)<>'object' then raise exception 'invalid_base_data'; end if;
+  if p_user_state is not null and jsonb_typeof(p_user_state)<>'object' then raise exception 'invalid_user_state'; end if;
+  if octet_length(coalesce(p_base_data,'{}'::jsonb)::text)+octet_length(coalesce(p_user_state,'{}'::jsonb)::text)>15728640 then raise exception 'project_payload_too_large'; end if;
+  if coalesce(array_length(p_source_files,1),0)>100 then raise exception 'too_many_source_files'; end if;
+  if p_period_key is not null and length(p_period_key)>40 then raise exception 'invalid_period_key'; end if;
+
+  update public.analysis_projects set
+    base_data=coalesce(p_base_data,base_data),
+    user_state=coalesce(p_user_state,user_state),
+    period_key=coalesce(p_period_key,period_key),
+    source_files=coalesce(p_source_files,source_files),
+    status=case when status='draft' then 'in_progress' else status end,
+    version=version+1,
+    updated_by=auth.uid(),
+    updated_at=now()
+  where id=p_project_id and version=p_expected_version
+  returning * into v_project;
+
+  if not found then raise exception 'version_conflict' using errcode='40001'; end if;
+  insert into public.activity_logs(workspace_id,project_id,actor_id,action,details)
+  values(v_project.workspace_id,v_project.id,auth.uid(),'save',
+    coalesce(p_change_summary,'{}'::jsonb)||jsonb_build_object('version',v_project.version));
+  return v_project;
+end;
+$$;
+
+create or replace function public.update_workspace_member_role(
+  p_workspace uuid,
+  p_user uuid,
+  p_role text
+)
+returns void
+language plpgsql security definer set search_path=public
+as $$
+begin
+  if auth.uid() is null then raise exception 'authentication_required' using errcode='42501'; end if;
+  if not public.is_workspace_admin(p_workspace) then raise exception 'permission_denied' using errcode='42501'; end if;
+  if p_role not in ('admin','editor','viewer') then raise exception 'invalid_role'; end if;
+  if exists(select 1 from public.workspaces where id=p_workspace and owner_id=p_user) and p_role<>'admin'
+    then raise exception 'workspace_owner_must_remain_admin'; end if;
+  update public.workspace_members set role=p_role where workspace_id=p_workspace and user_id=p_user;
+  if not found then raise exception 'member_not_found' using errcode='P0002'; end if;
+  insert into public.activity_logs(workspace_id,actor_id,action,details)
+  values(p_workspace,auth.uid(),'member_role_change',jsonb_build_object('user_id',p_user,'role',p_role));
+end;
+$$;
+
+create or replace function public.remove_workspace_member(
+  p_workspace uuid,
+  p_user uuid
+)
+returns void
+language plpgsql security definer set search_path=public
+as $$
+begin
+  if auth.uid() is null then raise exception 'authentication_required' using errcode='42501'; end if;
+  if not public.is_workspace_admin(p_workspace) then raise exception 'permission_denied' using errcode='42501'; end if;
+  if exists(select 1 from public.workspaces where id=p_workspace and owner_id=p_user)
+    then raise exception 'workspace_owner_cannot_be_removed'; end if;
+  delete from public.workspace_members where workspace_id=p_workspace and user_id=p_user;
+  if not found then raise exception 'member_not_found' using errcode='P0002'; end if;
+  insert into public.activity_logs(workspace_id,actor_id,action,details)
+  values(p_workspace,auth.uid(),'member_remove',jsonb_build_object('user_id',p_user));
+end;
+$$;
+
+create or replace function public.protect_analysis_project_identity()
+returns trigger language plpgsql set search_path=public
+as $$
+begin
+  if new.id is distinct from old.id
+    or new.workspace_id is distinct from old.workspace_id
+    or new.analysis_type is distinct from old.analysis_type
+    or new.created_by is distinct from old.created_by
+    or new.created_at is distinct from old.created_at
+  then raise exception 'immutable_project_fields'; end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_analysis_project_identity_trigger on public.analysis_projects;
+create trigger protect_analysis_project_identity_trigger
+before update on public.analysis_projects
+for each row execute function public.protect_analysis_project_identity();
+
+create or replace function public.protect_shared_dataset_identity()
+returns trigger language plpgsql set search_path=public
+as $$
+begin
+  if new.id is distinct from old.id
+    or new.workspace_id is distinct from old.workspace_id
+    or new.fingerprint is distinct from old.fingerprint
+    or new.created_by is distinct from old.created_by
+    or new.created_at is distinct from old.created_at
+  then raise exception 'immutable_dataset_fields'; end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_shared_dataset_identity_trigger on public.shared_datasets;
+create trigger protect_shared_dataset_identity_trigger
+before update on public.shared_datasets
+for each row execute function public.protect_shared_dataset_identity();
+
+-- Members can read their own membership; only Admin can enumerate the team.
+drop policy if exists members_member_select on public.workspace_members;
+drop policy if exists members_self_or_admin_select on public.workspace_members;
+create policy members_self_or_admin_select on public.workspace_members for select to authenticated
+using(user_id=auth.uid() or public.is_workspace_admin(workspace_id));
+
+-- Remove direct browser writes. RLS still protects every read, while the RPCs
+-- above perform server-side authorization and set audit fields themselves.
+revoke insert,update,delete on public.analysis_projects from authenticated,anon;
+revoke insert,update,delete on public.shared_datasets from authenticated,anon;
+revoke insert,update,delete on public.workspace_members from authenticated,anon;
+revoke insert,update,delete on public.activity_logs from authenticated,anon;
+revoke all on public.profiles,public.workspaces,public.workspace_members,public.shared_datasets,public.analysis_projects,public.activity_logs from anon;
+grant select on public.profiles,public.workspaces,public.workspace_members,public.shared_datasets,public.analysis_projects,public.activity_logs to authenticated;
+
+drop policy if exists members_admin_insert on public.workspace_members;
+drop policy if exists members_admin_update on public.workspace_members;
+drop policy if exists members_admin_delete on public.workspace_members;
+drop policy if exists datasets_editor_insert on public.shared_datasets;
+drop policy if exists datasets_editor_update on public.shared_datasets;
+drop policy if exists datasets_admin_delete on public.shared_datasets;
+drop policy if exists projects_editor_insert on public.analysis_projects;
+drop policy if exists projects_editor_update on public.analysis_projects;
+
+revoke all on function public.handle_new_user() from public,anon,authenticated;
+revoke all on function public.protect_workspace_owner() from public,anon,authenticated;
+revoke all on function public.protect_analysis_project_identity() from public,anon,authenticated;
+revoke all on function public.protect_shared_dataset_identity() from public,anon,authenticated;
+
+revoke all on function public.workspace_role(uuid) from public,anon;
+revoke all on function public.is_workspace_member(uuid) from public,anon;
+revoke all on function public.can_edit_workspace(uuid) from public,anon;
+revoke all on function public.is_workspace_admin(uuid) from public,anon;
+revoke all on function public.create_analysis_project(uuid,text,text) from public,anon;
+revoke all on function public.upsert_shared_dataset(uuid,text,text,text[],jsonb) from public,anon;
+revoke all on function public.save_analysis_project(uuid,bigint,jsonb,jsonb,text,text[],jsonb) from public,anon;
+revoke all on function public.soft_delete_project(uuid) from public,anon;
+revoke all on function public.add_workspace_member_by_email(uuid,text,text) from public,anon;
+revoke all on function public.update_workspace_member_role(uuid,uuid,text) from public,anon;
+revoke all on function public.remove_workspace_member(uuid,uuid) from public,anon;
+revoke all on function public.attach_dataset_to_project(uuid,uuid) from public,anon;
+
+grant execute on function public.workspace_role(uuid),public.is_workspace_member(uuid),public.can_edit_workspace(uuid),public.is_workspace_admin(uuid) to authenticated;
+grant execute on function public.create_analysis_project(uuid,text,text) to authenticated;
+grant execute on function public.upsert_shared_dataset(uuid,text,text,text[],jsonb) to authenticated;
+grant execute on function public.save_analysis_project(uuid,bigint,jsonb,jsonb,text,text[],jsonb) to authenticated;
+grant execute on function public.soft_delete_project(uuid),public.add_workspace_member_by_email(uuid,text,text) to authenticated;
+grant execute on function public.update_workspace_member_role(uuid,uuid,text),public.remove_workspace_member(uuid,uuid) to authenticated;
+grant execute on function public.attach_dataset_to_project(uuid,uuid) to authenticated;
+
 notify pgrst, 'reload schema';
 
 -- Setup verification: this final query must return five TRUE values and the
@@ -307,4 +560,13 @@ select
     join public.profiles p on p.id=wm.user_id
     where lower(p.email)='solargm123@gmail.com' and wm.role='admin'
   ) as admin_membership_ok,
+  to_regprocedure('public.create_analysis_project(uuid,text,text)') is not null
+    and to_regprocedure('public.upsert_shared_dataset(uuid,text,text,text[],jsonb)') is not null
+    and to_regprocedure('public.update_workspace_member_role(uuid,uuid,text)') is not null
+    as safety_rpcs_ok,
+  not has_table_privilege('authenticated','public.analysis_projects','INSERT')
+    and not has_table_privilege('authenticated','public.analysis_projects','UPDATE')
+    and not has_table_privilege('authenticated','public.shared_datasets','INSERT')
+    and not has_table_privilege('authenticated','public.workspace_members','UPDATE')
+    as direct_browser_writes_blocked,
   'solargm123@gmail.com'::text as configured_admin;
