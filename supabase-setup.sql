@@ -669,6 +669,72 @@ alter table public.analysis_projects
   add constraint analysis_projects_analysis_type_check
   check (analysis_type in ('working_day','global_irradiance','pr_report'));
 
+
+-- ============================================================
+-- ADMIN WORKSPACE BACKUP
+-- Read-only JSON snapshot. Authentication passwords/tokens are excluded.
+-- ============================================================
+
+create or replace function public.admin_export_workspace_backup(p_workspace uuid)
+returns jsonb
+language plpgsql security definer set search_path=public
+as $backup$
+declare v_result jsonb;
+begin
+  if auth.uid() is null then raise exception 'authentication_required' using errcode='42501'; end if;
+  if not public.is_workspace_admin(p_workspace) then raise exception 'permission_denied' using errcode='42501'; end if;
+
+  select jsonb_build_object(
+    'backup_version',1,
+    'exported_at',now(),
+    'workspace',(
+      select to_jsonb(w) from public.workspaces w where w.id=p_workspace
+    ),
+    'members',coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'user_id',m.user_id,
+          'email',p.email,
+          'display_name',p.display_name,
+          'role',m.role,
+          'created_at',m.created_at
+        ) order by m.created_at
+      )
+      from public.workspace_members m
+      join public.profiles p on p.id=m.user_id
+      where m.workspace_id=p_workspace
+    ),'[]'::jsonb),
+    'shared_datasets',coalesce((
+      select jsonb_agg(to_jsonb(d) order by d.updated_at)
+      from public.shared_datasets d
+      where d.workspace_id=p_workspace
+    ),'[]'::jsonb),
+    'analysis_projects',coalesce((
+      select jsonb_agg(to_jsonb(pr) order by pr.updated_at)
+      from public.analysis_projects pr
+      where pr.workspace_id=p_workspace
+    ),'[]'::jsonb),
+    'activity_logs',coalesce((
+      select jsonb_agg(to_jsonb(l) order by l.created_at)
+      from public.activity_logs l
+      where l.workspace_id=p_workspace
+    ),'[]'::jsonb)
+  ) into v_result;
+
+  insert into public.activity_logs(workspace_id,actor_id,action,details)
+  values(p_workspace,auth.uid(),'workspace_backup_export',
+    jsonb_build_object(
+      'project_count',jsonb_array_length(v_result->'analysis_projects'),
+      'dataset_count',jsonb_array_length(v_result->'shared_datasets')
+    ));
+
+  return v_result;
+end;
+$backup$;
+
+revoke all on function public.admin_export_workspace_backup(uuid) from public,anon;
+grant execute on function public.admin_export_workspace_backup(uuid) to authenticated;
+
 notify pgrst, 'reload schema';
 
 -- Setup verification: this final query must return five TRUE values and the
@@ -693,4 +759,5 @@ select
     and not has_table_privilege('authenticated','public.shared_datasets','INSERT')
     and not has_table_privilege('authenticated','public.workspace_members','UPDATE')
     as direct_browser_writes_blocked,
+  to_regprocedure('public.admin_export_workspace_backup(uuid)') is not null as backup_rpc_ok,
   'solargm123@gmail.com'::text as configured_admin;
