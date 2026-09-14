@@ -122,22 +122,24 @@ h1{font-size:clamp(1.7rem,4vw,2.5rem);font-weight:700}
   <div class="footer">FusionSolar Multi-Plant Analysis • BGPL</div>
 </div>
 
-<div id="adminDataModal" class="workspace-modal hidden"><div class="workspace-modal-card"><div class="modal-head"><div><h2>Admin Control</h2><div class="subtitle">จัดการงาน Archive, Shared Dataset และ Backup</div></div><div class="workspace-actions"><button class="small-btn" onclick="runSystemCheck()">System Check</button><button class="small-btn" onclick="downloadWorkspaceBackup()">Download Backup</button><label class="small-btn" style="cursor:pointer">Restore Preview<input type="file" accept=".json,application/json" style="display:none" onchange="previewWorkspaceBackup(event)"></label><button class="small-btn" onclick="closeAdminData()">✕</button></div></div><div id="systemHealthResult" class="health-result hidden"></div><div id="adminBackupMessage" class="subtitle" style="margin-bottom:10px"></div><div id="restorePreviewResult" class="restore-preview hidden"></div><div class="admin-section"><h3>งานที่ Archive</h3><div id="archivedRows"><div class="empty">กำลังโหลด...</div></div></div><div class="admin-section"><h3>Shared Dataset</h3><p class="subtitle">ลบได้เฉพาะ Dataset ที่ไม่มีงานใดใช้งานอยู่</p><div id="adminDatasetRows"><div class="empty">กำลังโหลด...</div></div></div><div class="admin-section"><div class="modal-head"><h3>Recent Activity</h3><button class="small-btn" onclick="renderAdminData()">Refresh</button></div><div id="activityRows"><div class="empty">กำลังโหลด...</div></div></div></div></div>
+<div id="adminDataModal" class="workspace-modal hidden"><div class="workspace-modal-card"><div class="modal-head"><div><h2>Admin Control</h2><div class="subtitle">จัดการงาน Archive, Shared Dataset และ Backup</div></div><div class="workspace-actions"><button class="small-btn" onclick="runSystemCheck()">System Check</button><button class="small-btn" onclick="downloadWorkspaceBackup()">Download Backup</button><label class="small-btn" style="cursor:pointer">Restore Preview<input type="file" accept=".json,application/json" style="display:none" onchange="previewWorkspaceBackup(event)"></label><button class="small-btn" onclick="closeAdminData()">✕</button></div></div><div id="systemHealthResult" class="health-result hidden"></div><div id="adminBackupMessage" class="subtitle" style="margin-bottom:10px"></div><div id="restorePreviewResult" class="restore-preview hidden"></div><div class="admin-section"><h3>Active Project Settings</h3><p class="subtitle">แก้ไขเฉพาะชื่อและสถานะ ไม่กระทบข้อมูลหรือสูตรคำนวณ</p><div id="activeAdminRows"><div class="empty">กำลังโหลด...</div></div></div><div class="admin-section"><h3>งานที่ Archive</h3><div id="archivedRows"><div class="empty">กำลังโหลด...</div></div></div><div class="admin-section"><h3>Shared Dataset</h3><p class="subtitle">ลบได้เฉพาะ Dataset ที่ไม่มีงานใดใช้งานอยู่</p><div id="adminDatasetRows"><div class="empty">กำลังโหลด...</div></div></div><div class="admin-section"><div class="modal-head"><h3>Recent Activity</h3><button class="small-btn" onclick="renderAdminData()">Refresh</button></div><div id="activityRows"><div class="empty">กำลังโหลด...</div></div></div></div></div>
 
 <div id="membersModal" class="workspace-modal hidden"><div class="workspace-modal-card"><div class="modal-head"><h2>สมาชิกและสิทธิ์</h2><button class="small-btn" onclick="closeMembers()">✕</button></div><p class="subtitle" style="margin-bottom:12px">ผู้ใช้ต้องถูกสร้างใน Authentication → Users ก่อน จึงจะเพิ่มเข้า Workspace ได้</p><form class="member-form" onsubmit="addMember(event)"><input id="memberEmail" type="email" placeholder="member@company.com" required><select id="memberRole"><option value="editor">Editor</option><option value="viewer">Viewer</option><option value="admin">Admin</option></select><button class="primary" style="width:auto">เพิ่มสมาชิก</button></form><div id="memberMessage" class="auth-error"></div><div id="memberRows"></div></div></div>
 <script>
 const byId=id=>document.getElementById(id);
 const escapeText=value=>String(value??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const analysisLabel=type=>type==='working_day'?'Working Day':type==='global_irradiance'?'Global Irradiance':'PR Report';
+// FINAL POLISH TODO: rewrite Recent Activity labels and raw details as
+// plain-language Thai sentences for users without programming knowledge.
 const activityLabel=action=>({
-  create:'สร้างงาน',save:'บันทึกงาน',archive:'Archive งาน',restore:'กู้คืนงาน',
+  create:'สร้างงาน',save:'บันทึกงาน',archive:'Archive งาน',restore:'กู้คืนงาน',project_metadata_update:'แก้ไขชื่อหรือสถานะงาน',
   attach_dataset:'เชื่อม Shared Dataset',dataset_upsert:'เพิ่มหรืออัปเดต Dataset',
   dataset_delete:'ลบ Dataset',member_add_or_update:'เพิ่มหรือปรับสมาชิก',
   member_role_change:'เปลี่ยนสิทธิ์สมาชิก',member_remove:'นำสมาชิกออก',
   workspace_backup_export:'ดาวน์โหลด Backup',workspace_backup_preview:'ตรวจไฟล์ Backup',
   workspace_backup_restore_missing:'กู้คืนข้อมูลที่หาย',system_health_check:'ตรวจสอบระบบ'
 }[action]||action);
-let activeMembership=null,pendingRestoreBackup=null,pendingRestorePreview=null;
+let activeMembership=null,pendingRestoreBackup=null,pendingRestorePreview=null,adminProjectsCache=[];
 SolarCloud.getClient().auth.onAuthStateChange(async event=>{
   if(event!=='PASSWORD_RECOVERY')return;
   const password=prompt('ตั้งรหัสผ่านใหม่ (อย่างน้อย 8 ตัวอักษร)');if(!password)return;
@@ -241,15 +243,26 @@ async function openAdminData(){
 }
 function closeAdminData(){pendingRestoreBackup=null;pendingRestorePreview=null;byId('adminDataModal').classList.add('hidden')}
 async function renderAdminData(){
-  byId('archivedRows').innerHTML='<div class="empty">กำลังโหลด...</div>';byId('adminDatasetRows').innerHTML='<div class="empty">กำลังโหลด...</div>';byId('activityRows').innerHTML='<div class="empty">กำลังโหลด...</div>';
-  const [archivedResult,datasetResult,activityResult]=await Promise.all([
+  byId('activeAdminRows').innerHTML='<div class="empty">กำลังโหลด...</div>';byId('archivedRows').innerHTML='<div class="empty">กำลังโหลด...</div>';byId('adminDatasetRows').innerHTML='<div class="empty">กำลังโหลด...</div>';byId('activityRows').innerHTML='<div class="empty">กำลังโหลด...</div>';
+  const [activeResult,archivedResult,datasetResult,activityResult]=await Promise.all([
+    SolarCloud.getClient().rpc('admin_list_active_projects',{p_workspace:activeMembership.workspace_id}),
     SolarCloud.getClient().rpc('admin_list_archived_projects',{p_workspace:activeMembership.workspace_id}),
     SolarCloud.getClient().rpc('admin_list_datasets',{p_workspace:activeMembership.workspace_id}),
     SolarCloud.getClient().rpc('admin_list_activity_logs',{p_workspace:activeMembership.workspace_id,p_limit:50,p_action:null})
   ]);
+  adminProjectsCache=activeResult.data||[];
+  byId('activeAdminRows').innerHTML=activeResult.error?`<div class="auth-error">${escapeText(activeResult.error.message)}</div>`:adminProjectsCache.map(project=>`<div class="admin-row"><div><b>${escapeText(project.project_name)}</b><div class="project-meta">${analysisLabel(project.analysis_type)} · ${escapeText(project.status)} · Version ${Number(project.version||1)}</div></div><button class="small-btn" onclick="editProjectMetadata('${project.project_id}')">แก้ไข</button></div>`).join('')||'<div class="empty">ไม่มี Active Project</div>';
   byId('archivedRows').innerHTML=archivedResult.error?`<div class="auth-error">${escapeText(archivedResult.error.message)}</div>`:(archivedResult.data||[]).map(project=>`<div class="admin-row"><div><b>${escapeText(project.name)}</b><div class="project-meta">${analysisLabel(project.analysis_type)} · Archive ${new Date(project.deleted_at).toLocaleString('th-TH')}</div></div><button class="restore-btn" onclick="restoreProject('${project.id}')">กู้คืน</button></div>`).join('')||'<div class="empty">ไม่มีงานที่ Archive</div>';
   byId('adminDatasetRows').innerHTML=datasetResult.error?`<div class="auth-error">${escapeText(datasetResult.error.message)}</div>`:(datasetResult.data||[]).map(dataset=>`<div class="admin-row"><div><b>${escapeText(dataset.name)}</b><div class="project-meta">${escapeText((dataset.source_files||[]).join(', '))} · ใช้งาน ${Number(dataset.usage_count||0)} งาน</div></div><button class="danger-btn" ${Number(dataset.usage_count||0)>0?'disabled title="Dataset กำลังถูกใช้งาน"':''} onclick="deleteDataset('${dataset.id}')">ลบ</button></div>`).join('')||'<div class="empty">ไม่มี Shared Dataset</div>';
   byId('activityRows').innerHTML=activityResult.error?`<div class="auth-error">${escapeText(activityResult.error.message)}</div>`:(activityResult.data||[]).map(log=>`<div class="admin-row"><div><b>${escapeText(activityLabel(log.action))}</b><div class="project-meta">${escapeText(log.actor_name||log.actor_email||'Unknown')} · ${new Date(log.created_at).toLocaleString('th-TH')}${log.project_name?` · ${escapeText(log.project_name)}`:''}</div><div class="project-meta">${escapeText(JSON.stringify(log.details||{}))}</div></div></div>`).join('')||'<div class="empty">ยังไม่มี Activity Log</div>';
+}
+async function editProjectMetadata(id){
+  const project=adminProjectsCache.find(item=>item.project_id===id);if(!project)return;
+  const name=prompt('ชื่อ Project',project.project_name);if(name===null)return;
+  const status=prompt('สถานะ: draft, in_progress หรือ completed',project.status);if(status===null)return;
+  if(!['draft','in_progress','completed'].includes(status)){alert('สถานะต้องเป็น draft, in_progress หรือ completed');return}
+  const {error}=await SolarCloud.getClient().rpc('admin_update_project_metadata',{p_project_id:id,p_name:name.trim(),p_status:status});
+  if(error)alert(error.message);else{await renderAdminData();await renderProjects()}
 }
 async function restoreProject(id){if(!confirm('กู้คืนงานนี้กลับสู่รายการหลักหรือไม่?'))return;const {error}=await SolarCloud.getClient().rpc('restore_analysis_project',{p_project_id:id});if(error)alert(error.message);else{await renderAdminData();await renderProjects()}}
 async function deleteDataset(id){if(!confirm('ลบ Shared Dataset นี้หรือไม่? การดำเนินการนี้ย้อนกลับไม่ได้'))return;const {error}=await SolarCloud.getClient().rpc('delete_shared_dataset',{p_dataset_id:id});if(error)alert(error.message.includes('dataset_in_use')?'Dataset นี้ยังมีงานใช้งานอยู่ จึงไม่สามารถลบได้':error.message);else await renderAdminData()}
