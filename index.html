@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="cloud-core.js?v=20260914-completed-lock1"></script>
+<script src="cloud-core.js?v=20260914-conflict-recovery1"></script>
 <style>
 :root{
   --bg:#0f172a; --card:#1e293b; --border:#334155;
@@ -128,6 +128,8 @@ h1{font-size:clamp(1.7rem,4vw,2.5rem);font-weight:700}
 <script>
 const byId=id=>document.getElementById(id);
 const escapeText=value=>String(value??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+// FINAL POLISH TODO: replace native prompt/confirm controls with styled pop-ups,
+// drop-downs for single choices and checkboxes for multiple choices.
 // FINAL POLISH TODO: add plain-language descriptions for Draft, In Progress,
 // Completed and Archived directly on the Center page.
 const analysisLabel=type=>type==='working_day'?'Working Day':type==='global_irradiance'?'Global Irradiance':'PR Report';
