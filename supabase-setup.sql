@@ -835,6 +835,207 @@ $preview$;
 revoke all on function public.admin_validate_workspace_backup(uuid,jsonb) from public,anon;
 grant execute on function public.admin_validate_workspace_backup(uuid,jsonb) to authenticated;
 
+
+-- ============================================================
+-- RESTORE MISSING DATA
+-- Inserts only missing members, datasets and projects. Existing
+-- rows are never updated and historical activity logs are not imported.
+-- ============================================================
+
+create or replace function public.admin_restore_workspace_backup_missing(
+  p_workspace uuid,
+  p_backup jsonb
+)
+returns jsonb
+language plpgsql security definer set search_path=public
+as $restore$
+declare
+  v_preview jsonb;
+  v_item jsonb;
+  v_user uuid;
+  v_role text;
+  v_dataset_id uuid;
+  v_existing_dataset uuid;
+  v_old_dataset_id text;
+  v_mapped_dataset uuid;
+  v_project_id uuid;
+  v_source_files text[];
+  v_row_count integer;
+  v_members_restored integer:=0;
+  v_members_skipped integer:=0;
+  v_members_missing integer:=0;
+  v_datasets_restored integer:=0;
+  v_datasets_skipped integer:=0;
+  v_projects_restored integer:=0;
+  v_projects_skipped integer:=0;
+  v_errors integer:=0;
+begin
+  if auth.uid() is null then raise exception 'authentication_required' using errcode='42501'; end if;
+  if not public.is_workspace_admin(p_workspace) then raise exception 'permission_denied' using errcode='42501'; end if;
+
+  v_preview=public.admin_validate_workspace_backup(p_workspace,p_backup);
+  if not coalesce((v_preview->>'valid')::boolean,false) then
+    raise exception 'backup_not_ready_for_restore';
+  end if;
+
+  -- Memberships are matched by email to an existing Authentication profile.
+  -- Existing roles are intentionally preserved.
+  for v_item in select value from jsonb_array_elements(p_backup->'members')
+  loop
+    begin
+      v_role=v_item->>'role';
+      if v_role not in ('admin','editor','viewer') then v_errors=v_errors+1; continue; end if;
+      select p.id into v_user from public.profiles p
+      where lower(p.email)=lower(trim(v_item->>'email')) limit 1;
+      if v_user is null then v_members_missing=v_members_missing+1; continue; end if;
+      if exists(select 1 from public.workspaces w where w.id=p_workspace and w.owner_id=v_user)
+        then v_role='admin';
+      end if;
+
+      insert into public.workspace_members(workspace_id,user_id,role)
+      values(p_workspace,v_user,v_role)
+      on conflict(workspace_id,user_id) do nothing;
+      get diagnostics v_row_count=row_count;
+      if v_row_count=1 then v_members_restored=v_members_restored+1;
+      else v_members_skipped=v_members_skipped+1;
+      end if;
+    exception when others then
+      v_errors=v_errors+1;
+    end;
+  end loop;
+
+  -- Dataset IDs are retained when available so project relationships can be
+  -- rebuilt. A matching ID or fingerprint is treated as existing and skipped.
+  for v_item in select value from jsonb_array_elements(p_backup->'shared_datasets')
+  loop
+    begin
+      v_dataset_id=(v_item->>'id')::uuid;
+      select d.id into v_existing_dataset
+      from public.shared_datasets d
+      where d.workspace_id=p_workspace
+        and (d.id=v_dataset_id or d.fingerprint=v_item->>'fingerprint')
+      limit 1;
+
+      if v_existing_dataset is not null then
+        v_datasets_skipped=v_datasets_skipped+1;
+        continue;
+      end if;
+      if length(trim(coalesce(v_item->>'name',''))) not between 1 and 180
+        or length(trim(coalesce(v_item->>'fingerprint',''))) not between 1 and 2000
+        or coalesce(jsonb_typeof(v_item->'normalized_data'),'')<>'object'
+        or octet_length((v_item->'normalized_data')::text)>15728640
+      then v_errors=v_errors+1; continue;
+      end if;
+
+      select coalesce(array_agg(value),'{}'::text[]) into v_source_files
+      from jsonb_array_elements_text(coalesce(v_item->'source_files','[]'::jsonb));
+
+      insert into public.shared_datasets(
+        id,workspace_id,name,fingerprint,source_files,normalized_data,
+        created_by,updated_by,created_at,updated_at
+      ) values(
+        v_dataset_id,p_workspace,trim(v_item->>'name'),trim(v_item->>'fingerprint'),
+        v_source_files,v_item->'normalized_data',auth.uid(),auth.uid(),
+        coalesce((v_item->>'created_at')::timestamptz,now()),
+        coalesce((v_item->>'updated_at')::timestamptz,now())
+      );
+      v_datasets_restored=v_datasets_restored+1;
+    exception when unique_violation then
+      v_datasets_skipped=v_datasets_skipped+1;
+    when others then
+      v_errors=v_errors+1;
+    end;
+  end loop;
+
+  -- Projects are restored only when their ID is missing. If a project points
+  -- to a dataset, that dataset must exist or have a matching backup fingerprint.
+  for v_item in select value from jsonb_array_elements(p_backup->'analysis_projects')
+  loop
+    begin
+      v_project_id=(v_item->>'id')::uuid;
+      if exists(select 1 from public.analysis_projects p where p.workspace_id=p_workspace and p.id=v_project_id) then
+        v_projects_skipped=v_projects_skipped+1;
+        continue;
+      end if;
+      if coalesce(v_item->>'analysis_type','') not in ('working_day','global_irradiance','pr_report')
+        or length(trim(coalesce(v_item->>'name',''))) not between 1 and 120
+        or coalesce(jsonb_typeof(v_item->'base_data'),'')<>'object'
+        or coalesce(jsonb_typeof(v_item->'user_state'),'')<>'object'
+      then v_errors=v_errors+1; continue;
+      end if;
+
+      v_old_dataset_id=v_item->>'dataset_id';
+      v_mapped_dataset=null;
+      if v_old_dataset_id is not null then
+        select d.id into v_mapped_dataset
+        from public.shared_datasets d
+        where d.workspace_id=p_workspace and (
+          d.id::text=v_old_dataset_id
+          or d.fingerprint=(
+            select b->>'fingerprint'
+            from jsonb_array_elements(p_backup->'shared_datasets') b
+            where b->>'id'=v_old_dataset_id
+            limit 1
+          )
+        ) limit 1;
+        if v_mapped_dataset is null then v_errors=v_errors+1; continue; end if;
+      end if;
+
+      select coalesce(array_agg(value),'{}'::text[]) into v_source_files
+      from jsonb_array_elements_text(coalesce(v_item->'source_files','[]'::jsonb));
+
+      insert into public.analysis_projects(
+        id,workspace_id,analysis_type,name,period_key,status,source_files,
+        base_data,user_state,dataset_id,version,created_by,updated_by,
+        created_at,updated_at,deleted_at
+      ) values(
+        v_project_id,p_workspace,v_item->>'analysis_type',trim(v_item->>'name'),
+        v_item->>'period_key',
+        case when v_item->>'status' in ('draft','in_progress','completed','archived')
+          then v_item->>'status' else 'draft' end,
+        v_source_files,v_item->'base_data',v_item->'user_state',v_mapped_dataset,
+        greatest(coalesce((v_item->>'version')::bigint,1),1),
+        auth.uid(),auth.uid(),
+        coalesce((v_item->>'created_at')::timestamptz,now()),
+        coalesce((v_item->>'updated_at')::timestamptz,now()),
+        (v_item->>'deleted_at')::timestamptz
+      );
+      v_projects_restored=v_projects_restored+1;
+    exception when unique_violation then
+      v_projects_skipped=v_projects_skipped+1;
+    when others then
+      v_errors=v_errors+1;
+    end;
+  end loop;
+
+  insert into public.activity_logs(workspace_id,actor_id,action,details)
+  values(p_workspace,auth.uid(),'workspace_backup_restore_missing',
+    jsonb_build_object(
+      'members_restored',v_members_restored,
+      'datasets_restored',v_datasets_restored,
+      'projects_restored',v_projects_restored,
+      'errors',v_errors
+    ));
+
+  return jsonb_build_object(
+    'mode','missing_only',
+    'existing_rows_updated',0,
+    'activity_logs_imported',0,
+    'members_restored',v_members_restored,
+    'members_skipped',v_members_skipped,
+    'members_missing_accounts',v_members_missing,
+    'datasets_restored',v_datasets_restored,
+    'datasets_skipped',v_datasets_skipped,
+    'projects_restored',v_projects_restored,
+    'projects_skipped',v_projects_skipped,
+    'errors',v_errors
+  );
+end;
+$restore$;
+
+revoke all on function public.admin_restore_workspace_backup_missing(uuid,jsonb) from public,anon;
+grant execute on function public.admin_restore_workspace_backup_missing(uuid,jsonb) to authenticated;
+
 notify pgrst, 'reload schema';
 
 -- Setup verification: this final query must return five TRUE values and the
@@ -861,4 +1062,5 @@ select
     as direct_browser_writes_blocked,
   to_regprocedure('public.admin_export_workspace_backup(uuid)') is not null as backup_rpc_ok,
   to_regprocedure('public.admin_validate_workspace_backup(uuid,jsonb)') is not null as restore_preview_rpc_ok,
+  to_regprocedure('public.admin_restore_workspace_backup_missing(uuid,jsonb)') is not null as restore_missing_rpc_ok,
   'solargm123@gmail.com'::text as configured_admin;
