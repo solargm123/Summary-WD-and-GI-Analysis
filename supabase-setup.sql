@@ -1181,6 +1181,80 @@ $activity$;
 revoke all on function public.admin_list_activity_logs(uuid,integer,text) from public,anon;
 grant execute on function public.admin_list_activity_logs(uuid,integer,text) to authenticated;
 
+
+-- ============================================================
+-- ADMIN PROJECT CONTROLS
+-- Metadata-only management. Calculation payloads are not changed.
+-- ============================================================
+
+create or replace function public.admin_list_active_projects(p_workspace uuid)
+returns table(
+  project_id uuid,
+  project_name text,
+  analysis_type text,
+  period_key text,
+  status text,
+  version bigint,
+  updated_at timestamptz
+)
+language plpgsql security definer set search_path=public
+as $project$
+begin
+  if auth.uid() is null then raise exception 'authentication_required' using errcode='42501'; end if;
+  if not public.is_workspace_admin(p_workspace) then raise exception 'permission_denied' using errcode='42501'; end if;
+  return query
+    select p.id,p.name,p.analysis_type,p.period_key,p.status,p.version,p.updated_at
+    from public.analysis_projects p
+    where p.workspace_id=p_workspace and p.deleted_at is null
+    order by p.updated_at desc;
+end;
+$project$;
+
+create or replace function public.admin_update_project_metadata(
+  p_project_id uuid,
+  p_name text,
+  p_status text
+)
+returns public.analysis_projects
+language plpgsql security definer set search_path=public
+as $project$
+declare
+  v_project public.analysis_projects;
+  v_old_name text;
+  v_old_status text;
+begin
+  if auth.uid() is null then raise exception 'authentication_required' using errcode='42501'; end if;
+  select * into v_project from public.analysis_projects
+  where id=p_project_id and deleted_at is null;
+  if not found then raise exception 'project_not_found' using errcode='P0002'; end if;
+  if not public.is_workspace_admin(v_project.workspace_id) then raise exception 'permission_denied' using errcode='42501'; end if;
+  if length(trim(coalesce(p_name,''))) not between 1 and 120 then raise exception 'invalid_project_name'; end if;
+  if p_status not in ('draft','in_progress','completed') then raise exception 'invalid_project_status'; end if;
+
+  v_old_name=v_project.name;
+  v_old_status=v_project.status;
+  update public.analysis_projects
+  set name=trim(p_name),status=p_status,updated_by=auth.uid(),
+      updated_at=now(),version=version+1
+  where id=p_project_id
+  returning * into v_project;
+
+  insert into public.activity_logs(workspace_id,project_id,actor_id,action,details)
+  values(v_project.workspace_id,v_project.id,auth.uid(),'project_metadata_update',
+    jsonb_build_object(
+      'old_name',v_old_name,'new_name',v_project.name,
+      'old_status',v_old_status,'new_status',v_project.status,
+      'version',v_project.version
+    ));
+  return v_project;
+end;
+$project$;
+
+revoke all on function public.admin_list_active_projects(uuid) from public,anon;
+revoke all on function public.admin_update_project_metadata(uuid,text,text) from public,anon;
+grant execute on function public.admin_list_active_projects(uuid) to authenticated;
+grant execute on function public.admin_update_project_metadata(uuid,text,text) to authenticated;
+
 notify pgrst, 'reload schema';
 
 -- Setup verification: this final query must return five TRUE values and the
@@ -1210,4 +1284,7 @@ select
   to_regprocedure('public.admin_restore_workspace_backup_missing(uuid,jsonb)') is not null as restore_missing_rpc_ok,
   to_regprocedure('public.admin_system_health(uuid)') is not null as system_health_rpc_ok,
   to_regprocedure('public.admin_list_activity_logs(uuid,integer,text)') is not null as activity_log_rpc_ok,
+  to_regprocedure('public.admin_list_active_projects(uuid)') is not null
+    and to_regprocedure('public.admin_update_project_metadata(uuid,text,text)') is not null
+    as project_controls_rpc_ok,
   'solargm123@gmail.com'::text as configured_admin;
