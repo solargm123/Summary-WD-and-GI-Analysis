@@ -31,11 +31,11 @@
   async function createProject(type,name){
     const s=await requireSession(),m=await membership();
     if(!['admin','editor'].includes(m.role))throw new Error('Viewer cannot create a project.');
-    const fallback=type==='working_day'?'Working Day Analysis':'Global Irradiance Analysis';
+    const fallback=type==='working_day'?'Working Day Analysis':type==='global_irradiance'?'Global Irradiance Analysis':'PR Report';
     const {data,error}=await getClient().rpc('create_analysis_project',{p_workspace:m.workspace_id,p_analysis_type:type,p_name:(name||fallback).trim()});
     if(error)throw error;return data.id;
   }
-  function analysisUrl(project){return `${project.analysis_type==='working_day'?'working-day-analysis.html':'global-irradiance-analysis.html'}?project=${encodeURIComponent(project.id)}`}
+  function analysisUrl(project){const page=project.analysis_type==='working_day'?'working-day-analysis.html':project.analysis_type==='global_irradiance'?'global-irradiance-analysis.html':'pr-report.html';return `${page}?project=${encodeURIComponent(project.id)}`}
   async function signIn(email,password){const {data,error}=await getClient().auth.signInWithPassword({email,password});if(error)throw error;return data}
   async function signOut(){await getClient().auth.signOut();location.replace(indexUrl())}
   async function loadProject(id){
@@ -94,10 +94,10 @@
     const normalized=await normalizeUpload(files),names=[...normalized.sourceFiles],fingerprint=Array.from(files).map(f=>`${f.name}:${f.size}:${f.lastModified}`).sort().join('|');
     const name=names.length===1?names[0]:`${names[0]} +${names.length-1}`;const s=await requireSession(),m=currentMembership||await membership();
     const {data,error}=await getClient().rpc('upsert_shared_dataset',{p_workspace:m.workspace_id,p_name:name,p_fingerprint:fingerprint,p_source_files:names,p_normalized_data:normalized});if(error)throw error;
-    await attachDataset(data,true);return data;
+    await attachDataset(data,currentProject?.analysis_type!=='pr_report');return data;
   }
   async function attachDataset(dataset,alreadyLoaded=false){
-    if(!currentProject||!dataset)return;const payload=dataset.normalized_data?.[currentProject.analysis_type];if(!payload||!Object.keys(payload).length)throw new Error('ชุดข้อมูลนี้ไม่มีข้อมูลสำหรับหน้าวิเคราะห์ปัจจุบัน');
+    if(!currentProject||!dataset)return;const payload=currentProject.analysis_type==='pr_report'?dataset.normalized_data:dataset.normalized_data?.[currentProject.analysis_type];if(!payload||!Object.keys(payload).length)throw new Error('ชุดข้อมูลนี้ไม่มีข้อมูลสำหรับหน้าวิเคราะห์ปัจจุบัน');
     if(!alreadyLoaded)await adapter.restore(payload,currentProject.user_state||{});
     const {data,error}=await getClient().rpc('attach_dataset_to_project',{p_project_id:currentProject.id,p_dataset_id:dataset.id});if(error)throw error;currentProject=data;dirty=false;conflict=false;setStatus(`Shared: ${dataset.name}`,'ok');
   }
@@ -155,7 +155,7 @@
       await requireSession();currentMembership=await membership();const id=projectId();if(!id)throw new Error('Project ID is missing. Open this page from Workspace.');
       currentProject=await loadProject(id);if(currentProject.analysis_type!==expectedType)throw new Error('This project belongs to another analysis type.');
       injectDock();setStatus('กำลังโหลดงาน...','busy');
-      if(currentProject.dataset_id){const {data:ds,error:dsError}=await getClient().from('shared_datasets').select('*').eq('id',currentProject.dataset_id).single();if(dsError)throw dsError;const shared=ds.normalized_data?.[expectedType];if(shared)await adapter.restore(shared,currentProject.user_state||{})}
+      if(currentProject.dataset_id){const {data:ds,error:dsError}=await getClient().from('shared_datasets').select('*').eq('id',currentProject.dataset_id).single();if(dsError)throw dsError;const shared=expectedType==='pr_report'?ds.normalized_data:ds.normalized_data?.[expectedType];if(shared)await adapter.restore(shared,currentProject.user_state||{})}
       else if(currentProject.base_data&&Object.keys(currentProject.base_data).length)await adapter.restore(currentProject.base_data,currentProject.user_state||{});
       applyViewerLock();installAutoSave();subscribe();setStatus(roleCanEdit()?'เชื่อมต่อแล้ว':'โหมดดูอย่างเดียว','ok');
       document.title=`${currentProject.name} — ${document.title}`;
