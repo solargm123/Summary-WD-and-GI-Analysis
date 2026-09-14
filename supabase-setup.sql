@@ -200,6 +200,9 @@ begin
   select * into v_project from public.analysis_projects where id=p_project_id and deleted_at is null;
   if not found then raise exception 'project_not_found' using errcode='P0002'; end if;
   if not public.can_edit_workspace(v_project.workspace_id) then raise exception 'permission_denied' using errcode='42501'; end if;
+  if v_project.status='completed' and not public.is_workspace_admin(v_project.workspace_id)
+    then raise exception 'project_locked_completed' using errcode='42501';
+  end if;
   if v_project.version<>p_expected_version then raise exception 'version_conflict' using errcode='40001'; end if;
 
   update public.analysis_projects set
@@ -256,6 +259,9 @@ begin
   select * into v_project from public.analysis_projects where id=p_project_id and deleted_at is null;
   if not found then raise exception 'project_not_found'; end if;
   if not public.can_edit_workspace(v_project.workspace_id) then raise exception 'permission_denied' using errcode='42501'; end if;
+  if v_project.status='completed' and not public.is_workspace_admin(v_project.workspace_id)
+    then raise exception 'project_locked_completed' using errcode='42501';
+  end if;
   select * into v_dataset from public.shared_datasets where id=p_dataset_id and workspace_id=v_project.workspace_id;
   if not found then raise exception 'dataset_not_found'; end if;
   update public.analysis_projects set dataset_id=p_dataset_id,base_data='{}'::jsonb,
@@ -390,6 +396,9 @@ begin
   select * into v_project from public.analysis_projects where id=p_project_id and deleted_at is null;
   if not found then raise exception 'project_not_found' using errcode='P0002'; end if;
   if not public.can_edit_workspace(v_project.workspace_id) then raise exception 'permission_denied' using errcode='42501'; end if;
+  if v_project.status='completed' and not public.is_workspace_admin(v_project.workspace_id)
+    then raise exception 'project_locked_completed' using errcode='42501';
+  end if;
   if v_project.version<>p_expected_version then raise exception 'version_conflict' using errcode='40001'; end if;
   if p_base_data is not null and jsonb_typeof(p_base_data)<>'object' then raise exception 'invalid_base_data'; end if;
   if p_user_state is not null and jsonb_typeof(p_user_state)<>'object' then raise exception 'invalid_user_state'; end if;
