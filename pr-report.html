@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>FusionSolar PR Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="cloud-core.js"></script>
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--border:#334155;--text:#f8fafc;--muted:#94a3b8;--yellow:#fbbf24;--green:#34d399}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at top,#27364f,var(--bg) 52%);color:var(--text);font-family:'Bai Jamjuree',sans-serif;padding:28px}
+main{width:min(1100px,100%);margin:auto}.head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:22px}.eyebrow{color:var(--yellow);font-weight:700;font-size:.78rem;letter-spacing:.08em}h1{margin:5px 0;font-size:clamp(1.7rem,4vw,2.5rem)}.muted{color:var(--muted);font-size:.86rem;line-height:1.6}
+.upload{display:inline-flex;align-items:center;gap:8px;background:var(--yellow);color:#332500;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer}.upload input{display:none}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.metric,.panel{background:#1e293bea;border:1px solid var(--border);border-radius:14px;padding:17px}.metric b{display:block;font-size:1.55rem;margin-top:6px}.metric span{color:var(--muted);font-size:.75rem}
+.panel{margin-top:14px}.panel h2{font-size:1rem;margin:0 0 12px}.status{display:inline-block;border-radius:999px;padding:5px 9px;background:#fbbf2420;color:#fde68a;font-size:.72rem;font-weight:700}.ready{background:#34d39920;color:#6ee7b7}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.78rem}th,td{text-align:left;padding:9px;border-bottom:1px solid var(--border)}th{color:var(--muted)}
+textarea{width:100%;min-height:100px;background:#0f172a;color:#fff;border:1px solid var(--border);border-radius:9px;padding:10px;font-family:inherit}
+@media(max-width:760px){body{padding:16px}.head{display:block}.upload{margin-top:12px}.grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<main>
+  <div class="head"><div><div class="eyebrow">PR REPORT FOUNDATION</div><h1>Performance Ratio Report</h1><div class="muted">โครงสร้างสำหรับเชื่อมข้อมูลก่อนกำหนดสูตร PR Guarantee และกติกาการคำนวณ</div></div><label class="upload">เชื่อมไฟล์ FusionSolar<input id="excelFileInput" type="file" accept=".xlsx,.xls" multiple></label></div>
+  <div class="grid">
+    <div class="metric"><span>Energy Records</span><b id="energyCount">0</b></div>
+    <div class="metric"><span>GI Plants</span><b id="plantCount">0</b></div>
+    <div class="metric"><span>GI Dates</span><b id="dateCount">0</b></div>
+    <div class="metric"><span>Source Files</span><b id="fileCount">0</b></div>
+  </div>
+  <section class="panel"><h2>Data Link Status</h2><span id="dataStatus" class="status">Waiting for Shared Dataset</span><div id="sourceFiles" class="muted" style="margin-top:9px">ยังไม่มีข้อมูลเชื่อมต่อ</div></section>
+  <section class="panel"><h2>Available Project Data</h2><table><thead><tr><th>Plant</th><th>Capacity</th><th>PV Yield</th><th>Loss</th><th>GI Data</th></tr></thead><tbody id="previewRows"><tr><td colspan="5" class="muted">เลือก Shared Data จากแถบด้านล่าง หรืออัปโหลดไฟล์ FusionSolar</td></tr></tbody></table></section>
+  <section class="panel"><h2>PR Calculation Configuration</h2><div class="muted">ยังไม่เปิดการคำนวณ — รอรายละเอียดสูตร, Capacity Basis, Loss Adjustment, Target PR และ Guarantee Period</div></section>
+  <section class="panel"><h2>Report Notes</h2><textarea id="reportNotes" placeholder="บันทึกข้อมูลหรือข้อกำหนดสำหรับ PR Report..."></textarea></section>
+</main>
+<script>
+let prDataset={working_day:{records:[]},global_irradiance:{plants:{},dates:[]},sourceFiles:[]};
+const el=id=>document.getElementById(id);
+const safe=value=>String(value??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+function renderPR(){
+  const records=prDataset.working_day?.records||[],plants=prDataset.global_irradiance?.plants||{},dates=prDataset.global_irradiance?.dates||[],files=prDataset.sourceFiles||prDataset.global_irradiance?.sourceFiles||[];
+  el('energyCount').textContent=records.length.toLocaleString();el('plantCount').textContent=Object.keys(plants).length.toLocaleString();el('dateCount').textContent=dates.length.toLocaleString();el('fileCount').textContent=files.length.toLocaleString();
+  const linked=records.length||Object.keys(plants).length;el('dataStatus').textContent=linked?'Shared Dataset Connected':'Waiting for Shared Dataset';el('dataStatus').classList.toggle('ready',!!linked);el('sourceFiles').textContent=files.length?files.join(', '):'ยังไม่มีข้อมูลเชื่อมต่อ';
+  const names=[...new Set([...records.map(r=>r.name),...Object.keys(plants)])].filter(Boolean).slice(0,12);
+  el('previewRows').innerHTML=names.length?names.map(name=>{const r=records.find(x=>x.name===name)||{},g=plants[name]||{};return `<tr><td>${safe(name)}</td><td>${Number(r.cap||g.capacity||0).toLocaleString()}</td><td>${Number(r.pv||0).toLocaleString()}</td><td>${Number(r.loss||0).toLocaleString()}</td><td>${Object.keys(g.dates||{}).length} วัน</td></tr>`}).join(''):'<tr><td colspan="5" class="muted">ยังไม่มีข้อมูล</td></tr>';
+}
+const adapter={
+  capture(){return{baseData:prDataset,userState:{notes:el('reportNotes').value},periodKey:null,sourceFiles:prDataset.sourceFiles||[]}},
+  async restore(baseData,userState){prDataset=baseData&&typeof baseData==='object'?baseData:prDataset;el('reportNotes').value=userState?.notes||'';renderPR()}
+};
+document.addEventListener('DOMContentLoaded',()=>{renderPR();SolarCloud.initAnalysis('pr_report',adapter)});
+</script>
+</body>
+</html>
