@@ -129,7 +129,7 @@ h1{font-size:clamp(1.7rem,4vw,2.5rem);font-weight:700}
 const byId=id=>document.getElementById(id);
 const escapeText=value=>String(value??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const analysisLabel=type=>type==='working_day'?'Working Day':type==='global_irradiance'?'Global Irradiance':'PR Report';
-let activeMembership=null;
+let activeMembership=null,pendingRestoreBackup=null,pendingRestorePreview=null;
 SolarCloud.getClient().auth.onAuthStateChange(async event=>{
   if(event!=='PASSWORD_RECOVERY')return;
   const password=prompt('ตั้งรหัสผ่านใหม่ (อย่างน้อย 8 ตัวอักษร)');if(!password)return;
@@ -174,10 +174,25 @@ async function previewWorkspaceBackup(event){
     if(!backup||backup.backup_version!==1)throw new Error('ไม่ใช่ Backup Version 1 ของ FusionSolar Workspace');
     const {data,error}=await SolarCloud.getClient().rpc('admin_validate_workspace_backup',{p_workspace:activeMembership.workspace_id,p_backup:backup});
     if(error)throw error;
+    pendingRestoreBackup=data.valid?backup:null;pendingRestorePreview=data;
     const status=data.valid?'ผ่านการตรวจสอบ':'ยังไม่พร้อมกู้คืน';
-    box.innerHTML=`<b style="color:${data.valid?'#6ee7b7':'#fda4af'}">${status}</b><div class="project-meta">Exported: ${escapeText(data.exported_at||'—')} · Workspace: ${data.workspace_match?'ตรงกัน':'ไม่ตรงกัน'} · ไม่มีการเขียนข้อมูล</div><div class="restore-grid"><div class="restore-metric"><b>${Number(data.projects||0)}</b><span>Projects · ซ้ำ ${Number(data.project_conflicts||0)}</span></div><div class="restore-metric"><b>${Number(data.datasets||0)}</b><span>Datasets · ซ้ำ ${Number(data.dataset_conflicts||0)}</span></div><div class="restore-metric"><b>${Number(data.members||0)}</b><span>Members · ไม่พบบัญชี ${Number(data.missing_member_accounts||0)}</span></div></div>`;
-  }catch(error){box.innerHTML=`<b style="color:#fda4af">ตรวจสอบไม่ผ่าน</b><div class="project-meta">${escapeText(error.message)}</div>`}
+    const restoreButton=data.valid?'<button class="restore-btn" style="margin-top:10px" onclick="restoreMissingData()">Restore Missing Data</button>':'';
+    box.innerHTML=`<b style="color:${data.valid?'#6ee7b7':'#fda4af'}">${status}</b><div class="project-meta">Exported: ${escapeText(data.exported_at||'—')} · Workspace: ${data.workspace_match?'ตรงกัน':'ไม่ตรงกัน'} · Preview ไม่มีการเขียนข้อมูล</div><div class="restore-grid"><div class="restore-metric"><b>${Number(data.projects||0)}</b><span>Projects · ซ้ำ ${Number(data.project_conflicts||0)}</span></div><div class="restore-metric"><b>${Number(data.datasets||0)}</b><span>Datasets · ซ้ำ ${Number(data.dataset_conflicts||0)}</span></div><div class="restore-metric"><b>${Number(data.members||0)}</b><span>Members · ไม่พบบัญชี ${Number(data.missing_member_accounts||0)}</span></div></div>${restoreButton}`;
+  }catch(error){pendingRestoreBackup=null;pendingRestorePreview=null;box.innerHTML=`<b style="color:#fda4af">ตรวจสอบไม่ผ่าน</b><div class="project-meta">${escapeText(error.message)}</div>`}
   finally{input.value=''}
+}
+async function restoreMissingData(){
+  if(!pendingRestoreBackup||!pendingRestorePreview?.valid){alert('กรุณา Restore Preview ใหม่');return}
+  const confirmation=prompt('ระบบจะเพิ่มเฉพาะข้อมูลที่หายและไม่เขียนทับข้อมูลเดิม\nพิมพ์ RESTORE เพื่อยืนยัน');
+  if(confirmation!=='RESTORE')return;
+  const box=byId('restorePreviewResult');box.innerHTML='<b>กำลังกู้คืนข้อมูลที่หาย...</b>';
+  try{
+    const {data,error}=await SolarCloud.getClient().rpc('admin_restore_workspace_backup_missing',{p_workspace:activeMembership.workspace_id,p_backup:pendingRestoreBackup});
+    if(error)throw error;
+    pendingRestoreBackup=null;pendingRestorePreview=null;
+    box.innerHTML=`<b style="color:#6ee7b7">Restore Missing Data เสร็จแล้ว</b><div class="project-meta">ไม่มีข้อมูลเดิมถูกเขียนทับ · Projects +${Number(data.projects_restored||0)} · Datasets +${Number(data.datasets_restored||0)} · Members +${Number(data.members_restored||0)} · Errors ${Number(data.errors||0)}</div>`;
+    await renderAdminData();await renderProjects();
+  }catch(error){box.innerHTML=`<b style="color:#fda4af">Restore ไม่สำเร็จ</b><div class="project-meta">${escapeText(error.message)}</div>`}
 }
 async function downloadWorkspaceBackup(){
   if(activeMembership?.role!=='admin'){alert('Admin only');return}
@@ -196,7 +211,7 @@ async function openAdminData(){
   if(activeMembership?.role!=='admin'){alert('Admin only');return}
   byId('adminDataModal').classList.remove('hidden');await renderAdminData();
 }
-function closeAdminData(){byId('adminDataModal').classList.add('hidden')}
+function closeAdminData(){pendingRestoreBackup=null;pendingRestorePreview=null;byId('adminDataModal').classList.add('hidden')}
 async function renderAdminData(){
   byId('archivedRows').innerHTML='<div class="empty">กำลังโหลด...</div>';byId('adminDatasetRows').innerHTML='<div class="empty">กำลังโหลด...</div>';
   const [archivedResult,datasetResult]=await Promise.all([
