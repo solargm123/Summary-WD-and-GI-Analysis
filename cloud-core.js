@@ -42,8 +42,9 @@
     const {data,error}=await getClient().from('analysis_projects').select('*').eq('id',id).is('deleted_at',null).single();
     if(error)throw error;return data;
   }
-  function roleCanEdit(){return ['admin','editor'].includes(currentMembership?.role)}
   function roleCanAdmin(){return currentMembership?.role==='admin'}
+  function roleCanEdit(){return ['admin','editor'].includes(currentMembership?.role)&&(currentProject?.status!=='completed'||roleCanAdmin())}
+  function editLockLabel(){return currentMembership?.role==='viewer'?'Viewer':currentProject?.status==='completed'&&!roleCanAdmin()?'Completed — Locked':''}
   async function listDatasets(){
     const m=currentMembership||await membership();
     const {data,error}=await getClient().from('shared_datasets').select('id,name,source_files,normalized_data,updated_at,updated_by').eq('workspace_id',m.workspace_id).order('updated_at',{ascending:false});
@@ -115,7 +116,7 @@
       #solarCloudModal{position:fixed;inset:0;z-index:10000;background:#07151db3;display:none;place-items:center;padding:20px;font-family:'Bai Jamjuree',sans-serif}#solarCloudModal.open{display:grid}
       #solarCloudModalBox{width:min(700px,100%);max-height:80vh;overflow:auto;background:#fff;color:#1e293b;border-radius:14px;padding:18px;box-shadow:0 25px 70px #0007}#solarCloudModalBox h3{margin:0 0 12px}#solarCloudModalBox .log{padding:10px 0;border-bottom:1px solid #e2e8f0;font-size:12px}#solarCloudModalBox time{color:#64748b;font-size:10px;display:block;margin-top:3px}
     `;document.head.appendChild(style);
-    const dock=document.createElement('div');dock.id='solarCloudDock';dock.innerHTML=`<button onclick="SolarCloud.back()">← Workspace</button><span id="solarCloudDot"></span><span id="solarCloudStatus">กำลังเชื่อมต่อ...</span><span class="solar-cloud-viewer">${currentMembership?.role==='viewer'?'Viewer':''}</span><button onclick="SolarCloud.datasets()">Shared Data</button><button onclick="SolarCloud.history()">History</button><button onclick="location.reload()">Reload</button><button onclick="SolarCloud.saveNow()" ${roleCanEdit()?'':'disabled'}>Save</button>`;document.body.appendChild(dock);
+    const dock=document.createElement('div');dock.id='solarCloudDock';dock.innerHTML=`<button onclick="SolarCloud.back()">← Workspace</button><span id="solarCloudDot"></span><span id="solarCloudStatus">กำลังเชื่อมต่อ...</span><span class="solar-cloud-viewer">${editLockLabel()}</span><button onclick="SolarCloud.datasets()">Shared Data</button><button onclick="SolarCloud.history()">History</button><button onclick="location.reload()">Reload</button><button onclick="SolarCloud.saveNow()" ${roleCanEdit()?'':'disabled'}>Save</button>`;document.body.appendChild(dock);
     const modal=document.createElement('div');modal.id='solarCloudModal';modal.innerHTML='<div id="solarCloudModalBox"><button style="float:right" onclick="document.getElementById(\'solarCloudModal\').classList.remove(\'open\')">✕</button><h3>Activity History</h3><div id="solarCloudLogs">Loading...</div></div>';document.body.appendChild(modal);
   }
   function applyViewerLock(){
@@ -157,7 +158,7 @@
       injectDock();setStatus('กำลังโหลดงาน...','busy');
       if(currentProject.dataset_id){const {data:ds,error:dsError}=await getClient().from('shared_datasets').select('*').eq('id',currentProject.dataset_id).single();if(dsError)throw dsError;const shared=expectedType==='pr_report'?ds.normalized_data:ds.normalized_data?.[expectedType];if(shared)await adapter.restore(shared,currentProject.user_state||{})}
       else if(currentProject.base_data&&Object.keys(currentProject.base_data).length)await adapter.restore(currentProject.base_data,currentProject.user_state||{});
-      applyViewerLock();installAutoSave();subscribe();setStatus(roleCanEdit()?'เชื่อมต่อแล้ว':'โหมดดูอย่างเดียว','ok');
+      applyViewerLock();installAutoSave();subscribe();setStatus(roleCanEdit()?'เชื่อมต่อแล้ว':currentProject.status==='completed'?'งานเสร็จแล้ว — โหมดดูอย่างเดียว':'โหมดดูอย่างเดียว','ok');
       document.title=`${currentProject.name} — ${document.title}`;
     }catch(error){console.error(error);alert(`Cloud workspace error: ${error.message}`);if(/Authentication|required|Project ID/.test(error.message))location.replace(indexUrl())}
   }
@@ -168,7 +169,7 @@
   }
   async function datasets(){
     $('solarCloudModalBox').querySelector('h3').textContent='Shared Data';$('solarCloudModal').classList.add('open');$('solarCloudLogs').textContent='Loading...';
-    try{const rows=await listDatasets();$('solarCloudLogs').innerHTML=rows.map(ds=>`<div class="log"><b>${esc(ds.name)}</b><div>${esc((ds.source_files||[]).join(', '))}</div><time>${new Date(ds.updated_at).toLocaleString()}</time><button onclick="SolarCloud.useDataset('${ds.id}')">ใช้กับงานนี้</button></div>`).join('')||'<div>ยังไม่มี Shared Data — อัปโหลด Excel ในหน้าวิเคราะห์หนึ่งครั้งเพื่อสร้าง</div>'}catch(error){$('solarCloudLogs').textContent=error.message}
+    try{const rows=await listDatasets();$('solarCloudLogs').innerHTML=rows.map(ds=>`<div class="log"><b>${esc(ds.name)}</b><div>${esc((ds.source_files||[]).join(', '))}</div><time>${new Date(ds.updated_at).toLocaleString()}</time>${roleCanEdit()?`<button onclick="SolarCloud.useDataset('${ds.id}')">ใช้กับงานนี้</button>`:''}</div>`).join('')||'<div>ยังไม่มี Shared Data — อัปโหลด Excel ในหน้าวิเคราะห์หนึ่งครั้งเพื่อสร้าง</div>'}catch(error){$('solarCloudLogs').textContent=error.message}
   }
   async function useDataset(id){try{const rows=await listDatasets(),ds=rows.find(item=>item.id===id);await attachDataset(ds);$('solarCloudModal').classList.remove('open')}catch(error){alert(error.message)}}
   global.SolarCloud={CONFIG,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,datasets,useDataset,back:()=>location.assign(indexUrl()),roleCanEdit,roleCanAdmin};
