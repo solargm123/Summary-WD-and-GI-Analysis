@@ -32,7 +32,7 @@
     const s=await requireSession(),m=await membership();
     if(!['admin','editor'].includes(m.role))throw new Error('Viewer cannot create a project.');
     const fallback=type==='working_day'?'Working Day Analysis':'Global Irradiance Analysis';
-    const {data,error}=await getClient().from('analysis_projects').insert({workspace_id:m.workspace_id,analysis_type:type,name:(name||fallback).trim(),created_by:s.user.id,updated_by:s.user.id}).select('id').single();
+    const {data,error}=await getClient().rpc('create_analysis_project',{p_workspace:m.workspace_id,p_analysis_type:type,p_name:(name||fallback).trim()});
     if(error)throw error;return data.id;
   }
   function analysisUrl(project){return `${project.analysis_type==='working_day'?'working-day-analysis.html':'global-irradiance-analysis.html'}?project=${encodeURIComponent(project.id)}`}
@@ -43,6 +43,7 @@
     if(error)throw error;return data;
   }
   function roleCanEdit(){return ['admin','editor'].includes(currentMembership?.role)}
+  function roleCanAdmin(){return currentMembership?.role==='admin'}
   async function listDatasets(){
     const m=currentMembership||await membership();
     const {data,error}=await getClient().from('shared_datasets').select('id,name,source_files,normalized_data,updated_at,updated_by').eq('workspace_id',m.workspace_id).order('updated_at',{ascending:false});
@@ -92,8 +93,7 @@
     if(!roleCanEdit()||!files?.length)return null;setStatus('กำลังสร้าง Shared Data...','busy');
     const normalized=await normalizeUpload(files),names=[...normalized.sourceFiles],fingerprint=Array.from(files).map(f=>`${f.name}:${f.size}:${f.lastModified}`).sort().join('|');
     const name=names.length===1?names[0]:`${names[0]} +${names.length-1}`;const s=await requireSession(),m=currentMembership||await membership();
-    const payload={workspace_id:m.workspace_id,name,fingerprint,source_files:names,normalized_data:normalized,created_by:s.user.id,updated_by:s.user.id,updated_at:new Date().toISOString()};
-    const {data,error}=await getClient().from('shared_datasets').upsert(payload,{onConflict:'workspace_id,fingerprint'}).select('*').single();if(error)throw error;
+    const {data,error}=await getClient().rpc('upsert_shared_dataset',{p_workspace:m.workspace_id,p_name:name,p_fingerprint:fingerprint,p_source_files:names,p_normalized_data:normalized});if(error)throw error;
     await attachDataset(data,true);return data;
   }
   async function attachDataset(dataset,alreadyLoaded=false){
@@ -171,5 +171,5 @@
     try{const rows=await listDatasets();$('solarCloudLogs').innerHTML=rows.map(ds=>`<div class="log"><b>${esc(ds.name)}</b><div>${esc((ds.source_files||[]).join(', '))}</div><time>${new Date(ds.updated_at).toLocaleString()}</time><button onclick="SolarCloud.useDataset('${ds.id}')">ใช้กับงานนี้</button></div>`).join('')||'<div>ยังไม่มี Shared Data — อัปโหลด Excel ในหน้าวิเคราะห์หนึ่งครั้งเพื่อสร้าง</div>'}catch(error){$('solarCloudLogs').textContent=error.message}
   }
   async function useDataset(id){try{const rows=await listDatasets(),ds=rows.find(item=>item.id===id);await attachDataset(ds);$('solarCloudModal').classList.remove('open')}catch(error){alert(error.message)}}
-  global.SolarCloud={CONFIG,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,datasets,useDataset,back:()=>location.assign(indexUrl()),roleCanEdit};
+  global.SolarCloud={CONFIG,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,datasets,useDataset,back:()=>location.assign(indexUrl()),roleCanEdit,roleCanAdmin};
 })(window);
