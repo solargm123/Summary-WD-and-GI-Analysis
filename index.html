@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FusionSolar Analysis Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="cloud-core.js"></script>
+<style>
+:root{
+  --bg:#0f172a; --card:#1e293b; --border:#334155;
+  --text:#f8fafc; --muted:#94a3b8; --blue:#38bdf8;
+  --green:#34d399; --yellow:#fbbf24;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  min-height:100vh; font-family:'Bai Jamjuree',sans-serif;
+  background:radial-gradient(circle at top,#1e3a5f 0%,var(--bg) 48%);
+  color:var(--text); display:flex; align-items:center; justify-content:center;
+  padding:24px;
+}
+.container{width:min(1050px,100%)}
+.header{text-align:center;margin-bottom:32px}
+.logo{
+  width:68px;height:68px;margin:0 auto 16px;border-radius:18px;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#fbbf24,#f97316);
+  font-size:32px;box-shadow:0 12px 35px rgba(0,0,0,.28)
+}
+h1{font-size:clamp(1.7rem,4vw,2.5rem);font-weight:700}
+.subtitle{color:var(--muted);margin-top:7px;font-size:.95rem}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.card{
+  display:block;text-decoration:none;color:inherit;
+  background:rgba(30,41,59,.9);border:1px solid var(--border);
+  border-radius:18px;padding:28px;min-height:245px;
+  transition:.22s ease;position:relative;overflow:hidden
+}
+.card:before{
+  content:"";position:absolute;inset:0;opacity:0;transition:.22s;
+  background:linear-gradient(135deg,rgba(56,189,248,.10),transparent 60%)
+}
+.card:hover{transform:translateY(-5px);border-color:var(--blue);box-shadow:0 18px 45px rgba(0,0,0,.25)}
+.card:hover:before{opacity:1}
+.icon{
+  width:52px;height:52px;border-radius:14px;display:flex;
+  align-items:center;justify-content:center;font-size:25px;margin-bottom:20px
+}
+.working .icon{background:rgba(52,211,153,.14);color:var(--green)}
+.irr .icon{background:rgba(56,189,248,.14);color:var(--blue)}
+.card h2{font-size:1.2rem;margin-bottom:8px;position:relative}
+.card p{color:var(--muted);font-size:.86rem;line-height:1.65;position:relative}
+.open{margin-top:22px;font-size:.8rem;font-weight:600;position:relative}
+.working .open{color:var(--green)} .irr .open{color:var(--blue)}
+.footer{text-align:center;color:#64748b;font-size:.72rem;margin-top:25px}
+.hidden{display:none!important}.auth-card{width:min(430px,100%);margin:auto;background:rgba(30,41,59,.94);border:1px solid var(--border);border-radius:18px;padding:28px;box-shadow:0 24px 60px rgba(0,0,0,.32)}.auth-card h2{margin-bottom:7px}.auth-card p{color:var(--muted);font-size:.83rem;margin-bottom:20px}.field{margin-bottom:14px}.field label{display:block;font-size:.75rem;font-weight:600;margin-bottom:6px}.field input{width:100%;border:1px solid var(--border);background:#0f172a;color:#fff;border-radius:9px;padding:11px 12px;font-family:inherit;outline:none}.field input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(56,189,248,.12)}.primary{width:100%;border:0;border-radius:9px;background:linear-gradient(135deg,#38bdf8,#0ea5e9);color:#06263a;font-family:inherit;font-weight:700;padding:11px;cursor:pointer}.auth-error{min-height:20px;color:#fda4af;font-size:.75rem;margin-top:10px}.workspace{width:min(1250px,100%)}.workspace-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.workspace-head h1{font-size:1.55rem}.workspace-actions{display:flex;gap:8px;align-items:center}.user-chip{color:var(--muted);font-size:.78rem}.small-btn{border:1px solid var(--border);background:#1e293b;color:#e2e8f0;border-radius:8px;padding:8px 11px;font-family:inherit;cursor:pointer}.project-list{margin-top:20px;background:rgba(30,41,59,.9);border:1px solid var(--border);border-radius:15px;overflow:hidden}.project-title{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between}.project-row{display:grid;grid-template-columns:1.7fr .8fr .7fr .8fr 40px;gap:10px;align-items:center;padding:13px 16px;border-bottom:1px solid #334155}.project-row:last-child{border-bottom:0}.project-row:hover{background:#26364b}.project-name{font-weight:600}.project-meta{color:var(--muted);font-size:.7rem;margin-top:2px}.badge{font-size:.68rem;font-weight:600;padding:4px 7px;border-radius:999px;background:#38bdf820;color:#7dd3fc;width:max-content}.badge.wd{background:#34d39920;color:#6ee7b7}.empty{padding:28px;text-align:center;color:var(--muted)}
+.link-button{display:block;margin:12px auto 0;border:0;background:transparent;color:var(--blue);font-family:inherit;cursor:pointer}.workspace-modal{position:fixed;inset:0;background:#020617bb;z-index:100;display:grid;place-items:center;padding:20px}.workspace-modal-card{width:min(680px,100%);max-height:82vh;overflow:auto;background:#17243a;border:1px solid var(--border);border-radius:15px;padding:18px;box-shadow:0 25px 70px #0008}.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.member-form{display:grid;grid-template-columns:1fr 130px auto;gap:8px;margin-bottom:14px}.member-form input,.member-form select,.member-role{border:1px solid var(--border);background:#0f172a;color:#fff;border-radius:8px;padding:9px;font-family:inherit}.member-row{display:grid;grid-template-columns:1fr 130px;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}.archive-btn{border:0;background:transparent;color:#fda4af;cursor:pointer;font-size:14px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}.card{min-height:210px}}
+</style>
+</head>
+<body>
+<section id="loginView" class="container hidden">
+  <div class="header"><div class="logo">☀</div><h1>FusionSolar Analysis Center</h1><div class="subtitle">BGPL Solar Engineering Cloud Workspace</div></div>
+  <form class="auth-card" id="loginForm">
+    <h2>เข้าสู่ระบบ</h2><p>ใช้บัญชีที่ผู้ดูแลระบบสร้างให้ เพื่อเปิดและแก้ไขงานของทีม</p>
+    <div class="field"><label>Email</label><input id="loginEmail" type="email" autocomplete="username" required></div>
+    <div class="field"><label>Password</label><input id="loginPassword" type="password" autocomplete="current-password" required></div>
+    <button id="loginButton" class="primary" type="submit">เข้าสู่ระบบ</button><button class="link-button" type="button" onclick="resetPassword()">ลืมรหัสผ่าน</button><div id="loginError" class="auth-error"></div>
+  </form>
+</section>
+
+<div id="workspaceView" class="workspace hidden">
+  <div class="workspace-head"><div><h1>FusionSolar Analysis Center</h1><div id="workspaceName" class="subtitle">Cloud Workspace</div></div><div class="workspace-actions"><button id="manageMembersButton" class="small-btn hidden" onclick="openMembers()">สมาชิกและสิทธิ์</button><span id="currentUser" class="user-chip"></span><span id="currentRole" class="badge"></span><button class="small-btn" onclick="SolarCloud.signOut()">ออกจากระบบ</button></div></div>
+  <div class="grid">
+    <button class="card working" onclick="createAnalysis('working_day')" style="text-align:left;font-family:inherit">
+      <div class="icon">📅</div><h2>สร้าง Working Day Analysis</h2><p>นำเข้า FusionSolar Report และบันทึก Loss Days, Method, Note และค่าที่แก้ไขไว้ใน Workspace</p><div class="open">Create New Analysis →</div>
+    </button>
+    <button class="card irr" onclick="createAnalysis('global_irradiance')" style="text-align:left;font-family:inherit">
+      <div class="icon">☀️</div><h2>สร้าง Global Irradiance Analysis</h2><p>นำเข้าข้อมูล Irradiation รายวัน ตรวจสอบ Normal / Abnormal และบันทึกการแก้ไขร่วมกับทีม</p><div class="open">Create New Analysis →</div>
+    </button>
+  </div>
+  <section class="project-list"><div class="project-title"><b>งานที่บันทึกไว้</b><span id="projectCount" class="subtitle"></span></div><div id="projectRows"><div class="empty">กำลังโหลด...</div></div></section>
+  <div class="footer">FusionSolar Multi-Plant Analysis • BGPL</div>
+</div>
+
+<div id="legacyView" class="container hidden">
+  <div class="header">
+    <div class="logo">☀</div>
+    <h1>FusionSolar Analysis Center</h1>
+    <div class="subtitle">Solar PV Analysis & Performance Monitoring System</div>
+  </div>
+
+  <div class="grid">
+    <a class="card working" href="working-day-analysis.html">
+      <div class="icon">📅</div>
+      <h2>Working Day Analysis</h2>
+      <p>
+        วิเคราะห์วันทำงานจากข้อมูล FusionSolar พร้อมคำนวณ Loss Days,
+        Working Days และผลการคำนวณที่เกี่ยวข้อง
+      </p>
+      <div class="open">Open Working Day Analysis →</div>
+    </a>
+
+    <a class="card irr" href="global-irradiance-analysis.html">
+      <div class="icon">☀️</div>
+      <h2>Global Irradiance Analysis</h2>
+      <p>
+        วิเคราะห์ Global Irradiance รายวัน เปรียบเทียบแต่ละ Plant,
+        ตรวจสอบ Normal / Abnormal และดูแนวโน้ม Irradiation
+      </p>
+      <div class="open">Open Global Irradiance Analysis →</div>
+    </a>
+  </div>
+
+  <div class="footer">FusionSolar Multi-Plant Analysis • BGPL</div>
+</div>
+
+<div id="membersModal" class="workspace-modal hidden"><div class="workspace-modal-card"><div class="modal-head"><h2>สมาชิกและสิทธิ์</h2><button class="small-btn" onclick="closeMembers()">✕</button></div><p class="subtitle" style="margin-bottom:12px">ผู้ใช้ต้องถูกสร้างใน Authentication → Users ก่อน จึงจะเพิ่มเข้า Workspace ได้</p><form class="member-form" onsubmit="addMember(event)"><input id="memberEmail" type="email" placeholder="member@company.com" required><select id="memberRole"><option value="editor">Editor</option><option value="viewer">Viewer</option><option value="admin">Admin</option></select><button class="primary" style="width:auto">เพิ่มสมาชิก</button></form><div id="memberMessage" class="auth-error"></div><div id="memberRows"></div></div></div>
+<script>
+const byId=id=>document.getElementById(id);
+const escapeText=value=>String(value??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+let activeMembership=null;
+SolarCloud.getClient().auth.onAuthStateChange(async event=>{
+  if(event!=='PASSWORD_RECOVERY')return;
+  const password=prompt('ตั้งรหัสผ่านใหม่ (อย่างน้อย 8 ตัวอักษร)');if(!password)return;
+  if(password.length<8){alert('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร');return}
+  const {error}=await SolarCloud.getClient().auth.updateUser({password});alert(error?error.message:'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว');history.replaceState({},'',location.pathname);
+});
+async function boot(){
+  try{
+    const session=await SolarCloud.session();
+    if(!session){byId('loginView').classList.remove('hidden');return}
+    byId('workspaceView').classList.remove('hidden');byId('currentUser').textContent=session.user.email||'';await renderProjects();
+  }catch(error){byId('loginView').classList.remove('hidden');byId('loginError').textContent=error.message}
+}
+byId('loginForm').addEventListener('submit',async event=>{
+  event.preventDefault();const button=byId('loginButton');button.disabled=true;button.textContent='กำลังเข้าสู่ระบบ...';byId('loginError').textContent='';
+  try{await SolarCloud.signIn(byId('loginEmail').value.trim(),byId('loginPassword').value);byId('loginView').classList.add('hidden');byId('workspaceView').classList.remove('hidden');await renderProjects()}
+  catch(error){byId('loginError').textContent=error.message}
+  finally{button.disabled=false;button.textContent='เข้าสู่ระบบ'}
+});
+async function renderProjects(){
+  try{
+    const {membership,projects}=await SolarCloud.listProjects();activeMembership=membership;byId('workspaceName').textContent=membership.workspaces?.name||'Workspace';byId('currentRole').textContent=membership.role.toUpperCase();byId('projectCount').textContent=`${projects.length} งาน`;byId('manageMembersButton').classList.toggle('hidden',membership.role!=='admin');
+    document.querySelectorAll('.card button').forEach(()=>{});
+    byId('projectRows').innerHTML=projects.length?projects.map(project=>`<div class="project-row" onclick="location.href='${SolarCloud.analysisUrl(project)}'" style="cursor:pointer"><div><div class="project-name">${escapeText(project.name)}</div><div class="project-meta">แก้ไข ${new Date(project.updated_at).toLocaleString('th-TH')}</div></div><span class="badge ${project.analysis_type==='working_day'?'wd':''}">${project.analysis_type==='working_day'?'Working Day':'Global Irradiance'}</span><span>${escapeText(project.period_key||'—')}</span><span>${escapeText(project.status)}</span>${membership.role==='admin'?`<button class="archive-btn" title="Archive" onclick="archiveProject(event,'${project.id}')">⌫</button>`:'<span>›</span>'}</div>`).join(''):'<div class="empty">ยังไม่มีงานที่บันทึกไว้ เลือกประเภทด้านบนเพื่อสร้างงานแรก</div>';
+    if(membership.role==='viewer')document.querySelectorAll('.grid>.card').forEach(button=>{button.disabled=true;button.style.opacity='.55';button.style.cursor='not-allowed'});
+  }catch(error){byId('projectRows').innerHTML=`<div class="empty" style="color:#fda4af">${escapeText(error.message)}<br>ตรวจสอบว่าได้รันไฟล์ supabase-setup.sql แล้ว</div>`}
+}
+async function createAnalysis(type){
+  const suggested=type==='working_day'?'Working Day Analysis':'Global Irradiance Analysis';const name=prompt('ตั้งชื่องาน',`${suggested} — ${new Date().toLocaleDateString('th-TH')}`);if(!name)return;
+  try{const id=await SolarCloud.createProject(type,name);location.href=`${type==='working_day'?'working-day-analysis.html':'global-irradiance-analysis.html'}?project=${encodeURIComponent(id)}`}
+  catch(error){alert(error.message)}
+}
+async function resetPassword(){const email=byId('loginEmail').value.trim();if(!email){byId('loginError').textContent='กรุณากรอก Email ก่อน';return}const {error}=await SolarCloud.getClient().auth.resetPasswordForEmail(email,{redirectTo:SolarCloud.CONFIG.siteRoot});byId('loginError').textContent=error?error.message:'ส่งลิงก์ Reset Password แล้ว กรุณาตรวจสอบ Email'}
+async function archiveProject(event,id){event.stopPropagation();if(!confirm('Archive งานนี้หรือไม่?'))return;const {error}=await SolarCloud.getClient().rpc('soft_delete_project',{p_project_id:id});if(error)alert(error.message);else renderProjects()}
+async function openMembers(){byId('membersModal').classList.remove('hidden');await renderMembers()}
+function closeMembers(){byId('membersModal').classList.add('hidden')}
+async function renderMembers(){const {data,error}=await SolarCloud.getClient().from('workspace_members').select('user_id,role,profiles!workspace_members_user_id_fkey(email,display_name)').eq('workspace_id',activeMembership.workspace_id).order('created_at');byId('memberRows').innerHTML=error?`<div class="auth-error">${escapeText(error.message)}</div>`:(data||[]).map(member=>`<div class="member-row"><div><b>${escapeText(member.profiles?.display_name||member.profiles?.email)}</b><div class="project-meta">${escapeText(member.profiles?.email)}</div></div><select class="member-role" onchange="changeMemberRole('${member.user_id}',this.value)"><option value="admin" ${member.role==='admin'?'selected':''}>Admin</option><option value="editor" ${member.role==='editor'?'selected':''}>Editor</option><option value="viewer" ${member.role==='viewer'?'selected':''}>Viewer</option></select></div>`).join('')}
+async function addMember(event){event.preventDefault();byId('memberMessage').textContent='กำลังเพิ่ม...';const {error}=await SolarCloud.getClient().rpc('add_workspace_member_by_email',{p_workspace:activeMembership.workspace_id,p_email:byId('memberEmail').value.trim(),p_role:byId('memberRole').value});byId('memberMessage').textContent=error?(error.message.includes('user_not_found')?'ไม่พบบัญชี กรุณาสร้างผู้ใช้ใน Authentication → Users ก่อน':error.message):'เพิ่มสมาชิกสำเร็จ';if(!error){byId('memberEmail').value='';await renderMembers()}}
+async function changeMemberRole(userId,role){const {error}=await SolarCloud.getClient().from('workspace_members').update({role}).eq('workspace_id',activeMembership.workspace_id).eq('user_id',userId);if(error){alert(error.message);await renderMembers()}}
+boot();
+</script>
+</body>
+</html>
