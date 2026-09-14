@@ -545,6 +545,117 @@ grant execute on function public.soft_delete_project(uuid),public.add_workspace_
 grant execute on function public.update_workspace_member_role(uuid,uuid,text),public.remove_workspace_member(uuid,uuid) to authenticated;
 grant execute on function public.attach_dataset_to_project(uuid,uuid) to authenticated;
 
+
+-- ============================================================
+-- ADMIN CONTROL CENTER
+-- Archived work and destructive dataset actions are Admin-only.
+-- ============================================================
+
+drop policy if exists projects_member_select on public.analysis_projects;
+create policy projects_member_select on public.analysis_projects for select to authenticated
+using(
+  public.is_workspace_member(workspace_id)
+  and (deleted_at is null or public.is_workspace_admin(workspace_id))
+);
+
+create or replace function public.admin_list_archived_projects(p_workspace uuid)
+returns table(
+  id uuid,
+  name text,
+  analysis_type text,
+  period_key text,
+  status text,
+  version bigint,
+  updated_at timestamptz,
+  deleted_at timestamptz
+)
+language plpgsql security definer set search_path=public
+as $admin$
+begin
+  if auth.uid() is null then raise exception 'authentication_required' using errcode='42501'; end if;
+  if not public.is_workspace_admin(p_workspace) then raise exception 'permission_denied' using errcode='42501'; end if;
+  return query
+    select p.id,p.name,p.analysis_type,p.period_key,p.status,p.version,p.updated_at,p.deleted_at
+    from public.analysis_projects p
+    where p.workspace_id=p_workspace and p.deleted_at is not null
+    order by p.deleted_at desc;
+end;
+$admin$;
+
+create or replace function public.admin_list_datasets(p_workspace uuid)
+returns table(
+  id uuid,
+  name text,
+  source_files text[],
+  updated_at timestamptz,
+  usage_count bigint
+)
+language plpgsql security definer set search_path=public
+as $admin$
+begin
+  if auth.uid() is null then raise exception 'authentication_required' using errcode='42501'; end if;
+  if not public.is_workspace_admin(p_workspace) then raise exception 'permission_denied' using errcode='42501'; end if;
+  return query
+    select d.id,d.name,d.source_files,d.updated_at,count(p.id)::bigint
+    from public.shared_datasets d
+    left join public.analysis_projects p on p.dataset_id=d.id
+    where d.workspace_id=p_workspace
+    group by d.id,d.name,d.source_files,d.updated_at
+    order by d.updated_at desc;
+end;
+$admin$;
+
+create or replace function public.restore_analysis_project(p_project_id uuid)
+returns public.analysis_projects
+language plpgsql security definer set search_path=public
+as $admin$
+declare v_project public.analysis_projects;
+begin
+  if auth.uid() is null then raise exception 'authentication_required' using errcode='42501'; end if;
+  select * into v_project from public.analysis_projects where id=p_project_id and deleted_at is not null;
+  if not found then raise exception 'archived_project_not_found' using errcode='P0002'; end if;
+  if not public.is_workspace_admin(v_project.workspace_id) then raise exception 'permission_denied' using errcode='42501'; end if;
+
+  update public.analysis_projects
+  set deleted_at=null,updated_at=now(),updated_by=auth.uid(),version=version+1
+  where id=p_project_id
+  returning * into v_project;
+
+  insert into public.activity_logs(workspace_id,project_id,actor_id,action,details)
+  values(v_project.workspace_id,v_project.id,auth.uid(),'restore',jsonb_build_object('version',v_project.version));
+  return v_project;
+end;
+$admin$;
+
+create or replace function public.delete_shared_dataset(p_dataset_id uuid)
+returns void
+language plpgsql security definer set search_path=public
+as $admin$
+declare v_workspace uuid; v_name text; v_usage bigint;
+begin
+  if auth.uid() is null then raise exception 'authentication_required' using errcode='42501'; end if;
+  select workspace_id,name into v_workspace,v_name from public.shared_datasets where id=p_dataset_id;
+  if not found then raise exception 'dataset_not_found' using errcode='P0002'; end if;
+  if not public.is_workspace_admin(v_workspace) then raise exception 'permission_denied' using errcode='42501'; end if;
+
+  select count(*) into v_usage from public.analysis_projects where dataset_id=p_dataset_id;
+  if v_usage>0 then raise exception 'dataset_in_use:%',v_usage using errcode='23503'; end if;
+
+  delete from public.shared_datasets where id=p_dataset_id;
+  insert into public.activity_logs(workspace_id,actor_id,action,details)
+  values(v_workspace,auth.uid(),'dataset_delete',jsonb_build_object('dataset_id',p_dataset_id,'dataset_name',v_name));
+end;
+$admin$;
+
+revoke all on function public.admin_list_archived_projects(uuid) from public,anon;
+revoke all on function public.admin_list_datasets(uuid) from public,anon;
+revoke all on function public.restore_analysis_project(uuid) from public,anon;
+revoke all on function public.delete_shared_dataset(uuid) from public,anon;
+grant execute on function public.admin_list_archived_projects(uuid) to authenticated;
+grant execute on function public.admin_list_datasets(uuid) to authenticated;
+grant execute on function public.restore_analysis_project(uuid) to authenticated;
+grant execute on function public.delete_shared_dataset(uuid) to authenticated;
+
 notify pgrst, 'reload schema';
 
 -- Setup verification: this final query must return five TRUE values and the
