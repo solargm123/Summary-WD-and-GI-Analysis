@@ -11,7 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<script src="cloud-core.js?v=20260915-central-data1"></script>
+<script src="cloud-core.js?v=20260915-project-alias1"></script>
 <link rel="stylesheet" href="unified-ui.css?v=20260915-unified-ui1">
 <style>
 :root{--bg:#f3f7fb;--card:#fff;--soft:#f8fafc;--line:#dce5ef;--text:#172033;--muted:#64748b;--blue:#2563eb;--green:#059669;--amber:#d97706;--red:#dc2626;--purple:#7c3aed;--shadow:0 10px 30px #15304b12}
@@ -32,7 +32,7 @@ html[data-fs-theme=dark]{--bg:#08141f;--card:#102131;--soft:#14293b;--line:#2942
 <div class="app">
  <header class="topbar">
   <div><div class="eyebrow">PV PERFORMANCE</div><h1 data-solar-th="รายงาน Performance Ratio" data-solar-en="Performance Ratio Report">รายงาน Performance Ratio</h1><div class="muted" data-solar-th="ภาพรวมทุกโครงการและเจาะลึกผลรายวัน" data-solar-en="Portfolio overview and daily project analysis">ภาพรวมทุกโครงการและเจาะลึกผลรายวัน</div></div>
-  <div class="actions"><button class="btn" onclick="openSettings()"><i class="fa-solid fa-sliders"></i><span data-solar-th="ตั้งค่า" data-solar-en="Settings">ตั้งค่า</span></button><button class="btn" onclick="exportCsv()"><i class="fa-solid fa-file-export"></i><span data-solar-th="ส่งออก" data-solar-en="Export">ส่งออก</span></button><label class="upload"><i class="fa-solid fa-cloud-arrow-up"></i><span data-solar-th="อัปโหลด Excel" data-solar-en="Upload Excel">อัปโหลด Excel</span><input id="excelFileInput" type="file" accept=".xlsx,.xls" multiple></label></div>
+  <div class="actions"><button class="btn" onclick="openSettings()"><i class="fa-solid fa-sliders"></i><span data-solar-th="ตั้งค่า" data-solar-en="Settings">ตั้งค่า</span></button><button class="btn" onclick="exportCsv()"><i class="fa-solid fa-file-export"></i><span data-solar-th="ส่งออก" data-solar-en="Export">ส่งออก</span></button><input id="excelFileInput" type="file" accept=".xlsx,.xls" multiple hidden></div>
  </header>
  <nav class="tabs"><button id="overviewTab" class="tab active" onclick="showView('overview')"><i class="fa-solid fa-table-list"></i> <span data-solar-th="ภาพรวมรายเดือน" data-solar-en="Monthly overview">ภาพรวมรายเดือน</span></button><button id="detailTab" class="tab" onclick="showView('detail')"><i class="fa-solid fa-chart-line"></i> <span data-solar-th="รายละเอียดโครงการ" data-solar-en="Project detail">รายละเอียดโครงการ</span></button></nav>
 
