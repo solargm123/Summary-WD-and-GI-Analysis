@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20260915-monthly1"></script>
+    <script src="cloud-core.js?v=20260915-gi-monthly1"></script>
 
     <style>
         :root[data-theme="dark"] {
@@ -374,14 +374,14 @@
                             <label>Year</label>
                             <div><button class="btn btn-secondary btn-xs" onclick="selectAllOptions('yearFilter', true)">All</button> <button class="btn btn-secondary btn-xs" onclick="selectAllOptions('yearFilter', false)">Clear</button></div>
                         </div>
-                        <select id="yearFilter" class="multi-select" multiple onchange="renderTableAndMetrics()"></select>
+                        <select id="yearFilter" class="multi-select" multiple onchange="onIrrPeriodFilterChange()"></select>
                     </div>
                     <div class="filter-item">
                         <div class="filter-item-header">
                             <label>Month</label>
                             <div><button class="btn btn-secondary btn-xs" onclick="selectAllOptions('monthFilter', true)">All</button> <button class="btn btn-secondary btn-xs" onclick="selectAllOptions('monthFilter', false)">Clear</button></div>
                         </div>
-                        <select id="monthFilter" class="multi-select" multiple onchange="renderTableAndMetrics()"></select>
+                        <select id="monthFilter" class="multi-select" multiple onchange="onIrrPeriodFilterChange()"></select>
                     </div>
                     <div class="filter-item">
                         <div class="filter-item-header">
@@ -422,6 +422,7 @@
     }
 
     let allPlantsSet = new Set(), selectedPlants = new Set(), datesSet = new Set(), sourceFileNames = [];
+    let availableIrrMonths = [], loadedIrrMonth = null, giFullDataLoaded = false, giPeriodLoading = false;
     let plantMasterData = {}, originalPlantData = {}, copiedIrrData = null;
     let isEditMode = false, isFileUploaded = false, activeStatusFilter = 'ALL';
 
@@ -438,12 +439,23 @@
         actionFn();
     }
 
-    function switchTab(tabId, btnEl) {
+    async function switchTab(tabId, btnEl) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
         btnEl.classList.add('active');
-        if (tabId === 'trendTab') { initTrendControls(); updateTrendChart(); }
+        if (tabId === 'trendTab') {
+            try {
+                if (!giFullDataLoaded) {
+                    await SolarCloud.loadCentralFullData();
+                    giFullDataLoaded = true;
+                }
+                initTrendControls();
+                updateTrendChart();
+            } catch (error) {
+                SolarCloud.notice('เปิด Trend ไม่สำเร็จ', error.message || String(error), 'danger');
+            }
+        }
     }
 
     function validateThresholds() {
@@ -575,9 +587,14 @@
     function populateDateFilters() {
         const yearSel = document.getElementById('yearFilter'), monthSel = document.getElementById('monthFilter'), daySel = document.getElementById('dayFilter');
         let years = new Set(), months = new Set(), days = new Set();
+        const periodSource = availableIrrMonths.length ? availableIrrMonths : Array.from(datesSet).map(d => d.slice(0,7));
+        periodSource.forEach(period => {
+            const parts = String(period).split('-');
+            if (parts.length >= 2) { years.add(parts[0]); months.add(parts[1]); }
+        });
         datesSet.forEach(d => {
-            let parts = d.split('-');
-            if (parts.length === 3) { years.add(parts[0]); months.add(parts[1]); days.add(parts[2]); }
+            const parts = d.split('-');
+            if (parts.length === 3) days.add(parts[2]);
         });
         yearSel.innerHTML = Array.from(years).sort().map(y => `<option value="${y}">${y}</option>`).join('');
         monthSel.innerHTML = Array.from(months).sort().map(m => `<option value="${m}">Month ${m}</option>`).join('');
@@ -588,6 +605,23 @@
         const selectEl = document.getElementById(selectId);
         Array.from(selectEl.options).forEach(opt => opt.selected = selectAll);
         renderTableAndMetrics();
+    }
+
+    async function onIrrPeriodFilterChange() {
+        renderTableAndMetrics();
+        if (giPeriodLoading) return;
+        const years = irrSelection('yearFilter'), months = irrSelection('monthFilter');
+        if (years.length !== 1 || months.length !== 1) return;
+        const requested = years[0] + '-' + months[0];
+        if (requested === loadedIrrMonth || !availableIrrMonths.includes(requested)) return;
+        giPeriodLoading = true;
+        try {
+            await SolarCloud.loadCentralPeriod(requested);
+        } catch (error) {
+            SolarCloud.notice('โหลดเดือนไม่สำเร็จ', error.message || String(error), 'danger');
+        } finally {
+            giPeriodLoading = false;
+        }
     }
 
     function getFilteredDates() {
@@ -1029,8 +1063,8 @@
       });
       const sortedDates=[...datesSet].sort();
       return {
-        baseData:{plants:originalPlantData,dates:sortedDates,sourceFiles:[...sourceFileNames]},
-        userState:{overrides,selectedPlants:[...selectedPlants],selectedTrendPlants:[...selectedTrendPlants],minIrr:document.getElementById('minIrr').value,maxIrr:document.getElementById('maxIrr').value,activeStatusFilter,filters:{years:irrSelection('yearFilter'),months:irrSelection('monthFilter'),days:irrSelection('dayFilter')}},
+        baseData:{plants:originalPlantData,dates:sortedDates,availableMonths:[...availableIrrMonths],loadedMonth:loadedIrrMonth,sourceFiles:[...sourceFileNames]},
+        userState:{overrides,selectedPlants:[...selectedPlants],selectedTrendPlants:[...selectedTrendPlants],minIrr:document.getElementById('minIrr').value,maxIrr:document.getElementById('maxIrr').value,activeStatusFilter,selectedPeriod:loadedIrrMonth,fullDataLoaded:giFullDataLoaded,filters:{years:irrSelection('yearFilter'),months:irrSelection('monthFilter'),days:irrSelection('dayFilter')}},
         periodKey:sortedDates.length?sortedDates[0].slice(0,7):null,
         sourceFiles:[...sourceFileNames]
       };
@@ -1039,6 +1073,9 @@
       originalPlantData=JSON.parse(JSON.stringify(base.plants||{}));
       plantMasterData=JSON.parse(JSON.stringify(base.plants||{}));
       allPlantsSet=new Set(Object.keys(plantMasterData));datesSet=new Set(base.dates||[]);
+      availableIrrMonths=Array.isArray(base.availableMonths)?base.availableMonths:[...new Set((base.dates||[]).map(date=>String(date).slice(0,7)))].sort().reverse();
+      loadedIrrMonth=base.loadedMonth||state.selectedPeriod||null;
+      giFullDataLoaded=!!state.fullDataLoaded&&!base.loadedMonth;
       Object.entries(state.overrides||{}).forEach(([name,saved])=>{if(!plantMasterData[name])return;if(saved.capacity!=null)plantMasterData[name].capacity=saved.capacity;if(saved.note!=null)plantMasterData[name].note=saved.note;Object.entries(saved.dates||{}).forEach(([date,value])=>{if(value===null)delete plantMasterData[name].dates[date];else plantMasterData[name].dates[date]=value})});
       selectedPlants=new Set(Array.isArray(state.selectedPlants)?state.selectedPlants:Object.keys(plantMasterData));
       selectedTrendPlants=new Set(Array.isArray(state.selectedTrendPlants)?state.selectedTrendPlants:[]);
