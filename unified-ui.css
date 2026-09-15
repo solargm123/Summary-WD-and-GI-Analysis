@@ -9,6 +9,9 @@ button:not(:disabled):hover,.btn:not(:disabled):hover,.small-btn:not(:disabled):
 button i,.btn i,.small-btn i,.primary i,.upload i{margin-right:6px}
 .fs-icon-only i,.btn-theme i{margin-right:0}
 #languageButton,[onclick="toggleTheme()"]{display:none!important}
+#wdHeaderActions #languageButton,
+#wdHeaderActions #themeButton,
+#wdHeaderActions #exportExcelButton{display:inline-flex!important}
 .logo,.brand-mark,.logo-icon{font-size:0!important}
 .logo i,.brand-mark i,.logo-icon i{font-size:24px!important}
 html[data-fs-theme="light"]{color-scheme:light}
