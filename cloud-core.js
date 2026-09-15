@@ -237,6 +237,21 @@
     if(!payload){const result=await getClient().rpc(rpcName,{p_workspace:currentMembership.workspace_id,p_month:month});if(result.error)throw result.error;payload=result.data;cacheWrite(key,{savedAt:Date.now(),payload})}
     await adapter.restore(payload,{...(captured.userState||{}),selectedMonth:month,selectedPeriod:month});setStatus('เชื่อมต่อแล้ว','ok');return true
   }
+  async function loadCentralFullData(){
+    const type=currentProject?.analysis_type;
+    if(!currentProject||!adapter||type!=='global_irradiance')return false;
+    const captured=adapter.capture(),summaryResult=await getClient().rpc('get_central_summary',{p_workspace:currentMembership.workspace_id}),summary=summaryResult.data||{},key=cacheKey(currentMembership.workspace_id,type,summary)+':full',cached=await cacheRead(key);
+    setStatus('กำลังเตรียมข้อมูล Trend...','busy');let payload=cached?.payload||null;
+    if(!payload){
+      const result=await getClient().rpc('get_central_analysis_payload',{p_workspace:currentMembership.workspace_id,p_analysis_type:type});
+      if(result.error)throw result.error;
+      payload=result.data;
+      cacheWrite(key,{savedAt:Date.now(),payload});
+    }
+    await adapter.restore(payload,{...(captured.userState||{}),fullDataLoaded:true});
+    setStatus('เชื่อมต่อแล้ว','ok');
+    return true;
+  }
   function localDraft(){
     if(!currentProject||!adapter)throw new Error('Project is not ready.');
     return {draft_version:1,exported_at:new Date().toISOString(),project:{id:currentProject.id,name:currentProject.name,analysis_type:currentProject.analysis_type,expected_version:currentProject.version},payload:adapter.capture()};
@@ -372,5 +387,5 @@
   }
   async function uploadCentralDataset(files){const prepared=await prepareCentralUpload(files);return commitCentralUpload(prepared,prepared.candidates.map(x=>({...x,action:'separate'})))}
   async function openCentralAnalysis(type){const project=await ensureCentralProject(type);if(!project.dataset_id){const {data:dataset,error}=await getClient().from('shared_datasets').select('id').eq('workspace_id',(currentMembership||await membership()).workspace_id).order('updated_at',{ascending:false}).limit(1).maybeSingle();if(error)throw error;if(dataset){const attached=await getClient().rpc('attach_dataset_to_project',{p_project_id:project.id,p_dataset_id:dataset.id});if(attached.error)throw attached.error}}location.href=analysisUrl(project)}
-  global.SolarCloud={CONFIG,dialog,notice,confirmDialog,setLanguage,getLanguage,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,datasets,useDataset,resolveConflict,downloadLocalDraft,reloadLatest,back:()=>location.assign(indexUrl()),roleCanEdit,roleCanAdmin,centralDatasetStatus,databaseStorageStatus,loadCentralPeriod,prepareCentralUpload,commitCentralUpload,prepareCentralBatchUpload,commitCentralBatchUpload,uploadCentralDataset,openCentralAnalysis};
+  global.SolarCloud={CONFIG,dialog,notice,confirmDialog,setLanguage,getLanguage,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,datasets,useDataset,resolveConflict,downloadLocalDraft,reloadLatest,back:()=>location.assign(indexUrl()),roleCanEdit,roleCanAdmin,centralDatasetStatus,databaseStorageStatus,loadCentralPeriod,loadCentralFullData,prepareCentralUpload,commitCentralUpload,prepareCentralBatchUpload,commitCentralBatchUpload,uploadCentralDataset,openCentralAnalysis};
 })(window);
