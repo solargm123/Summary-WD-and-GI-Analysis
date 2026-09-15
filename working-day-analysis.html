@@ -315,7 +315,7 @@
                     </h2>
                 </div>
                 <div class="flex flex-wrap items-center justify-end gap-2">
-                    <label class="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs"><i class="fa-solid fa-filter text-violet-500"></i><span class="font-semibold">MKT</span><select id="mktEstimateFilter" onchange="setMktEstimateFilter(this.value)" class="bg-transparent focus:outline-none max-w-[180px]"><option value="all">Total</option><option value="Estimated 12:00 L">Estimated 12:00 L</option><option value="Misestimated 12:00 L">Misestimated 12:00 L</option><option value="Haveno 12:00 L">Haveno 12:00 L</option><option value="Misestimated?">Misestimated?</option><option value="">Not specified</option></select></label><button id="method1FilterButton" onclick="setMethodFilter('m1')" class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg px-3 py-2 flex items-center gap-2 transition">
+                    <label class="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs"><i class="fa-solid fa-filter text-violet-500"></i><span class="font-semibold">MKT</span><select id="mktEstimateFilter" onchange="setMktEstimateFilter(this.value)" class="bg-transparent focus:outline-none max-w-[180px]"><option id="mktTotalOption" value="all">Total</option><option value="Estimated 12:00 L">Estimated 12:00 L</option><option value="Misestimated 12:00 L">Misestimated 12:00 L</option><option value="Haveno 12:00 L">Haveno 12:00 L</option><option value="Misestimated?">Misestimated?</option><option value="">Not specified</option></select></label><button id="method1FilterButton" onclick="setMethodFilter('m1')" class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg px-3 py-2 flex items-center gap-2 transition">
                         <i class="fa-solid fa-calculator"></i><span>วิธีที่ 1</span><strong id="method1ProjectCount" class="bg-blue-600 text-white rounded-full px-2 py-0.5">0</strong>
                     </button>
                     <button id="method2FilterButton" onclick="setMethodFilter('m2')" class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-lg px-3 py-2 flex items-center gap-2 transition">
@@ -626,6 +626,8 @@
         }
 
         function updateMethodSummary() {
+            const allVisiblePlants = plantData.filter(p => p.visible);
+            const totalOption=document.getElementById('mktTotalOption');if(totalOption)totalOption.textContent=`Total (${allVisiblePlants.length})`;
             const visiblePlants = plantData.filter(p => p.visible && matchesMktFilter(p));
             document.getElementById('method1ProjectCount').textContent = visiblePlants.filter(p => p.calculationMethod === 'm1').length;
             document.getElementById('method2ProjectCount').textContent = visiblePlants.filter(p => p.calculationMethod === 'm2').length;
