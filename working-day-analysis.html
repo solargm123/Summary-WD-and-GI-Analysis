@@ -159,13 +159,13 @@
                     <i class="fa-solid fa-language" aria-hidden="true"></i>
                     <span id="languageButtonText">EN</span>
                 </button>
-                <button id="themeButton" onclick="toggleTheme()" class="wd-header-action wd-header-action-dark" title="Change theme">
-                    <i id="themeIcon" class="fa-solid fa-moon" aria-hidden="true"></i>
-                    <span id="themeText">Dark</span>
-                </button>
                 <button id="exportExcelButton" onclick="exportToExcel()" class="wd-header-action wd-header-export">
                     <i class="fa-solid fa-file-arrow-down" aria-hidden="true"></i>
                     <span>Export Excel</span>
+                </button>
+                <button id="themeButton" onclick="toggleTheme()" class="wd-header-action wd-header-action-dark" title="Change theme">
+                    <i id="themeIcon" class="fa-solid fa-moon" aria-hidden="true"></i>
+                    <span id="themeText">Dark</span>
                 </button>
             </div>
         </div>
@@ -827,7 +827,6 @@
             const bucket = monthPlantOverrides[monthKey] || {};
             plantData.forEach(plant => {
                 bucket[projectStableKey(plant)] = {
-                    customDaysInMonth: Math.min(currentDaysInMonth, Math.max(1, Number(plant.customDaysInMonth) || currentDaysInMonth)),
                     lossDaysArray: [...(plant.lossDaysArray || [])].filter(day => Number.isInteger(day) && day >= 1 && day <= currentDaysInMonth)
                 };
             });
@@ -838,11 +837,11 @@
             const bucket = monthPlantOverrides[monthKey] || {};
             plantData.forEach(plant => {
                 const saved = bucket[projectStableKey(plant)] || bucket['name:' + plant.name.toLowerCase()];
+                plant.customDaysInMonth = currentDaysInMonth;
                 if (!saved) return;
-                plant.customDaysInMonth = Math.min(currentDaysInMonth, Math.max(1, Number(saved.customDaysInMonth) || currentDaysInMonth));
                 if (Array.isArray(saved.lossDaysArray)) {
                     plant.lossDaysArray = [...new Set(saved.lossDaysArray.map(Number))]
-                        .filter(day => Number.isInteger(day) && day >= 1 && day <= plant.customDaysInMonth)
+                        .filter(day => Number.isInteger(day) && day >= 1 && day <= currentDaysInMonth)
                         .sort((a,b) => a-b);
                 }
             });
@@ -894,7 +893,11 @@
             rememberCurrentMonthPlantState();
             document.getElementById('monthSelect').value=value;
             document.getElementById('monthPickerLabel').textContent=monthYearLabel(value);
-            closeMonthYearPopup();await onMonthSelectChange();
+            const picker=document.getElementById('monthPickerButton');
+            picker.disabled=true;picker.classList.add('opacity-60','cursor-wait');
+            closeMonthYearPopup();
+            try { await onMonthSelectChange(); }
+            finally { picker.disabled=false;picker.classList.remove('opacity-60','cursor-wait'); }
         }
 
         async function onMonthSelectChange() {
@@ -1213,15 +1216,12 @@
             }
         }
 
-        function updatePlantDays(id, value) {
+        function updatePlantDays(id) {
             const plant = plantData.find(p => p.id === id);
-            if (plant) {
-                const parsed = parseInt(value);
-                plant.customDaysInMonth = Number.isFinite(parsed) ? Math.min(currentDaysInMonth, Math.max(1, parsed)) : currentDaysInMonth;
-                plant.lossDaysArray = plant.lossDaysArray.filter(d => d <= plant.customDaysInMonth);
-                rememberCurrentMonthPlantState(document.getElementById('monthSelect').value);
-                calculateAndRender();
-            }
+            if (!plant) return;
+            plant.customDaysInMonth = currentDaysInMonth;
+            plant.lossDaysArray = plant.lossDaysArray.filter(d => d <= currentDaysInMonth);
+            calculateAndRender();
         }
 
         function removeRow(id) {
@@ -1238,7 +1238,7 @@
             const grid = document.getElementById('modalDaysGrid');
             grid.innerHTML = '';
 
-            const daysLimit = plant.customDaysInMonth || currentDaysInMonth;
+            const daysLimit = currentDaysInMonth;
             for (let d = 1; d <= daysLimit; d++) {
                 const isSelected = plant.lossDaysArray.includes(d);
                 const btn = document.createElement('button');
@@ -1276,7 +1276,7 @@
             if (currentEditingPlantId === null) return;
             const plant = plantData.find(p => p.id === currentEditingPlantId);
             if (!plant) return;
-            const daysLimit = plant.customDaysInMonth || currentDaysInMonth;
+            const daysLimit = currentDaysInMonth;
             plant.lossDaysArray = [...plant.originalLossDaysArray].filter(d => d <= daysLimit);
             rememberCurrentMonthPlantState(document.getElementById('monthSelect').value);
             openLossModal(currentEditingPlantId);
@@ -1318,7 +1318,7 @@
             const mode = document.querySelector('input[name="sunHoursMode"]:checked')?.value || 'custom';
             const customInput = parseFloat(document.getElementById('inputSunHoursCustom').value);
             const customVal = Number.isFinite(customInput) && customInput > 0 ? customInput : 4.0;
-            const days = plant.customDaysInMonth || currentDaysInMonth;
+            const days = currentDaysInMonth;
 
             // Specific Energy รวม
             let specEnergyTotal = plant.specificEnergyTotal;
@@ -1359,7 +1359,7 @@
 
         function calculatePlantMetrics(item) {
             const cap = Number(item.cap);
-            const daysInMonth = item.customDaysInMonth || currentDaysInMonth;
+            const daysInMonth = currentDaysInMonth;
             const shObj = getCalculatedSunHours(item);
             const lossInput = parseFloat(document.getElementById('inputLossFactor').value);
             const lossFactor = Number.isFinite(lossInput) ? Math.min(1, Math.max(0, lossInput)) : 0.9;
@@ -1476,7 +1476,7 @@
                     </td>
 
                     <td class="p-3 text-center bg-amber-50/20 dark:bg-amber-950/10">
-                        <input type="number" min="1" max="${currentDaysInMonth}" value="${daysInMonth}" onchange="updatePlantDays(${item.id}, this.value)" class="w-12 bg-amber-50/60 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 rounded px-1.5 py-0.5 font-mono text-center font-bold text-amber-900 dark:text-amber-200 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500">
+                        <span class="inline-flex min-w-12 h-8 items-center justify-center bg-amber-50/60 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 rounded-md px-2 font-mono text-center font-bold text-amber-900 dark:text-amber-200 text-xs" title="${currentLanguage==='th'?'คำนวณอัตโนมัติตามเดือนและปี':'Calculated automatically from month and year'}">${currentDaysInMonth}</span>
                     </td>
 
                     <td class="p-3 text-center font-mono font-semibold text-slate-800 dark:text-slate-200">${lossDaysCount}</td>
@@ -1625,10 +1625,10 @@
         capture(){
           const selectedMonth=document.getElementById('monthSelect').value||null;
           const sunMode=document.querySelector('input[name="sunHoursMode"]:checked')?.value||'custom';
-          rememberCurrentMonthPlantState(selectedMonth);
+          rememberCurrentMonthPlantState(activeMonthKey);
           const overrides={};
           plantData.forEach(plant=>{overrides[plant.name.toLowerCase()]={cap:plant.cap,note:plant.note||'',visible:plant.visible!==false}});
-          Object.entries(monthPlantOverrides).forEach(([month,projects])=>Object.entries(projects||{}).forEach(([key,value])=>{overrides['@period:'+month+':'+key]={customDaysInMonth:value.customDaysInMonth,lossDaysArray:[...(value.lossDaysArray||[])]}}));
+          Object.entries(monthPlantOverrides).forEach(([month,projects])=>Object.entries(projects||{}).forEach(([key,value])=>{overrides['@period:'+month+':'+key]={lossDaysArray:[...(value.lossDaysArray||[])]}}));
           Object.entries(mktEstimateByProject).forEach(([key,value])=>{overrides['@mkt:'+key]={mktEstimate:value}});
           Object.entries(methodOverridesByMonth).forEach(([month,projects])=>Object.entries(projects||{}).forEach(([key,method])=>{overrides['@method:'+month+':'+key]={method}}));
           return {
@@ -1650,7 +1650,7 @@
           Object.entries(overrides).forEach(([key,value])=>{
             if(key.startsWith('@period:')){
               const remainder=key.slice(8),split=remainder.indexOf(':'),month=remainder.slice(0,split),projectKey=remainder.slice(split+1);
-              if(split>0){monthPlantOverrides[month]=monthPlantOverrides[month]||{};monthPlantOverrides[month][projectKey]={customDaysInMonth:value?.customDaysInMonth,lossDaysArray:Array.isArray(value?.lossDaysArray)?value.lossDaysArray:[]}}
+              if(split>0){monthPlantOverrides[month]=monthPlantOverrides[month]||{};monthPlantOverrides[month][projectKey]={lossDaysArray:Array.isArray(value?.lossDaysArray)?value.lossDaysArray:[]}}
             }
             if(key.startsWith('@mkt:'))mktEstimateByProject[key.slice(5)]=value?.mktEstimate||'';
             if(key.startsWith('@method:')){
