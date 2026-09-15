@@ -158,6 +158,25 @@
         .plant-item:hover { background: var(--hover-bg); }
         .plant-item input { accent-color: var(--accent-blue); width: 16px; height: 16px; cursor: pointer; }
         .search-input { background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 8px 12px; color: var(--text-main); outline: none; width: 100%; font-size: 0.8rem; }
+
+        /* Center-aligned analysis workspace UI */
+        body{background:radial-gradient(circle at 50% -180px,#18324f 0,var(--bg-main) 500px);padding:14px 20px 32px}
+        :root[data-theme="light"] body{background:radial-gradient(circle at 50% -180px,#dbeafe 0,var(--bg-main) 500px)}
+        header{position:sticky;top:10px;z-index:80;background:color-mix(in srgb,var(--card-bg) 92%,transparent);border:1px solid var(--card-border);border-radius:17px;padding:14px 17px;margin-bottom:14px;box-shadow:0 18px 45px rgba(2,6,23,.28);backdrop-filter:blur(12px)}
+        .logo-icon{width:42px;height:42px;align-items:center;justify-content:center;border-radius:12px}
+        .header-titles h2{font-size:1.2rem}.header-controls{flex-wrap:wrap;justify-content:flex-end}
+        .btn{border-radius:9px;padding:8px 13px}.btn-theme{width:34px;height:34px;justify-content:center}
+        .nav-tabs{width:max-content;max-width:100%;padding:5px;background:color-mix(in srgb,var(--card-bg) 90%,transparent);border:1px solid var(--card-border);border-radius:12px;margin-bottom:14px;overflow-x:auto}
+        .tab-btn{border:0;border-radius:8px;padding:8px 15px}.tab-btn.active{box-shadow:0 6px 18px rgba(56,189,248,.2)}
+        .card,.upload-card{border-radius:16px;box-shadow:0 10px 28px rgba(2,6,23,.16)}
+        :root[data-theme="light"] .card,:root[data-theme="light"] .upload-card{box-shadow:0 10px 28px rgba(15,23,42,.07)}
+        .metric-card{min-height:96px}.card-value{font-size:1.65rem}.table-card{padding:17px}
+        .table-scroll-container{border-radius:12px}.threshold-box,.search-input,.multi-select,.cell-input,.note-input{border-radius:8px}
+        .analysis-flow{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:0 0 14px}
+        .analysis-flow-step{display:flex;align-items:center;gap:10px;padding:10px 13px;background:color-mix(in srgb,var(--card-bg) 92%,transparent);border:1px solid var(--card-border);border-radius:12px}
+        .analysis-flow-step strong{width:27px;height:27px;flex:0 0 27px;display:grid;place-items:center;border-radius:8px;background:rgba(56,189,248,.14);color:var(--accent-blue);font-size:12px}
+        .analysis-flow-step span{font-size:11px;color:var(--text-muted)}
+        @media(max-width:760px){body{padding:8px}header{position:relative;top:0}.header-controls{width:100%;justify-content:flex-start}.analysis-flow{grid-template-columns:1fr}.top-grid{gap:10px}.metrics-grid{grid-template-columns:repeat(2,1fr)}}
     </style>
 </head>
 <body>
@@ -167,20 +186,26 @@
         <div class="title-group">
             <div class="logo-icon"><i data-lucide="sun" size="22"></i></div>
             <div class="header-titles">
-                <h2>FusionSolar Multi-Plant Analysis</h2>
-                <p>Solar PV Irradiation & Performance Monitoring System</p>
+                <h2>Global Irradiance Analysis</h2>
+                <p>ตรวจสอบ Irradiation รายวันและเปรียบเทียบประสิทธิภาพหลายโครงการ</p>
             </div>
         </div>
         <div class="header-controls">
             <button class="btn btn-theme" onclick="toggleTheme()"><i data-lucide="sun" id="themeIcon"></i></button>
-            <button class="btn btn-danger" onclick="resetData()"><i data-lucide="trash-2" size="14"></i> Reset All Data</button>
-            <button class="btn" onclick="exportToExcel()"><i data-lucide="download" size="14"></i> Export Excel</button>
+            <button class="btn btn-danger" onclick="resetData()"><i data-lucide="trash-2" size="14"></i> ล้างข้อมูล</button>
+            <button class="btn" onclick="exportToExcel()"><i data-lucide="download" size="14"></i> ส่งออก Excel</button>
         </div>
     </header>
 
+    <section class="analysis-flow" aria-label="ขั้นตอนการใช้งาน">
+        <div class="analysis-flow-step"><strong>1</strong><span>อัปโหลด Plant Report<br>Import source files</span></div>
+        <div class="analysis-flow-step"><strong>2</strong><span>เลือกโครงการและตรวจค่าผิดปกติ<br>Select and review plants</span></div>
+        <div class="analysis-flow-step"><strong>3</strong><span>ดูแนวโน้มหรือส่งออก Excel<br>Review trend and export</span></div>
+    </section>
+
     <div class="nav-tabs">
-        <button class="tab-btn active" onclick="switchTab('tableTab', this)"><i data-lucide="table" size="16"></i> Data Table</button>
-        <button class="tab-btn" onclick="switchTab('trendTab', this)"><i data-lucide="line-chart" size="16"></i> Trend Irradiation</button>
+        <button class="tab-btn active" onclick="switchTab('tableTab', this)"><i data-lucide="table" size="16"></i> ตารางข้อมูล</button>
+        <button class="tab-btn" onclick="switchTab('trendTab', this)"><i data-lucide="line-chart" size="16"></i> แนวโน้ม Irradiation</button>
     </div>
 
     <!-- TAB 1: DATA TABLE -->
@@ -188,52 +213,52 @@
         <div class="top-grid">
             <div class="upload-card" id="dropzone" onclick="document.getElementById('fileInput').click()">
                 <i data-lucide="upload-cloud" size="36" style="color: var(--accent-blue); margin-bottom: 6px;"></i>
-                <h4 id="uploadStatus" style="font-weight: 600; font-size: 0.9rem;">Drop Plant Report Files Here (.xlsx/.csv)</h4>
-                <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px;">Click to browse or drag multiple files anytime</p>
+                <h4 id="uploadStatus" style="font-weight: 600; font-size: 0.9rem;">อัปโหลด Plant Report (.xlsx/.csv)</h4>
+                <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px;">คลิกเพื่อเลือกไฟล์ หรือลากหลายไฟล์มาวางได้</p>
                 <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" multiple style="display:none" onchange="handleFiles(this.files)">
             </div>
 
             <div class="metrics-grid">
                 <div class="card metric-card">
-                    <div class="card-header"><span>Selected Plants</span><i data-lucide="building" size="16" style="color: var(--accent-blue)"></i></div>
-                    <div class="card-value"><span id="metricPlants">0</span><span class="card-unit">Plants</span></div>
+                    <div class="card-header"><span>โครงการที่เลือก</span><i data-lucide="building" size="16" style="color: var(--accent-blue)"></i></div>
+                    <div class="card-value"><span id="metricPlants">0</span><span class="card-unit">โครงการ</span></div>
                 </div>
                 <div class="card metric-card">
-                    <div class="card-header"><span>Recorded Days</span><i data-lucide="calendar" size="16" style="color: var(--accent-blue)"></i></div>
-                    <div class="card-value"><span id="metricTotalDays">0</span><span class="card-unit">Days</span></div>
+                    <div class="card-header"><span>วันที่มีข้อมูล</span><i data-lucide="calendar" size="16" style="color: var(--accent-blue)"></i></div>
+                    <div class="card-value"><span id="metricTotalDays">0</span><span class="card-unit">วัน</span></div>
                 </div>
                 <div class="card metric-card">
-                    <div class="card-header"><span>Avg Daily Irradiation</span><i data-lucide="sun" size="16" style="color: var(--accent-yellow)"></i></div>
+                    <div class="card-header"><span>Irradiation เฉลี่ยต่อวัน</span><i data-lucide="sun" size="16" style="color: var(--accent-yellow)"></i></div>
                     <div class="card-value"><span id="metricAvgIrr">0.000</span><span class="card-unit">kWh/m²</span></div>
                 </div>
                 <div class="card metric-card">
-                    <div class="card-header"><span>Normal Days Ratio</span><i data-lucide="check-circle-2" size="16" style="color: var(--accent-green)"></i></div>
-                    <div class="card-value"><span id="metricNormalDaysRatio">0/0</span><span class="card-unit">Days</span></div>
+                    <div class="card-header"><span>สัดส่วนวันที่ค่าปกติ</span><i data-lucide="check-circle-2" size="16" style="color: var(--accent-green)"></i></div>
+                    <div class="card-value"><span id="metricNormalDaysRatio">0/0</span><span class="card-unit">วัน</span></div>
                 </div>
             </div>
         </div>
 
         <div class="card table-card">
             <div class="table-header-bar">
-                <h3><i data-lucide="table" size="18" style="color: var(--accent-blue);"></i> Daily Global Irradiation Comparison (kWh/m²)</h3>
+                <h3><i data-lucide="table" size="18" style="color: var(--accent-blue);"></i> เปรียบเทียบ Global Irradiation รายวัน (kWh/m²)</h3>
                 <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                     <div class="threshold-box">
-                        <label for="minIrr">Valid Irr Range:</label>
+                        <label for="minIrr">ช่วงค่าปกติ:</label>
                         <input type="number" id="minIrr" value="1.0" min="0" step="0.1" onchange="validateThresholds(); checkFileAndRun(renderTableAndMetrics)">
                         <span>-</span>
                         <input type="number" id="maxIrr" value="7.0" min="0" step="0.1" onchange="validateThresholds(); checkFileAndRun(renderTableAndMetrics)">
                     </div>
-                    <button class="btn btn-secondary" onclick="checkFileAndRun(openFilterModal)"><i data-lucide="filter" size="14"></i> Filter Options</button>
-                    <button class="btn btn-edit" id="toggleEditBtn" onclick="checkFileAndRun(toggleEditMode)"><i data-lucide="edit-3" size="14"></i> Edit Daily Irradiation</button>
+                    <button class="btn btn-secondary" onclick="checkFileAndRun(openFilterModal)"><i data-lucide="filter" size="14"></i> ตัวกรอง</button>
+                    <button class="btn btn-edit" id="toggleEditBtn" onclick="checkFileAndRun(toggleEditMode)"><i data-lucide="edit-3" size="14"></i> แก้ไขค่า Irradiation</button>
                 </div>
             </div>
 
             <div class="status-filter-bar">
-                <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">Status Filter:</span>
-                <button class="btn-filter-status active" id="btnFilterAll" onclick="setStatusFilter('ALL')">All Plants <span class="badge-count badge-all" id="countAll">0</span></button>
-                <button class="btn-filter-status" id="btnFilterNormal" onclick="setStatusFilter('NORMAL')"><i data-lucide="check-circle" size="14" style="color: var(--accent-green)"></i> Normal <span class="badge-count badge-normal" id="countNormal">0</span></button>
-                <button class="btn-filter-status" id="btnFilterAbnormal" onclick="setStatusFilter('ABNORMAL')"><i data-lucide="alert-triangle" size="14" style="color: var(--accent-yellow)"></i> Abnormal <span class="badge-count badge-abnormal" id="countAbnormal">0</span></button>
-                <button class="btn-filter-status" id="btnFilterNotFound" onclick="setStatusFilter('NOT_FOUND')"><i data-lucide="help-circle" size="14" style="color: var(--accent-red)"></i> Not Found Value <span class="badge-count badge-notfound" id="countNotFound">0</span></button>
+                <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">กรองตามสถานะ:</span>
+                <button class="btn-filter-status active" id="btnFilterAll" onclick="setStatusFilter('ALL')">ทุกโครงการ <span class="badge-count badge-all" id="countAll">0</span></button>
+                <button class="btn-filter-status" id="btnFilterNormal" onclick="setStatusFilter('NORMAL')"><i data-lucide="check-circle" size="14" style="color: var(--accent-green)"></i> ปกติ <span class="badge-count badge-normal" id="countNormal">0</span></button>
+                <button class="btn-filter-status" id="btnFilterAbnormal" onclick="setStatusFilter('ABNORMAL')"><i data-lucide="alert-triangle" size="14" style="color: var(--accent-yellow)"></i> ผิดปกติ <span class="badge-count badge-abnormal" id="countAbnormal">0</span></button>
+                <button class="btn-filter-status" id="btnFilterNotFound" onclick="setStatusFilter('NOT_FOUND')"><i data-lucide="help-circle" size="14" style="color: var(--accent-red)"></i> ไม่พบข้อมูล <span class="badge-count badge-notfound" id="countNotFound">0</span></button>
             </div>
 
             <div class="top-scroll-wrapper" id="topScrollWrapper"><div class="top-scroll-inner" id="topScrollInner"></div></div>
@@ -957,7 +982,7 @@
             document.querySelectorAll('.btn-filter-status').forEach(btn => btn.classList.remove('active'));
             document.getElementById('btnFilterAll').classList.add('active');
 
-            document.getElementById('uploadStatus').innerText = "Drop Plant Report Files Here (.xlsx/.csv)";
+            document.getElementById('uploadStatus').innerText = "อัปโหลด Plant Report (.xlsx/.csv)";
             document.getElementById('fileInput').value = '';
             renderPlantList();
             document.getElementById('tableBody').innerHTML = '';
