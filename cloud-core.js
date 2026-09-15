@@ -265,7 +265,59 @@
     const {data,error}=await getClient().rpc('upsert_shared_dataset',{p_workspace:m.workspace_id,p_name:'Central Data Hub',p_fingerprint:fingerprint,p_source_files:merged.sourceFiles,p_normalized_data:merged});if(error)throw error;
     for(const type of Object.keys(CENTRAL_PROJECT_NAMES)){const project=await ensureCentralProject(type),attached=await getClient().rpc('attach_dataset_to_project',{p_project_id:project.id,p_dataset_id:data.id});if(attached.error)throw attached.error}return{dataset:data,normalized:merged,summary:await centralDatasetStatus()}
   }
+
+  async function fileFingerprint(file){
+    const bytes=await file.arrayBuffer(),hash=await crypto.subtle.digest('SHA-256',bytes);
+    return [...new Uint8Array(hash)].map(x=>x.toString(16).padStart(2,'0')).join('');
+  }
+  async function prepareCentralBatchUpload(files,onProgress){
+    const list=Array.from(files||[]),m=currentMembership||await membership();
+    if(!['admin','editor'].includes(m.role))throw new Error('Viewer cannot upload or replace central data.');
+    if(!list.length)throw new Error('Please select at least one Excel file.');
+    const rows=await listDatasets(),existing=rows[0]||null,previous=structuredClone(existing?.normalized_data||{}),aliases=previous.projectAliases||{},payloads=[];let fresh={};
+    for(let i=0;i<list.length;i++){
+      const file=list[i];onProgress?.({stage:'reading',current:i+1,total:list.length,file:file.name});
+      try{
+        const normalized=await normalizeUpload([file]);applyKnownAliases(normalized,aliases);
+        const fingerprint=await fileFingerprint(file);payloads.push({file,fileName:file.name,fingerprint,normalized,error:null});
+        fresh=mergeCentralData(fresh,normalized);
+      }catch(error){payloads.push({file,fileName:file.name,fingerprint:null,normalized:null,error:error.message||String(error)})}
+      await new Promise(resolve=>setTimeout(resolve,0));
+    }
+    const oldProjects=projectCatalog(previous),newProjects=projectCatalog(fresh),oldNames=new Set(oldProjects.map(x=>x.name.toLowerCase())),candidates=[];
+    for(const incoming of newProjects){if(oldNames.has(incoming.name.toLowerCase())||aliases[incoming.name])continue;let best=null;for(const older of oldProjects){const score=nameScore(incoming.name,older.name);if(score>=.58&&(!best||score>best.score))best={oldName:older.name,newName:incoming.name,score,oldCapacity:older.capacity,newCapacity:incoming.capacity,oldLastDate:older.lastDate,newLastDate:incoming.lastDate}}if(best)candidates.push(best)}
+    return{fresh,previous,existingId:existing?.id||null,candidates,files:list.map(x=>x.name),payloads};
+  }
+  async function commitCentralBatchUpload(prepared,resolutions=[],onProgress){
+    const m=currentMembership||await membership(),aliases={...(prepared.previous?.projectAliases||{})},dbAliases={};
+    for(const choice of resolutions){
+      if(choice.action==='use_new'){aliases[choice.oldName]=choice.newName;dbAliases[choice.newName]=choice.oldName}
+      else if(choice.action==='keep_old'){aliases[choice.newName]=choice.oldName;dbAliases[choice.newName]=choice.oldName}
+    }
+    const started=await getClient().rpc('begin_central_import',{p_workspace:m.workspace_id,p_total_files:prepared.payloads.length});if(started.error)throw started.error;
+    const batchId=started.data,failed=[];let inserted=0,updated=0,duplicates=0;
+    for(let i=0;i<prepared.payloads.length;i++){
+      const item=prepared.payloads[i];onProgress?.({stage:'saving',current:i+1,total:prepared.payloads.length,file:item.fileName,failed:failed.length,duplicates});
+      if(item.error){failed.push({file:item.fileName,error:item.error});continue}
+      try{
+        const records=item.normalized?.pr_report?.records||[],recordDate=records.find(x=>x.date)?.date||fileDate(item.fileName);
+        const registered=await getClient().rpc('register_central_import_file',{p_workspace:m.workspace_id,p_batch:batchId,p_file_name:item.fileName,p_fingerprint:item.fingerprint,p_record_date:recordDate||null});
+        if(registered.error)throw registered.error;
+        if(registered.data?.duplicate){duplicates++;continue}
+        const fileId=registered.data.file_id,uploadRows=records.map(r=>({...r,fingerprint:item.fingerprint}));
+        for(let p=0;p<uploadRows.length;p+=250){
+          const saved=await getClient().rpc('upsert_central_daily_batch',{p_workspace:m.workspace_id,p_batch:batchId,p_file:fileId,p_rows:uploadRows.slice(p,p+250),p_aliases:dbAliases});
+          if(saved.error)throw saved.error;inserted+=Number(saved.data?.inserted||0);updated+=Number(saved.data?.updated||0);
+        }
+      }catch(error){failed.push({file:item.fileName,error:error.message||String(error)})}
+      await new Promise(resolve=>setTimeout(resolve,0));
+    }
+    const completed=await getClient().rpc('complete_central_import',{p_workspace:m.workspace_id,p_batch:batchId});if(completed.error)throw completed.error;
+    const preparedLegacy={...prepared,previous:prepared.previous,fresh:prepared.fresh};
+    const legacy=await commitCentralUpload(preparedLegacy,resolutions);
+    return{...legacy,batch:completed.data,batchId,failed,inserted,updated,duplicates};
+  }
   async function uploadCentralDataset(files){const prepared=await prepareCentralUpload(files);return commitCentralUpload(prepared,prepared.candidates.map(x=>({...x,action:'separate'})))}
   async function openCentralAnalysis(type){const project=await ensureCentralProject(type),rows=await listDatasets(),dataset=rows[0]||null;if(dataset&&project.dataset_id!==dataset.id){const {error}=await getClient().rpc('attach_dataset_to_project',{p_project_id:project.id,p_dataset_id:dataset.id});if(error)throw error}location.href=analysisUrl(project)}
-  global.SolarCloud={CONFIG,dialog,notice,confirmDialog,setLanguage,getLanguage,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,datasets,useDataset,resolveConflict,downloadLocalDraft,reloadLatest,back:()=>location.assign(indexUrl()),roleCanEdit,roleCanAdmin,centralDatasetStatus,prepareCentralUpload,commitCentralUpload,uploadCentralDataset,openCentralAnalysis};
+  global.SolarCloud={CONFIG,dialog,notice,confirmDialog,setLanguage,getLanguage,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,datasets,useDataset,resolveConflict,downloadLocalDraft,reloadLatest,back:()=>location.assign(indexUrl()),roleCanEdit,roleCanAdmin,centralDatasetStatus,prepareCentralUpload,commitCentralUpload,prepareCentralBatchUpload,commitCentralBatchUpload,uploadCentralDataset,openCentralAnalysis};
 })(window);
