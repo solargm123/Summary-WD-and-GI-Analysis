@@ -1568,27 +1568,57 @@
           const selectedMonth=document.getElementById('monthSelect').value||null;
           const sunMode=document.querySelector('input[name="sunHoursMode"]:checked')?.value||'custom';
           const overrides={};
-          plantData.forEach(plant=>{overrides[plant.name.toLowerCase()]={cap:plant.cap,customDaysInMonth:plant.customDaysInMonth,lossDaysArray:[...(plant.lossDaysArray||[])],calculationMethod:plant.calculationMethod||'other',note:plant.note||'',visible:plant.visible!==false}});
+          plantData.forEach(plant=>{overrides[plant.name.toLowerCase()]={cap:plant.cap,customDaysInMonth:plant.customDaysInMonth,lossDaysArray:[...(plant.lossDaysArray||[])],note:plant.note||'',visible:plant.visible!==false}});
+          Object.entries(mktEstimateByProject).forEach(([key,value])=>{overrides['@mkt:'+key]={mktEstimate:value}});
+          Object.entries(methodOverridesByMonth).forEach(([month,projects])=>Object.entries(projects||{}).forEach(([key,method])=>{overrides['@method:'+month+':'+key]={method}}));
           return {
             baseData:{records:rawRecordsByFile,detectedMonths:[...detectedMonths]},
-            userState:{selectedMonth,lossFactor:document.getElementById('inputLossFactor').value,sunHoursTarget:document.getElementById('sunHoursTarget').value,sunHoursMode:sunMode,sunHoursCustom:document.getElementById('inputSunHoursCustom').value,overrides},
+            userState:{selectedMonth,lossFactor:'0.9',sunHoursTarget:document.getElementById('sunHoursTarget').value,sunHoursMode:sunMode,sunHoursCustom:document.getElementById('inputSunHoursCustom').value,overrides},
             periodKey:selectedMonth,
             sourceFiles:[...new Set(rawRecordsByFile.map(record=>record.fileName).filter(Boolean))]
           };
         },
         async restore(base,state){
           rawRecordsByFile=Array.isArray(base.records)?base.records:[];
-          detectedMonths=Array.isArray(base.detectedMonths)?base.detectedMonths:[];
-          if(state.lossFactor!=null)document.getElementById('inputLossFactor').value=state.lossFactor;
+          detectedMonths=Array.isArray(base.detectedMonths)?base.detectedMonths:Array.isArray(base.availableMonths)?base.availableMonths:[];
+          document.getElementById('inputLossFactor').value='0.9';
           if(state.sunHoursTarget)document.getElementById('sunHoursTarget').value=state.sunHoursTarget;
           if(state.sunHoursCustom!=null)document.getElementById('inputSunHoursCustom').value=state.sunHoursCustom;
           const radio=document.querySelector(`input[name="sunHoursMode"][value="${state.sunHoursMode||'custom'}"]`);if(radio)radio.checked=true;
-          const selected=state.selectedMonth||detectedMonths[0];
-          renderMonthSelectOptions(selected,true);
           const overrides=state.overrides||{};
-          plantData.forEach(plant=>{const saved=overrides[plant.name.toLowerCase()];if(!saved)return;if(saved.cap!=null)plant.cap=saved.cap;if(saved.customDaysInMonth!=null)plant.customDaysInMonth=saved.customDaysInMonth;if(Array.isArray(saved.lossDaysArray))plant.lossDaysArray=[...saved.lossDaysArray];if(saved.calculationMethod)plant.calculationMethod=saved.calculationMethod;if(saved.note!=null)plant.note=saved.note;if(saved.visible!=null)plant.visible=saved.visible});
+          mktEstimateByProject={};methodOverridesByMonth={};
+          Object.entries(overrides).forEach(([key,value])=>{
+            if(key.startsWith('@mkt:'))mktEstimateByProject[key.slice(5)]=value?.mktEstimate||'';
+            if(key.startsWith('@method:')){
+              const remainder=key.slice(8),split=remainder.indexOf(':'),month=remainder.slice(0,split),projectKey=remainder.slice(split+1);
+              if(split>0){methodOverridesByMonth[month]=methodOverridesByMonth[month]||{};methodOverridesByMonth[month][projectKey]=value?.method}
+            }
+          });
+          const selected=state.selectedMonth||base.loadedMonth||detectedMonths[0];
+          renderMonthSelectOptions(selected,true);
+          plantData.forEach(plant=>{
+            const saved=overrides[plant.name.toLowerCase()],key=projectStableKey(plant);
+            if(saved){
+              if(saved.cap!=null)plant.cap=saved.cap;
+              if(saved.customDaysInMonth!=null)plant.customDaysInMonth=saved.customDaysInMonth;
+              if(Array.isArray(saved.lossDaysArray))plant.lossDaysArray=[...saved.lossDaysArray];
+              if(saved.note!=null)plant.note=saved.note;
+              if(saved.visible!=null)plant.visible=saved.visible;
+              if(saved.calculationMethod&&!Object.prototype.hasOwnProperty.call(mktEstimateByProject,key)&&!methodOverridesByMonth[selected]?.[key]){
+                methodOverridesByMonth[selected]=methodOverridesByMonth[selected]||{};
+                methodOverridesByMonth[selected][key]=saved.calculationMethod;
+                plant.calculationMethod=saved.calculationMethod;plant.methodSource='manual';
+              }
+            }
+            plant.mktEstimate=mktEstimateByProject[key]||'';
+            const manual=methodOverridesByMonth[selected]?.[key];
+            if(manual){plant.calculationMethod=manual;plant.methodSource='manual'}
+            else{plant.calculationMethod=defaultMethodForMkt(plant.mktEstimate);plant.methodSource='auto'}
+          });
+          document.getElementById('monthPickerLabel').textContent=monthYearLabel(selected);
           document.getElementById('autoDetectBadge').classList.toggle('hidden',rawRecordsByFile.length===0);
-          document.getElementById('fileList').innerHTML=[...new Set(rawRecordsByFile.map(record=>record.fileName).filter(Boolean))].map(name=>`<span class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-1 rounded border border-slate-200 dark:border-slate-700">${escapeHtml(name)}</span>`).join('');
+          const uniqueFiles=[...new Set(rawRecordsByFile.map(record=>record.fileName).filter(Boolean))];
+          document.getElementById('fileList').innerHTML=`<span class="text-slate-600 dark:text-slate-300"><i class="fa-solid fa-database text-blue-500 mr-1"></i>${uniqueFiles.length} file(s) · ${rawRecordsByFile.length} record(s) · ${plantData.length} project(s)</span>`;
           calculateAndRender();
         }
       };
