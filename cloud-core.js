@@ -207,12 +207,13 @@
       injectDock();setStatus('กำลังโหลดงาน...','busy');
       if(currentProject.dataset_id){
         let shared=null,summary=bootstrapSummary;if(!summary){const summaryResult=await getClient().rpc('get_central_summary',{p_workspace:currentMembership.workspace_id});if(!summaryResult.error)summary=summaryResult.data}
-        const preferredMonth=expectedType==='working_day'?(currentProject.user_state?.selectedMonth||String(summary?.date_end||'').slice(0,7)):null;
+        const preferredMonth=(expectedType==='working_day'||expectedType==='global_irradiance')?(currentProject.user_state?.selectedMonth||currentProject.user_state?.selectedPeriod||String(summary?.date_end||'').slice(0,7)):null;
         const key=cacheKey(currentMembership.workspace_id,expectedType,summary)+(preferredMonth?':'+preferredMonth:''),cached=await cacheRead(key);
         if(cached?.payload){shared=cached.payload;setStatus('กำลังเปิดข้อมูลจาก Cache...','busy')}
         else{
-          if(expectedType==='working_day'){
-            const monthly=await getClient().rpc('get_working_day_month',{p_workspace:currentMembership.workspace_id,p_month:preferredMonth||null});
+          if(expectedType==='working_day'||expectedType==='global_irradiance'){
+            const rpcName=expectedType==='working_day'?'get_working_day_month':'get_global_irradiance_month';
+            const monthly=await getClient().rpc(rpcName,{p_workspace:currentMembership.workspace_id,p_month:preferredMonth||null});
             if(!monthly.error&&monthly.data&&Object.keys(monthly.data).length)shared=monthly.data;
           }
           if(!shared){const fast=await getClient().rpc('get_central_analysis_payload',{p_workspace:currentMembership.workspace_id,p_analysis_type:expectedType});if(!fast.error&&fast.data&&Object.keys(fast.data).length)shared=fast.data}
@@ -228,11 +229,13 @@
     loading.remove();
   }
   async function loadCentralPeriod(month){
-    if(!currentProject||!adapter||currentProject.analysis_type!=='working_day'||!/^\d{4}-\d{2}$/.test(String(month||'')))return false;
-    const captured=adapter.capture(),summaryResult=await getClient().rpc('get_central_summary',{p_workspace:currentMembership.workspace_id}),summary=summaryResult.data||{},key=cacheKey(currentMembership.workspace_id,'working_day',summary)+':'+month,cached=await cacheRead(key);
+    const type=currentProject?.analysis_type;
+    if(!currentProject||!adapter||!['working_day','global_irradiance'].includes(type)||!/^\d{4}-\d{2}$/.test(String(month||'')))return false;
+    const rpcName=type==='working_day'?'get_working_day_month':'get_global_irradiance_month';
+    const captured=adapter.capture(),summaryResult=await getClient().rpc('get_central_summary',{p_workspace:currentMembership.workspace_id}),summary=summaryResult.data||{},key=cacheKey(currentMembership.workspace_id,type,summary)+':'+month,cached=await cacheRead(key);
     setStatus('กำลังโหลดเดือน '+month+'...','busy');let payload=cached?.payload||null;
-    if(!payload){const result=await getClient().rpc('get_working_day_month',{p_workspace:currentMembership.workspace_id,p_month:month});if(result.error)throw result.error;payload=result.data;cacheWrite(key,{savedAt:Date.now(),payload})}
-    await adapter.restore(payload,{...(captured.userState||{}),selectedMonth:month});setStatus('เชื่อมต่อแล้ว','ok');return true
+    if(!payload){const result=await getClient().rpc(rpcName,{p_workspace:currentMembership.workspace_id,p_month:month});if(result.error)throw result.error;payload=result.data;cacheWrite(key,{savedAt:Date.now(),payload})}
+    await adapter.restore(payload,{...(captured.userState||{}),selectedMonth:month,selectedPeriod:month});setStatus('เชื่อมต่อแล้ว','ok');return true
   }
   function localDraft(){
     if(!currentProject||!adapter)throw new Error('Project is not ready.');
