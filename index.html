@@ -269,7 +269,7 @@ byId('loginForm').addEventListener('submit',async event=>{
   catch(error){byId('loginError').textContent=error.message}
   finally{button.disabled=false;button.textContent='เข้าสู่ระบบ'}
 });
-const analysisIcon=type=>type==='working_day'?'📅':type==='global_irradiance'?'☀️':'📊';
+const analysisIcon=type=>type==='working_day'?'<i class="fa-solid fa-calendar-check" aria-hidden="true"></i>':type==='global_irradiance'?'<i class="fa-solid fa-sun" aria-hidden="true"></i>':'<i class="fa-solid fa-chart-line" aria-hidden="true"></i>';
 function renderDashboardSummary(){
   const total=projectCache.length,working=projectCache.filter(p=>p.analysis_type==='working_day').length,irr=projectCache.filter(p=>p.analysis_type==='global_irradiance').length,progress=projectCache.filter(p=>p.status==='in_progress').length,completed=projectCache.filter(p=>p.status==='completed').length;
   byId('dashboardSummary').innerHTML=`
