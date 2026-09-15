@@ -11,7 +11,7 @@
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20260915-central-data1"></script>
+    <script src="cloud-core.js?v=20260915-project-alias1"></script>
 
     <style>
         :root[data-theme="dark"] {
@@ -212,10 +212,10 @@
     <!-- TAB 1: DATA TABLE -->
     <div id="tableTab" class="tab-content active">
         <div class="top-grid">
-            <div class="upload-card" id="dropzone" onclick="document.getElementById('fileInput').click()">
-                <i class="fa-solid fa-cloud-arrow-up" style="color: var(--accent-blue); margin-bottom: 6px;"></i>
-                <h4 id="uploadStatus" style="font-weight: 600; font-size: 0.9rem;">อัปโหลด Plant Report (.xlsx/.csv)</h4>
-                <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px;">คลิกเพื่อเลือกไฟล์ หรือลากหลายไฟล์มาวางได้</p>
+            <div class="upload-card" id="dropzone" style="cursor:default">
+                <i class="fa-solid fa-database" style="color: var(--accent-blue); margin-bottom: 6px;"></i>
+                <h4 id="uploadStatus" style="font-weight: 600; font-size: 0.9rem;">ข้อมูลกลางจาก Analysis Center</h4>
+                <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px;">หากต้องการเพิ่มข้อมูล กรุณากลับไปอัปโหลดที่หน้า Center</p>
                 <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" multiple style="display:none" onchange="handleFiles(this.files)">
             </div>
 
