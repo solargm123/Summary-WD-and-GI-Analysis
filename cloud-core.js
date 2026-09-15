@@ -235,5 +235,39 @@
     try{const rows=await listDatasets();$('solarCloudLogs').innerHTML=rows.map(ds=>`<div class="log"><b>${esc(ds.name)}</b><div>${esc((ds.source_files||[]).join(', '))}</div><time>${new Date(ds.updated_at).toLocaleString()}</time>${roleCanEdit()?`<button onclick="SolarCloud.useDataset('${ds.id}')">ใช้กับงานนี้</button>`:''}</div>`).join('')||'<div>ยังไม่มี Shared Data — อัปโหลด Excel ในหน้าวิเคราะห์หนึ่งครั้งเพื่อสร้าง</div>'}catch(error){$('solarCloudLogs').textContent=error.message}
   }
   async function useDataset(id){try{const rows=await listDatasets(),ds=rows.find(item=>item.id===id);await attachDataset(ds);$('solarCloudModal').classList.remove('open')}catch(error){notice('ใช้ Shared Data ไม่สำเร็จ',error.message,'danger')}}
-  global.SolarCloud={CONFIG,dialog,notice,confirmDialog,setLanguage,getLanguage,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,datasets,useDataset,resolveConflict,downloadLocalDraft,reloadLatest,back:()=>location.assign(indexUrl()),roleCanEdit,roleCanAdmin};
+  const CENTRAL_PROJECT_NAMES={working_day:'System · Working Day',global_irradiance:'System · Global Irradiance',pr_report:'System · PR Report'};
+  function mergeCentralData(previous,next){
+    const old=previous&&typeof previous==='object'?previous:{},fresh=next&&typeof next==='object'?next:{};
+    const merged={working_day:{records:[],detectedMonths:[]},global_irradiance:{plants:{},dates:[],sourceFiles:[]},pr_report:{records:[],sourceFiles:[]},sourceFiles:[...new Set([...(old.sourceFiles||[]),...(fresh.sourceFiles||[])])]};
+    const wd=new Map();[...(old.working_day?.records||[]),...(fresh.working_day?.records||[])].forEach(r=>wd.set(`${r.monthKey||''}|${r.recordDay??''}|${String(r.name||'').toLowerCase()}`,r));merged.working_day.records=[...wd.values()];merged.working_day.detectedMonths=[...new Set(merged.working_day.records.map(r=>r.monthKey).filter(Boolean))].sort().reverse();
+    for(const source of [old.global_irradiance?.plants||{},fresh.global_irradiance?.plants||{}])for(const [name,plant] of Object.entries(source)){if(!merged.global_irradiance.plants[name])merged.global_irradiance.plants[name]={capacity:0,note:'',dates:{}};Object.assign(merged.global_irradiance.plants[name],plant,{dates:{...merged.global_irradiance.plants[name].dates,...(plant.dates||{})}})}
+    merged.global_irradiance.dates=[...new Set(Object.values(merged.global_irradiance.plants).flatMap(p=>Object.keys(p.dates||{})))].sort();merged.global_irradiance.sourceFiles=merged.sourceFiles;
+    const pr=new Map();[...(old.pr_report?.records||[]),...(fresh.pr_report?.records||[])].forEach(r=>pr.set(`${r.date||''}|${String(r.project||'').toLowerCase()}`,r));merged.pr_report.records=[...pr.values()].sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.project).localeCompare(String(b.project)));merged.pr_report.sourceFiles=merged.sourceFiles;
+    return merged;
+  }
+  async function ensureCentralProject(type){
+    const m=currentMembership||await membership(),name=CENTRAL_PROJECT_NAMES[type];if(!name)throw new Error('Unknown analysis type.');
+    const {data,error}=await getClient().from('analysis_projects').select('*').eq('workspace_id',m.workspace_id).eq('analysis_type',type).is('deleted_at',null).order('updated_at',{ascending:false});if(error)throw error;
+    let project=(data||[]).find(p=>p.name===name);
+    if(!project){if(!['admin','editor'].includes(m.role))throw new Error('พื้นที่วิเคราะห์กลางยังไม่ถูกสร้าง กรุณาให้ Admin หรือ Editor เปิดเครื่องมือนี้ครั้งแรก');const id=await createProject(type,name);project=await loadProject(id)}
+    return project;
+  }
+  async function centralDatasetStatus(){
+    const m=currentMembership||await membership(),rows=await listDatasets(),dataset=rows[0]||null,normalized=dataset?.normalized_data||{};
+    const pr=normalized.pr_report?.records||[],wd=normalized.working_day?.records||[],gi=normalized.global_irradiance||{},allDates=[...new Set([...pr.map(r=>r.date),...(gi.dates||[])].filter(Boolean))].sort(),plants=new Set([...pr.map(r=>r.project),...wd.map(r=>r.name),...Object.keys(gi.plants||{})].filter(Boolean));
+    return{membership:m,dataset,files:dataset?.source_files||normalized.sourceFiles||[],projectCount:plants.size,recordCount:Math.max(pr.length,wd.length),dateStart:allDates[0]||null,dateEnd:allDates.at(-1)||null};
+  }
+  async function uploadCentralDataset(files){
+    const m=currentMembership||await membership();if(!['admin','editor'].includes(m.role))throw new Error('Viewer cannot upload or replace central data.');if(!files?.length)throw new Error('Please select at least one Excel file.');
+    const fresh=await normalizeUpload(files),rows=await listDatasets(),existing=rows.find(ds=>String(ds.fingerprint||'').startsWith('central-data-hub:'))||rows[0]||null,merged=mergeCentralData(existing?.normalized_data,fresh),fingerprint=`central-data-hub:${m.workspace_id}`,names=merged.sourceFiles,name='Central Data Hub';
+    const {data,error}=await getClient().rpc('upsert_shared_dataset',{p_workspace:m.workspace_id,p_name:name,p_fingerprint:fingerprint,p_source_files:names,p_normalized_data:merged});if(error)throw error;
+    for(const type of Object.keys(CENTRAL_PROJECT_NAMES)){const project=await ensureCentralProject(type);const attached=await getClient().rpc('attach_dataset_to_project',{p_project_id:project.id,p_dataset_id:data.id});if(attached.error)throw attached.error}
+    return{dataset:data,normalized:merged,summary:await centralDatasetStatus()};
+  }
+  async function openCentralAnalysis(type){
+    const project=await ensureCentralProject(type),rows=await listDatasets(),dataset=rows[0]||null;
+    if(dataset&&project.dataset_id!==dataset.id){const {error}=await getClient().rpc('attach_dataset_to_project',{p_project_id:project.id,p_dataset_id:dataset.id});if(error)throw error}
+    location.href=analysisUrl(project);
+  }
+  global.SolarCloud={CONFIG,dialog,notice,confirmDialog,setLanguage,getLanguage,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,datasets,useDataset,resolveConflict,downloadLocalDraft,reloadLatest,back:()=>location.assign(indexUrl()),roleCanEdit,roleCanAdmin,centralDatasetStatus,uploadCentralDataset,openCentralAnalysis};
 })(window);
