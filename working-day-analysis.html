@@ -118,6 +118,7 @@
     </style>
 <style id="wdCompactUi">
 .analysis-flow{display:none!important}main{margin-top:.5rem!important;gap:.65rem}#wdTopPanel{gap:.65rem;align-items:start}#centralDataCard,#solarParamsCard{padding:.75rem!important}#centralDataCard #dropZone{display:none!important}#centralDataCard #fileList{margin-top:.35rem!important;max-height:none!important}#solarParamsCard .space-y-1\.5{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.35rem}#solarParamsCard .space-y-1\.5>label{margin:0!important}#wdKpis{gap:.65rem}#wdKpis>div{padding:.65rem!important}#wdKpis h3{font-size:1rem!important;margin-top:.15rem!important}#wdTableToolbar{padding:.55rem .7rem!important;gap:.5rem!important}#tableScrollContainer{max-height:calc(100vh - 270px);overflow:auto}#tableScrollContainer thead{position:sticky;top:0;z-index:20}#monthPickerButton{min-width:180px}@media(min-width:1024px){#centralDataCard{grid-column:span 3/span 3}#solarParamsCard{grid-column:span 9/span 9}}@media(max-width:900px){#solarParamsCard .space-y-1\.5{grid-template-columns:1fr}#tableScrollContainer{max-height:none}}
+.mkt-select{border-radius:999px!important;font-weight:700!important;text-align:center!important;padding:.45rem 2rem .45rem .75rem!important;transition:.2s;background-color:#fff}.dark .mkt-select{background-color:#0f172a!important;border-color:#475569!important;color-scheme:dark}.dark .mkt-select option{background:#0f172a;color:#e2e8f0}.mkt-estimated{background:#ecfdf5!important;border-color:#6ee7b7!important}.mkt-misestimated{background:#fffbeb!important;border-color:#fbbf24!important}.mkt-haveno{background:#fff1f2!important;border-color:#fda4af!important}.mkt-question{background:#f5f3ff!important;border-color:#c4b5fd!important}.dark .mkt-estimated{background:#064e3b!important}.dark .mkt-misestimated{background:#78350f!important}.dark .mkt-haveno{background:#881337!important}.dark .mkt-question{background:#4c1d95!important}#monthPickerButton{min-width:260px!important;min-height:44px;font-size:14px!important;padding:.65rem 1rem!important}#monthYearModal>div{max-width:440px!important}#monthPopupYear,#monthPopupMonth{min-height:48px;font-size:15px!important}#lossModal>div{max-width:520px!important;border-radius:18px!important}#modalDaysGrid button{min-height:38px;font-size:13px!important;text-align:center}
 </style>
 <link rel="stylesheet" href="unified-ui.css?v=20260915-unified-ui1">
 </head>
@@ -140,7 +141,7 @@
             </div>
             
             <!-- Quick Actions & Theme Switcher -->
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-1.5">
                 <button id="languageButton" onclick="toggleLanguage()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-lg transition border border-slate-300 dark:border-slate-700" title="Change language">
                     EN
                 </button>
@@ -314,7 +315,7 @@
                     </h2>
                 </div>
                 <div class="flex flex-wrap items-center justify-end gap-2">
-                    <label class="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs"><i class="fa-solid fa-filter text-violet-500"></i><span class="font-semibold">MKT</span><select id="mktEstimateFilter" onchange="setMktEstimateFilter(this.value)" class="bg-transparent focus:outline-none max-w-[180px]"><option value="all">All</option><option value="Estimated 12:00 L">Estimated 12:00 L</option><option value="Misestimated 12:00 L">Misestimated 12:00 L</option><option value="Haveno 12:00 L">Haveno 12:00 L</option><option value="Misestimated?">Misestimated?</option><option value="">Not specified</option></select></label><button id="method1FilterButton" onclick="setMethodFilter('m1')" class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg px-3 py-2 flex items-center gap-2 transition">
+                    <label class="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs"><i class="fa-solid fa-filter text-violet-500"></i><span class="font-semibold">MKT</span><select id="mktEstimateFilter" onchange="setMktEstimateFilter(this.value)" class="bg-transparent focus:outline-none max-w-[180px]"><option value="all">Total</option><option value="Estimated 12:00 L">Estimated 12:00 L</option><option value="Misestimated 12:00 L">Misestimated 12:00 L</option><option value="Haveno 12:00 L">Haveno 12:00 L</option><option value="Misestimated?">Misestimated?</option><option value="">Not specified</option></select></label><button id="method1FilterButton" onclick="setMethodFilter('m1')" class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg px-3 py-2 flex items-center gap-2 transition">
                         <i class="fa-solid fa-calculator"></i><span>วิธีที่ 1</span><strong id="method1ProjectCount" class="bg-blue-600 text-white rounded-full px-2 py-0.5">0</strong>
                     </button>
                     <button id="method2FilterButton" onclick="setMethodFilter('m2')" class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-lg px-3 py-2 flex items-center gap-2 transition">
@@ -381,7 +382,7 @@
 
     <!-- Modal for Editing Loss Days -->
     <div id="lossModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm hidden">
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 w-full max-w-md shadow-2xl space-y-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 w-full max-w-lg shadow-2xl space-y-4">
             <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
                 <h3 class="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400 flex items-center gap-2">
                     <i class="fa-solid fa-calendar-days text-amber-500"></i> เลือกวันที่เกิด Loss Due to Export Limit
@@ -400,7 +401,7 @@
                 <p id="modalPlantName" class="text-xs font-semibold text-blue-900 dark:text-blue-400 mb-1"></p>
                 <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-3">คลิกเลือกปุ่มวันที่ต้องการกำหนดเป็นวันเกิด Loss Due:</p>
                 
-                <div id="modalDaysGrid" class="grid grid-cols-7 gap-2 max-h-64 overflow-y-auto p-2 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
+                <div id="modalDaysGrid" class="grid grid-cols-7 gap-2 max-h-64 overflow-y-auto p-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800">
                     <!-- Dynamic Days Rendered Here -->
                 </div>
             </div>
@@ -591,11 +592,11 @@
             return ['<option value="">Not specified</option>',...MKT_ESTIMATE_OPTIONS.map(value=>`<option value="${value}" ${value===selected?'selected':''}>${value}</option>`)].join('');
         }
         function mktStatusClass(status) {
-            if(status==='Estimated 12:00 L')return 'text-emerald-700 dark:text-emerald-300';
-            if(status==='Misestimated 12:00 L')return 'text-amber-700 dark:text-amber-300';
-            if(status==='Haveno 12:00 L')return 'text-rose-700 dark:text-rose-300';
-            if(status==='Misestimated?')return 'text-violet-700 dark:text-violet-300';
-            return 'text-slate-500';
+            if(status==='Estimated 12:00 L')return 'mkt-estimated text-emerald-700 dark:text-emerald-200';
+            if(status==='Misestimated 12:00 L')return 'mkt-misestimated text-amber-700 dark:text-amber-200';
+            if(status==='Haveno 12:00 L')return 'mkt-haveno text-rose-700 dark:text-rose-200';
+            if(status==='Misestimated?')return 'mkt-question text-violet-700 dark:text-violet-200';
+            return 'text-slate-500 dark:text-slate-300';
         }
         function setMktEstimateFilter(value) { currentMktFilter=value;calculateAndRender(); }
         function matchesMktFilter(plant) { return currentMktFilter==='all'||(plant.mktEstimate||'')===currentMktFilter; }
@@ -605,7 +606,9 @@
             mktEstimateByProject[key]=status;plant.mktEstimate=status;
             methodOverridesByMonth[month]=methodOverridesByMonth[month]||{};
             methodOverridesByMonth[month][key]=null;
-            plant.calculationMethod=defaultMethodForMkt(status);plant.methodSource='auto';calculateAndRender();
+            plant.calculationMethod=defaultMethodForMkt(status);plant.methodSource='auto';
+            currentMktFilter='all';const filter=document.getElementById('mktEstimateFilter');if(filter)filter.value='all';
+            calculateAndRender();
         }
         function updateCalculationMethod(id, method) {
             const plant = plantData.find(p => p.id === id);
@@ -1404,7 +1407,7 @@
 
                 let lossDatesDisplay = `<span class="text-slate-400 italic">${t('noLoss')}</span>`;
                 if (lossDaysCount > 0) {
-                    lossDatesDisplay = `<span class="bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800 px-1.5 py-0.5 rounded font-mono text-[10px] font-semibold">${t('dayPrefix')} ${item.lossDaysArray.join(', ')}</span>`;
+                    lossDatesDisplay = `<span class="flex flex-wrap justify-center gap-1">${item.lossDaysArray.map(day=>`<span class="inline-flex min-w-7 h-7 items-center justify-center bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 rounded-md font-mono text-[10px] font-bold">${day}</span>`).join('')}</span>`;
                 }
 
                 const tr = document.createElement('tr');
@@ -1429,18 +1432,16 @@
                     <td class="p-3 text-center font-mono font-semibold text-slate-800 dark:text-slate-200">${lossDaysCount}</td>
                     
                     <td class="p-3 text-center font-mono text-[11px] bg-amber-50/20 dark:bg-amber-950/10">
-                        <div class="flex items-center justify-center gap-1.5">
-                            <span>${lossDatesDisplay}</span>
-                            <button onclick="openLossModal(${item.id})" class="bg-amber-500 hover:bg-amber-600 text-white px-1.5 py-0.5 rounded text-[10px] font-medium transition shadow-sm" title="แก้ไขวันที่เกิด Loss">
-                                <i class="fa-solid fa-pen"></i>
-                            </button>
+                        <div class="flex items-center justify-center gap-2 min-h-9">
+                            <span class="flex-1 text-center">${lossDatesDisplay}</span>
+                            <button onclick="openLossModal(${item.id})" class="shrink-0 w-8 h-8 grid place-items-center bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition shadow-sm" title="แก้ไขวันที่เกิด Loss"><i class="fa-solid fa-pen"></i></button>
                         </div>
                     </td>
 
                     <td class="p-3 text-right font-mono font-semibold text-red-600 dark:text-red-400">${selected.lossEnergy.toLocaleString(undefined, {maximumFractionDigits: 2})}</td>
                     <td class="p-3 text-right font-mono font-bold text-rose-700 dark:text-rose-300 bg-rose-50/30 dark:bg-rose-950/20">${(Number(item.lossDueEnergy)||0).toLocaleString(undefined, {maximumFractionDigits: 2})}</td>
                     <td class="p-3 text-right font-mono font-semibold text-indigo-600 dark:text-indigo-400">${selected.pvYield.toLocaleString(undefined, {maximumFractionDigits: 2})}</td>
-                    <td class="p-3 text-center"><select onchange="updateMktEstimate(${item.id}, this.value)" class="w-full min-w-[170px] border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded px-2 py-1.5 text-xs ${mktStatusClass(item.mktEstimate)}">${mktEstimateOptions(item.mktEstimate)}</select></td>
+                    <td class="p-3 text-center"><select onchange="updateMktEstimate(${item.id}, this.value)" class="mkt-select w-full min-w-[180px] border border-slate-300 dark:border-slate-700 text-xs ${mktStatusClass(item.mktEstimate)}">${mktEstimateOptions(item.mktEstimate)}</select></td>
                     <td class="p-3 text-right font-mono font-bold text-amber-600 dark:text-amber-400 bg-amber-50/30 dark:bg-amber-950/20" title="M1: ${shM1.toFixed(2)} | M2: ${shM2.toFixed(2)}">${shM1.toFixed(2)} / ${shM2.toFixed(2)}</td>
                     
                     <td class="p-3 text-center">
