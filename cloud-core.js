@@ -94,14 +94,14 @@
   }
   async function normalizeUpload(files){
     if(!global.XLSX)throw new Error('Excel reader is not available.');
-    const working=[],months=new Set(),plants={},dates=new Set(),seen=new Set(),sourceFiles=[];
+    const working=[],prRecords=[],months=new Set(),plants={},dates=new Set(),seen=new Set(),sourceFiles=[];
     for(const file of Array.from(files||[])){
       sourceFiles.push(file.name);const buffer=await file.arrayBuffer();const workbook=global.XLSX.read(buffer,{type:'array'});const fallbackDate=fileDate(file.name);
       workbook.SheetNames.forEach(sheetName=>{
         const rows=sheetRows(workbook.Sheets[sheetName]);if(!rows.length)return;
-        let header=-1,idx={plant:-1,cap:-1,pv:-1,specific:-1,loss:-1,irr:-1},date=fallbackDate;
+        let header=-1,idx={plant:-1,cap:-1,pv:-1,specific:-1,loss:-1,irr:-1,theory:-1},date=fallbackDate;
         for(let r=0;r<Math.min(rows.length,30);r++){
-          const candidate={plant:-1,cap:-1,pv:-1,specific:-1,loss:-1,irr:-1};
+          const candidate={plant:-1,cap:-1,pv:-1,specific:-1,loss:-1,irr:-1,theory:-1};
           (rows[r]||[]).forEach((cell,c)=>{const h=normalizedHeader(cell);const dm=String(cell??'').match(/\d{4}[-./]\d{2}[-./]\d{2}|\d{2}[-./]\d{2}[-./]\d{4}/);if(dm&&!date){const p=dm[0].split(/[-./]/);date=p[0].length===4?`${p[0]}-${p[1]}-${p[2]}`:`${p[2]}-${p[1]}-${p[0]}`}
             if(candidate.plant<0&&(h.includes('plant name')||h==='plant'||h==='station'||h.includes('ชื่อสถานี')||h.includes('ชื่อโครงการ')))candidate.plant=c;
             if(candidate.cap<0&&(h.includes('capacity')||h.includes('kwp')))candidate.cap=c;
@@ -109,20 +109,21 @@
             if(candidate.specific<0&&h.includes('specific energy'))candidate.specific=c;
             if(candidate.loss<0&&(h.includes('loss due to export limitation')||h.includes('loss due export')||h.includes('พลังงานสูญเสียจากการจำกัด')))candidate.loss=c;
             if(candidate.irr<0&&(h.includes('irradiation')||h.includes('irradiance')||h.includes('kwh/㎡')||h.includes('kwh/m²')))candidate.irr=c;
+            if(candidate.theory<0&&h.includes('theoretical yield'))candidate.theory=c;
           });
           if(candidate.plant>=0&&(candidate.cap>=0||candidate.pv>=0||candidate.irr>=0)){header=r;idx=candidate;break}
         }
         if(header<0)return;const month=date?.slice(0,7)||null;const day=date?Number(date.slice(8,10)):null;
         for(let r=header+1;r<rows.length;r++){
           const row=rows[r]||[],name=String(row[idx.plant]??'').replace(/\s+/g,' ').trim();if(!name||/total|รวม|plant name/i.test(name))continue;
-          const cap=idx.cap>=0?numeric(row[idx.cap]):0,pv=idx.pv>=0?numeric(row[idx.pv]):0,specific=idx.specific>=0?numeric(row[idx.specific]):(cap>0?pv/cap:0),loss=idx.loss>=0?numeric(row[idx.loss]):0;
-          if(month&&idx.pv>=0){const key=`${month}|${day??'none'}|${name.toLowerCase()}`;if(!seen.has(key)){seen.add(key);working.push({fileName:file.name,name,cap,pv,specEnergy:specific,loss,recordDay:day,monthKey:month});months.add(month)}}
+          const cap=idx.cap>=0?numeric(row[idx.cap]):0,pv=idx.pv>=0?numeric(row[idx.pv]):0,specific=idx.specific>=0?numeric(row[idx.specific]):(cap>0?pv/cap:0),loss=idx.loss>=0?numeric(row[idx.loss]):0,irr=idx.irr>=0?numeric(row[idx.irr]):0,theoretical=idx.theory>=0?numeric(row[idx.theory]):cap*irr;
+          if(month&&idx.pv>=0){const key=`${month}|${day??'none'}|${name.toLowerCase()}`;if(!seen.has(key)){seen.add(key);working.push({fileName:file.name,name,cap,pv,specEnergy:specific,loss,recordDay:day,monthKey:month});prRecords.push({fileName:file.name,project:name,date,capacity:cap,gi:irr,specific,theoretical,pv,loss});months.add(month)}}
           if(date&&idx.irr>=0){if(!plants[name])plants[name]={capacity:cap,note:'',dates:{}};if(cap>0)plants[name].capacity=cap;plants[name].dates[date]=numeric(row[idx.irr]);dates.add(date)}
         }
       });
     }
     if(!working.length&&!Object.keys(plants).length)throw new Error('No valid shared data was found in the selected file(s).');
-    return {working_day:{records:working,detectedMonths:[...months].sort().reverse()},global_irradiance:{plants,dates:[...dates].sort(),sourceFiles},sourceFiles};
+    return {working_day:{records:working,detectedMonths:[...months].sort().reverse()},global_irradiance:{plants,dates:[...dates].sort(),sourceFiles},pr_report:{records:prRecords,sourceFiles},sourceFiles};
   }
   async function saveSharedDataset(files){
     if(!roleCanEdit()||!files?.length)return null;setStatus('กำลังสร้าง Shared Data...','busy');
