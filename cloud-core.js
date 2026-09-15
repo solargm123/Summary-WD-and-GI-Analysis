@@ -160,7 +160,7 @@
   function applyViewerLock(){
     if(roleCanEdit())return;
     const lock=()=>{
-      document.querySelectorAll('#excelFileInput,#fileInput,#inputLossFactor,#inputSunHoursCustom,[onchange*="updatePlantCapacity"],[onchange*="updatePlantDays"],[onchange*="updateCalculationMethod"],[onclick*="openLossModal"],[onclick*="openNoteModal"],#toggleEditBtn,[onclick="resetData()"],.data-irr-input,.data-note-input,.btn-copy,.btn-paste,.btn-restore').forEach(el=>{el.disabled=true;el.style.opacity='.6';el.style.cursor='not-allowed'});
+      document.querySelectorAll('#excelFileInput,#fileInput,#inputLossFactor,#inputSunHoursCustom,[onchange*="updatePlantCapacity"],[onchange*="updatePlantDays"],[onchange*="updateCalculationMethod"],[onchange*="updateMktEstimate"],[onclick*="openLossModal"],[onclick*="openNoteModal"],#toggleEditBtn,[onclick="resetData()"],.data-irr-input,.data-note-input,.btn-copy,.btn-paste,.btn-restore').forEach(el=>{el.disabled=true;el.style.opacity='.6';el.style.cursor='not-allowed'});
     };lock();new MutationObserver(lock).observe(document.body,{subtree:true,childList:true});
   }
   const cloneJson=value=>JSON.parse(JSON.stringify(value??{}));
