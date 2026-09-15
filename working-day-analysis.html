@@ -117,7 +117,7 @@
         @media(max-width:760px){body>header{position:relative!important;top:0!important;margin:8px}.analysis-flow{grid-template-columns:1fr;margin-top:10px}.analysis-flow-step{padding:8px 11px}}
     </style>
 <style id="wdCompactUi">
-.analysis-flow{display:none!important}main{margin-top:.5rem!important;gap:.65rem}#wdTopPanel{gap:.65rem}#centralDataCard,#solarParamsCard{padding:.75rem!important}#centralDataCard #dropZone{display:none!important}#centralDataCard #fileList{margin-top:.35rem!important;max-height:none!important}#solarParamsCard .space-y-1\.5{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.35rem}#solarParamsCard .space-y-1\.5>label{margin:0!important}#wdKpis{gap:.65rem}#wdKpis>div{padding:.65rem!important}#wdKpis h3{font-size:1rem!important;margin-top:.15rem!important}#wdTableToolbar{padding:.55rem .7rem!important;gap:.5rem!important}#tableScrollContainer{max-height:calc(100vh - 270px);overflow:auto}#tableScrollContainer thead{position:sticky;top:0;z-index:20}#monthPickerButton{min-width:180px}@media(min-width:1024px){#centralDataCard{grid-column:span 3/span 3}#solarParamsCard{grid-column:span 9/span 9}}@media(max-width:900px){#solarParamsCard .space-y-1\.5{grid-template-columns:1fr}#tableScrollContainer{max-height:none}}
+.analysis-flow{display:none!important}main{margin-top:.5rem!important;gap:.65rem}#wdTopPanel{gap:.65rem;align-items:start}#centralDataCard,#solarParamsCard{padding:.75rem!important}#centralDataCard #dropZone{display:none!important}#centralDataCard #fileList{margin-top:.35rem!important;max-height:none!important}#solarParamsCard .space-y-1\.5{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.35rem}#solarParamsCard .space-y-1\.5>label{margin:0!important}#wdKpis{gap:.65rem}#wdKpis>div{padding:.65rem!important}#wdKpis h3{font-size:1rem!important;margin-top:.15rem!important}#wdTableToolbar{padding:.55rem .7rem!important;gap:.5rem!important}#tableScrollContainer{max-height:calc(100vh - 270px);overflow:auto}#tableScrollContainer thead{position:sticky;top:0;z-index:20}#monthPickerButton{min-width:180px}@media(min-width:1024px){#centralDataCard{grid-column:span 3/span 3}#solarParamsCard{grid-column:span 9/span 9}}@media(max-width:900px){#solarParamsCard .space-y-1\.5{grid-template-columns:1fr}#tableScrollContainer{max-height:none}}
 </style>
 <link rel="stylesheet" href="unified-ui.css?v=20260915-unified-ui1">
 </head>
@@ -412,7 +412,7 @@
         </div>
     </div>
 
-    <div id="monthYearModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[90] hidden items-center justify-center p-4"><div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl w-full max-w-sm p-5 space-y-4"><div class="flex justify-between items-center"><h3 class="font-bold text-slate-800 dark:text-slate-100">เลือกเดือนและปี</h3><button onclick="closeMonthYearPopup()" class="text-slate-400"><i class="fa-solid fa-xmark"></i></button></div><div class="grid grid-cols-2 gap-3"><label class="text-xs text-slate-500">ปี<select id="monthPopupYear" onchange="refreshMonthPopupOptions()" class="mt-1 w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-100"></select></label><label class="text-xs text-slate-500">เดือน<select id="monthPopupMonth" class="mt-1 w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-100"></select></label></div><div class="flex justify-end gap-2"><button onclick="closeMonthYearPopup()" class="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-xs">ยกเลิก</button><button onclick="applyMonthYearPopup()" class="px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold">ใช้เดือนนี้</button></div></div></div>
+    <div id="monthYearModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[90] hidden items-center justify-center p-4"><div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl w-full max-w-sm p-5 space-y-4"><div class="flex justify-between items-center"><h3 id="monthYearTitle" class="font-bold text-slate-800 dark:text-slate-100">เลือกเดือนและปี</h3><button onclick="closeMonthYearPopup()" class="text-slate-400"><i class="fa-solid fa-xmark"></i></button></div><div class="grid grid-cols-2 gap-3"><label class="text-xs text-slate-500"><span id="monthYearYearLabel">ปี</span><select id="monthPopupYear" onchange="refreshMonthPopupOptions()" class="mt-1 w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-100"></select></label><label class="text-xs text-slate-500"><span id="monthYearMonthLabel">เดือน</span><select id="monthPopupMonth" class="mt-1 w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-100"></select></label></div><div class="flex justify-end gap-2"><button id="monthYearCancel" onclick="closeMonthYearPopup()" class="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-xs">ยกเลิก</button><button id="monthYearApply" onclick="applyMonthYearPopup()" class="px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold">ใช้เดือนนี้</button></div></div></div>
 
     <!-- Formula details modal -->
     <div id="formulaModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm hidden">
@@ -718,6 +718,12 @@
             document.getElementById('projectPopupSearch').placeholder = t('searchProjects');
             document.getElementById('noteTextarea').placeholder = t('notePlaceholder');
             document.getElementById('formulaCloseButton').textContent = t('close');
+            const th=currentLanguage==='th';
+            if(document.getElementById('monthYearTitle'))document.getElementById('monthYearTitle').textContent=th?'เลือกเดือนและปี':'Select month and year';
+            if(document.getElementById('monthYearYearLabel'))document.getElementById('monthYearYearLabel').textContent=th?'ปี':'Year';
+            if(document.getElementById('monthYearMonthLabel'))document.getElementById('monthYearMonthLabel').textContent=th?'เดือน':'Month';
+            if(document.getElementById('monthYearCancel'))document.getElementById('monthYearCancel').textContent=th?'ยกเลิก':'Cancel';
+            if(document.getElementById('monthYearApply'))document.getElementById('monthYearApply').textContent=th?'ใช้เดือนนี้':'Apply month';
             document.getElementById('thSelectedLossEnergy').innerHTML = `${t('selectedLoss')}<br><span class="text-[10px] font-normal text-slate-400">(kWh)</span>`;
             document.getElementById('thMonthlyLossEnergy').innerHTML = `${t('monthlyLoss')}<br><span class="text-[10px] font-normal text-slate-400">(kWh)</span>`;
             document.getElementById('thSelectedPvYield').innerHTML = `${t('selectedPv')}<br><span class="text-[10px] font-normal text-slate-400">(kWh)</span>`;
@@ -1124,9 +1130,9 @@
                     }
                 });
 
-                const stableKey=String(plantObj.projectId||('name:'+key));
-                const mktEstimate=mktEstimateByProject[stableKey]||'';
-                const manualMethod=methodOverridesByMonth[targetMonthKey]?.[stableKey];
+                const stableKey=String(plantObj.projectId||('name:'+key)),legacyKey='name:'+key;
+                const mktEstimate=Object.prototype.hasOwnProperty.call(mktEstimateByProject,stableKey)?mktEstimateByProject[stableKey]:(mktEstimateByProject[legacyKey]||'');
+                const manualMethod=methodOverridesByMonth[targetMonthKey]?.[stableKey]||methodOverridesByMonth[targetMonthKey]?.[legacyKey];
                 plantData.push({
                     id: idx,
                     projectId: plantObj.projectId,
@@ -1618,7 +1624,7 @@
           document.getElementById('monthPickerLabel').textContent=monthYearLabel(selected);
           document.getElementById('autoDetectBadge').classList.toggle('hidden',rawRecordsByFile.length===0);
           const uniqueFiles=[...new Set(rawRecordsByFile.map(record=>record.fileName).filter(Boolean))];
-          document.getElementById('fileList').innerHTML=`<span class="text-slate-600 dark:text-slate-300"><i class="fa-solid fa-database text-blue-500 mr-1"></i>${uniqueFiles.length} file(s) · ${rawRecordsByFile.length} record(s) · ${plantData.length} project(s)</span>`;
+          document.getElementById('fileList').innerHTML=`<span class="text-slate-600 dark:text-slate-300"><i class="fa-solid fa-database text-blue-500 mr-1"></i>${uniqueFiles.length} ${currentLanguage==='th'?'ไฟล์':'files'} · ${rawRecordsByFile.length} ${currentLanguage==='th'?'รายการ':'records'} · ${plantData.length} ${currentLanguage==='th'?'โครงการ':'projects'}</span>`;
           calculateAndRender();
         }
       };
