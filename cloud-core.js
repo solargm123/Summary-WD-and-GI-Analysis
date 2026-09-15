@@ -36,6 +36,15 @@
   async function confirmDialog(title,message,options={}){return !!(await dialog({title,message,tone:options.tone||'default',icon:options.icon,confirmText:options.confirmText||'ยืนยัน',cancelText:options.cancelText||'ยกเลิก',fields:options.fields||[]}))}
 
 
+
+  let interfaceLanguage=localStorage.getItem('fusionLanguage')||'th';
+  function setLanguage(language){
+    interfaceLanguage=language==='en'?'en':'th';localStorage.setItem('fusionLanguage',interfaceLanguage);
+    document.querySelectorAll('[data-solar-th][data-solar-en]').forEach(node=>{node.textContent=interfaceLanguage==='th'?node.dataset.solarTh:node.dataset.solarEn});
+    document.documentElement.lang=interfaceLanguage;
+  }
+  function getLanguage(){return interfaceLanguage}
+
   function getClient(){
     if(client)return client;
     if(!global.supabase?.createClient)throw new Error('Supabase client library could not be loaded.');
@@ -144,7 +153,7 @@
       #solarCloudModal{position:fixed;inset:0;z-index:10000;background:#07151db3;display:none;place-items:center;padding:20px;font-family:'Bai Jamjuree',sans-serif}#solarCloudModal.open{display:grid}
       #solarCloudModalBox{width:min(700px,100%);max-height:80vh;overflow:auto;background:#fff;color:#1e293b;border-radius:14px;padding:18px;box-shadow:0 25px 70px #0007}#solarCloudModalBox h3{margin:0 0 12px}#solarCloudModalBox .log{padding:10px 0;border-bottom:1px solid #e2e8f0;font-size:12px}#solarCloudModalBox time{color:#64748b;font-size:10px;display:block;margin-top:3px}
     `;document.head.appendChild(style);
-    const dock=document.createElement('div');dock.id='solarCloudDock';dock.innerHTML=`<button onclick="SolarCloud.back()">← Workspace</button><span id="solarCloudDot"></span><span id="solarCloudStatus">กำลังเชื่อมต่อ...</span><span class="solar-cloud-viewer">${editLockLabel()}</span><button id="solarConflictButton" style="display:none" onclick="SolarCloud.resolveConflict()">จัดการ Conflict</button><button onclick="SolarCloud.datasets()">Shared Data</button><button onclick="SolarCloud.history()">History</button><button onclick="location.reload()">Reload</button><button onclick="SolarCloud.saveNow()" ${roleCanEdit()?'':'disabled'}>Save</button>`;document.body.appendChild(dock);
+    const dock=document.createElement('div');dock.id='solarCloudDock';dock.innerHTML=`<button onclick="SolarCloud.back()"><i class="fa-solid fa-arrow-left"></i><span data-solar-th="หน้าหลัก" data-solar-en="Center">หน้าหลัก</span></button><span id="solarCloudDot"></span><span id="solarCloudStatus">กำลังเชื่อมต่อ...</span><span class="solar-cloud-viewer">${editLockLabel()}</span><button id="solarConflictButton" style="display:none" onclick="SolarCloud.resolveConflict()"><i class="fa-solid fa-triangle-exclamation"></i><span data-solar-th="ข้อมูลชนกัน" data-solar-en="Conflict">ข้อมูลชนกัน</span></button><button onclick="SolarCloud.datasets()"><i class="fa-solid fa-database"></i><span data-solar-th="ชุดข้อมูล" data-solar-en="Shared Data">ชุดข้อมูล</span></button><button onclick="SolarCloud.history()"><i class="fa-solid fa-clock-rotate-left"></i><span data-solar-th="ประวัติ" data-solar-en="History">ประวัติ</span></button><button onclick="location.reload()"><i class="fa-solid fa-rotate-right"></i><span data-solar-th="โหลดใหม่" data-solar-en="Reload">โหลดใหม่</span></button><button onclick="SolarCloud.saveNow()" ${roleCanEdit()?'':'disabled'}><i class="fa-solid fa-floppy-disk"></i><span data-solar-th="บันทึก" data-solar-en="Save">บันทึก</span></button>`;document.body.appendChild(dock);setLanguage(interfaceLanguage);
     const modal=document.createElement('div');modal.id='solarCloudModal';modal.innerHTML='<div id="solarCloudModalBox"><button style="float:right" onclick="document.getElementById(\'solarCloudModal\').classList.remove(\'open\')">✕</button><h3>Activity History</h3><div id="solarCloudLogs">Loading...</div></div>';document.body.appendChild(modal);
   }
   function applyViewerLock(){
@@ -225,5 +234,5 @@
     try{const rows=await listDatasets();$('solarCloudLogs').innerHTML=rows.map(ds=>`<div class="log"><b>${esc(ds.name)}</b><div>${esc((ds.source_files||[]).join(', '))}</div><time>${new Date(ds.updated_at).toLocaleString()}</time>${roleCanEdit()?`<button onclick="SolarCloud.useDataset('${ds.id}')">ใช้กับงานนี้</button>`:''}</div>`).join('')||'<div>ยังไม่มี Shared Data — อัปโหลด Excel ในหน้าวิเคราะห์หนึ่งครั้งเพื่อสร้าง</div>'}catch(error){$('solarCloudLogs').textContent=error.message}
   }
   async function useDataset(id){try{const rows=await listDatasets(),ds=rows.find(item=>item.id===id);await attachDataset(ds);$('solarCloudModal').classList.remove('open')}catch(error){notice('ใช้ Shared Data ไม่สำเร็จ',error.message,'danger')}}
-  global.SolarCloud={CONFIG,dialog,notice,confirmDialog,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,datasets,useDataset,resolveConflict,downloadLocalDraft,reloadLatest,back:()=>location.assign(indexUrl()),roleCanEdit,roleCanAdmin};
+  global.SolarCloud={CONFIG,dialog,notice,confirmDialog,setLanguage,getLanguage,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,datasets,useDataset,resolveConflict,downloadLocalDraft,reloadLatest,back:()=>location.assign(indexUrl()),roleCanEdit,roleCanAdmin};
 })(window);

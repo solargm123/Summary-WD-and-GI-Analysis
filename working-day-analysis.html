@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FusionSolar Working Days Calculator - Pro Edition (Rev.15)</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -24,7 +25,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20260915-final-polish1"></script>
+    <script src="cloud-core.js?v=20260915-unified-ui1"></script>
     <style> 
         html, body, body *:not(i), button, input, select, option, textarea, table, th, td, code {
             font-family: 'Bai Jamjuree', Tahoma, Arial, sans-serif !important;
@@ -116,6 +117,7 @@
         .analysis-flow-step span{font-size:11px;color:#64748b}.dark .analysis-flow-step span{color:#cbd5e1}
         @media(max-width:760px){body>header{position:relative!important;top:0!important;margin:8px}.analysis-flow{grid-template-columns:1fr;margin-top:10px}.analysis-flow-step{padding:8px 11px}}
     </style>
+<link rel="stylesheet" href="unified-ui.css?v=20260915-unified-ui1">
 </head>
 <body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen pb-16 transition-colors duration-200">
 
@@ -680,6 +682,7 @@
 
         function toggleLanguage() {
             currentLanguage = currentLanguage === 'th' ? 'en' : 'th';
+            localStorage.setItem('fusionLanguage', currentLanguage);
             document.documentElement.lang = currentLanguage;
             applyLanguage();
             renderMonthSelectOptions(document.getElementById('monthSelect').value, false);
@@ -739,11 +742,13 @@
                 html.classList.add('light');
                 icon.className = 'fa-solid fa-moon text-slate-600';
                 text.innerText = t('darkMode');
+                localStorage.setItem('fusionTheme', 'light');
             } else {
                 html.classList.remove('light');
                 html.classList.add('dark');
                 icon.className = 'fa-solid fa-sun text-amber-400';
                 text.innerText = t('lightMode');
+                localStorage.setItem('fusionTheme', 'dark');
             }
         }
 
@@ -1512,5 +1517,6 @@
       };
       SolarCloud.initAnalysis('working_day',workingDayCloudAdapter);
     </script>
+<script src="unified-ui.js?v=20260915-unified-ui1"></script>
 </body>
 </html>

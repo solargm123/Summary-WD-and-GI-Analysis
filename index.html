@@ -1,14 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th" data-fs-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FusionSolar Analysis Center</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="cloud-core.js?v=20260915-final-polish1"></script>
+<script src="cloud-core.js?v=20260915-unified-ui1"></script>
 <style>
 :root{
   --bg:#0f172a; --card:#1e293b; --border:#334155;
@@ -89,10 +90,11 @@ body{align-items:flex-start;padding:18px 24px 36px}
   .status-guide{grid-template-columns:1fr 1fr}
 }
 </style>
+<link rel="stylesheet" href="unified-ui.css?v=20260915-unified-ui1">
 </head>
 <body>
 <section id="loginView" class="container hidden">
-  <div class="header"><div class="logo">☀</div><h1>FusionSolar Analysis Center</h1><div class="subtitle">BGPL Solar Engineering Cloud Workspace</div></div>
+  <div class="header"><div class="logo"><i class="fa-solid fa-sun"></i></div><h1>FusionSolar Analysis Center</h1><div class="subtitle">BGPL Solar Engineering Cloud Workspace</div></div>
   <form class="auth-card" id="loginForm">
     <h2>เข้าสู่ระบบ</h2><p>ใช้บัญชีที่ผู้ดูแลระบบสร้างให้ เพื่อเปิดและแก้ไขงานของทีม</p>
     <div class="field"><label>Email</label><input id="loginEmail" type="email" autocomplete="username" required></div>
@@ -103,7 +105,7 @@ body{align-items:flex-start;padding:18px 24px 36px}
 
 <div id="workspaceView" class="workspace hidden">
   <header class="workspace-head">
-    <div class="brand-area"><div class="brand-mark">☀</div><div class="brand-copy"><h1>FusionSolar Analysis Center</h1><div id="workspaceName" class="subtitle">Cloud Workspace</div></div></div>
+    <div class="brand-area"><div class="brand-mark"><i class="fa-solid fa-sun"></i></div><div class="brand-copy"><h1>FusionSolar Analysis Center</h1><div id="workspaceName" class="subtitle">Cloud Workspace</div></div></div>
     <div class="workspace-actions">
       <button id="manageMembersButton" class="small-btn hidden" onclick="openMembers()">สมาชิกและสิทธิ์</button>
       <button id="adminDataButton" class="small-btn hidden" onclick="openAdminData()">ศูนย์จัดการ Admin</button>
@@ -119,13 +121,13 @@ body{align-items:flex-start;padding:18px 24px 36px}
   <div class="section-heading"><div><div class="section-kicker">Create Analysis</div><h2>เริ่มงานวิเคราะห์</h2><p>เลือกประเภทงาน ระบบจะสร้าง Project ใหม่และบันทึกใน Workspace</p></div></div>
   <div class="grid">
     <button type="button" class="card working" onclick="createAnalysis('working_day')" style="text-align:left;font-family:inherit">
-      <span class="card-tag">พร้อมใช้งาน</span><div class="icon">📅</div><h2>Working Day Analysis</h2><p>นำเข้า FusionSolar Report คำนวณ Working Days และบันทึก Loss Days, Method และ Note</p><div class="open"><span>สร้างงานใหม่</span><span>→</span></div>
+      <span class="card-tag">พร้อมใช้งาน</span><div class="icon"><i class="fa-solid fa-calendar-check"></i></div><h2>Working Day Analysis</h2><p>นำเข้า FusionSolar Report คำนวณ Working Days และบันทึก Loss Days, Method และ Note</p><div class="open"><span>สร้างงานใหม่</span><span>→</span></div>
     </button>
     <button type="button" class="card irr" onclick="createAnalysis('global_irradiance')" style="text-align:left;font-family:inherit">
-      <span class="card-tag">พร้อมใช้งาน</span><div class="icon">☀️</div><h2>Global Irradiance Analysis</h2><p>ตรวจข้อมูล Irradiation รายวัน เปรียบเทียบโครงการ และคัดกรอง Normal / Abnormal</p><div class="open"><span>สร้างงานใหม่</span><span>→</span></div>
+      <span class="card-tag">พร้อมใช้งาน</span><div class="icon"><i class="fa-solid fa-sun"></i></div><h2>Global Irradiance Analysis</h2><p>ตรวจข้อมูล Irradiation รายวัน เปรียบเทียบโครงการ และคัดกรอง Normal / Abnormal</p><div class="open"><span>สร้างงานใหม่</span><span>→</span></div>
     </button>
     <button type="button" class="card pr" onclick="createAnalysis('pr_report')" style="text-align:left;font-family:inherit">
-      <span class="card-tag paused">พักรายละเอียดไว้ก่อน</span><div class="icon">📊</div><h2>PR Report</h2><p>โครงสำหรับเชื่อมข้อมูลเตรียมไว้แล้ว ส่วนสูตรและรูปแบบรายงานจะพัฒนาภายหลัง</p><div class="open"><span>เปิดโครง PR Report</span><span>→</span></div>
+      <span class="card-tag paused">พักรายละเอียดไว้ก่อน</span><div class="icon"><i class="fa-solid fa-chart-line"></i></div><h2>PR Report</h2><p>โครงสำหรับเชื่อมข้อมูลเตรียมไว้แล้ว ส่วนสูตรและรูปแบบรายงานจะพัฒนาภายหลัง</p><div class="open"><span>เปิดโครง PR Report</span><span>→</span></div>
     </button>
   </div>
 
@@ -146,14 +148,14 @@ body{align-items:flex-start;padding:18px 24px 36px}
 
 <div id="legacyView" class="container hidden">
   <div class="header">
-    <div class="logo">☀</div>
+    <div class="logo"><i class="fa-solid fa-sun"></i></div>
     <h1>FusionSolar Analysis Center</h1>
     <div class="subtitle">Solar PV Analysis & Performance Monitoring System</div>
   </div>
 
   <div class="grid">
     <a class="card working" href="working-day-analysis.html">
-      <div class="icon">📅</div>
+      <div class="icon"><i class="fa-solid fa-calendar-check"></i></div>
       <h2>Working Day Analysis</h2>
       <p>
         วิเคราะห์วันทำงานจากข้อมูล FusionSolar พร้อมคำนวณ Loss Days,
@@ -163,7 +165,7 @@ body{align-items:flex-start;padding:18px 24px 36px}
     </a>
 
     <a class="card irr" href="global-irradiance-analysis.html">
-      <div class="icon">☀️</div>
+      <div class="icon"><i class="fa-solid fa-sun"></i></div>
       <h2>Global Irradiance Analysis</h2>
       <p>
         วิเคราะห์ Global Irradiance รายวัน เปรียบเทียบแต่ละ Plant,
@@ -326,5 +328,6 @@ async function changeMemberRole(userId,role){const {error}=await SolarCloud.getC
 async function removeMember(userId){const ok=await SolarCloud.confirmDialog('นำสมาชิกออกจาก Workspace','สมาชิกจะไม่สามารถเปิดงานใน Workspace นี้ได้อีก',{tone:'danger',icon:'!',confirmText:'นำสมาชิกออก'});if(!ok)return;const {error}=await SolarCloud.getClient().rpc('remove_workspace_member',{p_workspace:activeMembership.workspace_id,p_user:userId});if(error)await SolarCloud.notice('นำสมาชิกออกไม่สำเร็จ',error.message,'danger');else await renderMembers()}
 boot();
 </script>
+<script src="unified-ui.js?v=20260915-unified-ui1"></script>
 </body>
 </html>

@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FusionSolar Multi-Plant Analysis</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20260915-final-polish1"></script>
+    <script src="cloud-core.js?v=20260915-unified-ui1"></script>
 
     <style>
         :root[data-theme="dark"] {
@@ -178,22 +178,23 @@
         .analysis-flow-step span{font-size:11px;color:var(--text-muted)}
         @media(max-width:760px){body{padding:8px}header{position:relative;top:0}.header-controls{width:100%;justify-content:flex-start}.analysis-flow{grid-template-columns:1fr}.top-grid{gap:10px}.metrics-grid{grid-template-columns:repeat(2,1fr)}}
     </style>
+<link rel="stylesheet" href="unified-ui.css?v=20260915-unified-ui1">
 </head>
 <body>
 
 <div class="container">
     <header>
         <div class="title-group">
-            <div class="logo-icon"><i data-lucide="sun" size="22"></i></div>
+            <div class="logo-icon"><i class="fa-solid fa-sun"></i></div>
             <div class="header-titles">
                 <h2>Global Irradiance Analysis</h2>
                 <p>ตรวจสอบ Irradiation รายวันและเปรียบเทียบประสิทธิภาพหลายโครงการ</p>
             </div>
         </div>
         <div class="header-controls">
-            <button class="btn btn-theme" onclick="toggleTheme()"><i data-lucide="sun" id="themeIcon"></i></button>
-            <button class="btn btn-danger" onclick="resetData()"><i data-lucide="trash-2" size="14"></i> ล้างข้อมูล</button>
-            <button class="btn" onclick="exportToExcel()"><i data-lucide="download" size="14"></i> ส่งออก Excel</button>
+            <button class="btn btn-theme" onclick="toggleTheme()"><i class="fa-solid fa-sun" id="themeIcon"></i></button>
+            <button class="btn btn-danger" onclick="resetData()"><i class="fa-solid fa-trash-can"></i> ล้างข้อมูล</button>
+            <button class="btn" onclick="exportToExcel()"><i class="fa-solid fa-file-arrow-down"></i> ส่งออก Excel</button>
         </div>
     </header>
 
@@ -204,15 +205,15 @@
     </section>
 
     <div class="nav-tabs">
-        <button class="tab-btn active" onclick="switchTab('tableTab', this)"><i data-lucide="table" size="16"></i> ตารางข้อมูล</button>
-        <button class="tab-btn" onclick="switchTab('trendTab', this)"><i data-lucide="line-chart" size="16"></i> แนวโน้ม Irradiation</button>
+        <button class="tab-btn active" onclick="switchTab('tableTab', this)"><i class="fa-solid fa-table"></i> ตารางข้อมูล</button>
+        <button class="tab-btn" onclick="switchTab('trendTab', this)"><i class="fa-solid fa-chart-line"></i> แนวโน้ม Irradiation</button>
     </div>
 
     <!-- TAB 1: DATA TABLE -->
     <div id="tableTab" class="tab-content active">
         <div class="top-grid">
             <div class="upload-card" id="dropzone" onclick="document.getElementById('fileInput').click()">
-                <i data-lucide="upload-cloud" size="36" style="color: var(--accent-blue); margin-bottom: 6px;"></i>
+                <i class="fa-solid fa-cloud-arrow-up" style="color: var(--accent-blue); margin-bottom: 6px;"></i>
                 <h4 id="uploadStatus" style="font-weight: 600; font-size: 0.9rem;">อัปโหลด Plant Report (.xlsx/.csv)</h4>
                 <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px;">คลิกเพื่อเลือกไฟล์ หรือลากหลายไฟล์มาวางได้</p>
                 <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" multiple style="display:none" onchange="handleFiles(this.files)">
@@ -220,19 +221,19 @@
 
             <div class="metrics-grid">
                 <div class="card metric-card">
-                    <div class="card-header"><span>โครงการที่เลือก</span><i data-lucide="building" size="16" style="color: var(--accent-blue)"></i></div>
+                    <div class="card-header"><span>โครงการที่เลือก</span><i class="fa-solid fa-building" style="color: var(--accent-blue)"></i></div>
                     <div class="card-value"><span id="metricPlants">0</span><span class="card-unit">โครงการ</span></div>
                 </div>
                 <div class="card metric-card">
-                    <div class="card-header"><span>วันที่มีข้อมูล</span><i data-lucide="calendar" size="16" style="color: var(--accent-blue)"></i></div>
+                    <div class="card-header"><span>วันที่มีข้อมูล</span><i class="fa-solid fa-calendar-days" style="color: var(--accent-blue)"></i></div>
                     <div class="card-value"><span id="metricTotalDays">0</span><span class="card-unit">วัน</span></div>
                 </div>
                 <div class="card metric-card">
-                    <div class="card-header"><span>Irradiation เฉลี่ยต่อวัน</span><i data-lucide="sun" size="16" style="color: var(--accent-yellow)"></i></div>
+                    <div class="card-header"><span>Irradiation เฉลี่ยต่อวัน</span><i class="fa-solid fa-sun" style="color: var(--accent-yellow)"></i></div>
                     <div class="card-value"><span id="metricAvgIrr">0.000</span><span class="card-unit">kWh/m²</span></div>
                 </div>
                 <div class="card metric-card">
-                    <div class="card-header"><span>สัดส่วนวันที่ค่าปกติ</span><i data-lucide="check-circle-2" size="16" style="color: var(--accent-green)"></i></div>
+                    <div class="card-header"><span>สัดส่วนวันที่ค่าปกติ</span><i class="fa-solid fa-circle-check" style="color: var(--accent-green)"></i></div>
                     <div class="card-value"><span id="metricNormalDaysRatio">0/0</span><span class="card-unit">วัน</span></div>
                 </div>
             </div>
@@ -240,7 +241,7 @@
 
         <div class="card table-card">
             <div class="table-header-bar">
-                <h3><i data-lucide="table" size="18" style="color: var(--accent-blue);"></i> เปรียบเทียบ Global Irradiation รายวัน (kWh/m²)</h3>
+                <h3><i class="fa-solid fa-table" style="color: var(--accent-blue);"></i> เปรียบเทียบ Global Irradiation รายวัน (kWh/m²)</h3>
                 <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                     <div class="threshold-box">
                         <label for="minIrr">ช่วงค่าปกติ:</label>
@@ -248,17 +249,17 @@
                         <span>-</span>
                         <input type="number" id="maxIrr" value="7.0" min="0" step="0.1" onchange="validateThresholds(); checkFileAndRun(renderTableAndMetrics)">
                     </div>
-                    <button class="btn btn-secondary" onclick="checkFileAndRun(openFilterModal)"><i data-lucide="filter" size="14"></i> ตัวกรอง</button>
-                    <button class="btn btn-edit" id="toggleEditBtn" onclick="checkFileAndRun(toggleEditMode)"><i data-lucide="edit-3" size="14"></i> แก้ไขค่า Irradiation</button>
+                    <button class="btn btn-secondary" onclick="checkFileAndRun(openFilterModal)"><i class="fa-solid fa-filter"></i> ตัวกรอง</button>
+                    <button class="btn btn-edit" id="toggleEditBtn" onclick="checkFileAndRun(toggleEditMode)"><i class="fa-solid fa-pen-to-square"></i> แก้ไขค่า Irradiation</button>
                 </div>
             </div>
 
             <div class="status-filter-bar">
                 <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">กรองตามสถานะ:</span>
                 <button class="btn-filter-status active" id="btnFilterAll" onclick="setStatusFilter('ALL')">ทุกโครงการ <span class="badge-count badge-all" id="countAll">0</span></button>
-                <button class="btn-filter-status" id="btnFilterNormal" onclick="setStatusFilter('NORMAL')"><i data-lucide="check-circle" size="14" style="color: var(--accent-green)"></i> ปกติ <span class="badge-count badge-normal" id="countNormal">0</span></button>
-                <button class="btn-filter-status" id="btnFilterAbnormal" onclick="setStatusFilter('ABNORMAL')"><i data-lucide="alert-triangle" size="14" style="color: var(--accent-yellow)"></i> ผิดปกติ <span class="badge-count badge-abnormal" id="countAbnormal">0</span></button>
-                <button class="btn-filter-status" id="btnFilterNotFound" onclick="setStatusFilter('NOT_FOUND')"><i data-lucide="help-circle" size="14" style="color: var(--accent-red)"></i> ไม่พบข้อมูล <span class="badge-count badge-notfound" id="countNotFound">0</span></button>
+                <button class="btn-filter-status" id="btnFilterNormal" onclick="setStatusFilter('NORMAL')"><i class="fa-solid fa-circle-check" style="color: var(--accent-green)"></i> ปกติ <span class="badge-count badge-normal" id="countNormal">0</span></button>
+                <button class="btn-filter-status" id="btnFilterAbnormal" onclick="setStatusFilter('ABNORMAL')"><i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-yellow)"></i> ผิดปกติ <span class="badge-count badge-abnormal" id="countAbnormal">0</span></button>
+                <button class="btn-filter-status" id="btnFilterNotFound" onclick="setStatusFilter('NOT_FOUND')"><i class="fa-solid fa-circle-question" style="color: var(--accent-red)"></i> ไม่พบข้อมูล <span class="badge-count badge-notfound" id="countNotFound">0</span></button>
             </div>
 
             <div class="top-scroll-wrapper" id="topScrollWrapper"><div class="top-scroll-inner" id="topScrollInner"></div></div>
@@ -284,7 +285,7 @@
         <div class="trend-grid">
             <div class="card" style="display: flex; flex-direction: column; gap: 14px;">
                 <h3 style="font-size: 0.95rem; display:flex; align-items:center; gap:6px; color: var(--accent-blue);">
-                    <i data-lucide="sliders" size="16"></i> Trend Controls
+                    <i class="fa-solid fa-sliders"></i> Trend Controls
                 </h3>
 
                 <div>
@@ -363,7 +364,7 @@
 <div class="modal-overlay" id="filterModal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3><i data-lucide="sliders" size="18"></i> Filter Plants & Dates</h3>
+            <h3><i class="fa-solid fa-sliders"></i> Filter Plants & Dates</h3>
             <button class="btn btn-secondary" onclick="closeFilterModal()">✕</button>
         </div>
         <div class="modal-body">
@@ -410,15 +411,15 @@
 </div>
 
 <script>
-    try { lucide.createIcons(); } catch(e) {}
+    try { } catch(e) {}
 
-    let currentTheme = localStorage.getItem('theme') || 'dark';
+    let currentTheme = localStorage.getItem('fusionTheme') || 'dark';
     document.documentElement.setAttribute('data-theme', currentTheme);
 
     function toggleTheme() {
         currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', currentTheme);
-        localStorage.setItem('theme', currentTheme);
+        localStorage.setItem('fusionTheme', currentTheme);
         if (trendChart) updateTrendChart();
     }
 
@@ -461,7 +462,7 @@
         isEditMode = !isEditMode;
         const btn = document.getElementById('toggleEditBtn');
         btn.className = isEditMode ? 'btn btn-secondary' : 'btn btn-edit';
-        btn.innerHTML = isEditMode ? `<i data-lucide="check" size="14"></i> Done Editing` : `<i data-lucide="edit-3" size="14"></i> Edit Daily Irradiation`;
+        btn.innerHTML = isEditMode ? `<i class="fa-solid fa-check"></i> Done Editing` : `<i class="fa-solid fa-pen-to-square"></i> Edit Daily Irradiation`;
         renderTableAndMetrics();
     }
 
@@ -1045,5 +1046,6 @@
   };
   SolarCloud.initAnalysis('global_irradiance',globalIrradianceCloudAdapter);
 </script>
+<script src="unified-ui.js?v=20260915-unified-ui1"></script>
 </body>
 </html>
