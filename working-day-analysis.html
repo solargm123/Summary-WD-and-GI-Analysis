@@ -25,7 +25,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20260915-central-data1"></script>
+    <script src="cloud-core.js?v=20260915-project-alias1"></script>
     <style> 
         html, body, body *:not(i), button, input, select, option, textarea, table, th, td, code {
             font-family: 'Bai Jamjuree', Tahoma, Arial, sans-serif !important;
@@ -170,17 +170,17 @@
                 <div>
                     <div class="flex justify-between items-center mb-3">
                         <label class="text-xs font-bold uppercase tracking-wider text-blue-900 dark:text-blue-400 flex items-center gap-2">
-                            <i class="fa-solid fa-cloud-arrow-up text-blue-600 dark:text-blue-400"></i> นำเข้าไฟล์รายงาน (Import Reports)
+                            <i class="fa-solid fa-database text-blue-600 dark:text-blue-400"></i> <span data-solar-th="ข้อมูลกลางจาก Center" data-solar-en="Central data from Center">ข้อมูลกลางจาก Center</span>
                         </label>
-                        <button onclick="clearAllData()" class="text-xs text-red-600 hover:text-red-700 dark:text-red-400 font-semibold flex items-center gap-1 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 px-2.5 py-1 rounded transition">
+                        <button onclick="clearAllData()" style="display:none" class="text-xs text-red-600 hover:text-red-700 dark:text-red-400 font-semibold flex items-center gap-1 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 px-2.5 py-1 rounded transition">
                             <i class="fa-solid fa-trash-arrow-up"></i> ล้างข้อมูลไฟล์
                         </button>
                     </div>
-                    <div id="dropZone" class="border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 rounded-xl p-4 text-center transition bg-slate-50/50 dark:bg-slate-950/50 cursor-pointer flex flex-col items-center justify-center min-h-[100px]" onclick="document.getElementById('excelFileInput').click()">
+                    <div id="dropZone" class="border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 rounded-xl p-4 text-center transition bg-slate-50/50 dark:bg-slate-950/50 cursor-pointer flex flex-col items-center justify-center min-h-[100px]">
                         <div class="w-8 h-8 rounded-full bg-blue-50 dark:bg-slate-800 flex items-center justify-center mb-1 text-blue-600 dark:text-blue-400">
-                            <i class="fa-solid fa-file-csv text-lg"></i>
+                            <i class="fa-solid fa-database text-lg"></i>
                         </div>
-                        <p class="text-xs text-slate-600 dark:text-slate-300">ลากไฟล์มาวางในบริเวณนี้ หรือ <span class="text-blue-600 dark:text-blue-400 underline underline-offset-4 font-semibold">คลิกเพื่อเลือกไฟล์</span></p>
+                        <p class="text-xs text-slate-600 dark:text-slate-300"><b>ใช้ข้อมูลกลางจาก Analysis Center</b><br><span class="text-slate-500">หากต้องการเพิ่มข้อมูล กรุณากลับไปอัปโหลดที่หน้า Center</span></p>
                         <input type="file" id="excelFileInput" multiple accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFileUpload(event)">
                     </div>
                 </div>
