@@ -9,7 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="cloud-core.js?v=20260915-unified-ui1"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="cloud-core.js?v=20260915-central-data1"></script>
 <style>
 :root{
   --bg:#0f172a; --card:#1e293b; --border:#334155;
@@ -89,7 +90,7 @@ body{align-items:flex-start;padding:18px 24px 36px}
   .project-row>.badge,.project-row>.period-label,.project-row>.status-pill{display:none}
   .status-guide{grid-template-columns:1fr 1fr}
 }
-</style>
+.central-hub{margin:18px 0 22px;padding:20px;border:1px solid #38bdf84d;border-radius:18px;background:linear-gradient(135deg,#0d2638e8,#132f43e8);box-shadow:0 16px 42px #02061736}.central-head{display:flex;align-items:center;justify-content:space-between;gap:18px}.central-head h2{margin:4px 0;font-size:1.25rem}.central-head p{color:var(--muted);font-size:.82rem}.central-upload{width:auto!important;cursor:pointer;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}.central-upload input{display:none}.central-progress,.central-message{margin-top:12px;padding:10px 12px;border-radius:9px;font-size:.78rem}.central-progress{display:flex;align-items:center;gap:8px;background:#38bdf817;color:#bae6fd}.central-message.success{background:#34d39918;color:#6ee7b7}.central-message.error{background:#fb718518;color:#fecdd3}.central-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:15px}.central-stats>div{display:grid;grid-template-columns:auto 1fr;gap:2px 9px;padding:12px;border:1px solid #ffffff18;border-radius:11px;background:#ffffff08}.central-stats i{grid-row:1/3;align-self:center;color:#7dd3fc;font-size:1.15rem}.central-stats strong{font-size:1.15rem}.central-stats span{color:var(--muted);font-size:.68rem}.central-source{margin-top:12px;padding-top:12px;border-top:1px solid #ffffff18;display:grid;grid-template-columns:auto 1fr;gap:5px 12px;font-size:.74rem}.central-source>span{text-align:right;color:var(--muted)}.central-source>div{grid-column:1/-1;color:var(--muted);line-height:1.5;word-break:break-word}.central-tools .card{cursor:pointer}.central-tools .card:disabled{opacity:.5;cursor:not-allowed}@media(max-width:760px){.central-head{display:block}.central-upload{margin-top:12px}.central-stats{grid-template-columns:1fr 1fr}.central-source{grid-template-columns:1fr}.central-source>span{text-align:left}}</style>
 <link rel="stylesheet" href="unified-ui.css?v=20260915-unified-ui1">
 </head>
 <body>
@@ -114,29 +115,18 @@ body{align-items:flex-start;padding:18px 24px 36px}
     </div>
   </header>
 
-  <section id="dashboardSummary" class="summary-grid" aria-label="ภาพรวมงาน">
-    <div class="summary-card"><strong>0</strong><span>งานทั้งหมด</span></div>
+  <section class="central-hub">
+    <div class="central-head"><div><div class="section-kicker">CENTRAL DATA</div><h2 data-solar-th="อัปโหลดข้อมูลครั้งเดียว ใช้ได้ทุกเครื่องมือ" data-solar-en="Upload once, use in every analysis">อัปโหลดข้อมูลครั้งเดียว ใช้ได้ทุกเครื่องมือ</h2><p data-solar-th="ระบบจะรวมข้อมูลตามโครงการและวันที่ พร้อมป้องกันรายการซ้ำ" data-solar-en="Data is merged by project and date with duplicate protection.">ระบบจะรวมข้อมูลตามโครงการและวันที่ พร้อมป้องกันรายการซ้ำ</p></div><label id="centralUploadLabel" class="primary central-upload"><i class="fa-solid fa-cloud-arrow-up"></i><span data-solar-th="เลือกไฟล์ FusionSolar" data-solar-en="Select FusionSolar files">เลือกไฟล์ FusionSolar</span><input id="centralFileInput" type="file" accept=".xlsx,.xls" multiple onchange="uploadCentralData(event)"></label></div>
+    <div id="centralProgress" class="central-progress hidden"><i class="fa-solid fa-spinner fa-spin"></i><span>กำลังอ่านและบันทึกข้อมูล...</span></div><div id="centralMessage" class="central-message"></div>
+    <div class="central-stats"><div><i class="fa-solid fa-file-excel"></i><strong id="centralFiles">0</strong><span data-solar-th="ไฟล์ข้อมูล" data-solar-en="Data files">ไฟล์ข้อมูล</span></div><div><i class="fa-solid fa-solar-panel"></i><strong id="centralProjects">0</strong><span data-solar-th="โครงการ" data-solar-en="Projects">โครงการ</span></div><div><i class="fa-solid fa-calendar-days"></i><strong id="centralRecords">0</strong><span data-solar-th="รายการข้อมูล" data-solar-en="Data records">รายการข้อมูล</span></div><div><i class="fa-solid fa-clock-rotate-left"></i><strong id="centralRange">—</strong><span data-solar-th="ช่วงวันที่" data-solar-en="Date range">ช่วงวันที่</span></div></div>
+    <div class="central-source"><b><i class="fa-solid fa-database"></i> <span data-solar-th="ข้อมูลกลางล่าสุด" data-solar-en="Latest central data">ข้อมูลกลางล่าสุด</span></b><span id="centralUpdated">ยังไม่มีข้อมูล</span><div id="centralSourceList">อัปโหลดไฟล์เพื่อเริ่มใช้งาน</div></div>
   </section>
-
-  <div class="section-heading"><div><div class="section-kicker">Create Analysis</div><h2>เริ่มงานวิเคราะห์</h2><p>เลือกประเภทงาน ระบบจะสร้าง Project ใหม่และบันทึกใน Workspace</p></div></div>
-  <div class="grid">
-    <button type="button" class="card working" onclick="createAnalysis('working_day')" style="text-align:left;font-family:inherit">
-      <span class="card-tag">พร้อมใช้งาน</span><div class="icon"><i class="fa-solid fa-calendar-check"></i></div><h2>Working Day Analysis</h2><p>นำเข้า FusionSolar Report คำนวณ Working Days และบันทึก Loss Days, Method และ Note</p><div class="open"><span>สร้างงานใหม่</span><span>→</span></div>
-    </button>
-    <button type="button" class="card irr" onclick="createAnalysis('global_irradiance')" style="text-align:left;font-family:inherit">
-      <span class="card-tag">พร้อมใช้งาน</span><div class="icon"><i class="fa-solid fa-sun"></i></div><h2>Global Irradiance Analysis</h2><p>ตรวจข้อมูล Irradiation รายวัน เปรียบเทียบโครงการ และคัดกรอง Normal / Abnormal</p><div class="open"><span>สร้างงานใหม่</span><span>→</span></div>
-    </button>
-    <button type="button" class="card pr" onclick="createAnalysis('pr_report')" style="text-align:left;font-family:inherit">
-      <span class="card-tag paused">พักรายละเอียดไว้ก่อน</span><div class="icon"><i class="fa-solid fa-chart-line"></i></div><h2>PR Report</h2><p>โครงสำหรับเชื่อมข้อมูลเตรียมไว้แล้ว ส่วนสูตรและรูปแบบรายงานจะพัฒนาภายหลัง</p><div class="open"><span>เปิดโครง PR Report</span><span>→</span></div>
-    </button>
+  <div class="section-heading"><div><div class="section-kicker">ANALYSIS TOOLS</div><h2 data-solar-th="เลือกเครื่องมือที่ต้องการใช้" data-solar-en="Choose an analysis tool">เลือกเครื่องมือที่ต้องการใช้</h2><p data-solar-th="ไม่ต้องสร้าง Project ระบบจะเปิดข้อมูลกลางล่าสุดให้อัตโนมัติ" data-solar-en="No project creation required. The latest central data opens automatically.">ไม่ต้องสร้าง Project ระบบจะเปิดข้อมูลกลางล่าสุดให้อัตโนมัติ</p></div></div>
+  <div class="grid central-tools">
+    <button type="button" class="card working" onclick="openCentralTool('working_day')" style="text-align:left;font-family:inherit"><span class="card-tag">พร้อมใช้งาน</span><div class="icon"><i class="fa-solid fa-calendar-check"></i></div><h2>Working Day Analysis</h2><p>คำนวณ Working Days, Loss Days, Method และ Note จากข้อมูลกลาง</p><div class="open"><span>เปิดใช้งาน</span><i class="fa-solid fa-arrow-right"></i></div></button>
+    <button type="button" class="card irr" onclick="openCentralTool('global_irradiance')" style="text-align:left;font-family:inherit"><span class="card-tag">พร้อมใช้งาน</span><div class="icon"><i class="fa-solid fa-sun"></i></div><h2>Global Irradiance Analysis</h2><p>ตรวจ Irradiation รายวันและเปรียบเทียบ Normal / Abnormal จากข้อมูลกลาง</p><div class="open"><span>เปิดใช้งาน</span><i class="fa-solid fa-arrow-right"></i></div></button>
+    <button type="button" class="card pr" onclick="openCentralTool('pr_report')" style="text-align:left;font-family:inherit"><span class="card-tag paused">พักการพัฒนา</span><div class="icon"><i class="fa-solid fa-chart-line"></i></div><h2>PR Report</h2><p>โครง PR ยังเก็บไว้ แต่พักการพัฒนาตามที่กำหนด</p><div class="open"><span>เปิดข้อมูลปัจจุบัน</span><i class="fa-solid fa-arrow-right"></i></div></button>
   </div>
-
-  <section class="project-list">
-    <div class="project-title"><div class="project-title-copy"><b>งานที่บันทึกไว้</b><span>คลิกชื่องานเพื่อเปิดต่อจากข้อมูลล่าสุด</span></div><span id="projectCount" class="project-count-pill"></span></div>
-    <div class="project-filters"><input id="projectSearch" type="search" placeholder="ค้นหาชื่อ Project หรือเดือน..." oninput="renderProjectRows()"><select id="projectTypeFilter" onchange="renderProjectRows()"><option value="">ทุกประเภท</option><option value="working_day">Working Day</option><option value="global_irradiance">Global Irradiance</option><option value="pr_report">PR Report</option></select><select id="projectStatusFilter" onchange="renderProjectRows()"><option value="">ทุกสถานะ</option><option value="draft">Draft · แบบร่าง</option><option value="in_progress">In Progress · กำลังทำ</option><option value="completed">Completed · เสร็จแล้ว</option></select></div>
-    <div id="projectRows"><div class="empty">กำลังโหลด...</div></div>
-  </section>
-
   <details class="center-description" open>
     <summary>
       <span class="description-main-icon"><i class="fa-solid fa-book-open"></i></span>
@@ -260,12 +250,12 @@ async function boot(){
   try{
     const session=await SolarCloud.session();
     if(!session){byId('loginView').classList.remove('hidden');return}
-    byId('workspaceView').classList.remove('hidden');byId('currentUser').textContent=session.user.email||'';byId('currentUserAvatar').textContent=(session.user.email||'U').charAt(0).toUpperCase();await renderProjects();
+    byId('workspaceView').classList.remove('hidden');byId('currentUser').textContent=session.user.email||'';byId('currentUserAvatar').textContent=(session.user.email||'U').charAt(0).toUpperCase();await renderCenter();
   }catch(error){byId('loginView').classList.remove('hidden');byId('loginError').textContent=error.message}
 }
 byId('loginForm').addEventListener('submit',async event=>{
   event.preventDefault();const button=byId('loginButton');button.disabled=true;button.textContent='กำลังเข้าสู่ระบบ...';byId('loginError').textContent='';
-  try{const result=await SolarCloud.signIn(byId('loginEmail').value.trim(),byId('loginPassword').value);byId('loginView').classList.add('hidden');byId('workspaceView').classList.remove('hidden');byId('currentUser').textContent=result.user?.email||byId('loginEmail').value.trim();byId('currentUserAvatar').textContent=(result.user?.email||'U').charAt(0).toUpperCase();await renderProjects()}
+  try{const result=await SolarCloud.signIn(byId('loginEmail').value.trim(),byId('loginPassword').value);byId('loginView').classList.add('hidden');byId('workspaceView').classList.remove('hidden');byId('currentUser').textContent=result.user?.email||byId('loginEmail').value.trim();byId('currentUserAvatar').textContent=(result.user?.email||'U').charAt(0).toUpperCase();await renderCenter()}
   catch(error){byId('loginError').textContent=error.message}
   finally{button.disabled=false;button.textContent='เข้าสู่ระบบ'}
 });
@@ -293,12 +283,22 @@ function renderProjectRows(){
     ${activeMembership?.role==='admin'?`<button class="archive-btn" title="เก็บงานออกจากรายการ" aria-label="เก็บงานออกจากรายการ" onclick="archiveProject(event,'${project.id}')">⌫</button>`:'<span style="text-align:center">›</span>'}
   </div>`).join(''):projectCache.length?'<div class="empty"><b>ไม่พบงานที่ค้นหา</b><div class="project-meta" style="margin-top:5px">ลองเปลี่ยนคำค้นหาหรือตัวกรองด้านบน</div></div>':'<div class="empty"><b>ยังไม่มีงานที่บันทึกไว้</b><div class="project-meta" style="margin-top:5px">เลือกประเภทงานด้านบนเพื่อสร้าง Project แรก</div></div>';
 }
-async function renderProjects(){
+async function renderCenter(){
   try{
-    const {membership,projects}=await SolarCloud.listProjects();activeMembership=membership;projectCache=projects;byId('workspaceName').textContent=membership.workspaces?.name||'Workspace';byId('currentRole').textContent=roleLabel(membership.role);byId('manageMembersButton').classList.toggle('hidden',membership.role!=='admin');byId('adminDataButton').classList.toggle('hidden',membership.role!=='admin');
-    renderProjectRows();
-    if(membership.role==='viewer')document.querySelectorAll('.grid>.card').forEach(button=>{button.disabled=true;button.style.opacity='.55';button.style.cursor='not-allowed'});
-  }catch(error){byId('projectRows').innerHTML=`<div class="empty" style="color:#fda4af">${escapeText(error.message)}<br><b>Connected project:</b> ${escapeText(SolarCloud.CONFIG.url)}<br>กรุณารันไฟล์ supabase-setup.sql ใน SQL Editor ของ Project URL เดียวกัน แล้ว Refresh หน้านี้</div>`}
+    const status=await SolarCloud.centralDatasetStatus();activeMembership=status.membership;
+    byId('workspaceName').textContent=status.membership.workspaces?.name||'Workspace';byId('currentRole').textContent=roleLabel(status.membership.role);byId('manageMembersButton').classList.toggle('hidden',status.membership.role!=='admin');byId('adminDataButton').classList.toggle('hidden',status.membership.role!=='admin');
+    byId('centralFiles').textContent=status.files.length;byId('centralProjects').textContent=status.projectCount;byId('centralRecords').textContent=status.recordCount;byId('centralRange').textContent=status.dateStart?(status.dateStart===status.dateEnd?status.dateStart:`${status.dateStart} – ${status.dateEnd}`):'—';byId('centralUpdated').textContent=status.dataset?`อัปเดต ${new Date(status.dataset.updated_at).toLocaleString('th-TH')}`:'ยังไม่มีข้อมูล';byId('centralSourceList').textContent=status.files.length?status.files.join(', '):'อัปโหลดไฟล์เพื่อเริ่มใช้งาน';
+    const canEdit=['admin','editor'].includes(status.membership.role);byId('centralUploadLabel').style.display=canEdit?'inline-flex':'none';document.querySelectorAll('.central-tools .card').forEach(button=>{button.disabled=!status.dataset});
+    byId('centralMessage').className='central-message';byId('centralMessage').textContent=status.dataset?'ข้อมูลกลางพร้อมใช้งาน ทุกเครื่องมือจะเปิดข้อมูลชุดนี้อัตโนมัติ':'ยังไม่มีข้อมูลกลาง กรุณาอัปโหลดไฟล์ FusionSolar ก่อน';
+  }catch(error){byId('centralMessage').className='central-message error';byId('centralMessage').textContent=error.message}
+}
+async function uploadCentralData(event){
+  const files=Array.from(event.target.files||[]);if(!files.length)return;const progress=byId('centralProgress'),message=byId('centralMessage');progress.classList.remove('hidden');message.className='central-message';message.textContent='';
+  try{const result=await SolarCloud.uploadCentralDataset(files),summary=result.summary;message.className='central-message success';message.textContent=`บันทึกสำเร็จ ${files.length} ไฟล์ · ${summary.projectCount} โครงการ · ช่วง ${summary.dateStart||'—'} ถึง ${summary.dateEnd||'—'}`;await renderCenter()}catch(error){message.className='central-message error';message.textContent=`อัปโหลดไม่สำเร็จ: ${error.message}`}finally{progress.classList.add('hidden');event.target.value=''}
+}
+async function openCentralTool(type){
+  const message=byId('centralMessage');message.className='central-message';message.textContent='กำลังเปิดข้อมูลกลาง...';
+  try{await SolarCloud.openCentralAnalysis(type)}catch(error){message.className='central-message error';message.textContent=`เปิดเครื่องมือไม่สำเร็จ: ${error.message}`}
 }
 async function createAnalysis(type){
   const suggested=type==='working_day'?'Working Day Analysis':type==='global_irradiance'?'Global Irradiance Analysis':'PR Report';
@@ -353,7 +353,7 @@ async function restoreMissingData(){
   if(!pendingRestoreBackup||!pendingRestorePreview?.valid){await SolarCloud.notice('ต้องตรวจไฟล์อีกครั้ง','กรุณาเลือกไฟล์ Backup และตรวจสอบให้ผ่านก่อน','danger');return}
   const answer=await SolarCloud.dialog({title:'ยืนยันการกู้คืนข้อมูลที่ขาด',message:'ระบบจะเพิ่มเฉพาะรายการที่ยังไม่มีเท่านั้น ข้อมูลเดิมจะไม่ถูกแก้ไขและไม่ถูกลบ',icon:'↥',confirmText:'เริ่มกู้คืน',fields:[{key:'confirmed',type:'checkbox',label:'ฉันตรวจสอบผล Preview แล้ว และเข้าใจว่าระบบจะเพิ่มเฉพาะข้อมูลที่ขาด',required:true,error:'กรุณาทำเครื่องหมายยืนยันก่อนเริ่มกู้คืน'}]});if(!answer)return;
   const box=byId('restorePreviewResult');box.innerHTML='<b>กำลังกู้คืนข้อมูลที่ขาด...</b>';
-  try{const {data,error}=await SolarCloud.getClient().rpc('admin_restore_workspace_backup_missing',{p_workspace:activeMembership.workspace_id,p_backup:pendingRestoreBackup});if(error)throw error;pendingRestoreBackup=null;pendingRestorePreview=null;box.innerHTML=`<b style="color:#6ee7b7">กู้คืนข้อมูลเรียบร้อยแล้ว</b><div class="project-meta">ข้อมูลเดิมไม่ถูกเขียนทับ · เพิ่มงาน ${Number(data.projects_restored||0)} · เพิ่มชุดข้อมูล ${Number(data.datasets_restored||0)} · เพิ่มสมาชิก ${Number(data.members_restored||0)} · รายการที่มีปัญหา ${Number(data.errors||0)}</div>`;await renderAdminData();await renderProjects()}
+  try{const {data,error}=await SolarCloud.getClient().rpc('admin_restore_workspace_backup_missing',{p_workspace:activeMembership.workspace_id,p_backup:pendingRestoreBackup});if(error)throw error;pendingRestoreBackup=null;pendingRestorePreview=null;box.innerHTML=`<b style="color:#6ee7b7">กู้คืนข้อมูลเรียบร้อยแล้ว</b><div class="project-meta">ข้อมูลเดิมไม่ถูกเขียนทับ · เพิ่มงาน ${Number(data.projects_restored||0)} · เพิ่มชุดข้อมูล ${Number(data.datasets_restored||0)} · เพิ่มสมาชิก ${Number(data.members_restored||0)} · รายการที่มีปัญหา ${Number(data.errors||0)}</div>`;await renderAdminData();await renderCenter()}
   catch(error){box.innerHTML=`<b style="color:#fda4af">กู้คืนไม่สำเร็จ</b><div class="project-meta">${escapeText(error.message)}</div>`}
 }
 async function downloadWorkspaceBackup(){
@@ -391,9 +391,9 @@ async function renderAdminData(){
 async function editProjectMetadata(id){
   const project=adminProjectsCache.find(item=>item.project_id===id);if(!project)return;
   const answer=await SolarCloud.dialog({title:'แก้ไขข้อมูลโครงการ',message:'แก้ไขเฉพาะชื่อและสถานะ โดยไม่กระทบข้อมูลคำนวณ',icon:'✎',confirmText:'บันทึกการเปลี่ยนแปลง',fields:[{key:'name',label:'ชื่อโครงการ',value:project.project_name,required:true},{key:'status',type:'select',label:'สถานะ',value:project.status,required:true,options:[{value:'draft',label:'Draft · แบบร่าง'},{value:'in_progress',label:'In Progress · กำลังทำ'},{value:'completed',label:'Completed · เสร็จแล้ว'}]}]});if(!answer)return;
-  const {error}=await SolarCloud.getClient().rpc('admin_update_project_metadata',{p_project_id:id,p_name:answer.name.trim(),p_status:answer.status});if(error)await SolarCloud.notice('แก้ไขโครงการไม่สำเร็จ',error.message,'danger');else{await renderAdminData();await renderProjects()}
+  const {error}=await SolarCloud.getClient().rpc('admin_update_project_metadata',{p_project_id:id,p_name:answer.name.trim(),p_status:answer.status});if(error)await SolarCloud.notice('แก้ไขโครงการไม่สำเร็จ',error.message,'danger');else{await renderAdminData();await renderCenter()}
 }
-async function restoreProject(id){const ok=await SolarCloud.confirmDialog('กู้คืนงานนี้','งานจะกลับไปแสดงในรายการหลักพร้อมข้อมูลเดิม',{icon:'↥',confirmText:'กู้คืน'});if(!ok)return;const {error}=await SolarCloud.getClient().rpc('restore_analysis_project',{p_project_id:id});if(error)await SolarCloud.notice('กู้คืนไม่สำเร็จ',error.message,'danger');else{await renderAdminData();await renderProjects()}}
+async function restoreProject(id){const ok=await SolarCloud.confirmDialog('กู้คืนงานนี้','งานจะกลับไปแสดงในรายการหลักพร้อมข้อมูลเดิม',{icon:'↥',confirmText:'กู้คืน'});if(!ok)return;const {error}=await SolarCloud.getClient().rpc('restore_analysis_project',{p_project_id:id});if(error)await SolarCloud.notice('กู้คืนไม่สำเร็จ',error.message,'danger');else{await renderAdminData();await renderCenter()}}
 async function deleteDataset(id){const ok=await SolarCloud.confirmDialog('ลบชุดข้อมูลนี้ถาวร','ดำเนินการได้เฉพาะชุดข้อมูลที่ไม่มีงานใช้งาน และไม่สามารถย้อนกลับได้',{tone:'danger',icon:'!',confirmText:'ลบชุดข้อมูล'});if(!ok)return;const {error}=await SolarCloud.getClient().rpc('delete_shared_dataset',{p_dataset_id:id});if(error)await SolarCloud.notice('ลบชุดข้อมูลไม่สำเร็จ',error.message.includes('dataset_in_use')?'ชุดข้อมูลนี้ยังมีงานใช้งานอยู่ จึงไม่สามารถลบได้':error.message,'danger');else await renderAdminData()}
 async function openMembers(){byId('membersModal').classList.remove('hidden');await renderMembers()}
 function closeMembers(){byId('membersModal').classList.add('hidden')}
