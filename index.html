@@ -316,11 +316,16 @@ function cancelNameReview(){pendingCentralUpload=null;byId('nameReviewModal').cl
 async function finishCentralUpload(resolutions){
   const progress=byId('centralProgress'),message=byId('centralMessage');progress.classList.remove('hidden');message.className='central-message';message.textContent='กำลังบันทึกข้อมูลแบบแบ่งชุด...';
   try{
-    const result=await SolarCloud.commitCentralBatchUpload(pendingCentralUpload,resolutions,updateCentralQueue),summary=result.summary,failed=result.failed||[];
+    const total=pendingCentralUpload.payloads.length,result=await SolarCloud.commitCentralBatchUpload(pendingCentralUpload,resolutions,updateCentralQueue),summary=result.summary,failed=result.failed||[],duplicateCount=Number(result.duplicates||0),newCount=Math.max(0,total-duplicateCount-failed.length);
     byId('centralQueueErrors').innerHTML=failed.map(x=>'<div><i class="fa-solid fa-circle-xmark"></i> '+escapeText(x.file)+' — '+escapeText(x.error)+'</div>').join('');
-    if(failed.length){message.className='central-message error';message.textContent=`เสร็จบางส่วน · สำเร็จหรือซ้ำ ${pendingCentralUpload.payloads.length-failed.length} ไฟล์ · ผิดพลาด ${failed.length} ไฟล์`;updateCentralQueue({state:'error',title:'มีไฟล์ที่ต้องทำต่อ',total:pendingCentralUpload.payloads.length,current:pendingCentralUpload.payloads.length,file:'เลือกไฟล์ชุดเดิมอีกครั้ง ระบบจะข้ามไฟล์ที่สำเร็จแล้ว'})}
-    else{message.className='central-message success';message.textContent=`บันทึกสำเร็จ · ${summary.projectCount} โครงการ · เพิ่ม ${result.inserted} รายการ · อัปเดต ${result.updated} รายการ · ข้ามไฟล์ซ้ำ ${result.duplicates} ไฟล์`;updateCentralQueue({state:'done',title:'นำเข้าข้อมูลเสร็จสมบูรณ์',total:pendingCentralUpload.payloads.length,current:pendingCentralUpload.payloads.length,file:`ช่วงข้อมูล ${summary.dateStart||'—'} ถึง ${summary.dateEnd||'—'}`})}
     pendingCentralUpload=null;await renderCenter();
+    if(failed.length){
+      message.className='central-message error';message.textContent=`อัปโหลดเสร็จบางส่วน · ไฟล์ใหม่ ${newCount} · ไฟล์ซ้ำ ${duplicateCount} · ไฟล์ผิดพลาด ${failed.length}`;
+      updateCentralQueue({state:'error',title:'มีไฟล์ที่ต้องทำต่อ',total,current:total,file:'เลือกไฟล์ชุดเดิมอีกครั้ง ระบบจะข้ามไฟล์ที่สำเร็จแล้ว'});
+    }else{
+      message.className='central-message success';message.textContent=`อัปโหลดเสร็จแล้ว · ไฟล์ใหม่ ${newCount} · ไฟล์ซ้ำ ${duplicateCount} · ไฟล์ผิดพลาด 0`;
+      updateCentralQueue({state:'done',title:duplicateCount===total?'ตรวจพบไฟล์ซ้ำทั้งหมด':'นำเข้าข้อมูลเสร็จสมบูรณ์',total,current:total,file:`เพิ่ม ${result.inserted} รายการ · อัปเดต ${result.updated} รายการ · ช่วง ${summary.dateStart||'—'} ถึง ${summary.dateEnd||'—'}`});
+    }
   }catch(error){message.className='central-message error';message.textContent='บันทึกหยุดชั่วคราว: '+error.message;const total=pendingCentralUpload?.payloads?.length||0;updateCentralQueue({state:'error',title:'งานหยุดชั่วคราว',total,current:0,file:'เลือกไฟล์ชุดเดิมอีกครั้งเพื่อทำต่อ — ไฟล์ที่สำเร็จแล้วจะถูกข้าม'})}finally{progress.classList.add('hidden')}
 }
 async function openCentralTool(type){
