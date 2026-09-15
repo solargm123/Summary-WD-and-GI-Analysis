@@ -171,10 +171,11 @@
     try{
       const payload=adapter.capture();
       const baseChanged=!currentProject.dataset_id&&JSON.stringify(payload.baseData??{})!==JSON.stringify(currentProject.base_data??{});
-      const {data,error}=await getClient().rpc('save_analysis_project',{p_project_id:currentProject.id,p_expected_version:currentProject.version,p_base_data:baseChanged?(payload.baseData??{}):null,p_user_state:payload.userState??{},p_period_key:payload.periodKey??null,p_source_files:payload.sourceFiles??[],p_change_summary:{source:reason,analysis_type:currentProject.analysis_type,base_changed:baseChanged}});
+      const {data,error}=await getClient().rpc('save_analysis_project',{p_project_id:currentProject.id,p_expected_version:currentProject.version,p_base_data:baseChanged?(payload.baseData??{}):null,p_user_state:payload.userState??{},p_period_key:payload.periodKey??null,p_source_files:currentProject.dataset_id?null:(payload.sourceFiles??[]),p_change_summary:{source:reason,analysis_type:currentProject.analysis_type,base_changed:baseChanged}});
       if(error)throw error;currentProject=data;dirty=false;setConflictState(false);setStatus('บันทึกแล้ว','ok');
     }catch(error){
-      if(/version_conflict|40001/i.test(error.message||'')){setConflictState(true);setStatus('มีข้อมูลใหม่จากผู้ใช้อื่น — จัดการ Conflict','conflict')}else setStatus('บันทึกไม่สำเร็จ','error');
+      const raw=error.message||String(error),friendly=/permission_denied|42501/i.test(raw)?'บัญชีนี้ยังไม่มีสิทธิ์ Editor ใน Workspace':/project_locked_completed/i.test(raw)?'งานนี้ถูกล็อกเป็น Completed':/statement timeout/i.test(raw)?'ฐานข้อมูลใช้เวลานานเกินกำหนด กรุณาลองอีกครั้ง':raw;
+      if(/version_conflict|40001/i.test(raw)){setConflictState(true);setStatus('มีข้อมูลใหม่จากผู้ใช้อื่น — จัดการ Conflict','conflict')}else{setStatus('บันทึกไม่สำเร็จ: '+friendly,'error');if(reason==='manual')notice('บันทึกไม่สำเร็จ',friendly,'danger')}
       console.error('Cloud save failed:',error);
     }finally{saving=false}
   }
