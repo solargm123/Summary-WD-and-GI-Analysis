@@ -11,7 +11,7 @@
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20260914-conflict-recovery1"></script>
+    <script src="cloud-core.js?v=20260915-final-polish1"></script>
 
     <style>
         :root[data-theme="dark"] {
@@ -410,7 +410,7 @@
     ];
 
     function checkFileAndRun(actionFn) {
-        if (!isFileUploaded) { alert("Please upload file excel"); return; }
+        if (!isFileUploaded) { SolarCloud.notice("ยังไม่มีข้อมูล","กรุณาอัปโหลดไฟล์ Excel ก่อน","danger"); return; }
         actionFn();
     }
 
@@ -634,13 +634,13 @@
     function copyPlantIrr(plantKey) {
         if (plantMasterData[plantKey]) {
             copiedIrrData = JSON.parse(JSON.stringify(plantMasterData[plantKey].dates));
-            alert(`Copied Irradiation values from "${plantKey}"`);
+            SolarCloud.notice("คัดลอกข้อมูลแล้ว",`คัดลอกค่า Irradiation จาก “${plantKey}” แล้ว`,"success");
             renderTableAndMetrics();
         }
     }
 
     function pastePlantIrr(plantKey) {
-        if (!copiedIrrData) return alert("No copied data available!");
+        if (!copiedIrrData) return SolarCloud.notice("ยังไม่มีข้อมูลที่คัดลอก","กรุณาคัดลอกค่า Irradiation จากโครงการต้นทางก่อน","danger");
         if (plantMasterData[plantKey]) {
             plantMasterData[plantKey].dates = JSON.parse(JSON.stringify(copiedIrrData));
             renderTableAndMetrics();
@@ -810,7 +810,7 @@
     function onTrendPlantCheckChange(cb) {
         if (cb.checked) {
             if (selectedTrendPlants.size >= 20) {
-                alert("You can select up to 20 plants maximum for trend analysis.");
+                SolarCloud.notice("เลือกได้สูงสุด 20 โครงการ","กรุณายกเลิกบางโครงการก่อนเลือกเพิ่ม","danger");
                 cb.checked = false;
                 return;
             }
@@ -947,9 +947,10 @@
         });
     }
 
-    function resetData() {
-        if (!isFileUploaded) return alert("Please upload file excel");
-        if (confirm("Are you sure you want to reset all loaded data?")) {
+    async function resetData() {
+        if (!isFileUploaded) return SolarCloud.notice("ยังไม่มีข้อมูล","กรุณาอัปโหลดไฟล์ Excel ก่อน","danger");
+        const ok=await SolarCloud.confirmDialog("ล้างข้อมูลทั้งหมด","ข้อมูลที่นำเข้าและค่าที่แก้ไขในหน้านี้จะถูกล้าง",{tone:"danger",icon:"!",confirmText:"ล้างข้อมูล"});
+        if (ok) {
             allPlantsSet.clear(); selectedPlants.clear(); datesSet.clear(); selectedTrendPlants.clear(); sourceFileNames = [];
             plantMasterData = {}; originalPlantData = {}; copiedIrrData = null; isFileUploaded = false;
             activeStatusFilter = 'ALL';
@@ -975,8 +976,8 @@
     }
 
     function exportToExcel() {
-        if (!isFileUploaded) return alert("Please upload file excel");
-        if (!selectedPlants.size) return alert('Please select at least 1 plant.');
+        if (!isFileUploaded) return SolarCloud.notice("ยังไม่มีข้อมูล","กรุณาอัปโหลดไฟล์ Excel ก่อน","danger");
+        if (!selectedPlants.size) return SolarCloud.notice('ยังไม่ได้เลือกโครงการ','กรุณาเลือกอย่างน้อย 1 โครงการก่อนส่งออก','danger');
         const wb = XLSX.utils.table_to_book(document.getElementById('resultTable'), { sheet: "Irradiation Summary" });
         XLSX.writeFile(wb, `FusionSolar_Irradiation_Report.xlsx`);
     }
