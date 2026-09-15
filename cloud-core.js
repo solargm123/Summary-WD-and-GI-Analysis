@@ -266,6 +266,10 @@
     const rows=await listDatasets(),full=rows[0]||null,normalized=full?.normalized_data||{},pr=normalized.pr_report?.records||[],wd=normalized.working_day?.records||[],gi=normalized.global_irradiance||{},allDates=[...new Set([...pr.map(r=>r.date),...(gi.dates||[])].filter(Boolean))].sort(),plants=new Set([...pr.map(r=>r.project),...wd.map(r=>r.name),...Object.keys(gi.plants||{})].filter(Boolean));
     return{membership:m,dataset:full,files:full?.source_files||normalized.sourceFiles||[],projectCount:plants.size,recordCount:Math.max(pr.length,wd.length),dateStart:allDates[0]||null,dateEnd:allDates.at(-1)||null,aliasCount:Object.keys(normalized.projectAliases||{}).length}
   }
+  async function databaseStorageStatus(limitBytes=524288000){
+    const m=currentMembership||await membership(),{data,error}=await getClient().rpc('get_database_storage_status',{p_workspace:m.workspace_id,p_limit_bytes:limitBytes});
+    if(error)return{available:false,error:error.message};return{available:true,...data}
+  }
   async function prepareCentralUpload(files){
     const m=currentMembership||await membership();if(!['admin','editor'].includes(m.role))throw new Error('Viewer cannot upload or replace central data.');if(!files?.length)throw new Error('Please select at least one Excel file.');
     const fresh=await normalizeUpload(files),rows=await listDatasets(),existing=rows[0]||null,previous=structuredClone(existing?.normalized_data||{}),aliases=previous.projectAliases||{};applyKnownAliases(fresh,aliases);
@@ -328,11 +332,16 @@
       await new Promise(resolve=>setTimeout(resolve,0));
     }
     const completed=await getClient().rpc('complete_central_import',{p_workspace:m.workspace_id,p_batch:batchId});if(completed.error)throw completed.error;
-    const preparedLegacy={...prepared,previous:prepared.previous,fresh:prepared.fresh};
-    const legacy=await commitCentralUpload(preparedLegacy,resolutions);
-    return{...legacy,batch:completed.data,batchId,failed,inserted,updated,duplicates};
+    let marker=(await getClient().from('shared_datasets').select('id,name,updated_at').eq('workspace_id',m.workspace_id).order('updated_at',{ascending:false}).limit(1).maybeSingle());
+    if(marker.error)throw marker.error;
+    if(!marker.data){
+      const created=await getClient().rpc('upsert_shared_dataset',{p_workspace:m.workspace_id,p_name:'Central Data Hub',p_fingerprint:`central-data-hub:${m.workspace_id}`,p_source_files:[],p_normalized_data:{sourceFiles:[],working_day:{records:[],detectedMonths:[]},global_irradiance:{plants:{},dates:[],sourceFiles:[]},pr_report:{records:[],sourceFiles:[]}}});
+      if(created.error)throw created.error;marker={data:created.data};
+    }
+    for(const type of Object.keys(CENTRAL_PROJECT_NAMES)){const project=await ensureCentralProject(type);if(project.dataset_id!==marker.data.id){const attached=await getClient().rpc('attach_dataset_to_project',{p_project_id:project.id,p_dataset_id:marker.data.id});if(attached.error)throw attached.error}}
+    return{dataset:marker.data,normalized:null,summary:await centralDatasetStatus(),batch:completed.data,batchId,failed,inserted,updated,duplicates};
   }
   async function uploadCentralDataset(files){const prepared=await prepareCentralUpload(files);return commitCentralUpload(prepared,prepared.candidates.map(x=>({...x,action:'separate'})))}
   async function openCentralAnalysis(type){const project=await ensureCentralProject(type);if(!project.dataset_id){const {data:dataset,error}=await getClient().from('shared_datasets').select('id').eq('workspace_id',(currentMembership||await membership()).workspace_id).order('updated_at',{ascending:false}).limit(1).maybeSingle();if(error)throw error;if(dataset){const attached=await getClient().rpc('attach_dataset_to_project',{p_project_id:project.id,p_dataset_id:dataset.id});if(attached.error)throw attached.error}}location.href=analysisUrl(project)}
-  global.SolarCloud={CONFIG,dialog,notice,confirmDialog,setLanguage,getLanguage,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,datasets,useDataset,resolveConflict,downloadLocalDraft,reloadLatest,back:()=>location.assign(indexUrl()),roleCanEdit,roleCanAdmin,centralDatasetStatus,prepareCentralUpload,commitCentralUpload,prepareCentralBatchUpload,commitCentralBatchUpload,uploadCentralDataset,openCentralAnalysis};
+  global.SolarCloud={CONFIG,dialog,notice,confirmDialog,setLanguage,getLanguage,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,datasets,useDataset,resolveConflict,downloadLocalDraft,reloadLatest,back:()=>location.assign(indexUrl()),roleCanEdit,roleCanAdmin,centralDatasetStatus,databaseStorageStatus,prepareCentralUpload,commitCentralUpload,prepareCentralBatchUpload,commitCentralBatchUpload,uploadCentralDataset,openCentralAnalysis};
 })(window);
