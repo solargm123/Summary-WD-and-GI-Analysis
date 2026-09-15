@@ -788,13 +788,17 @@
             if (reaggregate) onMonthSelectChange();
         }
 
-        function onMonthSelectChange() {
-            const val = document.getElementById('monthSelect').value;
+        async function onMonthSelectChange() {
+            const select=document.getElementById('monthSelect'),val=select.value;
             if (val) {
+                if(rawRecordsByFile.length&&!rawRecordsByFile.some(record=>record.monthKey===val)&&SolarCloud.loadCentralPeriod){
+                    select.disabled=true;
+                    try{await SolarCloud.loadCentralPeriod(val)}catch(error){SolarCloud.notice('โหลดเดือนไม่สำเร็จ',error.message,'danger')}finally{select.disabled=false}
+                    return;
+                }
                 currentMethodFilter = 'all';
                 const [year, month] = val.split('-').map(Number);
                 currentDaysInMonth = new Date(year, month, 0).getDate();
-                
                 aggregateDataByMonth(val);
                 calculateAndRender();
             }
