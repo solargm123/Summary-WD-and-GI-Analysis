@@ -199,7 +199,7 @@
     </header>
 
     <section class="analysis-flow" aria-label="ขั้นตอนการใช้งาน">
-        <div class="analysis-flow-step"><strong>1</strong><span>อัปโหลด Plant Report<br>Import source files</span></div>
+        <div class="analysis-flow-step"><strong>1</strong><span>รับข้อมูลจาก Center<br>Load central data</span></div>
         <div class="analysis-flow-step"><strong>2</strong><span>เลือกโครงการและตรวจค่าผิดปกติ<br>Select and review plants</span></div>
         <div class="analysis-flow-step"><strong>3</strong><span>ดูแนวโน้มหรือส่งออก Excel<br>Review trend and export</span></div>
     </section>
@@ -216,7 +216,6 @@
                 <i class="fa-solid fa-database" style="color: var(--accent-blue); margin-bottom: 6px;"></i>
                 <h4 id="uploadStatus" style="font-weight: 600; font-size: 0.9rem;">ข้อมูลกลางจาก Analysis Center</h4>
                 <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px;">หากต้องการเพิ่มข้อมูล กรุณากลับไปอัปโหลดที่หน้า Center</p>
-                <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" multiple style="display:none" onchange="handleFiles(this.files)">
             </div>
 
             <div class="metrics-grid">
