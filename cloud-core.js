@@ -200,10 +200,13 @@
     adapter=projectAdapter;const loading=document.createElement('div');loading.id='solarPageLoading';loading.innerHTML='<div><i class="fa-solid fa-spinner fa-spin"></i><b>กำลังเตรียมข้อมูล...</b><span>Loading central data</span></div>';loading.style.cssText='position:fixed;inset:0;z-index:30000;display:grid;place-items:center;background:#0f172ae8;color:#f8fafc;font-family:Bai Jamjuree,sans-serif;backdrop-filter:blur(5px)';loading.firstElementChild.style.cssText='display:grid;gap:8px;text-align:center;padding:24px';loading.querySelector('i').style.cssText='font-size:26px;color:#38bdf8';loading.querySelector('span').style.cssText='font-size:12px;color:#94a3b8';document.body.appendChild(loading);
     try{
       await requireSession();const id=projectId();if(!id)throw new Error('Project ID is missing. Open this page from Workspace.');
-      [currentMembership,currentProject]=await Promise.all([membership(),loadProject(id)]);if(currentProject.analysis_type!==expectedType)throw new Error('This project belongs to another analysis type.');
+      let bootstrapSummary=null;const bootstrap=await getClient().rpc('get_analysis_bootstrap',{p_project_id:id});
+      if(!bootstrap.error&&bootstrap.data){currentMembership=bootstrap.data.membership;currentProject=bootstrap.data.project;bootstrapSummary=bootstrap.data.summary}
+      else [currentMembership,currentProject]=await Promise.all([membership(),loadProject(id)]);
+      if(currentProject.analysis_type!==expectedType)throw new Error('This project belongs to another analysis type.');
       injectDock();setStatus('กำลังโหลดงาน...','busy');
       if(currentProject.dataset_id){
-        let shared=null,summary=null;const summaryResult=await getClient().rpc('get_central_summary',{p_workspace:currentMembership.workspace_id});if(!summaryResult.error)summary=summaryResult.data;
+        let shared=null,summary=bootstrapSummary;if(!summary){const summaryResult=await getClient().rpc('get_central_summary',{p_workspace:currentMembership.workspace_id});if(!summaryResult.error)summary=summaryResult.data}
         const key=cacheKey(currentMembership.workspace_id,expectedType,summary),cached=await cacheRead(key);
         if(cached?.payload){shared=cached.payload;setStatus('กำลังเปิดข้อมูลจาก Cache...','busy')}
         else{
