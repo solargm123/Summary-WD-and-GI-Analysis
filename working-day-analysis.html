@@ -95,6 +95,26 @@
         .dark ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+        /* Center-aligned analysis workspace UI */
+        body{background:radial-gradient(circle at 50% -180px,#dbeafe 0,var(--app-bg) 470px)!important}
+        .dark body{background:radial-gradient(circle at 50% -180px,#18324f 0,var(--app-bg) 470px)!important}
+        body>header{top:10px!important;margin:10px 14px 0;border:1px solid var(--app-border)!important;border-radius:17px;box-shadow:0 18px 45px rgba(15,23,42,.12)!important;overflow:hidden}
+        .dark body>header{box-shadow:0 18px 50px rgba(2,6,23,.38)!important}
+        body>header>div{padding-top:12px!important;padding-bottom:12px!important}
+        main{padding-bottom:32px}
+        main .rounded-xl{border-radius:16px!important}
+        main .shadow-sm{box-shadow:0 10px 28px rgba(15,23,42,.07)!important}
+        .dark main .shadow-sm{box-shadow:0 12px 32px rgba(2,6,23,.24)!important}
+        main button,header button{border-radius:9px!important}
+        main input,main select,main textarea{border-radius:9px!important}
+        #tableScrollContainer{border-radius:0 0 14px 14px}
+        #topTableScroll{border-radius:10px 10px 0 0}
+        .analysis-flow{max-width:2200px;margin:16px auto 0;padding:0 12px;display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+        .analysis-flow-step{display:flex;align-items:center;gap:10px;padding:10px 13px;background:color-mix(in srgb,var(--app-surface) 92%,transparent);border:1px solid var(--app-border);border-radius:12px;box-shadow:0 7px 20px rgba(15,23,42,.05)}
+        .analysis-flow-step strong{width:27px;height:27px;flex:0 0 27px;display:grid;place-items:center;border-radius:8px;background:#38bdf820;color:#0284c7;font-size:12px}
+        .analysis-flow-step span{font-size:11px;color:#64748b}.dark .analysis-flow-step span{color:#cbd5e1}
+        @media(max-width:760px){body>header{position:relative!important;top:0!important;margin:8px}.analysis-flow{grid-template-columns:1fr;margin-top:10px}.analysis-flow-step{padding:8px 11px}}
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen pb-16 transition-colors duration-200">
@@ -132,7 +152,13 @@
         </div>
     </header>
 
-    <main class="max-w-[2200px] mx-auto px-3 xl:px-5 mt-6 space-y-6">
+    <section class="analysis-flow" aria-label="ขั้นตอนการใช้งาน">
+        <div class="analysis-flow-step"><strong>1</strong><span>อัปโหลด FusionSolar Report<br>Import source files</span></div>
+        <div class="analysis-flow-step"><strong>2</strong><span>ตรวจค่า Loss, Method และพารามิเตอร์<br>Review calculation settings</span></div>
+        <div class="analysis-flow-step"><strong>3</strong><span>ตรวจผลและส่งออก Excel<br>Review and export results</span></div>
+    </section>
+
+    <main class="max-w-[2200px] mx-auto px-3 xl:px-5 mt-4 space-y-5">
 
         <!-- Top Workstation Panel -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
