@@ -131,7 +131,7 @@
 </style>
 <style id="wdCompactUi">
 .analysis-flow{display:none!important}main{margin-top:.5rem!important;gap:.65rem}#wdTopPanel{gap:.65rem;align-items:start}#centralDataCard,#solarParamsCard{padding:.75rem!important}#centralDataCard #dropZone{display:none!important}#centralDataCard #fileList{margin-top:.35rem!important;max-height:none!important}#solarParamsCard .space-y-1\.5{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.35rem}#solarParamsCard .space-y-1\.5>label{margin:0!important}#wdKpis{gap:.65rem}#wdKpis>div{padding:.65rem!important}#wdKpis h3{font-size:1rem!important;margin-top:.15rem!important}#wdTableToolbar{padding:.55rem .7rem!important;gap:.5rem!important}#tableScrollContainer{max-height:calc(100vh - 270px);overflow:auto}#tableScrollContainer thead{position:sticky;top:0;z-index:20}#monthPickerButton{min-width:180px}@media(min-width:1024px){#centralDataCard{grid-column:span 3/span 3}#solarParamsCard{grid-column:span 9/span 9}}@media(max-width:900px){#solarParamsCard .space-y-1\.5{grid-template-columns:1fr}#tableScrollContainer{max-height:none}}
-.mkt-select{border-radius:999px!important;font-weight:700!important;text-align:center!important;padding:.45rem 2rem .45rem .75rem!important;transition:.2s;background-color:#fff}.dark .mkt-select{background-color:#0f172a!important;border-color:#475569!important;color-scheme:dark}.dark .mkt-select option{background:#0f172a;color:#e2e8f0}.mkt-estimated{background:#ecfdf5!important;border-color:#6ee7b7!important}.mkt-misestimated{background:#fffbeb!important;border-color:#fbbf24!important}.mkt-haveno{background:#fff1f2!important;border-color:#fda4af!important}.mkt-question{background:#f5f3ff!important;border-color:#c4b5fd!important}.dark .mkt-estimated{background:#064e3b!important}.dark .mkt-misestimated{background:#78350f!important}.dark .mkt-haveno{background:#881337!important}.dark .mkt-question{background:#4c1d95!important}#monthPickerButton{min-width:260px!important;min-height:44px;font-size:14px!important;padding:.65rem 1rem!important}#monthYearModal>div{max-width:440px!important}#monthPopupYear,#monthPopupMonth{min-height:48px;font-size:15px!important}#lossModal>div{max-width:520px!important;border-radius:18px!important}#modalDaysGrid button{min-height:38px;font-size:13px!important;text-align:center}
+.mkt-select{border-radius:999px!important;font-weight:700!important;text-align:center!important;padding:.45rem 2rem .45rem .75rem!important;transition:.2s;background-color:#fff}.dark .mkt-select{background-color:#0f172a!important;border-color:#475569!important;color-scheme:dark}.dark .mkt-select option{background:#0f172a;color:#e2e8f0}.mkt-estimated{background:#ecfdf5!important;border-color:#6ee7b7!important}.mkt-misestimated{background:#fffbeb!important;border-color:#fbbf24!important}.mkt-haveno{background:#fff1f2!important;border-color:#fda4af!important}.mkt-question{background:#f5f3ff!important;border-color:#c4b5fd!important}.dark .mkt-estimated{background:#064e3b!important}.dark .mkt-misestimated{background:#78350f!important}.dark .mkt-haveno{background:#881337!important}.dark .mkt-question{background:#4c1d95!important}#mktFilterBox{min-height:42px;box-sizing:border-box}#mktEstimateFilter{width:230px;min-width:230px;min-height:26px;color:inherit;background-color:transparent}#mktEstimateFilter option{color:#1e293b;background:#fff}.dark #mktEstimateFilter{color-scheme:dark}.dark #mktEstimateFilter option{color:#e2e8f0;background:#0f172a}#monthPickerButton{width:320px!important;min-width:320px!important;min-height:50px;font-size:15px!important;padding:.8rem 1.1rem!important}#monthYearModal>div{max-width:540px!important;padding:1.6rem!important}#monthYearTitle{font-size:18px!important}#monthPopupYear,#monthPopupMonth{min-height:52px;font-size:16px!important;padding:.75rem 1rem!important}@media(max-width:640px){#mktEstimateFilter{width:190px;min-width:190px}#monthPickerButton{width:100%!important;min-width:0!important}#monthYearModal>div{max-width:100%!important}}#lossModal>div{max-width:520px!important;border-radius:18px!important}#modalDaysGrid button{min-height:38px;font-size:13px!important;text-align:center}
 </style>
 <link rel="stylesheet" href="unified-ui.css?v=20260915-unified-ui1">
 </head>
@@ -326,7 +326,7 @@
                     </h2>
                 </div>
                 <div class="flex flex-wrap items-center justify-end gap-2">
-                    <label class="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs"><i class="fa-solid fa-filter text-violet-500"></i><span class="font-semibold">MKT</span><select id="mktEstimateFilter" onchange="setMktEstimateFilter(this.value)" class="bg-transparent focus:outline-none max-w-[180px]"><option id="mktTotalOption" value="all">Total</option><option value="Estimated 12:00 L">Estimated 12:00 L</option><option value="Misestimated 12:00 L">Misestimated 12:00 L</option><option value="Haveno 12:00 L">Haveno 12:00 L</option><option value="Misestimated?">Misestimated?</option><option value="">Not specified</option></select></label><button id="method1FilterButton" onclick="setMethodFilter('m1')" class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg px-3 py-2 flex items-center gap-2 transition">
+                    <label id="mktFilterBox" class="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs"><i class="fa-solid fa-filter text-violet-500"></i><span class="font-semibold">MKT</span><select id="mktEstimateFilter" onchange="setMktEstimateFilter(this.value)" class="bg-transparent focus:outline-none"><option id="mktTotalOption" value="all">Total</option><option value="Estimated 12:00 L">Estimated 12:00 L</option><option value="Misestimated 12:00 L">Misestimated 12:00 L</option><option value="Haveno 12:00 L">Haveno 12:00 L</option><option value="Misestimated?">Misestimated?</option><option value="">Not specified</option></select></label><button id="method1FilterButton" onclick="setMethodFilter('m1')" class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg px-3 py-2 flex items-center gap-2 transition">
                         <i class="fa-solid fa-calculator"></i><span>วิธีที่ 1</span><strong id="method1ProjectCount" class="bg-blue-600 text-white rounded-full px-2 py-0.5">0</strong>
                     </button>
                     <button id="method2FilterButton" onclick="setMethodFilter('m2')" class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-lg px-3 py-2 flex items-center gap-2 transition">
@@ -506,6 +506,8 @@
         let currentMktFilter = 'all';
         let mktEstimateByProject = {};
         let methodOverridesByMonth = {};
+        let monthPlantOverrides = {};
+        let activeMonthKey = null;
         const MKT_ESTIMATE_OPTIONS = ['Estimated 12:00 L','Misestimated 12:00 L','Haveno 12:00 L','Misestimated?'];
 
         const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
@@ -820,6 +822,32 @@
             return `${names[month - 1]} ${year}`;
         }
 
+        function rememberCurrentMonthPlantState(monthKey = activeMonthKey) {
+            if (!monthKey || !plantData.length) return;
+            const bucket = monthPlantOverrides[monthKey] || {};
+            plantData.forEach(plant => {
+                bucket[projectStableKey(plant)] = {
+                    customDaysInMonth: Math.min(currentDaysInMonth, Math.max(1, Number(plant.customDaysInMonth) || currentDaysInMonth)),
+                    lossDaysArray: [...(plant.lossDaysArray || [])].filter(day => Number.isInteger(day) && day >= 1 && day <= currentDaysInMonth)
+                };
+            });
+            monthPlantOverrides[monthKey] = bucket;
+        }
+
+        function applyMonthPlantState(monthKey) {
+            const bucket = monthPlantOverrides[monthKey] || {};
+            plantData.forEach(plant => {
+                const saved = bucket[projectStableKey(plant)] || bucket['name:' + plant.name.toLowerCase()];
+                if (!saved) return;
+                plant.customDaysInMonth = Math.min(currentDaysInMonth, Math.max(1, Number(saved.customDaysInMonth) || currentDaysInMonth));
+                if (Array.isArray(saved.lossDaysArray)) {
+                    plant.lossDaysArray = [...new Set(saved.lossDaysArray.map(Number))]
+                        .filter(day => Number.isInteger(day) && day >= 1 && day <= plant.customDaysInMonth)
+                        .sort((a,b) => a-b);
+                }
+            });
+        }
+
         function renderMonthSelectOptions(selectedKey, reaggregate = true) {
             const selectEl = document.getElementById('monthSelect');
             selectEl.innerHTML = '';
@@ -836,7 +864,8 @@
             });
             if (!selectEl.value) selectEl.value = detectedMonths[0];
             document.getElementById('monthPickerLabel').textContent = monthYearLabel(selectEl.value);
-            if (reaggregate) onMonthSelectChange();
+            if (reaggregate) return onMonthSelectChange();
+            return Promise.resolve();
         }
 
         function openMonthYearPopup() {
@@ -862,6 +891,7 @@
         async function applyMonthYearPopup() {
             const value=document.getElementById('monthPopupYear').value+'-'+document.getElementById('monthPopupMonth').value;
             if (!detectedMonths.includes(value)) return SolarCloud.notice('ไม่พบข้อมูลเดือนนี้','กรุณาเลือกเดือนที่มีข้อมูล','danger');
+            rememberCurrentMonthPlantState();
             document.getElementById('monthSelect').value=value;
             document.getElementById('monthPickerLabel').textContent=monthYearLabel(value);
             closeMonthYearPopup();await onMonthSelectChange();
@@ -870,6 +900,7 @@
         async function onMonthSelectChange() {
             const select=document.getElementById('monthSelect'),val=select.value;
             if (val) {
+                if (activeMonthKey && activeMonthKey !== val) rememberCurrentMonthPlantState(activeMonthKey);
                 if(rawRecordsByFile.length&&!rawRecordsByFile.some(record=>record.monthKey===val)&&SolarCloud.loadCentralPeriod){
                     select.disabled=true;
                     try{await SolarCloud.loadCentralPeriod(val)}catch(error){SolarCloud.notice('โหลดเดือนไม่สำเร็จ',error.message,'danger')}finally{select.disabled=false}
@@ -879,6 +910,8 @@
                 const [year, month] = val.split('-').map(Number);
                 currentDaysInMonth = new Date(year, month, 0).getDate();
                 aggregateDataByMonth(val);
+                applyMonthPlantState(val);
+                activeMonthKey = val;
                 calculateAndRender();
             }
         }
@@ -1186,6 +1219,7 @@
                 const parsed = parseInt(value);
                 plant.customDaysInMonth = Number.isFinite(parsed) ? Math.min(currentDaysInMonth, Math.max(1, parsed)) : currentDaysInMonth;
                 plant.lossDaysArray = plant.lossDaysArray.filter(d => d <= plant.customDaysInMonth);
+                rememberCurrentMonthPlantState(document.getElementById('monthSelect').value);
                 calculateAndRender();
             }
         }
@@ -1231,6 +1265,7 @@
                 const plant = plantData.find(p => p.id === currentEditingPlantId);
                 if (plant) {
                     plant.lossDaysArray = [];
+                    rememberCurrentMonthPlantState(document.getElementById('monthSelect').value);
                     openLossModal(currentEditingPlantId);
                     calculateAndRender();
                 }
@@ -1243,6 +1278,7 @@
             if (!plant) return;
             const daysLimit = plant.customDaysInMonth || currentDaysInMonth;
             plant.lossDaysArray = [...plant.originalLossDaysArray].filter(d => d <= daysLimit);
+            rememberCurrentMonthPlantState(document.getElementById('monthSelect').value);
             openLossModal(currentEditingPlantId);
             calculateAndRender();
         }
@@ -1270,6 +1306,7 @@
                 plant.lossDaysArray.push(day);
             }
             plant.lossDaysArray.sort((a,b) => a - b);
+            rememberCurrentMonthPlantState(document.getElementById('monthSelect').value);
         }
 
         function toggleSunHoursMode() {
@@ -1588,8 +1625,10 @@
         capture(){
           const selectedMonth=document.getElementById('monthSelect').value||null;
           const sunMode=document.querySelector('input[name="sunHoursMode"]:checked')?.value||'custom';
+          rememberCurrentMonthPlantState(selectedMonth);
           const overrides={};
-          plantData.forEach(plant=>{overrides[plant.name.toLowerCase()]={cap:plant.cap,customDaysInMonth:plant.customDaysInMonth,lossDaysArray:[...(plant.lossDaysArray||[])],note:plant.note||'',visible:plant.visible!==false}});
+          plantData.forEach(plant=>{overrides[plant.name.toLowerCase()]={cap:plant.cap,note:plant.note||'',visible:plant.visible!==false}});
+          Object.entries(monthPlantOverrides).forEach(([month,projects])=>Object.entries(projects||{}).forEach(([key,value])=>{overrides['@period:'+month+':'+key]={customDaysInMonth:value.customDaysInMonth,lossDaysArray:[...(value.lossDaysArray||[])]}}));
           Object.entries(mktEstimateByProject).forEach(([key,value])=>{overrides['@mkt:'+key]={mktEstimate:value}});
           Object.entries(methodOverridesByMonth).forEach(([month,projects])=>Object.entries(projects||{}).forEach(([key,method])=>{overrides['@method:'+month+':'+key]={method}}));
           return {
@@ -1607,8 +1646,12 @@
           if(state.sunHoursCustom!=null)document.getElementById('inputSunHoursCustom').value=state.sunHoursCustom;
           const radio=document.querySelector(`input[name="sunHoursMode"][value="${state.sunHoursMode||'custom'}"]`);if(radio)radio.checked=true;
           const overrides=state.overrides||{};
-          mktEstimateByProject={};methodOverridesByMonth={};
+          mktEstimateByProject={};methodOverridesByMonth={};monthPlantOverrides={};activeMonthKey=null;
           Object.entries(overrides).forEach(([key,value])=>{
+            if(key.startsWith('@period:')){
+              const remainder=key.slice(8),split=remainder.indexOf(':'),month=remainder.slice(0,split),projectKey=remainder.slice(split+1);
+              if(split>0){monthPlantOverrides[month]=monthPlantOverrides[month]||{};monthPlantOverrides[month][projectKey]={customDaysInMonth:value?.customDaysInMonth,lossDaysArray:Array.isArray(value?.lossDaysArray)?value.lossDaysArray:[]}}
+            }
             if(key.startsWith('@mkt:'))mktEstimateByProject[key.slice(5)]=value?.mktEstimate||'';
             if(key.startsWith('@method:')){
               const remainder=key.slice(8),split=remainder.indexOf(':'),month=remainder.slice(0,split),projectKey=remainder.slice(split+1);
@@ -1616,13 +1659,11 @@
             }
           });
           const selected=state.selectedMonth||base.loadedMonth||detectedMonths[0];
-          renderMonthSelectOptions(selected,true);
+          await renderMonthSelectOptions(selected,true);
           plantData.forEach(plant=>{
             const saved=overrides[plant.name.toLowerCase()],key=projectStableKey(plant);
             if(saved){
               if(saved.cap!=null)plant.cap=saved.cap;
-              if(saved.customDaysInMonth!=null)plant.customDaysInMonth=saved.customDaysInMonth;
-              if(Array.isArray(saved.lossDaysArray))plant.lossDaysArray=[...saved.lossDaysArray];
               if(saved.note!=null)plant.note=saved.note;
               if(saved.visible!=null)plant.visible=saved.visible;
               if(saved.calculationMethod&&!Object.prototype.hasOwnProperty.call(mktEstimateByProject,key)&&!methodOverridesByMonth[selected]?.[key]){
@@ -1636,6 +1677,8 @@
             if(manual){plant.calculationMethod=manual;plant.methodSource='manual'}
             else{plant.calculationMethod=defaultMethodForMkt(plant.mktEstimate);plant.methodSource='auto'}
           });
+          applyMonthPlantState(selected);
+          activeMonthKey=selected;
           document.getElementById('monthPickerLabel').textContent=monthYearLabel(selected);
           document.getElementById('autoDetectBadge').classList.toggle('hidden',rawRecordsByFile.length===0);
           const uniqueFiles=[...new Set(rawRecordsByFile.map(record=>record.fileName).filter(Boolean))];
