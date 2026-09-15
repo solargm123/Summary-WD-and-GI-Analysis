@@ -67,7 +67,9 @@
     return box;
   }
   function mount(){
-    if(document.querySelector('.header-controls'))document.querySelector('.header-controls').prepend(toolbar());
+    if(document.querySelector('#wdHeaderActions')) {
+      // Working Day owns its Language, Export and Theme controls; do not inject duplicates.
+    } else if(document.querySelector('.header-controls'))document.querySelector('.header-controls').prepend(toolbar());
     else if(document.querySelector('body > main .head')){const wrap=document.createElement('div');wrap.className='fs-ui-toolbar';const tb=toolbar();while(tb.firstChild)wrap.appendChild(tb.firstChild);document.querySelector('body > main .head').appendChild(wrap)}
     else if(document.querySelector('#workspaceView')){
       document.querySelector('#workspaceView .workspace-actions')?.prepend(toolbar());
