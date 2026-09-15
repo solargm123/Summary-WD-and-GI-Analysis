@@ -603,7 +603,8 @@
             const plant=plantData.find(p=>p.id===id);if(!plant||(!MKT_ESTIMATE_OPTIONS.includes(status)&&status!==''))return;
             const key=projectStableKey(plant),month=document.getElementById('monthSelect').value;
             mktEstimateByProject[key]=status;plant.mktEstimate=status;
-            if(methodOverridesByMonth[month])delete methodOverridesByMonth[month][key];
+            methodOverridesByMonth[month]=methodOverridesByMonth[month]||{};
+            methodOverridesByMonth[month][key]=null;
             plant.calculationMethod=defaultMethodForMkt(status);plant.methodSource='auto';calculateAndRender();
         }
         function updateCalculationMethod(id, method) {
