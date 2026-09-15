@@ -491,6 +491,10 @@
         let lastFormulaContext = null;
         let currentNotePlantId = null;
         let currentMethodFilter = 'all';
+        let currentMktFilter = 'all';
+        let mktEstimateByProject = {};
+        let methodOverridesByMonth = {};
+        const MKT_ESTIMATE_OPTIONS = ['Estimated 12:00 L','Misestimated 12:00 L','Haveno 12:00 L','Misestimated?'];
 
         const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
         const englishMonths = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -581,10 +585,34 @@
             calculateAndRender();
         }
 
+        function projectStableKey(plant) { return String(plant?.projectId || plant?.projectKey || ('name:'+(plant?.name||'').toLowerCase())); }
+        function defaultMethodForMkt(status) { return ['Misestimated 12:00 L','Misestimated?'].includes(status) ? 'm2' : 'm1'; }
+        function mktEstimateOptions(selected) {
+            return ['<option value="">Not specified</option>',...MKT_ESTIMATE_OPTIONS.map(value=>`<option value="${value}" ${value===selected?'selected':''}>${value}</option>`)].join('');
+        }
+        function mktStatusClass(status) {
+            if(status==='Estimated 12:00 L')return 'text-emerald-700 dark:text-emerald-300';
+            if(status==='Misestimated 12:00 L')return 'text-amber-700 dark:text-amber-300';
+            if(status==='Haveno 12:00 L')return 'text-rose-700 dark:text-rose-300';
+            if(status==='Misestimated?')return 'text-violet-700 dark:text-violet-300';
+            return 'text-slate-500';
+        }
+        function setMktEstimateFilter(value) { currentMktFilter=value;calculateAndRender(); }
+        function matchesMktFilter(plant) { return currentMktFilter==='all'||(plant.mktEstimate||'')===currentMktFilter; }
+        function updateMktEstimate(id,status) {
+            const plant=plantData.find(p=>p.id===id);if(!plant||(!MKT_ESTIMATE_OPTIONS.includes(status)&&status!==''))return;
+            const key=projectStableKey(plant),month=document.getElementById('monthSelect').value;
+            mktEstimateByProject[key]=status;plant.mktEstimate=status;
+            if(methodOverridesByMonth[month])delete methodOverridesByMonth[month][key];
+            plant.calculationMethod=defaultMethodForMkt(status);plant.methodSource='auto';calculateAndRender();
+        }
         function updateCalculationMethod(id, method) {
             const plant = plantData.find(p => p.id === id);
             if (!plant || !['m1', 'm2', 'other'].includes(method)) return;
-            plant.calculationMethod = method;
+            const month=document.getElementById('monthSelect').value,key=projectStableKey(plant);
+            methodOverridesByMonth[month]=methodOverridesByMonth[month]||{};
+            methodOverridesByMonth[month][key]=method;
+            plant.calculationMethod = method;plant.methodSource='manual';
             calculateAndRender();
         }
 
@@ -594,7 +622,7 @@
         }
 
         function updateMethodSummary() {
-            const visiblePlants = plantData.filter(p => p.visible);
+            const visiblePlants = plantData.filter(p => p.visible && matchesMktFilter(p));
             document.getElementById('method1ProjectCount').textContent = visiblePlants.filter(p => p.calculationMethod === 'm1').length;
             document.getElementById('method2ProjectCount').textContent = visiblePlants.filter(p => p.calculationMethod === 'm2').length;
             document.getElementById('otherProjectCount').textContent = visiblePlants.filter(p => p.calculationMethod === 'other').length;
@@ -749,6 +777,9 @@
             plantData = [];
             detectedMonths = [];
             currentMethodFilter = 'all';
+            currentMktFilter = 'all';
+            mktEstimateByProject = {};
+            methodOverridesByMonth = {};
             document.getElementById('fileList').innerHTML = '';
             document.getElementById('monthSelect').innerHTML = `<option value="">${t('waiting')}</option>`;
             document.getElementById('autoDetectBadge').classList.add('hidden');
@@ -759,27 +790,58 @@
             calculateAndRender();
         }
 
+        function monthYearLabel(monthKey) {
+            if (!monthKey) return currentLanguage === 'th' ? '-- รอข้อมูล --' : '-- Waiting for data --';
+            const [year, month] = monthKey.split('-').map(Number);
+            const names = currentLanguage === 'th' ? thaiMonths : englishMonths;
+            return `${names[month - 1]} ${year}`;
+        }
+
         function renderMonthSelectOptions(selectedKey, reaggregate = true) {
             const selectEl = document.getElementById('monthSelect');
             selectEl.innerHTML = '';
-
             if (detectedMonths.length === 0) {
                 selectEl.innerHTML = `<option value="">${t('waiting')}</option>`;
+                document.getElementById('monthPickerLabel').textContent = monthYearLabel('');
                 return;
             }
-
             detectedMonths.forEach(mKey => {
-                const [year, month] = mKey.split('-').map(Number);
-                const monthNames = currentLanguage === 'th' ? thaiMonths : englishMonths;
-                const label = `${monthNames[month - 1]} ${year}`;
                 const option = document.createElement('option');
-                option.value = mKey;
-                option.innerText = label;
+                option.value = mKey;option.innerText = monthYearLabel(mKey);
                 if (mKey === selectedKey) option.selected = true;
                 selectEl.appendChild(option);
             });
-
+            if (!selectEl.value) selectEl.value = detectedMonths[0];
+            document.getElementById('monthPickerLabel').textContent = monthYearLabel(selectEl.value);
             if (reaggregate) onMonthSelectChange();
+        }
+
+        function openMonthYearPopup() {
+            if (!detectedMonths.length) return SolarCloud.notice('ยังไม่มีข้อมูล','กรุณาอัปโหลดข้อมูลจากหน้า Center ก่อน','danger');
+            const modal=document.getElementById('monthYearModal'),yearSel=document.getElementById('monthPopupYear');
+            const current=document.getElementById('monthSelect').value||detectedMonths[0],currentYear=current.slice(0,4);
+            const years=[...new Set(detectedMonths.map(value=>value.slice(0,4)))].sort().reverse();
+            yearSel.innerHTML=years.map(year=>`<option value="${year}" ${year===currentYear?'selected':''}>${year}</option>`).join('');
+            refreshMonthPopupOptions(current.slice(5,7));
+            modal.classList.remove('hidden');modal.classList.add('flex');
+        }
+
+        function refreshMonthPopupOptions(preferredMonth='') {
+            const year=document.getElementById('monthPopupYear').value,monthSel=document.getElementById('monthPopupMonth');
+            const months=detectedMonths.filter(value=>value.startsWith(year+'-')).map(value=>value.slice(5,7));
+            monthSel.innerHTML=months.map(month=>`<option value="${month}" ${month===preferredMonth?'selected':''}>${(currentLanguage==='th'?thaiMonths:englishMonths)[Number(month)-1]}</option>`).join('');
+        }
+
+        function closeMonthYearPopup() {
+            const modal=document.getElementById('monthYearModal');modal.classList.add('hidden');modal.classList.remove('flex');
+        }
+
+        async function applyMonthYearPopup() {
+            const value=document.getElementById('monthPopupYear').value+'-'+document.getElementById('monthPopupMonth').value;
+            if (!detectedMonths.includes(value)) return SolarCloud.notice('ไม่พบข้อมูลเดือนนี้','กรุณาเลือกเดือนที่มีข้อมูล','danger');
+            document.getElementById('monthSelect').value=value;
+            document.getElementById('monthPickerLabel').textContent=monthYearLabel(value);
+            closeMonthYearPopup();await onMonthSelectChange();
         }
 
         async function onMonthSelectChange() {
@@ -1002,7 +1064,7 @@
                 const recordKey = `${monthKey}|${fileDay ?? 'none'}|${normalizedName.toLowerCase()}`;
                 if (parsedKeys && parsedKeys.has(recordKey)) continue;
                 if (parsedKeys) parsedKeys.add(recordKey);
-                rawRecordsByFile.push({ fileName, name: normalizedName, cap, pv, specEnergy, loss, recordDay: fileDay, monthKey });
+                rawRecordsByFile.push({ projectId:null, fileName, name: normalizedName, cap, pv, specEnergy, loss, recordDay: fileDay, monthKey });
                 added++;
             }
 
@@ -1028,6 +1090,7 @@
                 const key = rec.name.toLowerCase();
                 if (!aggregated[key]) {
                     aggregated[key] = {
+                        projectId: rec.projectId || null,
                         name: rec.name,
                         cap: rec.cap, 
                         lossDueEnergy: 0, 
@@ -1036,6 +1099,7 @@
                     };
                 }
                 
+                if (rec.projectId) aggregated[key].projectId = rec.projectId;
                 if (rec.cap > 0) aggregated[key].cap = rec.cap;
                 aggregated[key].lossDueEnergy += rec.loss;
                 aggregated[key].specEnergySum += rec.specEnergy;
@@ -1060,8 +1124,13 @@
                     }
                 });
 
+                const stableKey=String(plantObj.projectId||('name:'+key));
+                const mktEstimate=mktEstimateByProject[stableKey]||'';
+                const manualMethod=methodOverridesByMonth[targetMonthKey]?.[stableKey];
                 plantData.push({
                     id: idx,
+                    projectId: plantObj.projectId,
+                    projectKey: stableKey,
                     name: plantObj.name,
                     cap: plantObj.cap,
                     customDaysInMonth: currentDaysInMonth,
@@ -1070,7 +1139,9 @@
                     dailyMap: plantObj.dailyMap,
                     lossDaysArray: initialLossDays.sort((a,b) => a - b),
                     originalLossDaysArray: [...initialLossDays].sort((a,b) => a - b),
-                    calculationMethod: 'other',
+                    calculationMethod: manualMethod || defaultMethodForMkt(mktEstimate),
+                    methodSource: manualMethod ? 'manual' : 'auto',
+                    mktEstimate,
                     note: '',
                     visible: true
                 });
@@ -1286,6 +1357,7 @@
             const filteredData = plantData.filter(p =>
                 p.visible &&
                 p.name.toLowerCase().includes(searchText) &&
+                matchesMktFilter(p) &&
                 (currentMethodFilter === 'all' || p.calculationMethod === currentMethodFilter)
             );
 
@@ -1366,11 +1438,11 @@
                     
                     <td class="p-3 text-center">
                         <div class="flex items-center justify-center gap-2">
-                            <select onchange="updateCalculationMethod(${item.id}, this.value)" class="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded px-2 py-1.5 text-xs">
+                            <div class="flex flex-col items-start gap-0.5"><select onchange="updateCalculationMethod(${item.id}, this.value)" class="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded px-2 py-1.5 text-xs">
                                 <option value="m1" ${item.calculationMethod === 'm1' ? 'selected' : ''}>${currentLanguage === 'th' ? 'วิธีที่ 1' : 'Method 1'}</option>
                                 <option value="m2" ${item.calculationMethod === 'm2' ? 'selected' : ''}>${currentLanguage === 'th' ? 'วิธีที่ 2' : 'Method 2'}</option>
                                 <option value="other" ${item.calculationMethod === 'other' ? 'selected' : ''}>${currentLanguage === 'th' ? 'อื่นๆ' : 'Other'}</option>
-                            </select>
+                            </select><small class="text-[9px] ${item.methodSource==='auto'?'text-violet-500':'text-slate-400'}">${item.methodSource==='auto'?'Auto from MKT':'Manual'}</small></div>
                             <button onclick="openNoteModal(${item.id})" class="${item.note ? 'bg-amber-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'} border border-slate-300 dark:border-slate-700 rounded px-2 py-1.5" title="Note"><i class="fa-solid fa-note-sticky"></i></button>
                         </div>
                     </td>
@@ -1416,7 +1488,7 @@
             const th = currentLanguage === 'th';
             const headers = {
                 plant: th ? 'ชื่อโครงการ (Plant Name)' : 'Plant Name', cap: 'Capacity (kWp)', days: th ? 'จำนวนวันในเดือน' : 'Days in Month',
-                specific: 'Specific Energy (kWh/kWp)', sh1: th ? 'Sun Hours วิธี 1 (ชม.)' : 'Sun Hours Method 1 (hr)', sh2: th ? 'Sun Hours วิธี 2 (ชม.)' : 'Sun Hours Method 2 (hr)',
+                mkt: 'MKT Estimate', sh1: th ? 'Sun Hours วิธี 1 (ชม.)' : 'Sun Hours Method 1 (hr)', sh2: th ? 'Sun Hours วิธี 2 (ชม.)' : 'Sun Hours Method 2 (hr)',
                 lossFactor: 'Loss Factor', lossCount: th ? 'เกิด Loss Due (วัน)' : 'Loss Due (days)', lossDates: th ? 'วันที่เกิด Loss Due' : 'Loss Due Dates',
                 lossEnergy: th ? 'Loss Due Export วันที่เลือก (kWh)' : 'Selected Loss Due Export (kWh)', monthlyLoss: th ? 'Loss Due monthly (kWh)' : 'Monthly Loss Due (kWh)', pv: th ? 'PV Yield วัน Loss ที่เลือก (kWh)' : 'Selected Loss-Day PV Yield (kWh)',
                 m1: th ? 'วันทำงาน (วิธีที่ 1)' : 'Working Days (Method 1)', m1Formula: th ? 'สูตร Excel วิธีที่ 1' : 'Excel Formula Method 1', m1Explain: th ? 'การแทนค่า วิธีที่ 1' : 'Substitution Method 1',
@@ -1436,7 +1508,7 @@
                     [headers.plant]: item.name,
                     [headers.cap]: item.cap,
                     [headers.days]: m.daysInMonth,
-                    [headers.specific]: parseFloat(m.shObj.specificEnergyTotal.toFixed(2)),
+                    [headers.mkt]: item.mktEstimate || 'Not specified',
                     [headers.sh1]: parseFloat(m.shM1.toFixed(4)),
                     [headers.sh2]: parseFloat(m.shM2.toFixed(4)),
                     [headers.lossFactor]: m.lossFactor,
