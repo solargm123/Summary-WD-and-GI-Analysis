@@ -191,6 +191,11 @@
       if(payload.new.version>currentProject.version&&!saving){setConflictState(true);setStatus(dirty?'ข้อมูลชนกัน — กรุณาจัดการ Conflict':'มีข้อมูลใหม่ — กรุณา Reload','conflict')}
     }).subscribe();
   }
+  const CENTRAL_CACHE_DB='fusion-central-cache-v1',CENTRAL_CACHE_STORE='payloads';
+  function cacheDb(){return new Promise((resolve,reject)=>{const request=indexedDB.open(CENTRAL_CACHE_DB,1);request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains(CENTRAL_CACHE_STORE))request.result.createObjectStore(CENTRAL_CACHE_STORE)};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)})}
+  async function cacheRead(key){try{const db=await cacheDb();return await new Promise((resolve,reject)=>{const tx=db.transaction(CENTRAL_CACHE_STORE,'readonly'),request=tx.objectStore(CENTRAL_CACHE_STORE).get(key);request.onsuccess=()=>resolve(request.result||null);request.onerror=()=>reject(request.error)})}catch{return null}}
+  async function cacheWrite(key,value){try{const db=await cacheDb();await new Promise((resolve,reject)=>{const tx=db.transaction(CENTRAL_CACHE_STORE,'readwrite');tx.objectStore(CENTRAL_CACHE_STORE).put(value,key);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch{}}
+  function cacheKey(workspace,type,summary){return [workspace,type,summary?.updated_at||summary?.date_end||'current',summary?.record_count||0].join(':')}
   async function initAnalysis(expectedType,projectAdapter){
     adapter=projectAdapter;const loading=document.createElement('div');loading.id='solarPageLoading';loading.innerHTML='<div><i class="fa-solid fa-spinner fa-spin"></i><b>กำลังเตรียมข้อมูล...</b><span>Loading central data</span></div>';loading.style.cssText='position:fixed;inset:0;z-index:30000;display:grid;place-items:center;background:#0f172ae8;color:#f8fafc;font-family:Bai Jamjuree,sans-serif;backdrop-filter:blur(5px)';loading.firstElementChild.style.cssText='display:grid;gap:8px;text-align:center;padding:24px';loading.querySelector('i').style.cssText='font-size:26px;color:#38bdf8';loading.querySelector('span').style.cssText='font-size:12px;color:#94a3b8';document.body.appendChild(loading);
     try{
@@ -198,9 +203,15 @@
       [currentMembership,currentProject]=await Promise.all([membership(),loadProject(id)]);if(currentProject.analysis_type!==expectedType)throw new Error('This project belongs to another analysis type.');
       injectDock();setStatus('กำลังโหลดงาน...','busy');
       if(currentProject.dataset_id){
-        let shared=null;const fast=await getClient().rpc('get_central_analysis_payload',{p_workspace:currentMembership.workspace_id,p_analysis_type:expectedType});
-        if(!fast.error&&fast.data&&Object.keys(fast.data).length)shared=fast.data;
-        else{const {data:ds,error:dsError}=await getClient().from('shared_datasets').select('id,name,normalized_data').eq('id',currentProject.dataset_id).single();if(dsError)throw dsError;shared=expectedType==='pr_report'?ds.normalized_data:ds.normalized_data?.[expectedType]}
+        let shared=null,summary=null;const summaryResult=await getClient().rpc('get_central_summary',{p_workspace:currentMembership.workspace_id});if(!summaryResult.error)summary=summaryResult.data;
+        const key=cacheKey(currentMembership.workspace_id,expectedType,summary),cached=await cacheRead(key);
+        if(cached?.payload){shared=cached.payload;setStatus('กำลังเปิดข้อมูลจาก Cache...','busy')}
+        else{
+          const fast=await getClient().rpc('get_central_analysis_payload',{p_workspace:currentMembership.workspace_id,p_analysis_type:expectedType});
+          if(!fast.error&&fast.data&&Object.keys(fast.data).length)shared=fast.data;
+          else{const {data:ds,error:dsError}=await getClient().from('shared_datasets').select('id,name,normalized_data').eq('id',currentProject.dataset_id).single();if(dsError)throw dsError;shared=expectedType==='pr_report'?ds.normalized_data:ds.normalized_data?.[expectedType]}
+          if(shared)cacheWrite(key,{savedAt:Date.now(),payload:shared})
+        }
         if(shared)await adapter.restore(shared,currentProject.user_state||{})
       }
       else if(currentProject.base_data&&Object.keys(currentProject.base_data).length)await adapter.restore(currentProject.base_data,currentProject.user_state||{});
