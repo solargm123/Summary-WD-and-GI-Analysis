@@ -116,6 +116,19 @@
         .analysis-flow-step span{font-size:11px;color:#64748b}.dark .analysis-flow-step span{color:#cbd5e1}
         @media(max-width:760px){body>header{position:relative!important;top:0!important;margin:8px}.analysis-flow{grid-template-columns:1fr;margin-top:10px}.analysis-flow-step{padding:8px 11px}}
     </style>
+<style id="wdHeaderActionUi">
+#wdHeaderActions{flex-shrink:0}
+#wdHeaderActions .wd-header-action{height:34px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 12px;border-radius:9px;font-size:12px;font-weight:700;line-height:1;white-space:nowrap;transition:transform .15s ease,background-color .15s ease,border-color .15s ease,box-shadow .15s ease}
+#wdHeaderActions .wd-header-action:active{transform:scale(.97)}
+#wdHeaderActions .wd-header-action-dark{background:#0f172a;color:#f8fafc;border:1px solid #334155;box-shadow:0 2px 5px rgba(15,23,42,.16)}
+#wdHeaderActions .wd-header-action-dark:hover{background:#1e293b;border-color:#475569}
+#wdHeaderActions .wd-header-export{background:#38bdf8;color:#fff;border:1px solid #38bdf8;box-shadow:0 3px 8px rgba(14,165,233,.22)}
+#wdHeaderActions .wd-header-export:hover{background:#0ea5e9;border-color:#0ea5e9}
+#wdHeaderActions .wd-header-action>i.fa-solid{width:16px;height:16px;flex:0 0 16px;border-radius:0;background:transparent;box-shadow:none;font-size:11px}
+#wdHeaderActions .wd-header-action-dark>i{color:#f59e0b}
+#wdHeaderActions .wd-header-export>i{color:#fff}
+@media(max-width:760px){#wdHeaderActions{width:100%;justify-content:flex-end}#wdHeaderActions .wd-header-action{height:32px;padding:0 10px;font-size:11px}}
+</style>
 <style id="wdCompactUi">
 .analysis-flow{display:none!important}main{margin-top:.5rem!important;gap:.65rem}#wdTopPanel{gap:.65rem;align-items:start}#centralDataCard,#solarParamsCard{padding:.75rem!important}#centralDataCard #dropZone{display:none!important}#centralDataCard #fileList{margin-top:.35rem!important;max-height:none!important}#solarParamsCard .space-y-1\.5{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.35rem}#solarParamsCard .space-y-1\.5>label{margin:0!important}#wdKpis{gap:.65rem}#wdKpis>div{padding:.65rem!important}#wdKpis h3{font-size:1rem!important;margin-top:.15rem!important}#wdTableToolbar{padding:.55rem .7rem!important;gap:.5rem!important}#tableScrollContainer{max-height:calc(100vh - 270px);overflow:auto}#tableScrollContainer thead{position:sticky;top:0;z-index:20}#monthPickerButton{min-width:180px}@media(min-width:1024px){#centralDataCard{grid-column:span 3/span 3}#solarParamsCard{grid-column:span 9/span 9}}@media(max-width:900px){#solarParamsCard .space-y-1\.5{grid-template-columns:1fr}#tableScrollContainer{max-height:none}}
 .mkt-select{border-radius:999px!important;font-weight:700!important;text-align:center!important;padding:.45rem 2rem .45rem .75rem!important;transition:.2s;background-color:#fff}.dark .mkt-select{background-color:#0f172a!important;border-color:#475569!important;color-scheme:dark}.dark .mkt-select option{background:#0f172a;color:#e2e8f0}.mkt-estimated{background:#ecfdf5!important;border-color:#6ee7b7!important}.mkt-misestimated{background:#fffbeb!important;border-color:#fbbf24!important}.mkt-haveno{background:#fff1f2!important;border-color:#fda4af!important}.mkt-question{background:#f5f3ff!important;border-color:#c4b5fd!important}.dark .mkt-estimated{background:#064e3b!important}.dark .mkt-misestimated{background:#78350f!important}.dark .mkt-haveno{background:#881337!important}.dark .mkt-question{background:#4c1d95!important}#monthPickerButton{min-width:260px!important;min-height:44px;font-size:14px!important;padding:.65rem 1rem!important}#monthYearModal>div{max-width:440px!important}#monthPopupYear,#monthPopupMonth{min-height:48px;font-size:15px!important}#lossModal>div{max-width:520px!important;border-radius:18px!important}#modalDaysGrid button{min-height:38px;font-size:13px!important;text-align:center}
@@ -141,17 +154,18 @@
             </div>
             
             <!-- Quick Actions & Theme Switcher -->
-            <div class="flex items-center gap-1.5">
-                <button id="languageButton" onclick="toggleLanguage()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-lg transition border border-slate-300 dark:border-slate-700" title="Change language">
-                    EN
+            <div id="wdHeaderActions" class="flex flex-wrap items-center justify-end gap-2">
+                <button id="languageButton" onclick="toggleLanguage()" class="wd-header-action wd-header-action-dark" title="Change language">
+                    <i class="fa-solid fa-language" aria-hidden="true"></i>
+                    <span id="languageButtonText">EN</span>
                 </button>
-                <button onclick="toggleTheme()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium px-3.5 py-2 rounded-lg transition flex items-center gap-2 border border-slate-300 dark:border-slate-700">
-                    <i id="themeIcon" class="fa-solid fa-moon text-amber-500"></i>
-                    <span id="themeText">Dark Mode</span>
+                <button id="themeButton" onclick="toggleTheme()" class="wd-header-action wd-header-action-dark" title="Change theme">
+                    <i id="themeIcon" class="fa-solid fa-moon" aria-hidden="true"></i>
+                    <span id="themeText">Dark</span>
                 </button>
-
-                <button onclick="exportToExcel()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-4 py-2 rounded-lg transition flex items-center gap-2 border border-blue-500 shadow-sm active:scale-95">
-                    <i class="fa-solid fa-file-excel text-sm"></i> Export เป็น Excel (2 ชีท)
+                <button id="exportExcelButton" onclick="exportToExcel()" class="wd-header-action wd-header-export">
+                    <i class="fa-solid fa-file-arrow-down" aria-hidden="true"></i>
+                    <span>Export Excel</span>
                 </button>
             </div>
         </div>
@@ -175,9 +189,6 @@
                         <label class="text-xs font-bold uppercase tracking-wider text-blue-900 dark:text-blue-400 flex items-center gap-2">
                             <i class="fa-solid fa-database text-blue-600 dark:text-blue-400"></i> <span data-solar-th="ข้อมูลกลางจาก Center" data-solar-en="Central data from Center">ข้อมูลกลางจาก Center</span>
                         </label>
-                        <button onclick="clearAllData()" style="display:none" class="text-xs text-red-600 hover:text-red-700 dark:text-red-400 font-semibold flex items-center gap-1 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 px-2.5 py-1 rounded transition">
-                            <i class="fa-solid fa-trash-arrow-up"></i> ล้างข้อมูลไฟล์
-                        </button>
                     </div>
                     <div id="dropZone" class="border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 rounded-xl p-4 text-center transition bg-slate-50/50 dark:bg-slate-950/50 cursor-pointer flex flex-col items-center justify-center min-h-[100px]">
                         <div class="w-8 h-8 rounded-full bg-blue-50 dark:bg-slate-800 flex items-center justify-center mb-1 text-blue-600 dark:text-blue-400">
@@ -718,8 +729,8 @@
         }
 
         function applyLanguage() {
-            document.getElementById('languageButton').textContent = currentLanguage === 'th' ? 'EN' : 'ไทย';
-            document.getElementById('themeText').textContent = document.documentElement.classList.contains('dark') ? t('lightMode') : t('darkMode');
+            document.getElementById('languageButtonText').textContent = currentLanguage === 'th' ? 'EN' : 'ไทย';
+            document.getElementById('themeText').textContent = document.documentElement.classList.contains('dark') ? 'Light' : 'Dark';
             document.getElementById('searchInput').placeholder = t('search');
             document.getElementById('projectPopupSearch').placeholder = t('searchProjects');
             document.getElementById('noteTextarea').placeholder = t('notePlaceholder');
@@ -773,13 +784,13 @@
                 html.classList.remove('dark');
                 html.classList.add('light');
                 icon.className = 'fa-solid fa-moon text-slate-600';
-                text.innerText = t('darkMode');
+                text.innerText = 'Dark';
                 localStorage.setItem('fusionTheme', 'light');
             } else {
                 html.classList.remove('light');
                 html.classList.add('dark');
                 icon.className = 'fa-solid fa-sun text-amber-400';
-                text.innerText = t('lightMode');
+                text.innerText = 'Light';
                 localStorage.setItem('fusionTheme', 'dark');
             }
         }
