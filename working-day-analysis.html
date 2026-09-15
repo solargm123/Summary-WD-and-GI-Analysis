@@ -23,7 +23,6 @@
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="cloud-core.js?v=20260915-idbcache1"></script>
     <style> 
@@ -1401,7 +1400,16 @@
             }
         }
 
-        function exportToExcel() {
+        let xlsxLoaderPromise=null;
+        function ensureXlsx(){
+            if(window.XLSX)return Promise.resolve(window.XLSX);
+            if(xlsxLoaderPromise)return xlsxLoaderPromise;
+            xlsxLoaderPromise=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';script.onload=()=>resolve(window.XLSX);script.onerror=()=>reject(new Error('ไม่สามารถโหลดเครื่องมือส่งออก Excel ได้'));document.head.appendChild(script)});
+            return xlsxLoaderPromise;
+        }
+
+        async function exportToExcel() {
+            try{await ensureXlsx()}catch(error){SolarCloud.notice('ส่งออกไม่ได้',error.message,'danger');return}
             if (plantData.length === 0) {
                 SolarCloud.notice(currentLanguage==='th'?'ยังส่งออกไม่ได้':'Export unavailable',t('exportNoData'),'danger');
                 return;
