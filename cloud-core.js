@@ -69,7 +69,7 @@
     const {data,error}=await getClient().rpc('create_analysis_project',{p_workspace:m.workspace_id,p_analysis_type:type,p_name:(name||fallback).trim()});
     if(error)throw error;return data.id;
   }
-  function analysisUrl(project){const page=project.analysis_type==='working_day'?'working-day-analysis.html':project.analysis_type==='global_irradiance'?'global-irradiance-analysis.html':'pr-report.html';return `${page}?v=20260915-wd-calendar-lock1&project=${encodeURIComponent(project.id)}`}
+  function analysisUrl(project){const page=project.analysis_type==='working_day'?'working-day-analysis.html':project.analysis_type==='global_irradiance'?'global-irradiance-analysis.html':'pr-report.html';return `${page}?v=20260915-wd-loss-reset1&project=${encodeURIComponent(project.id)}`}
   async function signIn(email,password){const {data,error}=await getClient().auth.signInWithPassword({email,password});if(error)throw error;return data}
   async function signOut(){await getClient().auth.signOut();location.replace(indexUrl())}
   async function loadProject(id){
