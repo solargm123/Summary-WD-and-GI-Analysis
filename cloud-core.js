@@ -196,7 +196,12 @@
       await requireSession();const id=projectId();if(!id)throw new Error('Project ID is missing. Open this page from Workspace.');
       [currentMembership,currentProject]=await Promise.all([membership(),loadProject(id)]);if(currentProject.analysis_type!==expectedType)throw new Error('This project belongs to another analysis type.');
       injectDock();setStatus('กำลังโหลดงาน...','busy');
-      if(currentProject.dataset_id){const {data:ds,error:dsError}=await getClient().from('shared_datasets').select('id,name,normalized_data').eq('id',currentProject.dataset_id).single();if(dsError)throw dsError;const shared=expectedType==='pr_report'?ds.normalized_data:ds.normalized_data?.[expectedType];if(shared)await adapter.restore(shared,currentProject.user_state||{})}
+      if(currentProject.dataset_id){
+        let shared=null;const fast=await getClient().rpc('get_central_analysis_payload',{p_workspace:currentMembership.workspace_id,p_analysis_type:expectedType});
+        if(!fast.error&&fast.data&&Object.keys(fast.data).length)shared=fast.data;
+        else{const {data:ds,error:dsError}=await getClient().from('shared_datasets').select('id,name,normalized_data').eq('id',currentProject.dataset_id).single();if(dsError)throw dsError;shared=expectedType==='pr_report'?ds.normalized_data:ds.normalized_data?.[expectedType]}
+        if(shared)await adapter.restore(shared,currentProject.user_state||{})
+      }
       else if(currentProject.base_data&&Object.keys(currentProject.base_data).length)await adapter.restore(currentProject.base_data,currentProject.user_state||{});
       applyViewerLock();installAutoSave();subscribe();setStatus(roleCanEdit()?'เชื่อมต่อแล้ว':currentProject.status==='completed'?'งานเสร็จแล้ว — โหมดดูอย่างเดียว':'โหมดดูอย่างเดียว','ok');
       document.title=`${currentProject.name} — ${document.title}`;
@@ -252,7 +257,15 @@
     const pr=new Map();[...(old.pr_report?.records||[]),...(fresh.pr_report?.records||[])].forEach(r=>pr.set(`${r.date||''}|${String(r.project||'').toLowerCase()}`,r));merged.pr_report.records=[...pr.values()].sort((x,y)=>String(x.date).localeCompare(String(y.date))||String(x.project).localeCompare(String(y.project)));merged.pr_report.sourceFiles=merged.sourceFiles;return merged;
   }
   async function ensureCentralProject(type){const m=currentMembership||await membership(),name=CENTRAL_PROJECT_NAMES[type];if(!name)throw new Error('Unknown analysis type.');const {data,error}=await getClient().from('analysis_projects').select('*').eq('workspace_id',m.workspace_id).eq('analysis_type',type).is('deleted_at',null).order('updated_at',{ascending:false});if(error)throw error;let project=(data||[]).find(p=>p.name===name);if(!project){if(!['admin','editor'].includes(m.role))throw new Error('พื้นที่วิเคราะห์กลางยังไม่ถูกสร้าง กรุณาให้ Admin หรือ Editor เปิดเครื่องมือนี้ครั้งแรก');const id=await createProject(type,name);project=await loadProject(id)}return project}
-  async function centralDatasetStatus(){const m=currentMembership||await membership(),rows=await listDatasets(),dataset=rows[0]||null,normalized=dataset?.normalized_data||{},pr=normalized.pr_report?.records||[],wd=normalized.working_day?.records||[],gi=normalized.global_irradiance||{},allDates=[...new Set([...pr.map(r=>r.date),...(gi.dates||[])].filter(Boolean))].sort(),plants=new Set([...pr.map(r=>r.project),...wd.map(r=>r.name),...Object.keys(gi.plants||{})].filter(Boolean));return{membership:m,dataset,files:dataset?.source_files||normalized.sourceFiles||[],projectCount:plants.size,recordCount:Math.max(pr.length,wd.length),dateStart:allDates[0]||null,dateEnd:allDates.at(-1)||null,aliasCount:Object.keys(normalized.projectAliases||{}).length}}
+  async function centralDatasetStatus(){
+    const m=currentMembership||await membership();
+    const meta=await getClient().from('shared_datasets').select('id,name,updated_at,updated_by').eq('workspace_id',m.workspace_id).order('updated_at',{ascending:false}).limit(1).maybeSingle();
+    if(meta.error)throw meta.error;const dataset=meta.data||null;
+    const fast=await getClient().rpc('get_central_summary',{p_workspace:m.workspace_id});
+    if(!fast.error&&fast.data){const x=fast.data;return{membership:m,dataset,files:Array.isArray(x.files)?x.files:[],projectCount:Number(x.project_count||0),recordCount:Number(x.record_count||0),dateStart:x.date_start||null,dateEnd:x.date_end||null,aliasCount:Number(x.alias_count||0)}}
+    const rows=await listDatasets(),full=rows[0]||null,normalized=full?.normalized_data||{},pr=normalized.pr_report?.records||[],wd=normalized.working_day?.records||[],gi=normalized.global_irradiance||{},allDates=[...new Set([...pr.map(r=>r.date),...(gi.dates||[])].filter(Boolean))].sort(),plants=new Set([...pr.map(r=>r.project),...wd.map(r=>r.name),...Object.keys(gi.plants||{})].filter(Boolean));
+    return{membership:m,dataset:full,files:full?.source_files||normalized.sourceFiles||[],projectCount:plants.size,recordCount:Math.max(pr.length,wd.length),dateStart:allDates[0]||null,dateEnd:allDates.at(-1)||null,aliasCount:Object.keys(normalized.projectAliases||{}).length}
+  }
   async function prepareCentralUpload(files){
     const m=currentMembership||await membership();if(!['admin','editor'].includes(m.role))throw new Error('Viewer cannot upload or replace central data.');if(!files?.length)throw new Error('Please select at least one Excel file.');
     const fresh=await normalizeUpload(files),rows=await listDatasets(),existing=rows[0]||null,previous=structuredClone(existing?.normalized_data||{}),aliases=previous.projectAliases||{};applyKnownAliases(fresh,aliases);
