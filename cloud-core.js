@@ -207,12 +207,16 @@
       injectDock();setStatus('กำลังโหลดงาน...','busy');
       if(currentProject.dataset_id){
         let shared=null,summary=bootstrapSummary;if(!summary){const summaryResult=await getClient().rpc('get_central_summary',{p_workspace:currentMembership.workspace_id});if(!summaryResult.error)summary=summaryResult.data}
-        const key=cacheKey(currentMembership.workspace_id,expectedType,summary),cached=await cacheRead(key);
+        const preferredMonth=expectedType==='working_day'?(currentProject.user_state?.selectedMonth||String(summary?.date_end||'').slice(0,7)):null;
+        const key=cacheKey(currentMembership.workspace_id,expectedType,summary)+(preferredMonth?':'+preferredMonth:''),cached=await cacheRead(key);
         if(cached?.payload){shared=cached.payload;setStatus('กำลังเปิดข้อมูลจาก Cache...','busy')}
         else{
-          const fast=await getClient().rpc('get_central_analysis_payload',{p_workspace:currentMembership.workspace_id,p_analysis_type:expectedType});
-          if(!fast.error&&fast.data&&Object.keys(fast.data).length)shared=fast.data;
-          else{const {data:ds,error:dsError}=await getClient().from('shared_datasets').select('id,name,normalized_data').eq('id',currentProject.dataset_id).single();if(dsError)throw dsError;shared=expectedType==='pr_report'?ds.normalized_data:ds.normalized_data?.[expectedType]}
+          if(expectedType==='working_day'){
+            const monthly=await getClient().rpc('get_working_day_month',{p_workspace:currentMembership.workspace_id,p_month:preferredMonth||null});
+            if(!monthly.error&&monthly.data&&Object.keys(monthly.data).length)shared=monthly.data;
+          }
+          if(!shared){const fast=await getClient().rpc('get_central_analysis_payload',{p_workspace:currentMembership.workspace_id,p_analysis_type:expectedType});if(!fast.error&&fast.data&&Object.keys(fast.data).length)shared=fast.data}
+          if(!shared){const {data:ds,error:dsError}=await getClient().from('shared_datasets').select('id,name,normalized_data').eq('id',currentProject.dataset_id).single();if(dsError)throw dsError;shared=expectedType==='pr_report'?ds.normalized_data:ds.normalized_data?.[expectedType]}
           if(shared)cacheWrite(key,{savedAt:Date.now(),payload:shared})
         }
         if(shared)await adapter.restore(shared,currentProject.user_state||{})
@@ -222,6 +226,13 @@
       document.title=`${currentProject.name} — ${document.title}`;
     }catch(error){console.error(error);loading.remove();await notice('ไม่สามารถเปิดงานได้',error.message,'danger');if(/Authentication|required|Project ID/.test(error.message))location.replace(indexUrl());return}
     loading.remove();
+  }
+  async function loadCentralPeriod(month){
+    if(!currentProject||!adapter||currentProject.analysis_type!=='working_day'||!/^\d{4}-\d{2}$/.test(String(month||'')))return false;
+    const captured=adapter.capture(),summaryResult=await getClient().rpc('get_central_summary',{p_workspace:currentMembership.workspace_id}),summary=summaryResult.data||{},key=cacheKey(currentMembership.workspace_id,'working_day',summary)+':'+month,cached=await cacheRead(key);
+    setStatus('กำลังโหลดเดือน '+month+'...','busy');let payload=cached?.payload||null;
+    if(!payload){const result=await getClient().rpc('get_working_day_month',{p_workspace:currentMembership.workspace_id,p_month:month});if(result.error)throw result.error;payload=result.data;cacheWrite(key,{savedAt:Date.now(),payload})}
+    await adapter.restore(payload,{...(captured.userState||{}),selectedMonth:month});setStatus('เชื่อมต่อแล้ว','ok');return true
   }
   function localDraft(){
     if(!currentProject||!adapter)throw new Error('Project is not ready.');
@@ -358,5 +369,5 @@
   }
   async function uploadCentralDataset(files){const prepared=await prepareCentralUpload(files);return commitCentralUpload(prepared,prepared.candidates.map(x=>({...x,action:'separate'})))}
   async function openCentralAnalysis(type){const project=await ensureCentralProject(type);if(!project.dataset_id){const {data:dataset,error}=await getClient().from('shared_datasets').select('id').eq('workspace_id',(currentMembership||await membership()).workspace_id).order('updated_at',{ascending:false}).limit(1).maybeSingle();if(error)throw error;if(dataset){const attached=await getClient().rpc('attach_dataset_to_project',{p_project_id:project.id,p_dataset_id:dataset.id});if(attached.error)throw attached.error}}location.href=analysisUrl(project)}
-  global.SolarCloud={CONFIG,dialog,notice,confirmDialog,setLanguage,getLanguage,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,datasets,useDataset,resolveConflict,downloadLocalDraft,reloadLatest,back:()=>location.assign(indexUrl()),roleCanEdit,roleCanAdmin,centralDatasetStatus,databaseStorageStatus,prepareCentralUpload,commitCentralUpload,prepareCentralBatchUpload,commitCentralBatchUpload,uploadCentralDataset,openCentralAnalysis};
+  global.SolarCloud={CONFIG,dialog,notice,confirmDialog,setLanguage,getLanguage,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,datasets,useDataset,resolveConflict,downloadLocalDraft,reloadLatest,back:()=>location.assign(indexUrl()),roleCanEdit,roleCanAdmin,centralDatasetStatus,databaseStorageStatus,loadCentralPeriod,prepareCentralUpload,commitCentralUpload,prepareCentralBatchUpload,commitCentralBatchUpload,uploadCentralDataset,openCentralAnalysis};
 })(window);
