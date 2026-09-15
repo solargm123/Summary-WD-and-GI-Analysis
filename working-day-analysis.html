@@ -1633,7 +1633,7 @@
           Object.entries(methodOverridesByMonth).forEach(([month,projects])=>Object.entries(projects||{}).forEach(([key,method])=>{overrides['@method:'+month+':'+key]={method}}));
           return {
             baseData:{records:rawRecordsByFile,detectedMonths:[...detectedMonths]},
-            userState:{selectedMonth,lossFactor:'0.9',sunHoursTarget:document.getElementById('sunHoursTarget').value,sunHoursMode:sunMode,sunHoursCustom:document.getElementById('inputSunHoursCustom').value,overrides},
+            userState:{selectedMonth,lossFactor:'0.9',sunHoursTarget:document.getElementById('sunHoursTarget').value,sunHoursMode:sunMode,sunHoursCustom:document.getElementById('inputSunHoursCustom').value,monthLossStateVersion:2,overrides},
             periodKey:selectedMonth,
             sourceFiles:[...new Set(rawRecordsByFile.map(record=>record.fileName).filter(Boolean))]
           };
@@ -1646,9 +1646,10 @@
           if(state.sunHoursCustom!=null)document.getElementById('inputSunHoursCustom').value=state.sunHoursCustom;
           const radio=document.querySelector(`input[name="sunHoursMode"][value="${state.sunHoursMode||'custom'}"]`);if(radio)radio.checked=true;
           const overrides=state.overrides||{};
+          const acceptMonthLossState=Number(state.monthLossStateVersion)===2;
           mktEstimateByProject={};methodOverridesByMonth={};monthPlantOverrides={};activeMonthKey=null;
           Object.entries(overrides).forEach(([key,value])=>{
-            if(key.startsWith('@period:')){
+            if(acceptMonthLossState&&key.startsWith('@period:')){
               const remainder=key.slice(8),split=remainder.indexOf(':'),month=remainder.slice(0,split),projectKey=remainder.slice(split+1);
               if(split>0){monthPlantOverrides[month]=monthPlantOverrides[month]||{};monthPlantOverrides[month][projectKey]={lossDaysArray:Array.isArray(value?.lossDaysArray)?value.lossDaysArray:[]}}
             }
@@ -1688,6 +1689,6 @@
       };
       SolarCloud.initAnalysis('working_day',workingDayCloudAdapter);
     </script>
-<script src="unified-ui.js?v=20260915-unified-ui1"></script>
+<script src="unified-ui.js?v=20260915-wd-header-fix1"></script>
 </body>
 </html>
