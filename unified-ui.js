@@ -67,6 +67,9 @@
     return box;
   }
   function mount(){
+    if(document.querySelector('#giHeaderActions')) {
+      // Global Irradiance owns its Language, Export and Theme controls.
+    } else
     if(document.querySelector('#wdHeaderActions')) {
       // Working Day owns its Language, Export and Theme controls; do not inject duplicates.
     } else if(document.querySelector('.header-controls'))document.querySelector('.header-controls').prepend(toolbar());
