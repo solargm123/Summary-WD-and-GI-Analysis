@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20260916-gi-province1"></script>
+    <script src="cloud-core.js?v=20260921-gi-address1"></script>
 
     <style>
         :root[data-theme="dark"] {
@@ -207,6 +207,7 @@
         #trendControlsCard .search-input{min-height:42px;padding:9px 12px}
         #trendControlsCard .plant-list-container{height:250px;border-radius:11px}
         #trendControlsCard input[type="checkbox"]{width:17px;height:17px;accent-color:var(--accent-blue)}
+        #giHeaderActions .gi-theme-button{width:auto!important;min-width:88px;min-height:34px;justify-content:center;white-space:nowrap}
         @media(max-width:1024px){#trendControlsCard{position:relative;top:0}.trend-grid{grid-template-columns:1fr}#trendControlsCard .trend-date-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
         @media(max-width:720px){#filterModal .modal-content{padding:14px}#filterModal .filter-grid,#trendControlsCard .trend-date-grid{grid-template-columns:1fr}#filterModal .multi-select,#trendControlsCard .multi-select{height:120px}}
     </style>
@@ -226,7 +227,7 @@
         <div class="header-controls" id="giHeaderActions">
             <button class="btn btn-secondary" onclick="FusionUI.setLanguage(FusionUI.getLanguage()==='th'?'en':'th')"><i class="fa-solid fa-language"></i><span data-fs-lang-label>ภาษา</span></button>
             <button class="btn" onclick="exportToExcel()"><i class="fa-solid fa-file-arrow-down"></i> ส่งออก Excel</button>
-            <button class="btn btn-theme" onclick="toggleTheme()"><i class="fa-solid fa-sun" id="themeIcon"></i></button>
+            <button class="btn btn-secondary gi-theme-button" onclick="FusionUI.setTheme(FusionUI.getTheme()==='dark'?'light':'dark')"><i class="fa-solid" data-fs-theme-icon></i><span data-fs-theme-label>Light</span></button>
         </div>
     </header>
 
