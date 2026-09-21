@@ -1633,7 +1633,8 @@
           Object.entries(methodOverridesByMonth).forEach(([month,projects])=>Object.entries(projects||{}).forEach(([key,method])=>{overrides['@method:'+month+':'+key]={method}}));
           return {
             baseData:{records:rawRecordsByFile,detectedMonths:[...detectedMonths]},
-            userState:{selectedMonth,lossFactor:'0.9',sunHoursTarget:document.getElementById('sunHoursTarget').value,sunHoursMode:sunMode,sunHoursCustom:document.getElementById('inputSunHoursCustom').value,monthLossStateVersion:2,overrides},
+            // Loss-date state v3: discard incorrect month/project overrides saved by older builds.
+            userState:{selectedMonth,lossFactor:'0.9',sunHoursTarget:document.getElementById('sunHoursTarget').value,sunHoursMode:sunMode,sunHoursCustom:document.getElementById('inputSunHoursCustom').value,monthLossStateVersion:3,overrides},
             periodKey:selectedMonth,
             sourceFiles:[...new Set(rawRecordsByFile.map(record=>record.fileName).filter(Boolean))]
           };
@@ -1646,7 +1647,7 @@
           if(state.sunHoursCustom!=null)document.getElementById('inputSunHoursCustom').value=state.sunHoursCustom;
           const radio=document.querySelector(`input[name="sunHoursMode"][value="${state.sunHoursMode||'custom'}"]`);if(radio)radio.checked=true;
           const overrides=state.overrides||{};
-          const acceptMonthLossState=Number(state.monthLossStateVersion)===2;
+          const acceptMonthLossState=Number(state.monthLossStateVersion)===3;
           mktEstimateByProject={};methodOverridesByMonth={};monthPlantOverrides={};activeMonthKey=null;
           Object.entries(overrides).forEach(([key,value])=>{
             if(acceptMonthLossState&&key.startsWith('@period:')){
