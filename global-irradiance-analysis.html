@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20260921-gi-address1"></script>
+    <script src="cloud-core.js?v=20260921-topbar1"></script>
 
     <style>
         :root[data-theme="dark"] {
@@ -124,7 +124,17 @@
 
         .cell-input { width: 75px; background: var(--input-bg); color: var(--accent-blue); border: 1px solid var(--accent-blue); border-radius: 4px; padding: 2px 4px; text-align: right; font-weight: bold; font-size: 0.8rem; }
         .note-input { width: 100%; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--card-border); border-radius: 4px; padding: 4px 6px; font-size: 0.78rem; }
-        .province-select { width:100%; background:var(--input-bg); color:var(--text-main); border:1px solid var(--card-border); border-radius:8px; padding:6px 7px; font-size:.76rem; outline:none; }
+        .province-button,.province-filter-select { width:100%; background:var(--input-bg); color:var(--text-main); border:1px solid var(--card-border); border-radius:8px; padding:6px 8px; font-size:.76rem; outline:none; }
+        .province-button { display:flex; align-items:center; justify-content:space-between; gap:6px; cursor:pointer; text-align:left; }
+        .province-button span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .province-filter-wrap { display:flex; align-items:center; gap:7px; min-width:245px; margin-left:6px; }
+        .province-filter-select { min-width:170px; }
+        #provinceModal .modal-content { width:min(92vw,520px); max-width:520px; }
+        .province-search { width:100%; min-height:44px; background:var(--input-bg); color:var(--text-main); border:1px solid var(--card-border); border-radius:10px; padding:10px 12px; outline:none; }
+        .province-option-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; max-height:52vh; overflow:auto; padding:2px; }
+        .province-option { background:var(--input-bg); color:var(--text-main); border:1px solid var(--card-border); border-radius:9px; padding:9px 10px; cursor:pointer; text-align:left; }
+        .province-option:hover,.province-option.active { border-color:var(--accent-blue); background:rgba(56,189,248,.14); color:var(--accent-blue); }
+        .province-option small { display:block; color:var(--text-muted); margin-top:2px; }
 
         .threshold-box { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; background: var(--input-bg); padding: 4px 10px; border-radius: 8px; border: 1px solid var(--card-border); }
         .threshold-box input { width: 50px; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--accent-yellow); text-align: center; border-radius: 4px; padding: 2px; font-weight: bold; }
@@ -225,7 +235,7 @@
             </div>
         </div>
         <div class="header-controls" id="giHeaderActions">
-            <button class="btn btn-secondary" onclick="FusionUI.setLanguage(FusionUI.getLanguage()==='th'?'en':'th')"><i class="fa-solid fa-language"></i><span data-fs-lang-label>ภาษา</span></button>
+            <button class="btn btn-secondary" onclick="toggleGiLanguage()"><i class="fa-solid fa-language"></i><span data-fs-lang-label>ภาษา</span></button>
             <button class="btn" onclick="exportToExcel()"><i class="fa-solid fa-file-arrow-down"></i> ส่งออก Excel</button>
             <button class="btn btn-secondary gi-theme-button" onclick="FusionUI.setTheme(FusionUI.getTheme()==='dark'?'light':'dark')"><i class="fa-solid" data-fs-theme-icon></i><span data-fs-theme-label>Light</span></button>
         </div>
@@ -287,11 +297,15 @@
             </div>
 
             <div class="status-filter-bar">
-                <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">กรองตามสถานะ:</span>
+                <span data-solar-th="กรองตามสถานะ:" data-solar-en="Filter by status:" style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">กรองตามสถานะ:</span>
                 <button class="btn-filter-status active" id="btnFilterAll" onclick="setStatusFilter('ALL')">ทุกโครงการ <span class="badge-count badge-all" id="countAll">0</span></button>
                 <button class="btn-filter-status" id="btnFilterNormal" onclick="setStatusFilter('NORMAL')"><i class="fa-solid fa-circle-check" style="color: var(--accent-green)"></i> ปกติ <span class="badge-count badge-normal" id="countNormal">0</span></button>
                 <button class="btn-filter-status" id="btnFilterAbnormal" onclick="setStatusFilter('ABNORMAL')"><i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-yellow)"></i> ผิดปกติ <span class="badge-count badge-abnormal" id="countAbnormal">0</span></button>
                 <button class="btn-filter-status" id="btnFilterNotFound" onclick="setStatusFilter('NOT_FOUND')"><i class="fa-solid fa-circle-question" style="color: var(--accent-red)"></i> ไม่พบข้อมูล <span class="badge-count badge-notfound" id="countNotFound">0</span></button>
+                <div class="province-filter-wrap">
+                    <span data-solar-th="จังหวัด:" data-solar-en="Province:" style="font-size:.78rem;color:var(--text-muted);font-weight:600;">จังหวัด:</span>
+                    <select id="provinceStatusFilter" class="province-filter-select" onchange="setProvinceFilter(this.value)"></select>
+                </div>
             </div>
 
             <div class="top-scroll-wrapper" id="topScrollWrapper"><div class="top-scroll-inner" id="topScrollInner"></div></div>
@@ -443,6 +457,17 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="provinceModal" onclick="if(event.target===this)closeProvincePopup()">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="provinceModalTitle">เลือกจังหวัด / Select province</h3>
+            <button class="btn btn-secondary" onclick="closeProvincePopup()">✕</button>
+        </div>
+        <input id="provinceSearch" class="province-search" type="search" placeholder="ค้นหาจังหวัด / Search province" oninput="renderProvinceOptions()">
+        <div id="provinceOptionList" class="province-option-list"></div>
+    </div>
+</div>
+
 <script>
     try { } catch(e) {}
 
@@ -459,12 +484,21 @@
     let allPlantsSet = new Set(), selectedPlants = new Set(), datesSet = new Set(), sourceFileNames = [];
     let availableIrrMonths = [], loadedIrrMonth = null, giFullDataLoaded = false, giPeriodLoading = false;
     let plantMasterData = {}, originalPlantData = {}, copiedIrrData = null;
-    let isEditMode = false, isFileUploaded = false, activeStatusFilter = 'ALL';
+    let isEditMode = false, isFileUploaded = false, activeStatusFilter = 'ALL', activeProvinceFilter = 'ALL', currentProvincePlant = null;
 
     const THAI_PROVINCES=['ไม่ระบุ','กรุงเทพมหานคร','กระบี่','กาญจนบุรี','กาฬสินธุ์','กำแพงเพชร','ขอนแก่น','จันทบุรี','ฉะเชิงเทรา','ชลบุรี','ชัยนาท','ชัยภูมิ','ชุมพร','เชียงราย','เชียงใหม่','ตรัง','ตราด','ตาก','นครนายก','นครปฐม','นครพนม','นครราชสีมา','นครศรีธรรมราช','นครสวรรค์','นนทบุรี','นราธิวาส','น่าน','บึงกาฬ','บุรีรัมย์','ปทุมธานี','ประจวบคีรีขันธ์','ปราจีนบุรี','ปัตตานี','พระนครศรีอยุธยา','พะเยา','พังงา','พัทลุง','พิจิตร','พิษณุโลก','เพชรบุรี','เพชรบูรณ์','แพร่','ภูเก็ต','มหาสารคาม','มุกดาหาร','แม่ฮ่องสอน','ยโสธร','ยะลา','ร้อยเอ็ด','ระนอง','ระยอง','ราชบุรี','ลพบุรี','ลำปาง','ลำพูน','เลย','ศรีสะเกษ','สกลนคร','สงขลา','สตูล','สมุทรปราการ','สมุทรสงคราม','สมุทรสาคร','สระแก้ว','สระบุรี','สิงห์บุรี','สุโขทัย','สุพรรณบุรี','สุราษฎร์ธานี','สุรินทร์','หนองคาย','หนองบัวลำภู','อ่างทอง','อำนาจเจริญ','อุดรธานี','อุตรดิตถ์','อุทัยธานี','อุบลราชธานี'];
+    const EN_PROVINCES=['Not specified','Bangkok','Krabi','Kanchanaburi','Kalasin','Kamphaeng Phet','Khon Kaen','Chanthaburi','Chachoengsao','Chon Buri','Chai Nat','Chaiyaphum','Chumphon','Chiang Rai','Chiang Mai','Trang','Trat','Tak','Nakhon Nayok','Nakhon Pathom','Nakhon Phanom','Nakhon Ratchasima','Nakhon Si Thammarat','Nakhon Sawan','Nonthaburi','Narathiwat','Nan','Bueng Kan','Buri Ram','Pathum Thani','Prachuap Khiri Khan','Prachin Buri','Pattani','Phra Nakhon Si Ayutthaya','Phayao','Phang Nga','Phatthalung','Phichit','Phitsanulok','Phetchaburi','Phetchabun','Phrae','Phuket','Maha Sarakham','Mukdahan','Mae Hong Son','Yasothon','Yala','Roi Et','Ranong','Rayong','Ratchaburi','Lop Buri','Lampang','Lamphun','Loei','Si Sa Ket','Sakon Nakhon','Songkhla','Satun','Samut Prakan','Samut Songkhram','Samut Sakhon','Sa Kaeo','Saraburi','Sing Buri','Sukhothai','Suphan Buri','Surat Thani','Surin','Nong Khai','Nong Bua Lam Phu','Ang Thong','Amnat Charoen','Udon Thani','Uttaradit','Uthai Thani','Ubon Ratchathani'];
+    const PROVINCE_EN=Object.fromEntries(THAI_PROVINCES.map((name,index)=>[name,EN_PROVINCES[index]]));
     const PROVINCE_ALIASES={'กรุงเทพมหานคร':['bangkok'],'ชลบุรี':['chon buri','chonburi'],'ระยอง':['rayong'],'สมุทรปราการ':['samut prakan'],'สมุทรสาคร':['samut sakhon'],'นครปฐม':['nakhon pathom'],'ปทุมธานี':['pathum thani','pathumthani'],'พระนครศรีอยุธยา':['ayutthaya'],'ฉะเชิงเทรา':['chachoengsao'],'จันทบุรี':['chanthaburi'],'นครราชสีมา':['nakhon ratchasima','korat'],'เพชรบุรี':['phetchaburi'],'ภูเก็ต':['phuket'],'พะเยา':['phayao'],'สระบุรี':['saraburi'],'ราชบุรี':['ratchaburi'],'นนทบุรี':['nonthaburi'],'เชียงใหม่':['chiang mai'],'เชียงราย':['chiang rai'],'สงขลา':['songkhla'],'ขอนแก่น':['khon kaen']};
     function detectProvince(address){const source=String(address||'').toLowerCase().replace(/\s+/g,' ');if(!source)return 'ไม่ระบุ';const thai=THAI_PROVINCES.slice(1).sort((a,b)=>b.length-a.length).find(name=>source.includes(name.toLowerCase()));if(thai)return thai;for(const [province,aliases] of Object.entries(PROVINCE_ALIASES))if(aliases.some(alias=>source.includes(alias)))return province;return 'ไม่ระบุ'}
-    function provinceOptions(selected){const value=selected||'ไม่ระบุ';return THAI_PROVINCES.map(name=>`<option value="${name}" ${name===value?'selected':''}>${name}</option>`).join('')}
+    const giLanguage=()=>window.FusionUI?.getLanguage?.()||document.documentElement.lang||'th';
+    const provinceLabel=name=>giLanguage()==='en'?(PROVINCE_EN[name]||name):name;
+    function toggleGiLanguage(){FusionUI.setLanguage(FusionUI.getLanguage()==='th'?'en':'th');renderProvinceFilterOptions();if(isFileUploaded)renderTableAndMetrics();if(document.getElementById('provinceModal').style.display==='flex')renderProvinceOptions()}
+    function openProvincePopup(plant){currentProvincePlant=plant;document.getElementById('provinceSearch').value='';document.getElementById('provinceModal').style.display='flex';renderProvinceOptions();setTimeout(()=>document.getElementById('provinceSearch').focus(),0)}
+    function closeProvincePopup(){document.getElementById('provinceModal').style.display='none';currentProvincePlant=null}
+    function renderProvinceOptions(){const query=document.getElementById('provinceSearch').value.trim().toLowerCase();const selected=plantMasterData[currentProvincePlant]?.province||'ไม่ระบุ';document.getElementById('provinceOptionList').innerHTML=THAI_PROVINCES.filter(name=>!query||name.toLowerCase().includes(query)||(PROVINCE_EN[name]||'').toLowerCase().includes(query)).map(name=>`<button class="province-option ${name===selected?'active':''}" onclick="selectProvince('${name}')">${escapeHtml(provinceLabel(name))}<small>${escapeHtml(giLanguage()==='en'?name:PROVINCE_EN[name])}</small></button>`).join('')}
+    function selectProvince(value){updateProvinceData(currentProvincePlant,value);closeProvincePopup();renderTableAndMetrics()}
+    function renderProvinceFilterOptions(){const select=document.getElementById('provinceStatusFilter');if(!select)return;const used=[...new Set([...selectedPlants].map(name=>plantMasterData[name]?.province||'ไม่ระบุ'))].sort((a,b)=>provinceLabel(a).localeCompare(provinceLabel(b)));if(activeProvinceFilter!=='ALL'&&!used.includes(activeProvinceFilter))activeProvinceFilter='ALL';select.innerHTML=`<option value="ALL">${giLanguage()==='en'?'All provinces':'ทุกจังหวัด'}</option>`+used.map(name=>`<option value="${escapeHtml(name)}">${escapeHtml(provinceLabel(name))}</option>`).join('');select.value=activeProvinceFilter}
 
     let trendChart = null, selectedTrendPlants = new Set();
     const chartColors = [
@@ -523,6 +557,11 @@
         if (status === 'NORMAL') document.getElementById('btnFilterNormal').classList.add('active');
         if (status === 'ABNORMAL') document.getElementById('btnFilterAbnormal').classList.add('active');
         if (status === 'NOT_FOUND') document.getElementById('btnFilterNotFound').classList.add('active');
+        renderTableAndMetrics();
+    }
+
+    function setProvinceFilter(province) {
+        activeProvinceFilter = province || 'ALL';
         renderTableAndMetrics();
     }
 
@@ -760,12 +799,13 @@
         if (!isFileUploaded) return;
 
         const dateList = getFilteredDates();
+        renderProvinceFilterOptions();
         const headerTr = document.getElementById('tableHeader');
         const tbody = document.getElementById('tableBody');
         const minIrr = parseFloat(document.getElementById('minIrr').value) || 0;
         const maxIrr = parseFloat(document.getElementById('maxIrr').value) || 99;
 
-        let headerHtml = `<th class="col-status">Status</th><th class="col-plant">Plant Name</th><th class="col-province">Province</th><th class="number-col avg-col col-avg">Average</th><th class="number-col normal-col col-normal">Normal Day</th><th class="number-col col-kwp">kWp</th>`;
+        let headerHtml = `<th class="col-status">Status</th><th class="col-plant">Plant Name</th><th class="col-province">${giLanguage()==='en'?'Province':'จังหวัด'}</th><th class="number-col avg-col col-avg">Average</th><th class="number-col normal-col col-normal">Normal Day</th><th class="number-col col-kwp">kWp</th>`;
         dateList.forEach(d => { headerHtml += `<th class="number-col col-date" style="color:var(--accent-blue)">${d}</th>`; });
         headerHtml += `<th class="col-note">Note</th>`;
         headerTr.innerHTML = headerHtml;
@@ -774,7 +814,8 @@
         let countNormal = 0, countAbnormal = 0, countNotFound = 0;
         tbody.innerHTML = '';
 
-        Array.from(selectedPlants).sort().forEach(plant => {
+        const provincePlants=Array.from(selectedPlants).filter(plant=>activeProvinceFilter==='ALL'||(plantMasterData[plant]?.province||'ไม่ระบุ')===activeProvinceFilter).sort();
+        provincePlants.forEach(plant => {
             const pData = plantMasterData[plant];
             if (!pData) return;
 
@@ -835,7 +876,7 @@
                         <div style="display:flex; gap:4px;">${actionBtns}</div>
                     </div>
                 </td>
-                <td class="col-province"><select class="province-select data-province-select" data-plant="${escapeHtml(plant)}" title="${escapeHtml(pData.address||'')}">${provinceOptions(pData.province)}</select></td>
+                <td class="col-province"><button class="province-button" data-plant="${escapeHtml(plant)}" onclick="openProvincePopup(this.dataset.plant)" title="${escapeHtml(pData.address||'')}"><span>${escapeHtml(provinceLabel(pData.province||'ไม่ระบุ'))}</span><i class="fa-solid fa-chevron-down"></i></button></td>
                 <td class="number-col avg-col col-avg">${plantAvgIrr.toFixed(3)}</td>
                 <td class="number-col normal-col col-normal">${plantNormalDays} / ${dateList.length}</td>
                 <td class="number-col col-kwp">${pData.capacity.toLocaleString()}</td>
@@ -846,15 +887,15 @@
         });
 
         bindDynamicEvents();
-        document.getElementById('countAll').innerText = selectedPlants.size;
+        document.getElementById('countAll').innerText = provincePlants.length;
         document.getElementById('countNormal').innerText = countNormal;
         document.getElementById('countAbnormal').innerText = countAbnormal;
         document.getElementById('countNotFound').innerText = countNotFound;
 
-        document.getElementById('metricPlants').innerText = selectedPlants.size;
+        document.getElementById('metricPlants').innerText = provincePlants.length;
         document.getElementById('metricTotalDays').innerText = dateList.length;
         document.getElementById('metricAvgIrr').innerText = totalValidCount > 0 ? (totalValidIrrSum / totalValidCount).toFixed(3) : "0.000";
-        document.getElementById('metricNormalDaysRatio').innerText = `${totalNormalDaysCount}/${selectedPlants.size * dateList.length}`;
+        document.getElementById('metricNormalDaysRatio').innerText = `${totalNormalDaysCount}/${provincePlants.length * dateList.length}`;
 
         try { lucide.createIcons(); } catch(e) {}
         setTimeout(syncTopScrollWidth, 50);
@@ -863,7 +904,6 @@
     function bindDynamicEvents() {
         document.querySelectorAll('.data-irr-input').forEach(input => { input.onchange = (e) => updateCellData(e.target.dataset.plant, e.target.dataset.date, e.target.value); });
         document.querySelectorAll('.data-note-input').forEach(input => { input.onchange = (e) => updateNoteData(e.target.dataset.plant, e.target.value); });
-        document.querySelectorAll('.data-province-select').forEach(input=>{input.onchange=e=>updateProvinceData(e.target.dataset.plant,e.target.value)});
         document.querySelectorAll('.btn-copy').forEach(btn => { btn.onclick = (e) => copyPlantIrr(e.target.dataset.plant); });
         document.querySelectorAll('.btn-paste').forEach(btn => { btn.onclick = (e) => pastePlantIrr(e.target.dataset.plant); });
         document.querySelectorAll('.btn-restore').forEach(btn => { btn.onclick = (e) => restorePlantData(e.target.dataset.plant); });
@@ -1059,7 +1099,7 @@
         if (ok) {
             allPlantsSet.clear(); selectedPlants.clear(); datesSet.clear(); selectedTrendPlants.clear(); sourceFileNames = [];
             plantMasterData = {}; originalPlantData = {}; copiedIrrData = null; isFileUploaded = false;
-            activeStatusFilter = 'ALL';
+            activeStatusFilter = 'ALL'; activeProvinceFilter = 'ALL';
             document.querySelectorAll('.btn-filter-status').forEach(btn => btn.classList.remove('active'));
             document.getElementById('btnFilterAll').classList.add('active');
 
@@ -1112,7 +1152,7 @@
       const sortedDates=[...datesSet].sort();
       return {
         baseData:{plants:originalPlantData,dates:sortedDates,availableMonths:[...availableIrrMonths],loadedMonth:loadedIrrMonth,sourceFiles:[...sourceFileNames]},
-        userState:{overrides,selectedPlants:[...selectedPlants],selectedTrendPlants:[...selectedTrendPlants],minIrr:document.getElementById('minIrr').value,maxIrr:document.getElementById('maxIrr').value,activeStatusFilter,selectedPeriod:loadedIrrMonth,fullDataLoaded:giFullDataLoaded,filters:{years:irrSelection('yearFilter'),months:irrSelection('monthFilter'),days:irrSelection('dayFilter')}},
+        userState:{overrides,selectedPlants:[...selectedPlants],selectedTrendPlants:[...selectedTrendPlants],minIrr:document.getElementById('minIrr').value,maxIrr:document.getElementById('maxIrr').value,activeStatusFilter,activeProvinceFilter,selectedPeriod:loadedIrrMonth,fullDataLoaded:giFullDataLoaded,filters:{years:irrSelection('yearFilter'),months:irrSelection('monthFilter'),days:irrSelection('dayFilter')}},
         periodKey:sortedDates.length?sortedDates[0].slice(0,7):null,
         sourceFiles:[...sourceFileNames]
       };
@@ -1129,7 +1169,7 @@
       selectedPlants=new Set(Array.isArray(state.selectedPlants)?state.selectedPlants:Object.keys(plantMasterData));
       selectedTrendPlants=new Set(Array.isArray(state.selectedTrendPlants)?state.selectedTrendPlants:[]);
       if(state.minIrr!=null)document.getElementById('minIrr').value=state.minIrr;if(state.maxIrr!=null)document.getElementById('maxIrr').value=state.maxIrr;
-      activeStatusFilter=state.activeStatusFilter||'ALL';isFileUploaded=Object.keys(plantMasterData).length>0;
+      activeStatusFilter=state.activeStatusFilter||'ALL';activeProvinceFilter=state.activeProvinceFilter||'ALL';isFileUploaded=Object.keys(plantMasterData).length>0;
       sourceFileNames=Array.isArray(base.sourceFiles)?base.sourceFiles:[];
       populateDateFilters();
       const filters=state.filters||{};[['yearFilter',filters.years],['monthFilter',filters.months],['dayFilter',filters.days]].forEach(([id,values])=>{if(!Array.isArray(values))return;Array.from(document.getElementById(id).options).forEach(option=>option.selected=values.includes(option.value))});
