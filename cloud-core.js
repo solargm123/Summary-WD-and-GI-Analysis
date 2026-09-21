@@ -119,7 +119,7 @@
           const row=rows[r]||[],name=String(row[idx.plant]??'').replace(/\s+/g,' ').trim();if(!name||/total|รวม|plant name/i.test(name))continue;
           const address=idx.address>=0?String(row[idx.address]??'').replace(/\s+/g,' ').trim():'';
           const cap=idx.cap>=0?numeric(row[idx.cap]):0,pv=idx.pv>=0?numeric(row[idx.pv]):0,specific=idx.specific>=0?numeric(row[idx.specific]):(cap>0?pv/cap:0),loss=idx.loss>=0?numeric(row[idx.loss]):0,irr=idx.irr>=0?numeric(row[idx.irr]):0,theoretical=idx.theory>=0?numeric(row[idx.theory]):cap*irr;
-          if(month&&idx.pv>=0){const key=`${month}|${day??'none'}|${name.toLowerCase()}`;if(!seen.has(key)){seen.add(key);working.push({fileName:file.name,name,cap,pv,specEnergy:specific,loss,recordDay:day,monthKey:month});prRecords.push({fileName:file.name,project:name,date,capacity:cap,gi:irr,specific,theoretical,pv,loss});months.add(month)}}
+          if(month&&idx.pv>=0){const key=`${month}|${day??'none'}|${name.toLowerCase()}`;if(!seen.has(key)){seen.add(key);working.push({fileName:file.name,name,cap,pv,specEnergy:specific,loss,recordDay:day,monthKey:month});prRecords.push({fileName:file.name,project:name,address,date,capacity:cap,gi:irr,specific,theoretical,pv,loss});months.add(month)}}
           if(date&&idx.irr>=0){if(!plants[name])plants[name]={capacity:cap,address,province:'',note:'',dates:{}};if(cap>0)plants[name].capacity=cap;if(address)plants[name].address=address;plants[name].dates[date]=numeric(row[idx.irr]);dates.add(date)}
         }
       });
