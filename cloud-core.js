@@ -152,8 +152,8 @@
       if(node.nodeType===Node.TEXT_NODE&&/^(?:\s|\\[nrt])+$/i.test(node.textContent||''))node.remove();
     });
     const style=document.createElement('style');style.textContent=`
-      #solarCloudDock{position:relative;z-index:9998;display:flex;align-items:center;justify-content:center;gap:7px;width:max-content;max-width:100%;margin:0 auto;padding:7px 9px;background:#102432ee;color:#e8f3f5;border:1px solid #426171;border-radius:12px;box-shadow:0 8px 22px #0003;font:500 11px 'Bai Jamjuree',sans-serif;backdrop-filter:blur(10px);overflow-x:auto;flex-shrink:1}
-      .solar-cloud-topbar-host{display:flex;align-items:center;justify-content:center;width:100%;padding:10px 12px 12px;box-sizing:border-box;overflow-x:auto}
+      #solarCloudDock{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:7px;width:max-content;max-width:100%;margin:0 auto;padding:7px 9px;background:#102432ee;color:#e8f3f5;border:1px solid #426171;border-radius:12px;box-shadow:0 8px 22px #0003;font:500 11px 'Bai Jamjuree',sans-serif;backdrop-filter:blur(10px);overflow-x:auto;flex-shrink:1}
+      .solar-cloud-topbar-host{position:relative;z-index:1;clear:both;display:flex;align-items:center;justify-content:center;width:100%;padding:10px 12px 12px;margin:0 auto 14px;box-sizing:border-box;overflow-x:auto}
       @media(max-width:980px){#solarCloudDock{width:max-content;min-width:max-content}.solar-cloud-topbar-host{justify-content:flex-start}}
       #solarCloudDock button{border:1px solid #ffffff22;background:#ffffff0c;color:#e8f3f5;border-radius:8px;padding:6px 8px;font:600 11px 'Bai Jamjuree',sans-serif;cursor:pointer}#solarCloudDock button:hover{background:#ffffff1d}#solarConflictButton{border-color:#fb7185!important;color:#fecdd3!important;background:#fb71851c!important}
       #solarCloudDot{width:8px;height:8px;border-radius:50%;background:#34d399;box-shadow:0 0 0 4px #34d39922}#solarCloudDot[data-state=busy]{background:#fbbf24}#solarCloudDot[data-state=error],#solarCloudDot[data-state=conflict]{background:#fb7185}
