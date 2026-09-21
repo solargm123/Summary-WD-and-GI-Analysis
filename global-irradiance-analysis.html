@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20260921-saveorder1"></script>
+    <script src="cloud-core.js?v=20260921-uihistory1"></script>
 
     <style>
         :root[data-theme="dark"] {
@@ -128,7 +128,7 @@
         .province-button { display:flex; align-items:center; justify-content:space-between; gap:6px; cursor:pointer; text-align:left; }
         .province-button span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .province-filter-wrap { display:flex; align-items:center; gap:7px; min-width:245px; margin-left:6px; }
-        .province-filter-select { min-width:170px; }
+        .province-filter-select { min-width:170px; cursor:pointer; display:flex;align-items:center;justify-content:space-between;gap:8px; }
         #provinceModal .modal-content { width:min(92vw,520px); max-width:520px; }
         .province-search { width:100%; min-height:44px; background:var(--input-bg); color:var(--text-main); border:1px solid var(--card-border); border-radius:10px; padding:10px 12px; outline:none; }
         .province-option-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; max-height:52vh; overflow:auto; padding:2px; }
@@ -140,7 +140,7 @@
         .threshold-box input { width: 50px; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--accent-yellow); text-align: center; border-radius: 4px; padding: 2px; font-weight: bold; }
 
         /* Trend Tab Enhanced Styling */
-        .trend-grid { display: grid; grid-template-columns: 390px 1fr; gap: 16px; }
+        .trend-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
         @media (max-width: 1024px) { .trend-grid { grid-template-columns: 1fr; } }
         
         .chart-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
@@ -207,7 +207,11 @@
         #filterModal .plant-list-container{height:230px;border-radius:12px;padding:10px}
         #filterModal .modal-footer .btn{min-height:42px;padding:9px 18px}
 
-        #trendControlsCard{padding:18px;border-radius:18px;gap:12px!important;align-self:start;position:sticky;top:94px}
+        #trendControlsCard{display:none!important;position:fixed;z-index:1200;left:50%;top:50%;transform:translate(-50%,-50%);width:min(94vw,620px);max-height:88vh;overflow:auto;padding:18px;border-radius:18px;gap:12px!important;box-shadow:0 30px 90px rgba(0,0,0,.65)}
+        #trendControlsCard.open{display:flex!important}
+        #trendPopupBackdrop{display:none;position:fixed;inset:0;z-index:1190;background:rgba(2,6,23,.72);backdrop-filter:blur(4px)}#trendPopupBackdrop.open{display:block}
+        .gi-toolbar{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+        .gi-toolbar .province-filter-wrap{margin-left:0;min-width:230px}
         #trendControlsCard>h3{margin:0;padding:0 2px 11px;border-bottom:1px solid var(--card-border)}
         #trendControlsCard .trend-control-section{border:1px solid var(--card-border);background:color-mix(in srgb,var(--input-bg) 72%,transparent);border-radius:13px;padding:13px;margin:0}
         #trendControlsCard .trend-date-grid{gap:10px}
@@ -218,7 +222,7 @@
         #trendControlsCard .plant-list-container{height:250px;border-radius:11px}
         #trendControlsCard input[type="checkbox"]{width:17px;height:17px;accent-color:var(--accent-blue)}
         #giHeaderActions .gi-theme-button{width:auto!important;min-width:88px;min-height:34px;justify-content:center;white-space:nowrap}
-        @media(max-width:1024px){#trendControlsCard{position:relative;top:0}.trend-grid{grid-template-columns:1fr}#trendControlsCard .trend-date-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+        @media(max-width:1024px){.trend-grid{grid-template-columns:1fr}#trendControlsCard .trend-date-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
         @media(max-width:720px){#filterModal .modal-content{padding:14px}#filterModal .filter-grid,#trendControlsCard .trend-date-grid{grid-template-columns:1fr}#filterModal .multi-select,#trendControlsCard .multi-select{height:120px}}
     </style>
 <link rel="stylesheet" href="unified-ui.css?v=20260915-unified-ui1">
@@ -240,12 +244,6 @@
             <button class="btn btn-secondary gi-theme-button" onclick="FusionUI.setTheme(FusionUI.getTheme()==='dark'?'light':'dark')"><i class="fa-solid" data-fs-theme-icon></i><span data-fs-theme-label>Light</span></button>
         </div>
     </header>
-
-    <section class="analysis-flow" aria-label="ขั้นตอนการใช้งาน">
-        <div class="analysis-flow-step"><strong>1</strong><span>รับข้อมูลจาก Center<br>Load central data</span></div>
-        <div class="analysis-flow-step"><strong>2</strong><span>เลือกโครงการและตรวจค่าผิดปกติ<br>Select and review plants</span></div>
-        <div class="analysis-flow-step"><strong>3</strong><span>ดูแนวโน้มหรือส่งออก Excel<br>Review trend and export</span></div>
-    </section>
 
     <div class="nav-tabs">
         <button class="tab-btn active" onclick="switchTab('tableTab', this)"><i class="fa-solid fa-table"></i> ตารางข้อมูล</button>
@@ -284,7 +282,7 @@
         <div class="card table-card">
             <div class="table-header-bar">
                 <h3><i class="fa-solid fa-table" style="color: var(--accent-blue);"></i> เปรียบเทียบ Global Irradiation รายวัน (kWh/m²)</h3>
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <div class="gi-toolbar">
                     <div class="threshold-box">
                         <label for="minIrr">ช่วงค่าปกติ:</label>
                         <input type="number" id="minIrr" value="1.0" min="0" step="0.1" onchange="validateThresholds(); checkFileAndRun(renderTableAndMetrics)">
@@ -293,6 +291,10 @@
                     </div>
                     <button class="btn btn-secondary" onclick="checkFileAndRun(openFilterModal)"><i class="fa-solid fa-filter"></i> ตัวกรอง</button>
                     <button class="btn btn-edit" id="toggleEditBtn" onclick="checkFileAndRun(toggleEditMode)"><i class="fa-solid fa-pen-to-square"></i> แก้ไขค่า Irradiation</button>
+                    <div class="province-filter-wrap">
+                        <span data-solar-th="จังหวัด:" data-solar-en="Province:" style="font-size:.78rem;color:var(--text-muted);font-weight:600;">จังหวัด:</span>
+                        <button id="provinceStatusFilter" type="button" class="province-filter-select" onclick="openProvinceFilterPopup('table')"><span id="provinceStatusFilterLabel">ทุกจังหวัด</span><i class="fa-solid fa-chevron-down"></i></button>
+                    </div>
                 </div>
             </div>
 
@@ -302,10 +304,6 @@
                 <button class="btn-filter-status" id="btnFilterNormal" onclick="setStatusFilter('NORMAL')"><i class="fa-solid fa-circle-check" style="color: var(--accent-green)"></i> ปกติ <span class="badge-count badge-normal" id="countNormal">0</span></button>
                 <button class="btn-filter-status" id="btnFilterAbnormal" onclick="setStatusFilter('ABNORMAL')"><i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-yellow)"></i> ผิดปกติ <span class="badge-count badge-abnormal" id="countAbnormal">0</span></button>
                 <button class="btn-filter-status" id="btnFilterNotFound" onclick="setStatusFilter('NOT_FOUND')"><i class="fa-solid fa-circle-question" style="color: var(--accent-red)"></i> ไม่พบข้อมูล <span class="badge-count badge-notfound" id="countNotFound">0</span></button>
-                <div class="province-filter-wrap">
-                    <span data-solar-th="จังหวัด:" data-solar-en="Province:" style="font-size:.78rem;color:var(--text-muted);font-weight:600;">จังหวัด:</span>
-                    <select id="provinceStatusFilter" class="province-filter-select" onchange="setProvinceFilter(this.value)"></select>
-                </div>
             </div>
 
             <div class="top-scroll-wrapper" id="topScrollWrapper"><div class="top-scroll-inner" id="topScrollInner"></div></div>
@@ -330,9 +328,10 @@
     <!-- TAB 2: TREND IRRADIATION -->
     <div id="trendTab" class="tab-content">
         <div class="trend-grid">
-            <div class="card" id="trendControlsCard" style="display: flex; flex-direction: column; gap: 14px;">
+            <div id="trendPopupBackdrop" onclick="closeTrendFilters()"></div>
+            <div class="card" id="trendControlsCard" style="flex-direction: column; gap: 14px;">
                 <h3 style="font-size: 0.95rem; display:flex; align-items:center; gap:6px; color: var(--accent-blue);">
-                    <i class="fa-solid fa-sliders"></i> Trend Controls
+                    <i class="fa-solid fa-sliders"></i> Trend Controls <button class="btn btn-secondary" style="margin-left:auto" onclick="closeTrendFilters()">✕</button>
                 </h3>
 
                 <div class="trend-control-section">
@@ -359,6 +358,7 @@
                             <select id="trendMonthSel" class="multi-select" multiple onchange="updateTrendChart()"></select>
                         </div>
                     </div>
+                    <div style="margin-top:10px"><label style="font-size:.72rem;color:var(--text-muted);display:block;margin-bottom:4px">Province</label><button id="trendProvinceSel" type="button" class="province-filter-select" style="width:100%" onclick="openProvinceFilterPopup('trend')"><span id="trendProvinceLabel">ทุกจังหวัด</span><i class="fa-solid fa-chevron-down"></i></button></div>
                 </div>
 
                 <div class="trend-control-section">
@@ -381,6 +381,7 @@
             </div>
 
             <div class="card">
+                <div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button class="btn" onclick="openTrendFilters()"><i class="fa-solid fa-sliders"></i> เลือกข้อมูลกราฟ / Chart Filters</button></div>
                 <div class="chart-stats-grid">
                     <div class="stat-card">
                         <div class="label">Min Irr (Selected)</div>
@@ -484,7 +485,7 @@
     let allPlantsSet = new Set(), selectedPlants = new Set(), datesSet = new Set(), sourceFileNames = [];
     let availableIrrMonths = [], loadedIrrMonth = null, giFullDataLoaded = false, giPeriodLoading = false;
     let plantMasterData = {}, originalPlantData = {}, copiedIrrData = null;
-    let isEditMode = false, isFileUploaded = false, activeStatusFilter = 'ALL', activeProvinceFilter = 'ALL', currentProvincePlant = null;
+    let isEditMode = false, isFileUploaded = false, activeStatusFilter = 'ALL', activeProvinceFilter = 'ALL', activeTrendProvinceFilter = 'ALL', currentProvincePlant = null, currentProvinceMode='plant';
 
     const THAI_PROVINCES=['ไม่ระบุ','กรุงเทพมหานคร','กระบี่','กาญจนบุรี','กาฬสินธุ์','กำแพงเพชร','ขอนแก่น','จันทบุรี','ฉะเชิงเทรา','ชลบุรี','ชัยนาท','ชัยภูมิ','ชุมพร','เชียงราย','เชียงใหม่','ตรัง','ตราด','ตาก','นครนายก','นครปฐม','นครพนม','นครราชสีมา','นครศรีธรรมราช','นครสวรรค์','นนทบุรี','นราธิวาส','น่าน','บึงกาฬ','บุรีรัมย์','ปทุมธานี','ประจวบคีรีขันธ์','ปราจีนบุรี','ปัตตานี','พระนครศรีอยุธยา','พะเยา','พังงา','พัทลุง','พิจิตร','พิษณุโลก','เพชรบุรี','เพชรบูรณ์','แพร่','ภูเก็ต','มหาสารคาม','มุกดาหาร','แม่ฮ่องสอน','ยโสธร','ยะลา','ร้อยเอ็ด','ระนอง','ระยอง','ราชบุรี','ลพบุรี','ลำปาง','ลำพูน','เลย','ศรีสะเกษ','สกลนคร','สงขลา','สตูล','สมุทรปราการ','สมุทรสงคราม','สมุทรสาคร','สระแก้ว','สระบุรี','สิงห์บุรี','สุโขทัย','สุพรรณบุรี','สุราษฎร์ธานี','สุรินทร์','หนองคาย','หนองบัวลำภู','อ่างทอง','อำนาจเจริญ','อุดรธานี','อุตรดิตถ์','อุทัยธานี','อุบลราชธานี'];
     const EN_PROVINCES=['Not specified','Bangkok','Krabi','Kanchanaburi','Kalasin','Kamphaeng Phet','Khon Kaen','Chanthaburi','Chachoengsao','Chon Buri','Chai Nat','Chaiyaphum','Chumphon','Chiang Rai','Chiang Mai','Trang','Trat','Tak','Nakhon Nayok','Nakhon Pathom','Nakhon Phanom','Nakhon Ratchasima','Nakhon Si Thammarat','Nakhon Sawan','Nonthaburi','Narathiwat','Nan','Bueng Kan','Buri Ram','Pathum Thani','Prachuap Khiri Khan','Prachin Buri','Pattani','Phra Nakhon Si Ayutthaya','Phayao','Phang Nga','Phatthalung','Phichit','Phitsanulok','Phetchaburi','Phetchabun','Phrae','Phuket','Maha Sarakham','Mukdahan','Mae Hong Son','Yasothon','Yala','Roi Et','Ranong','Rayong','Ratchaburi','Lop Buri','Lampang','Lamphun','Loei','Si Sa Ket','Sakon Nakhon','Songkhla','Satun','Samut Prakan','Samut Songkhram','Samut Sakhon','Sa Kaeo','Saraburi','Sing Buri','Sukhothai','Suphan Buri','Surat Thani','Surin','Nong Khai','Nong Bua Lam Phu','Ang Thong','Amnat Charoen','Udon Thani','Uttaradit','Uthai Thani','Ubon Ratchathani'];
@@ -494,11 +495,12 @@
     const giLanguage=()=>window.FusionUI?.getLanguage?.()||document.documentElement.lang||'th';
     const provinceLabel=name=>giLanguage()==='en'?(PROVINCE_EN[name]||name):name;
     function toggleGiLanguage(){FusionUI.setLanguage(FusionUI.getLanguage()==='th'?'en':'th');renderProvinceFilterOptions();if(isFileUploaded)renderTableAndMetrics();if(document.getElementById('provinceModal').style.display==='flex')renderProvinceOptions()}
-    function openProvincePopup(plant){currentProvincePlant=plant;document.getElementById('provinceSearch').value='';document.getElementById('provinceModal').style.display='flex';renderProvinceOptions();setTimeout(()=>document.getElementById('provinceSearch').focus(),0)}
-    function closeProvincePopup(){document.getElementById('provinceModal').style.display='none';currentProvincePlant=null}
-    function renderProvinceOptions(){const query=document.getElementById('provinceSearch').value.trim().toLowerCase();const selected=plantMasterData[currentProvincePlant]?.province||'ไม่ระบุ';document.getElementById('provinceOptionList').innerHTML=THAI_PROVINCES.filter(name=>!query||name.toLowerCase().includes(query)||(PROVINCE_EN[name]||'').toLowerCase().includes(query)).map(name=>`<button class="province-option ${name===selected?'active':''}" onclick="selectProvince('${name}')">${escapeHtml(provinceLabel(name))}<small>${escapeHtml(giLanguage()==='en'?name:PROVINCE_EN[name])}</small></button>`).join('')}
-    function selectProvince(value){updateProvinceData(currentProvincePlant,value);closeProvincePopup();renderTableAndMetrics()}
-    function renderProvinceFilterOptions(){const select=document.getElementById('provinceStatusFilter');if(!select)return;const used=[...new Set([...selectedPlants].map(name=>plantMasterData[name]?.province||'ไม่ระบุ'))].sort((a,b)=>provinceLabel(a).localeCompare(provinceLabel(b)));if(activeProvinceFilter!=='ALL'&&!used.includes(activeProvinceFilter))activeProvinceFilter='ALL';select.innerHTML=`<option value="ALL">${giLanguage()==='en'?'All provinces':'ทุกจังหวัด'}</option>`+used.map(name=>`<option value="${escapeHtml(name)}">${escapeHtml(provinceLabel(name))}</option>`).join('');select.value=activeProvinceFilter}
+    function openProvincePopup(plant){currentProvinceMode='plant';currentProvincePlant=plant;document.getElementById('provinceSearch').value='';document.getElementById('provinceModal').style.display='flex';renderProvinceOptions();setTimeout(()=>document.getElementById('provinceSearch').focus(),0)}
+    function openProvinceFilterPopup(mode='table'){currentProvinceMode=mode;currentProvincePlant=null;document.getElementById('provinceSearch').value='';document.getElementById('provinceModal').style.display='flex';renderProvinceOptions();setTimeout(()=>document.getElementById('provinceSearch').focus(),0)}
+    function closeProvincePopup(){document.getElementById('provinceModal').style.display='none';currentProvincePlant=null;currentProvinceMode='plant'}
+    function renderProvinceOptions(){const query=document.getElementById('provinceSearch').value.trim().toLowerCase();const selected=currentProvinceMode==='table'?activeProvinceFilter:currentProvinceMode==='trend'?activeTrendProvinceFilter:(plantMasterData[currentProvincePlant]?.province||'ไม่ระบุ');const names=currentProvinceMode==='plant'?THAI_PROVINCES:['ALL',...THAI_PROVINCES];document.getElementById('provinceOptionList').innerHTML=names.filter(name=>{const label=name==='ALL'?(giLanguage()==='en'?'All provinces':'ทุกจังหวัด'):provinceLabel(name);return !query||name.toLowerCase().includes(query)||label.toLowerCase().includes(query)||(PROVINCE_EN[name]||'').toLowerCase().includes(query)}).map(name=>{const label=name==='ALL'?(giLanguage()==='en'?'All provinces':'ทุกจังหวัด'):provinceLabel(name);const secondary=name==='ALL'?'All':(giLanguage()==='en'?name:PROVINCE_EN[name]);return `<button class="province-option ${name===selected?'active':''}" onclick="selectProvince('${name}')">${escapeHtml(label)}<small>${escapeHtml(secondary||'')}</small></button>`}).join('')}
+    function selectProvince(value){if(currentProvinceMode==='table')setProvinceFilter(value);else if(currentProvinceMode==='trend'){activeTrendProvinceFilter=value||'ALL';syncTrendProvinceSelect();renderTrendPlantList();updateTrendChart()}else updateProvinceData(currentProvincePlant,value);closeProvincePopup();renderTableAndMetrics()}
+    function renderProvinceFilterOptions(){const used=[...new Set([...selectedPlants].map(name=>plantMasterData[name]?.province||'ไม่ระบุ'))].sort((a,b)=>provinceLabel(a).localeCompare(provinceLabel(b)));if(activeProvinceFilter!=='ALL'&&!used.includes(activeProvinceFilter))activeProvinceFilter='ALL';const label=document.getElementById('provinceStatusFilterLabel');if(label)label.textContent=activeProvinceFilter==='ALL'?(giLanguage()==='en'?'All provinces':'ทุกจังหวัด'):provinceLabel(activeProvinceFilter);syncTrendProvinceSelect()}
 
     let trendChart = null, selectedTrendPlants = new Set();
     const chartColors = [
@@ -541,6 +543,8 @@
 
     function openFilterModal() { document.getElementById('filterModal').style.display = 'flex'; }
     function closeFilterModal() { document.getElementById('filterModal').style.display = 'none'; }
+    function openTrendFilters(){document.getElementById('trendControlsCard').classList.add('open');document.getElementById('trendPopupBackdrop').classList.add('open')}
+    function closeTrendFilters(){document.getElementById('trendControlsCard').classList.remove('open');document.getElementById('trendPopupBackdrop').classList.remove('open')}
 
     function toggleEditMode() {
         isEditMode = !isEditMode;
@@ -562,6 +566,7 @@
 
     function setProvinceFilter(province) {
         activeProvinceFilter = province || 'ALL';
+        renderProvinceFilterOptions();
         renderTableAndMetrics();
     }
 
@@ -919,8 +924,11 @@
         });
         yearSel.innerHTML = Array.from(years).sort().map(y => `<option value="${y}" selected>${y}</option>`).join('');
         monthSel.innerHTML = Array.from(months).sort().map(m => `<option value="${m}" selected>Month ${m}</option>`).join('');
+        syncTrendProvinceSelect();
         renderTrendPlantList();
     }
+
+    function syncTrendProvinceSelect(){const label=document.getElementById('trendProvinceLabel');if(label)label.textContent=activeTrendProvinceFilter==='ALL'?(giLanguage()==='en'?'All provinces':'ทุกจังหวัด'):provinceLabel(activeTrendProvinceFilter)}
 
     function selectAllTrendOptions(selectId, selectAll) {
         const selectEl = document.getElementById(selectId);
@@ -931,7 +939,7 @@
     function renderTrendPlantList() {
         const container = document.getElementById('trendPlantListContainer');
         container.innerHTML = '';
-        const sorted = Array.from(allPlantsSet).sort();
+        const sorted = Array.from(allPlantsSet).filter(plant=>activeTrendProvinceFilter==='ALL'||(plantMasterData[plant]?.province||'ไม่ระบุ')===activeTrendProvinceFilter).sort();
 
         sorted.forEach((plant, idx) => {
             const id = `t_chk_${idx}`;
@@ -973,7 +981,7 @@
         updateTrendChart();
     }
 
-    function selectAllTrendPlants(){selectedTrendPlants=new Set(Array.from(allPlantsSet).sort().slice(0,20));renderTrendPlantList();updateTrendChart()}
+    function selectAllTrendPlants(){selectedTrendPlants=new Set(Array.from(allPlantsSet).filter(plant=>activeTrendProvinceFilter==='ALL'||(plantMasterData[plant]?.province||'ไม่ระบุ')===activeTrendProvinceFilter).sort().slice(0,20));renderTrendPlantList();updateTrendChart()}
 
     function updateTrendChart() {
         const selYears = Array.from(document.getElementById('trendYearSel').selectedOptions).map(o => o.value);
@@ -994,7 +1002,7 @@
         let dailyAvgMap = {};
         filteredDates.forEach(d => dailyAvgMap[d] = { sum: 0, count: 0 });
 
-        Array.from(selectedTrendPlants).forEach((plant, idx) => {
+        Array.from(selectedTrendPlants).filter(plant=>activeTrendProvinceFilter==='ALL'||(plantMasterData[plant]?.province||'ไม่ระบุ')===activeTrendProvinceFilter).forEach((plant, idx) => {
             let pData = plantMasterData[plant];
             if (!pData) return;
 
@@ -1152,7 +1160,7 @@
       const sortedDates=[...datesSet].sort();
       return {
         baseData:{plants:originalPlantData,dates:sortedDates,availableMonths:[...availableIrrMonths],loadedMonth:loadedIrrMonth,sourceFiles:[...sourceFileNames]},
-        userState:{overrides,selectedPlants:[...selectedPlants],selectedTrendPlants:[...selectedTrendPlants],minIrr:document.getElementById('minIrr').value,maxIrr:document.getElementById('maxIrr').value,activeStatusFilter,activeProvinceFilter,selectedPeriod:loadedIrrMonth,fullDataLoaded:giFullDataLoaded,filters:{years:irrSelection('yearFilter'),months:irrSelection('monthFilter'),days:irrSelection('dayFilter')}},
+        userState:{overrides,selectedPlants:[...selectedPlants],selectedTrendPlants:[...selectedTrendPlants],minIrr:document.getElementById('minIrr').value,maxIrr:document.getElementById('maxIrr').value,activeStatusFilter,activeProvinceFilter,activeTrendProvinceFilter,selectedPeriod:loadedIrrMonth,fullDataLoaded:giFullDataLoaded,filters:{years:irrSelection('yearFilter'),months:irrSelection('monthFilter'),days:irrSelection('dayFilter')}},
         periodKey:sortedDates.length?sortedDates[0].slice(0,7):null,
         sourceFiles:[...sourceFileNames]
       };
@@ -1169,7 +1177,7 @@
       selectedPlants=new Set(Array.isArray(state.selectedPlants)?state.selectedPlants:Object.keys(plantMasterData));
       selectedTrendPlants=new Set(Array.isArray(state.selectedTrendPlants)?state.selectedTrendPlants:[]);
       if(state.minIrr!=null)document.getElementById('minIrr').value=state.minIrr;if(state.maxIrr!=null)document.getElementById('maxIrr').value=state.maxIrr;
-      activeStatusFilter=state.activeStatusFilter||'ALL';activeProvinceFilter=state.activeProvinceFilter||'ALL';isFileUploaded=Object.keys(plantMasterData).length>0;
+      activeStatusFilter=state.activeStatusFilter||'ALL';activeProvinceFilter=state.activeProvinceFilter||'ALL';activeTrendProvinceFilter=state.activeTrendProvinceFilter||'ALL';isFileUploaded=Object.keys(plantMasterData).length>0;
       sourceFileNames=Array.isArray(base.sourceFiles)?base.sourceFiles:[];
       populateDateFilters();
       const filters=state.filters||{};[['yearFilter',filters.years],['monthFilter',filters.months],['dayFilter',filters.days]].forEach(([id,values])=>{if(!Array.isArray(values))return;Array.from(document.getElementById(id).options).forEach(option=>option.selected=values.includes(option.value))});

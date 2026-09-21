@@ -180,7 +180,7 @@
   }
   function localKeys(type){
     if(type==='working_day')return ['selectedMonth'];
-    if(type==='global_irradiance')return ['selectedPlants','selectedTrendPlants','activeStatusFilter','activeProvinceFilter','selectedPeriod','fullDataLoaded','filters'];
+    if(type==='global_irradiance')return ['selectedPlants','selectedTrendPlants','activeStatusFilter','activeProvinceFilter','activeTrendProvinceFilter','selectedPeriod','fullDataLoaded','filters'];
     if(type==='pr_report')return ['selectedProject','month','dayMode'];
     return [];
   }
@@ -216,10 +216,19 @@
   function pathsOverlap(a,b){const aa=a||[],bb=b||[],n=Math.min(aa.length,bb.length);for(let i=0;i<n;i++)if(aa[i]!==bb[i])return false;return true}
   function pendingPatches(){if(!adapter||!currentProject)return[];return fieldPatches(lastSharedState,sharedState(adapter.capture().userState||{}))}
   function friendlyPath(path){
-    const labels={overrides:'ข้อมูลแก้ไข',lossFactor:'Loss Factor',sunHoursTarget:'Sun Hours เป้าหมาย',sunHoursMode:'วิธี Sun Hours',sunHoursCustom:'Sun Hours กำหนดเอง',minIrr:'GI ต่ำสุด',maxIrr:'GI สูงสุด',settings:'เงื่อนไข PR',guarantees:'PR Guarantee',dailyNotes:'Note รายวัน',monthlyNotes:'Note รายเดือน',projectNotes:'Note โครงการ',capacity:'Capacity',note:'Note',dates:'วันที่'};
+    const labels={overrides:'ข้อมูลแก้ไข',lossFactor:'Loss Factor',sunHoursTarget:'Sun Hours เป้าหมาย',sunHoursMode:'วิธี Sun Hours',sunHoursCustom:'Sun Hours กำหนดเอง',minIrr:'GI ต่ำสุด',maxIrr:'GI สูงสุด',settings:'เงื่อนไข PR',guarantees:'PR Guarantee',dailyNotes:'Note รายวัน',monthlyNotes:'Note รายเดือน',projectNotes:'Note โครงการ',capacity:'Capacity',cap:'Capacity',customDaysInMonth:'Days in Month',lossDaysArray:'วันที่เกิด Loss',province:'จังหวัด',visible:'การแสดงโครงการ',method:'วิธีคำนวณ',mktEstimate:'MKT Estimate',note:'Note',dates:'วันที่'};
     return (path||[]).map(x=>labels[x]||x).join(' › ');
   }
   function friendlyValue(value){if(value===undefined)return '—';if(value===null)return 'ไม่มีข้อมูล';if(typeof value==='object')return JSON.stringify(value);return String(value)}
+  function valueAtPath(source,path){return (path||[]).reduce((value,key)=>value==null?undefined:value[key],source)}
+  function historyChanges(patches){
+    return (patches||[]).slice(0,100).map(patch=>({
+      path:patch.path,
+      label:friendlyPath(patch.path),
+      before:valueAtPath(lastSharedState,patch.path),
+      after:patch.delete?undefined:patch.value
+    }));
+  }
   function showFieldConflict(){
     if(!pendingFieldConflict)return;
     const box=$('solarCloudModalBox');box.querySelector('h3').textContent='มีการแก้ไขช่องเดียวกัน';
@@ -234,12 +243,13 @@
   }
   async function persistFieldPatches(patches,reason='manual',force=false,clientVersion=null){
     const payload=adapter.capture();
+    const changes=historyChanges(patches);
     const {data,error}=await getClient().rpc('save_analysis_field_patches',{
       p_project_id:currentProject.id,
       p_client_version:clientVersion??currentProject.version,
       p_patches:patches,
       p_period_key:payload.periodKey??null,
-      p_change_summary:{source:reason,analysis_type:currentProject.analysis_type,save_mode:'field_level'},
+      p_change_summary:{source:reason,analysis_type:currentProject.analysis_type,save_mode:'field_level',changes,changes_truncated:patches.length>changes.length},
       p_force:force
     });
     if(error)throw error;
@@ -441,11 +451,15 @@
     $('solarCloudModal').classList.add('open');
     $('solarCloudLogs').innerHTML=`<div class="log"><b>พบข้อมูลใหม่ในระบบ</b><div>ข้อมูลที่แก้คนละช่องจะรวมอัตโนมัติ หากเป็นช่องเดียวกันระบบจะแสดงค่าให้เลือก</div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button onclick="SolarCloud.downloadLocalDraft()">ดาวน์โหลดข้อมูลที่ยังไม่บันทึก</button><button onclick="SolarCloud.reloadLatest()">โหลดข้อมูลล่าสุด</button></div>`;
   }
-  function projectActivityText(log){const d=log.details||{},title={create:'สร้างงาน',save:'บันทึกการแก้ไข',archive:'เก็บงานออกจากรายการ',restore:'กู้คืนงาน',project_metadata_update:'แก้ไขชื่อหรือสถานะ',attach_dataset:'เชื่อมชุดข้อมูล'}[log.action]||'มีการใช้งานระบบ';let detail='ดำเนินการเรียบร้อย';if(log.action==='save')detail=`บันทึกครั้งที่ ${Number(d.version||0)}`;if(log.action==='create')detail='สร้างงานวิเคราะห์ใหม่';if(log.action==='attach_dataset')detail=`เชื่อมชุดข้อมูล “${d.dataset_name||'—'}”`;if(log.action==='project_metadata_update')detail=`เปลี่ยนชื่อหรือสถานะเป็น ${d.new_status||'สถานะใหม่'}`;return {title,detail}}
+  function projectActivityText(log){const d=log.details||{},title={create:'สร้างงาน',save:'บันทึกการแก้ไข',archive:'เก็บงานออกจากรายการ',restore:'กู้คืนงาน',project_metadata_update:'แก้ไขชื่อหรือสถานะ',attach_dataset:'เชื่อมชุดข้อมูล'}[log.action]||'มีการใช้งานระบบ';let detail='ดำเนินการเรียบร้อย';if(log.action==='save')detail=`บันทึกครั้งที่ ${Number(d.version||0)} · ${Number(d.patch_count||d.changes?.length||0)} ช่อง`;if(log.action==='create')detail='สร้างงานวิเคราะห์ใหม่';if(log.action==='attach_dataset')detail=`เชื่อมชุดข้อมูล “${d.dataset_name||'—'}”`;if(log.action==='project_metadata_update')detail=`เปลี่ยนชื่อหรือสถานะเป็น ${d.new_status||'สถานะใหม่'}`;return {title,detail}}
+  function historyChangeHtml(change){
+    const label=change?.label||friendlyPath(change?.path||[]),before=friendlyValue(change?.before),after=friendlyValue(change?.after);
+    return `<div style="margin-top:7px;padding:7px 9px;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0"><b>${esc(label)}</b><div style="margin-top:3px"><span style="color:#64748b">${esc(before)}</span> <span aria-hidden="true">→</span> <strong>${esc(after)}</strong></div></div>`;
+  }
   async function history(){
     if(!currentProject)return;$('solarCloudModalBox').querySelector('h3').textContent='ประวัติการใช้งาน';$('solarCloudModal').classList.add('open');$('solarCloudLogs').textContent='กำลังโหลด...';
     const {data,error}=await getClient().from('activity_logs').select('action,details,created_at,profiles!activity_logs_actor_id_fkey(display_name,email)').eq('project_id',currentProject.id).order('created_at',{ascending:false}).limit(50);
-    $('solarCloudLogs').innerHTML=error?`<div>${esc(error.message)}</div>`:(data||[]).map(log=>{const copy=projectActivityText(log);return `<div class="log"><b>${esc(copy.title)}</b> · ${esc(log.profiles?.display_name||log.profiles?.email||'ผู้ใช้')}<div>${esc(copy.detail)}</div><time>${new Date(log.created_at).toLocaleString('th-TH')}</time></div>`}).join('')||'<div>ยังไม่มีประวัติการใช้งาน</div>';
+    $('solarCloudLogs').innerHTML=error?`<div>${esc(error.message)}</div>`:(data||[]).map(log=>{const copy=projectActivityText(log),changes=Array.isArray(log.details?.changes)?log.details.changes:[];const rows=changes.slice(0,12).map(historyChangeHtml).join('');const more=changes.length>12||log.details?.changes_truncated?`<div style="margin-top:6px;color:#64748b">และรายการอื่นเพิ่มเติม</div>`:'';const legacy=log.action==='save'&&!changes.length?'<div style="margin-top:5px;color:#94a3b8">ประวัตินี้บันทึกก่อนเปิดใช้รายละเอียดรายช่อง</div>':'';return `<div class="log"><b>${esc(copy.title)}</b> · ${esc(log.profiles?.display_name||log.profiles?.email||'ผู้ใช้')}<div>${esc(copy.detail)}</div>${rows}${more}${legacy}<time>${new Date(log.created_at).toLocaleString('th-TH')}</time></div>`}).join('')||'<div>ยังไม่มีประวัติการใช้งาน</div>';
   }
   async function datasets(){
     $('solarCloudModalBox').querySelector('h3').textContent='Shared Data';$('solarCloudModal').classList.add('open');$('solarCloudLogs').textContent='Loading...';

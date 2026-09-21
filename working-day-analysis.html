@@ -24,7 +24,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20260921-saveorder1"></script>
+    <script src="cloud-core.js?v=20260921-uihistory1"></script>
     <style> 
         html, body, body *:not(i), button, input, select, option, textarea, table, th, td, code {
             font-family: 'Bai Jamjuree', Tahoma, Arial, sans-serif !important;
@@ -86,8 +86,11 @@
         .sticky-divider { box-shadow: 5px 0 8px -6px rgba(15, 23, 42, 0.55); }
         #topTableScroll { overflow-x: auto; overflow-y: hidden; height: 16px; }
         #topTableScrollInner { width: 1990px; height: 1px; }
-        #tableScrollContainer { scrollbar-width: none; }
-        #tableScrollContainer::-webkit-scrollbar { display: none; }
+        #tableScrollContainer { scrollbar-width: auto; scrollbar-color:#64748b #e2e8f0; }
+        #tableScrollContainer::-webkit-scrollbar { display:block; width:14px; height:14px; }
+        #tableScrollContainer::-webkit-scrollbar-thumb { background:#64748b; border:3px solid #e2e8f0; border-radius:10px; }
+        #topTableScroll{height:18px;overflow-x:auto;overflow-y:hidden;scrollbar-width:auto;scrollbar-color:#64748b #e2e8f0}
+        #topTableScroll::-webkit-scrollbar{height:14px}#topTableScroll::-webkit-scrollbar-thumb{background:#64748b;border:3px solid #e2e8f0;border-radius:10px}
         #statusMessage, #fileList, #formulaModalBody, #lossModal { font-size: 12.5px; }
         .has-tooltip:hover .tooltip { display: block; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -130,7 +133,7 @@
 @media(max-width:760px){#wdHeaderActions{width:100%;justify-content:flex-end}#wdHeaderActions .wd-header-action{height:32px;padding:0 10px;font-size:11px}}
 </style>
 <style id="wdCompactUi">
-.analysis-flow{display:none!important}main{margin-top:.5rem!important;gap:.65rem}#wdTopPanel{gap:.65rem;align-items:start}#centralDataCard,#solarParamsCard{padding:.75rem!important}#centralDataCard #dropZone{display:none!important}#centralDataCard #fileList{margin-top:.35rem!important;max-height:none!important}#solarParamsCard .space-y-1\.5{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.35rem}#solarParamsCard .space-y-1\.5>label{margin:0!important}#wdKpis{gap:.65rem}#wdKpis>div{padding:.65rem!important}#wdKpis h3{font-size:1rem!important;margin-top:.15rem!important}#wdTableToolbar{padding:.55rem .7rem!important;gap:.5rem!important}#tableScrollContainer{height:calc(100vh - 110px);min-height:640px;max-height:none;overflow:auto}#tableScrollContainer thead{position:sticky;top:0;z-index:20}#monthPickerButton{min-width:180px}@media(min-width:1024px){#centralDataCard{grid-column:span 3/span 3}#solarParamsCard{grid-column:span 9/span 9}}@media(max-width:900px){#solarParamsCard .space-y-1\.5{grid-template-columns:1fr}#tableScrollContainer{height:auto;max-height:none;min-height:0}}
+.analysis-flow{display:none!important}main{margin-top:.5rem!important;gap:.65rem}#wdTopPanel{gap:.65rem;align-items:stretch}#centralDataCard,#solarParamsCard{padding:.75rem!important}#centralDataCard #dropZone{display:none!important}#centralDataCard #fileList{margin-top:.35rem!important;max-height:none!important}#centralDataCard #wdKpis{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem;margin-top:.65rem}#centralDataCard #wdKpis>div{min-width:0;padding:.65rem!important}#solarParamsCard .space-y-1\.5{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.35rem}#solarParamsCard .space-y-1\.5>label{margin:0!important}#wdKpis{gap:.65rem}#wdKpis>div{padding:.65rem!important}#wdKpis h3{font-size:1rem!important;margin-top:.15rem!important}#wdTableToolbar{padding:.55rem .7rem!important;gap:.5rem!important}#tableScrollContainer{height:calc(100vh - 110px);min-height:640px;max-height:none;overflow:auto}#tableScrollContainer thead{position:sticky;top:0;z-index:20}#monthPickerButton{min-width:180px}@media(min-width:1024px){#centralDataCard{grid-column:span 3/span 3}#solarParamsCard{grid-column:span 9/span 9}}@media(max-width:900px){#solarParamsCard .space-y-1\.5{grid-template-columns:1fr}#tableScrollContainer{height:auto;max-height:none;min-height:0}#centralDataCard #wdKpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .mkt-select{border-radius:999px!important;font-weight:700!important;text-align:center!important;padding:.45rem 2rem .45rem .75rem!important;transition:.2s;background-color:#fff}.dark .mkt-select{background-color:#0f172a!important;border-color:#475569!important;color-scheme:dark}.dark .mkt-select option{background:#0f172a;color:#e2e8f0}.mkt-estimated{background:#ecfdf5!important;border-color:#6ee7b7!important}.mkt-misestimated{background:#fffbeb!important;border-color:#fbbf24!important}.mkt-haveno{background:#fff1f2!important;border-color:#fda4af!important}.mkt-question{background:#f5f3ff!important;border-color:#c4b5fd!important}.dark .mkt-estimated{background:#064e3b!important}.dark .mkt-misestimated{background:#78350f!important}.dark .mkt-haveno{background:#881337!important}.dark .mkt-question{background:#4c1d95!important}#mktFilterBox{min-height:42px;box-sizing:border-box}#mktEstimateFilter{width:230px;min-width:230px;min-height:26px;color:inherit;background-color:transparent}#mktEstimateFilter option{color:#1e293b;background:#fff}.dark #mktEstimateFilter{color-scheme:dark}.dark #mktEstimateFilter option{color:#e2e8f0;background:#0f172a}#monthPickerButton{width:320px!important;min-width:320px!important;min-height:50px;font-size:15px!important;padding:.8rem 1.1rem!important}#monthYearModal>div{max-width:540px!important;padding:1.6rem!important}#monthYearTitle{font-size:18px!important}#monthPopupYear,#monthPopupMonth{min-height:52px;font-size:16px!important;padding:.75rem 1rem!important}@media(max-width:640px){#mktEstimateFilter{width:190px;min-width:190px}#monthPickerButton{width:100%!important;min-width:0!important}#monthYearModal>div{max-width:100%!important}}#lossModal>div{max-width:520px!important;border-radius:18px!important}#modalDaysGrid button{min-height:38px;font-size:13px!important;text-align:center}
 </style>
 <link rel="stylesheet" href="unified-ui.css?v=20260915-wd-header-visible1">
@@ -827,7 +830,8 @@
             const bucket = monthPlantOverrides[monthKey] || {};
             plantData.forEach(plant => {
                 bucket[projectStableKey(plant)] = {
-                    lossDaysArray: [...(plant.lossDaysArray || [])].filter(day => Number.isInteger(day) && day >= 1 && day <= currentDaysInMonth)
+                    customDaysInMonth: Math.max(1, Math.min(31, Number(plant.customDaysInMonth) || currentDaysInMonth)),
+                    lossDaysArray: [...(plant.lossDaysArray || [])].filter(day => Number.isInteger(day) && day >= 1 && day <= (Number(plant.customDaysInMonth)||currentDaysInMonth))
                 };
             });
             monthPlantOverrides[monthKey] = bucket;
@@ -837,11 +841,11 @@
             const bucket = monthPlantOverrides[monthKey] || {};
             plantData.forEach(plant => {
                 const saved = bucket[projectStableKey(plant)] || bucket['name:' + plant.name.toLowerCase()];
-                plant.customDaysInMonth = currentDaysInMonth;
+                plant.customDaysInMonth = saved?.customDaysInMonth ? Math.max(1,Math.min(31,Number(saved.customDaysInMonth))) : currentDaysInMonth;
                 if (!saved) return;
                 if (Array.isArray(saved.lossDaysArray)) {
                     plant.lossDaysArray = [...new Set(saved.lossDaysArray.map(Number))]
-                        .filter(day => Number.isInteger(day) && day >= 1 && day <= currentDaysInMonth)
+                        .filter(day => Number.isInteger(day) && day >= 1 && day <= plant.customDaysInMonth)
                         .sort((a,b) => a-b);
                 }
             });
@@ -1216,11 +1220,13 @@
             }
         }
 
-        function updatePlantDays(id) {
+        function updatePlantDays(id, value) {
             const plant = plantData.find(p => p.id === id);
             if (!plant) return;
-            plant.customDaysInMonth = currentDaysInMonth;
-            plant.lossDaysArray = plant.lossDaysArray.filter(d => d <= currentDaysInMonth);
+            const parsed=Math.round(Number(value));
+            plant.customDaysInMonth=Number.isFinite(parsed)?Math.max(1,Math.min(31,parsed)):currentDaysInMonth;
+            plant.lossDaysArray = plant.lossDaysArray.filter(d => d <= plant.customDaysInMonth);
+            rememberCurrentMonthPlantState(document.getElementById('monthSelect').value);
             calculateAndRender();
         }
 
@@ -1238,7 +1244,7 @@
             const grid = document.getElementById('modalDaysGrid');
             grid.innerHTML = '';
 
-            const daysLimit = currentDaysInMonth;
+            const daysLimit = Number(plant.customDaysInMonth) || currentDaysInMonth;
             for (let d = 1; d <= daysLimit; d++) {
                 const isSelected = plant.lossDaysArray.includes(d);
                 const btn = document.createElement('button');
@@ -1276,7 +1282,7 @@
             if (currentEditingPlantId === null) return;
             const plant = plantData.find(p => p.id === currentEditingPlantId);
             if (!plant) return;
-            const daysLimit = currentDaysInMonth;
+            const daysLimit = Number(plant.customDaysInMonth) || currentDaysInMonth;
             plant.lossDaysArray = [...plant.originalLossDaysArray].filter(d => d <= daysLimit);
             rememberCurrentMonthPlantState(document.getElementById('monthSelect').value);
             openLossModal(currentEditingPlantId);
@@ -1318,7 +1324,7 @@
             const mode = document.querySelector('input[name="sunHoursMode"]:checked')?.value || 'custom';
             const customInput = parseFloat(document.getElementById('inputSunHoursCustom').value);
             const customVal = Number.isFinite(customInput) && customInput > 0 ? customInput : 4.0;
-            const days = currentDaysInMonth;
+            const days = Math.max(1,Math.min(31,Number(plant.customDaysInMonth)||currentDaysInMonth));
 
             // Specific Energy รวม
             let specEnergyTotal = plant.specificEnergyTotal;
@@ -1359,7 +1365,7 @@
 
         function calculatePlantMetrics(item) {
             const cap = Number(item.cap);
-            const daysInMonth = currentDaysInMonth;
+            const daysInMonth = Math.max(1,Math.min(31,Number(item.customDaysInMonth)||currentDaysInMonth));
             const shObj = getCalculatedSunHours(item);
             const lossInput = parseFloat(document.getElementById('inputLossFactor').value);
             const lossFactor = Number.isFinite(lossInput) ? Math.min(1, Math.max(0, lossInput)) : 0.9;
@@ -1476,7 +1482,7 @@
                     </td>
 
                     <td class="p-3 text-center bg-amber-50/20 dark:bg-amber-950/10">
-                        <span class="inline-flex min-w-12 h-8 items-center justify-center bg-amber-50/60 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 rounded-md px-2 font-mono text-center font-bold text-amber-900 dark:text-amber-200 text-xs" title="${currentLanguage==='th'?'คำนวณอัตโนมัติตามเดือนและปี':'Calculated automatically from month and year'}">${currentDaysInMonth}</span>
+                        <input type="number" min="1" max="31" step="1" value="${daysInMonth}" onchange="updatePlantDays(${item.id}, this.value)" class="w-16 h-8 bg-amber-50/60 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 rounded-md px-2 font-mono text-center font-bold text-amber-900 dark:text-amber-200 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500" title="${currentLanguage==='th'?'แก้ไขจำนวนวันของโครงการนี้':'Edit days for this plant'}">
                     </td>
 
                     <td class="p-3 text-center font-mono font-semibold text-slate-800 dark:text-slate-200">${lossDaysCount}</td>
@@ -1628,7 +1634,7 @@
           rememberCurrentMonthPlantState(activeMonthKey);
           const overrides={};
           plantData.forEach(plant=>{overrides[plant.name.toLowerCase()]={cap:plant.cap,note:plant.note||'',visible:plant.visible!==false}});
-          Object.entries(monthPlantOverrides).forEach(([month,projects])=>Object.entries(projects||{}).forEach(([key,value])=>{overrides['@period:'+month+':'+key]={lossDaysArray:[...(value.lossDaysArray||[])]}}));
+          Object.entries(monthPlantOverrides).forEach(([month,projects])=>Object.entries(projects||{}).forEach(([key,value])=>{overrides['@period:'+month+':'+key]={customDaysInMonth:value.customDaysInMonth,lossDaysArray:[...(value.lossDaysArray||[])]}}));
           Object.entries(mktEstimateByProject).forEach(([key,value])=>{overrides['@mkt:'+key]={mktEstimate:value}});
           Object.entries(methodOverridesByMonth).forEach(([month,projects])=>Object.entries(projects||{}).forEach(([key,method])=>{overrides['@method:'+month+':'+key]={method}}));
           return {
@@ -1652,7 +1658,7 @@
           Object.entries(overrides).forEach(([key,value])=>{
             if(acceptMonthLossState&&key.startsWith('@period:')){
               const remainder=key.slice(8),split=remainder.indexOf(':'),month=remainder.slice(0,split),projectKey=remainder.slice(split+1);
-              if(split>0){monthPlantOverrides[month]=monthPlantOverrides[month]||{};monthPlantOverrides[month][projectKey]={lossDaysArray:Array.isArray(value?.lossDaysArray)?value.lossDaysArray:[]}}
+              if(split>0){monthPlantOverrides[month]=monthPlantOverrides[month]||{};monthPlantOverrides[month][projectKey]={customDaysInMonth:value?.customDaysInMonth,lossDaysArray:Array.isArray(value?.lossDaysArray)?value.lossDaysArray:[]}}
             }
             if(key.startsWith('@mkt:'))mktEstimateByProject[key.slice(5)]=value?.mktEstimate||'';
             if(key.startsWith('@method:')){
@@ -1688,6 +1694,8 @@
           calculateAndRender();
         }
       };
+      const centralCard=document.getElementById('centralDataCard'),kpis=document.getElementById('wdKpis');
+      if(centralCard&&kpis)centralCard.appendChild(kpis);
       SolarCloud.initAnalysis('working_day',workingDayCloudAdapter);
     </script>
 <script src="unified-ui.js?v=20260915-wd-header-fix1"></script>
