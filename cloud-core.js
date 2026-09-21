@@ -184,6 +184,17 @@
     if(type==='pr_report')return ['selectedProject','month','dayMode'];
     return [];
   }
+  const localViewStorageKey=()=>currentProject?.id?'solar:last-view:'+currentProject.id:null;
+  function loadLocalViewState(){
+    const key=localViewStorageKey();if(!key)return{};
+    try{const value=JSON.parse(localStorage.getItem(key)||'{}');return value&&typeof value==='object'?selectState(value,localKeys(currentProject?.analysis_type)):{}}
+    catch(error){console.warn('Cannot restore last view:',error);return{}}
+  }
+  function saveLocalViewState(){
+    const key=localViewStorageKey();if(!key||!adapter)return;
+    try{localStorage.setItem(key,JSON.stringify(selectState(adapter.capture().userState||{},localKeys(currentProject?.analysis_type))))}
+    catch(error){console.warn('Cannot save last view:',error)}
+  }
   function selectState(source,keys){
     const out={};keys.forEach(key=>{if(Object.prototype.hasOwnProperty.call(source||{},key))out[key]=cloneJson(source[key])});return out;
   }
@@ -240,7 +251,7 @@
     if(channel)channel.send({type:'broadcast',event:'project_saved',payload:{userId:presenceSession?.userId||'',name:presenceSession?.name||'ผู้ใช้อื่น',version:currentProject.version,paths:patches.map(p=>p.path),at:new Date().toISOString()}}).catch(()=>{});
     return true;
   }
-  function scheduleSave(reason='edit'){if(!roleCanEdit()||!currentProject)return;dirty=true;setStatus('มีการเปลี่ยนแปลง','busy');clearTimeout(saveTimer);saveTimer=setTimeout(()=>save(reason),1500)}
+  function scheduleSave(reason='edit'){if(!currentProject)return;saveLocalViewState();if(!roleCanEdit())return;dirty=true;setStatus('มีการเปลี่ยนแปลง','busy');clearTimeout(saveTimer);saveTimer=setTimeout(()=>save(reason),1500)}
   async function save(reason='manual'){
     if(!roleCanEdit()||!currentProject||!adapter||saving)return;
     saving=true;setStatus('กำลังบันทึก...','busy');
@@ -351,7 +362,8 @@
       setStatus('กำลังโหลดงาน...','busy');
       if(currentProject.dataset_id){
         let shared=null,summary=bootstrapSummary;if(!summary){const summaryResult=await getClient().rpc('get_central_summary',{p_workspace:currentMembership.workspace_id});if(!summaryResult.error)summary=summaryResult.data}
-        const preferredMonth=(expectedType==='working_day'||expectedType==='global_irradiance')?(currentProject.user_state?.selectedMonth||currentProject.user_state?.selectedPeriod||String(summary?.date_end||'').slice(0,7)):null;
+        const localView=loadLocalViewState(),restoredUserState=mergeRemoteWithLocal(currentProject.user_state||{},localView);
+        const preferredMonth=(expectedType==='working_day'||expectedType==='global_irradiance')?(localView.selectedMonth||localView.selectedPeriod||currentProject.user_state?.selectedMonth||currentProject.user_state?.selectedPeriod||String(summary?.date_end||'').slice(0,7)):null;
         const key=cacheKey(currentMembership.workspace_id,expectedType,summary)+(preferredMonth?':'+preferredMonth:''),cached=await cacheRead(key);
         if(cached?.payload){shared=cached.payload;setStatus('กำลังเปิดข้อมูลจาก Cache...','busy')}
         else{
@@ -364,9 +376,9 @@
           if(!shared){const {data:ds,error:dsError}=await getClient().from('shared_datasets').select('id,name,normalized_data').eq('id',currentProject.dataset_id).single();if(dsError)throw dsError;shared=expectedType==='pr_report'?ds.normalized_data:ds.normalized_data?.[expectedType]}
           if(shared)cacheWrite(key,{savedAt:Date.now(),payload:shared})
         }
-        if(shared)await adapter.restore(shared,currentProject.user_state||{})
+        if(shared)await adapter.restore(shared,restoredUserState)
       }
-      else if(currentProject.base_data&&Object.keys(currentProject.base_data).length)await adapter.restore(currentProject.base_data,currentProject.user_state||{});
+      else if(currentProject.base_data&&Object.keys(currentProject.base_data).length)await adapter.restore(currentProject.base_data,mergeRemoteWithLocal(currentProject.user_state||{},loadLocalViewState()));
       lastSharedState=sharedState(currentProject.user_state||{});applyViewerLock();installAutoSave();subscribe();setStatus(roleCanEdit()?'เชื่อมต่อแล้ว':currentProject.status==='completed'?'งานเสร็จแล้ว — โหมดดูอย่างเดียว':'โหมดดูอย่างเดียว','ok');
       document.title=`${currentProject.name} — ${document.title}`;
     }catch(error){console.error(error);loading.remove();await notice('ไม่สามารถเปิดงานได้',error.message,'danger');if(/Authentication|required|Project ID/.test(error.message))location.replace(indexUrl());return}
@@ -540,6 +552,7 @@
   }
   async function uploadCentralDataset(files){const prepared=await prepareCentralUpload(files);return commitCentralUpload(prepared,prepared.candidates.map(x=>({...x,action:'separate'})))}
   async function backToCenter(){
+    saveLocalViewState();
     clearTimeout(saveTimer);
     while(saving)await new Promise(resolve=>setTimeout(resolve,100));
     if(dirty&&roleCanEdit()&&currentProject&&adapter){
