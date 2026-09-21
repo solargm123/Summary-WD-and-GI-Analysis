@@ -267,9 +267,9 @@
   }
   function installAutoSave(){
     global.addEventListener('beforeunload',event=>{if(dirty||conflict){event.preventDefault();event.returnValue=''}});
-    document.addEventListener('input',event=>{if(event.target.closest('#solarCloudDock,#solarCloudModal,#solarAppDialog'))return;if(event.target.matches('input:not([type="file"]),textarea,select'))scheduleSave('field_input')},true);
-    document.addEventListener('change',event=>{if(event.target.closest('#solarCloudDock,#solarCloudModal,#solarAppDialog'))return;scheduleSave('field_change')},true);
-    document.addEventListener('click',event=>{const target=event.target.closest('button');if(target&&!target.closest('#solarCloudDock,#solarCloudModal,#solarAppDialog'))setTimeout(()=>scheduleSave('action'),50)},true);
+    document.addEventListener('input',event=>{if(event.target.closest('#solarCloudDock,#solarCloudModal,#solarAppDialog'))return;if(event.target.matches('input:not([type="file"]),textarea,select'))scheduleSave('field_input')});
+    document.addEventListener('change',event=>{if(event.target.closest('#solarCloudDock,#solarCloudModal,#solarAppDialog'))return;scheduleSave('field_change')});
+    document.addEventListener('click',event=>{const target=event.target.closest('button');if(target&&!target.closest('#solarCloudDock,#solarCloudModal,#solarAppDialog'))setTimeout(()=>scheduleSave('action'),50)});
     const fileInput=$('excelFileInput')||$('fileInput');if(fileInput)fileInput.addEventListener('change',event=>{const files=Array.from(event.target.files||[]);[2500,5000,10000].forEach(ms=>setTimeout(()=>scheduleSave('file_import'),ms));if(files.length&&roleCanEdit())setTimeout(()=>saveSharedDataset(files).catch(error=>{console.error(error);setStatus('สร้าง Shared Data ไม่สำเร็จ','error');notice('สร้าง Shared Data ไม่สำเร็จ',error.message,'danger')}),300)});
   }
   function analysisPageLabel(){
@@ -391,7 +391,7 @@
     const captured=adapter.capture(),summaryResult=await getClient().rpc('get_central_summary',{p_workspace:currentMembership.workspace_id}),summary=summaryResult.data||{},key=cacheKey(currentMembership.workspace_id,type,summary)+':'+month,cached=await cacheRead(key);
     setStatus('กำลังโหลดเดือน '+month+'...','busy');let payload=cached?.payload||null;
     if(!payload){const result=await getClient().rpc(rpcName,{p_workspace:currentMembership.workspace_id,p_month:month});if(result.error)throw result.error;payload=result.data;cacheWrite(key,{savedAt:Date.now(),payload})}
-    await adapter.restore(payload,{...(captured.userState||{}),selectedMonth:month,selectedPeriod:month});setStatus('เชื่อมต่อแล้ว','ok');return true
+    await adapter.restore(payload,{...(captured.userState||{}),selectedMonth:month,selectedPeriod:month});saveLocalViewState();setStatus('เชื่อมต่อแล้ว','ok');return true
   }
   async function loadCentralFullData(){
     const type=currentProject?.analysis_type;
@@ -405,6 +405,7 @@
       cacheWrite(key,{savedAt:Date.now(),payload});
     }
     await adapter.restore(payload,{...(captured.userState||{}),fullDataLoaded:true});
+    saveLocalViewState();
     setStatus('เชื่อมต่อแล้ว','ok');
     return true;
   }
