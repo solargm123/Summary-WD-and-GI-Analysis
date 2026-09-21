@@ -256,6 +256,7 @@
   }
   function installAutoSave(){
     global.addEventListener('beforeunload',event=>{if(dirty||conflict){event.preventDefault();event.returnValue=''}});
+    document.addEventListener('input',event=>{if(event.target.closest('#solarCloudDock,#solarCloudModal,#solarAppDialog'))return;if(event.target.matches('input:not([type="file"]),textarea,select'))scheduleSave('field_input')},true);
     document.addEventListener('change',event=>{if(event.target.closest('#solarCloudDock,#solarCloudModal,#solarAppDialog'))return;scheduleSave('field_change')},true);
     document.addEventListener('click',event=>{const target=event.target.closest('button');if(target&&!target.closest('#solarCloudDock,#solarCloudModal,#solarAppDialog'))setTimeout(()=>scheduleSave('action'),50)},true);
     const fileInput=$('excelFileInput')||$('fileInput');if(fileInput)fileInput.addEventListener('change',event=>{const files=Array.from(event.target.files||[]);[2500,5000,10000].forEach(ms=>setTimeout(()=>scheduleSave('file_import'),ms));if(files.length&&roleCanEdit())setTimeout(()=>saveSharedDataset(files).catch(error=>{console.error(error);setStatus('สร้าง Shared Data ไม่สำเร็จ','error');notice('สร้าง Shared Data ไม่สำเร็จ',error.message,'danger')}),300)});
@@ -538,6 +539,15 @@
     return{dataset:marker.data,normalized:null,summary:await centralDatasetStatus(),batch:completed.data,batchId,failed,inserted,updated,duplicates};
   }
   async function uploadCentralDataset(files){const prepared=await prepareCentralUpload(files);return commitCentralUpload(prepared,prepared.candidates.map(x=>({...x,action:'separate'})))}
+  async function backToCenter(){
+    clearTimeout(saveTimer);
+    while(saving)await new Promise(resolve=>setTimeout(resolve,100));
+    if(dirty&&roleCanEdit()&&currentProject&&adapter){
+      await save('navigation');
+      if(dirty){await notice('ยังออกจากหน้านี้ไม่ได้','ไม่สามารถบันทึกการเปลี่ยนแปลงล่าสุดได้ กรุณาตรวจสอบสถานะการบันทึกแล้วลองอีกครั้ง','danger');return}
+    }
+    location.assign(indexUrl());
+  }
   async function openCentralAnalysis(type){const project=await ensureCentralProject(type);if(!project.dataset_id){const {data:dataset,error}=await getClient().from('shared_datasets').select('id').eq('workspace_id',(currentMembership||await membership()).workspace_id).order('updated_at',{ascending:false}).limit(1).maybeSingle();if(error)throw error;if(dataset){const attached=await getClient().rpc('attach_dataset_to_project',{p_project_id:project.id,p_dataset_id:dataset.id});if(attached.error)throw attached.error}}location.href=analysisUrl(project)}
-  global.SolarCloud={CONFIG,dialog,notice,confirmDialog,setLanguage,getLanguage,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,datasets,useDataset,resolveConflict,downloadLocalDraft,reloadLatest,back:()=>location.assign(indexUrl()),roleCanEdit,roleCanAdmin,centralDatasetStatus,databaseStorageStatus,loadCentralPeriod,loadCentralFullData,showPresence,useLatestConflict,keepMyConflict,prepareCentralUpload,commitCentralUpload,prepareCentralBatchUpload,commitCentralBatchUpload,uploadCentralDataset,openCentralAnalysis};
+  global.SolarCloud={CONFIG,dialog,notice,confirmDialog,setLanguage,getLanguage,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,datasets,useDataset,resolveConflict,downloadLocalDraft,reloadLatest,back:backToCenter,roleCanEdit,roleCanAdmin,centralDatasetStatus,databaseStorageStatus,loadCentralPeriod,loadCentralFullData,showPresence,useLatestConflict,keepMyConflict,prepareCentralUpload,commitCentralUpload,prepareCentralBatchUpload,commitCentralBatchUpload,uploadCentralDataset,openCentralAnalysis};
 })(window);
