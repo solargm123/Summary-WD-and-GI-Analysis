@@ -210,8 +210,9 @@
         #trendControlsCard{display:none!important;position:fixed;z-index:1200;left:50%;top:50%;transform:translate(-50%,-50%);width:min(94vw,620px);max-height:88vh;overflow:auto;padding:18px;border-radius:18px;gap:12px!important;box-shadow:0 30px 90px rgba(0,0,0,.65)}
         #trendControlsCard.open{display:flex!important}
         #trendPopupBackdrop{display:none;position:fixed;inset:0;z-index:1190;background:rgba(2,6,23,.72);backdrop-filter:blur(4px)}#trendPopupBackdrop.open{display:block}
-        .gi-toolbar{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+        .gi-toolbar{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-left:auto}
         .gi-toolbar .province-filter-wrap{margin-left:0;min-width:230px}
+        @media(max-width:1350px){.status-filter-bar .gi-toolbar{flex:1 0 100%;justify-content:flex-start;margin-left:0;padding-top:4px}}
         #trendControlsCard>h3{margin:0;padding:0 2px 11px;border-bottom:1px solid var(--card-border)}
         #trendControlsCard .trend-control-section{border:1px solid var(--card-border);background:color-mix(in srgb,var(--input-bg) 72%,transparent);border-radius:13px;padding:13px;margin:0}
         #trendControlsCard .trend-date-grid{gap:10px}
@@ -282,6 +283,14 @@
         <div class="card table-card">
             <div class="table-header-bar">
                 <h3><i class="fa-solid fa-table" style="color: var(--accent-blue);"></i> เปรียบเทียบ Global Irradiation รายวัน (kWh/m²)</h3>
+            </div>
+
+            <div class="status-filter-bar">
+                <span data-solar-th="กรองตามสถานะ:" data-solar-en="Filter by status:" style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">กรองตามสถานะ:</span>
+                <button class="btn-filter-status active" id="btnFilterAll" onclick="setStatusFilter('ALL')">ทุกโครงการ <span class="badge-count badge-all" id="countAll">0</span></button>
+                <button class="btn-filter-status" id="btnFilterNormal" onclick="setStatusFilter('NORMAL')"><i class="fa-solid fa-circle-check" style="color: var(--accent-green)"></i> ปกติ <span class="badge-count badge-normal" id="countNormal">0</span></button>
+                <button class="btn-filter-status" id="btnFilterAbnormal" onclick="setStatusFilter('ABNORMAL')"><i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-yellow)"></i> ผิดปกติ <span class="badge-count badge-abnormal" id="countAbnormal">0</span></button>
+                <button class="btn-filter-status" id="btnFilterNotFound" onclick="setStatusFilter('NOT_FOUND')"><i class="fa-solid fa-circle-question" style="color: var(--accent-red)"></i> ไม่พบข้อมูล <span class="badge-count badge-notfound" id="countNotFound">0</span></button>
                 <div class="gi-toolbar">
                     <div class="threshold-box">
                         <label for="minIrr">ช่วงค่าปกติ:</label>
@@ -296,14 +305,6 @@
                         <button id="provinceStatusFilter" type="button" class="province-filter-select" onclick="openProvinceFilterPopup('table')"><span id="provinceStatusFilterLabel">ทุกจังหวัด</span><i class="fa-solid fa-chevron-down"></i></button>
                     </div>
                 </div>
-            </div>
-
-            <div class="status-filter-bar">
-                <span data-solar-th="กรองตามสถานะ:" data-solar-en="Filter by status:" style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">กรองตามสถานะ:</span>
-                <button class="btn-filter-status active" id="btnFilterAll" onclick="setStatusFilter('ALL')">ทุกโครงการ <span class="badge-count badge-all" id="countAll">0</span></button>
-                <button class="btn-filter-status" id="btnFilterNormal" onclick="setStatusFilter('NORMAL')"><i class="fa-solid fa-circle-check" style="color: var(--accent-green)"></i> ปกติ <span class="badge-count badge-normal" id="countNormal">0</span></button>
-                <button class="btn-filter-status" id="btnFilterAbnormal" onclick="setStatusFilter('ABNORMAL')"><i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-yellow)"></i> ผิดปกติ <span class="badge-count badge-abnormal" id="countAbnormal">0</span></button>
-                <button class="btn-filter-status" id="btnFilterNotFound" onclick="setStatusFilter('NOT_FOUND')"><i class="fa-solid fa-circle-question" style="color: var(--accent-red)"></i> ไม่พบข้อมูล <span class="badge-count badge-notfound" id="countNotFound">0</span></button>
             </div>
 
             <div class="top-scroll-wrapper" id="topScrollWrapper"><div class="top-scroll-inner" id="topScrollInner"></div></div>
