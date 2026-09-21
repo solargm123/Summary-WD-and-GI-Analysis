@@ -181,7 +181,7 @@
   function localKeys(type){
     if(type==='working_day')return ['selectedMonth'];
     if(type==='global_irradiance')return ['selectedPlants','selectedTrendPlants','activeStatusFilter','activeProvinceFilter','activeTrendProvinceFilter','selectedPeriod','fullDataLoaded','filters','trendFilters'];
-    if(type==='pr_report')return ['selectedProject','month','dayMode'];
+    if(type==='pr_report')return ['selectedProject','selectedPlants','displayMode','month','dayMode','trendMode','startDate','endDate'];
     return [];
   }
   const localViewStorageKey=()=>currentProject?.id?'solar:last-view:'+currentProject.id:null;
@@ -361,6 +361,12 @@
   async function cacheRead(key){try{const db=await cacheDb();return await new Promise((resolve,reject)=>{const tx=db.transaction(CENTRAL_CACHE_STORE,'readonly'),request=tx.objectStore(CENTRAL_CACHE_STORE).get(key);request.onsuccess=()=>resolve(request.result||null);request.onerror=()=>reject(request.error)})}catch{return null}}
   async function cacheWrite(key,value){try{const db=await cacheDb();await new Promise((resolve,reject)=>{const tx=db.transaction(CENTRAL_CACHE_STORE,'readwrite');tx.objectStore(CENTRAL_CACHE_STORE).put(value,key);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch{}}
   function cacheKey(workspace,type,summary){return [workspace,type,summary?.updated_at||summary?.date_end||'current',summary?.record_count||0].join(':')}
+  async function loadGiOverridesForPr(){
+    if(!currentMembership?.workspace_id)return{};
+    const {data,error}=await getClient().from('analysis_projects').select('user_state,updated_at').eq('workspace_id',currentMembership.workspace_id).eq('analysis_type','global_irradiance').is('deleted_at',null).order('updated_at',{ascending:false}).limit(1).maybeSingle();
+    if(error){console.warn('Cannot load GI overrides for PR:',error.message);return{}}
+    return cloneJson(data?.user_state?.overrides||{});
+  }
   async function initAnalysis(expectedType,projectAdapter){
     adapter=projectAdapter;injectDock();setStatus('กำลังเชื่อมต่อ...','busy');const loading=document.createElement('div');loading.id='solarPageLoading';loading.innerHTML='<div><i class="fa-solid fa-spinner fa-spin"></i><b>กำลังเตรียมข้อมูล...</b><span>Loading central data</span></div>';loading.style.cssText='position:fixed;inset:0;z-index:30000;display:grid;place-items:center;background:#0f172ae8;color:#f8fafc;font-family:Bai Jamjuree,sans-serif;backdrop-filter:blur(5px)';loading.firstElementChild.style.cssText='display:grid;gap:8px;text-align:center;padding:24px';loading.querySelector('i').style.cssText='font-size:26px;color:#38bdf8';loading.querySelector('span').style.cssText='font-size:12px;color:#94a3b8';document.body.appendChild(loading);
     try{
@@ -373,6 +379,7 @@
       if(currentProject.dataset_id){
         let shared=null,summary=bootstrapSummary;if(!summary){const summaryResult=await getClient().rpc('get_central_summary',{p_workspace:currentMembership.workspace_id});if(!summaryResult.error)summary=summaryResult.data}
         const localView=loadLocalViewState(),restoredUserState=mergeRemoteWithLocal(currentProject.user_state||{},localView);
+        if(expectedType==='pr_report')restoredUserState.giOverrides=await loadGiOverridesForPr();
         const preferredMonth=(expectedType==='working_day'||expectedType==='global_irradiance')?(localView.selectedMonth||localView.selectedPeriod||currentProject.user_state?.selectedMonth||currentProject.user_state?.selectedPeriod||String(summary?.date_end||'').slice(0,7)):null;
         const key=cacheKey(currentMembership.workspace_id,expectedType,summary)+(preferredMonth?':'+preferredMonth:''),cached=await cacheRead(key);
         if(cached?.payload){shared=cached.payload;setStatus('กำลังเปิดข้อมูลจาก Cache...','busy')}
