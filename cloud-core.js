@@ -180,7 +180,7 @@
   }
   function localKeys(type){
     if(type==='working_day')return ['selectedMonth'];
-    if(type==='global_irradiance')return ['selectedPlants','selectedTrendPlants','activeStatusFilter','activeProvinceFilter','activeTrendProvinceFilter','selectedPeriod','fullDataLoaded','filters'];
+    if(type==='global_irradiance')return ['selectedPlants','selectedTrendPlants','activeStatusFilter','activeProvinceFilter','activeTrendProvinceFilter','selectedPeriod','fullDataLoaded','filters','trendFilters'];
     if(type==='pr_report')return ['selectedProject','month','dayMode'];
     return [];
   }
