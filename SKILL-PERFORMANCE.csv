@@ -1,1 +1,2 @@
 date,task_type,primary_skill,files_read,files_changed,tool_calls,commits,rework_count,clarification_used,first_pass_success,notes
+2026-09-22,ui-state-bug,ui-consistency+bug-triage,9,5,15,1,0,no,yes,"Removed PR settings clutter; preserved province overrides across months and expanded province detection"
