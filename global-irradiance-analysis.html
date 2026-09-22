@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20260922-gi-province2"></script>
+    <script src="cloud-core.js?v=20260922-gi-trend3"></script>
 
     <style>
         :root[data-theme="dark"] {
@@ -153,6 +153,10 @@
         .stat-card .sub-info { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         .chart-container { position: relative; height: 440px; width: 100%; }
+        .trend-mode-picker{min-width:160px;display:flex;flex-direction:column;gap:3px}.trend-mode-picker small{color:var(--text-muted);font-size:.66rem}.trend-mode-picker select{min-height:46px;background:var(--input-bg);color:var(--text-main);border:1px solid var(--card-border);border-radius:10px;padding:7px 11px;font:600 .78rem 'Bai Jamjuree',sans-serif;outline:none;cursor:pointer}
+        .trend-summary{margin-top:16px;border:1px solid var(--card-border);border-radius:12px;overflow:hidden;background:var(--input-bg)}
+        .trend-summary-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 13px;border-bottom:1px solid var(--card-border)}.trend-summary-head h4{margin:0;font-size:.88rem}.trend-summary-head span{font-size:.72rem;color:var(--text-muted)}
+        .trend-summary-scroll{max-height:380px;overflow:auto}.trend-summary table{min-width:960px;table-layout:auto}.trend-summary th{position:sticky;top:0;z-index:2;padding:9px 10px;white-space:nowrap}.trend-summary td{padding:8px 10px;border-bottom:1px solid var(--card-border);white-space:nowrap}.trend-summary td:nth-child(2){min-width:280px;white-space:normal}.trend-summary-empty{text-align:center;color:var(--text-muted);padding:24px!important}.province-option-row{display:flex;align-items:center;justify-content:space-between;gap:8px}.province-count{display:inline-grid;place-items:center;min-width:28px;height:22px;padding:0 7px;border-radius:999px;background:rgba(56,189,248,.14);color:var(--accent-blue);font-weight:700;font-size:.7rem}
 
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: var(--card-bg); border: 1px solid var(--card-border); width:min(96vw,980px); max-width:980px; max-height:90vh; border-radius:14px; padding:20px; display:flex; flex-direction:column; gap:16px; box-shadow:0 24px 70px rgba(0,0,0,.45); }
@@ -346,7 +350,7 @@
                 <div class="trend-control-section" data-trend-popup-section="date">
                     <label style="font-size: 0.78rem; color: var(--text-muted); font-weight:600; display:block; margin-bottom:4px;">Date Filter</label>
                     <div class="trend-date-grid">
-                        <div>
+                        <div id="trendYearFilterBox">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                                 <label style="font-size: 0.72rem; color: var(--text-muted);">Year</label>
                                 <div>
@@ -356,7 +360,7 @@
                             </div>
                             <select id="trendYearSel" class="multi-select" multiple onchange="updateTrendChart()"></select>
                         </div>
-                        <div>
+                        <div id="trendMonthFilterBox">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                                 <label style="font-size: 0.72rem; color: var(--text-muted);">Month</label>
                                 <div>
@@ -390,6 +394,7 @@
 
             <div class="card">
                 <div class="trend-toolbar">
+                    <label class="trend-mode-picker"><small data-solar-th="รูปแบบกราฟ" data-solar-en="Chart view">รูปแบบกราฟ</small><select id="trendGranularitySel" onchange="setTrendGranularity(this.value)"><option value="daily">รายวัน / Daily</option><option value="monthly">รายเดือน / Monthly</option><option value="yearly">รายปี / Yearly</option></select></label>
                     <button id="trendDatePickerButton" type="button" class="trend-popup-button" onclick="openTrendFilters('date')"><span><small id="trendDatePickerCaption">เลือกเดือน / ปี</small><strong id="trendDatePickerLabel">ทุกช่วงเวลา</strong></span><i class="fa-solid fa-calendar-days"></i></button>
                     <button id="trendPlantPickerButton" type="button" class="trend-popup-button" onclick="openTrendFilters('plants')"><span><small id="trendPlantPickerCaption">โครงการ</small><strong><span id="trendPlantPickerText">เลือกโครงการ</span> <b id="trendPlantPickerCount">0/0</b></strong></span><i class="fa-solid fa-list-check"></i></button>
                     <div class="province-filter-wrap"><span data-solar-th="จังหวัด:" data-solar-en="Province:" style="font-weight:700">จังหวัด:</span><button id="trendProvinceSel" type="button" class="province-filter-select" onclick="openProvinceFilterPopup('trend')"><span id="trendProvinceLabel">ทุกจังหวัด</span><i class="fa-solid fa-chevron-down"></i></button></div>
@@ -414,6 +419,10 @@
 
                 <div class="chart-container">
                     <canvas id="irrTrendChart"></canvas>
+                </div>
+                <div class="trend-summary">
+                    <div class="trend-summary-head"><h4 id="trendSummaryTitle">ตารางสรุป GI ของโครงการที่เลือก</h4><span id="trendSummaryMeta">-</span></div>
+                    <div class="trend-summary-scroll"><table><thead><tr id="trendSummaryHeader"></tr></thead><tbody id="trendSummaryBody"></tbody></table></div>
                 </div>
             </div>
         </div>
@@ -511,11 +520,23 @@
     function openProvincePopup(plant){currentProvinceMode='plant';currentProvincePlant=plant;document.getElementById('provinceSearch').value='';document.getElementById('provinceModal').style.display='flex';renderProvinceOptions();setTimeout(()=>document.getElementById('provinceSearch').focus(),0)}
     function openProvinceFilterPopup(mode='table'){currentProvinceMode=mode;currentProvincePlant=null;document.getElementById('provinceSearch').value='';document.getElementById('provinceModal').style.display='flex';renderProvinceOptions();setTimeout(()=>document.getElementById('provinceSearch').focus(),0)}
     function closeProvincePopup(){document.getElementById('provinceModal').style.display='none';currentProvincePlant=null;currentProvinceMode='plant'}
-    function renderProvinceOptions(){const query=document.getElementById('provinceSearch').value.trim().toLowerCase();const selected=currentProvinceMode==='table'?activeProvinceFilter:currentProvinceMode==='trend'?activeTrendProvinceFilter:(plantMasterData[currentProvincePlant]?.province||'ไม่ระบุ');const names=currentProvinceMode==='plant'?THAI_PROVINCES:['ALL',...THAI_PROVINCES];document.getElementById('provinceOptionList').innerHTML=names.filter(name=>{const label=name==='ALL'?(giLanguage()==='en'?'All provinces':'ทุกจังหวัด'):provinceLabel(name);return !query||name.toLowerCase().includes(query)||label.toLowerCase().includes(query)||(PROVINCE_EN[name]||'').toLowerCase().includes(query)}).map(name=>{const label=name==='ALL'?(giLanguage()==='en'?'All provinces':'ทุกจังหวัด'):provinceLabel(name);const secondary=name==='ALL'?'All':(giLanguage()==='en'?name:PROVINCE_EN[name]);return `<button class="province-option ${name===selected?'active':''}" onclick="selectProvince('${name}')">${escapeHtml(label)}<small>${escapeHtml(secondary||'')}</small></button>`}).join('')}
-    function selectProvince(value){if(currentProvinceMode==='table')setProvinceFilter(value);else if(currentProvinceMode==='trend'){activeTrendProvinceFilter=value||'ALL';selectedTrendPlants=new Set(trendAvailablePlants());syncTrendProvinceSelect();renderTrendPlantList();updateTrendChart()}else updateProvinceData(currentProvincePlant,value);closeProvincePopup();renderTableAndMetrics()}
+    function trendProvinceCounts(){const counts={};allPlantsSet.forEach(name=>{const province=plantMasterData[name]?.province||'ไม่ระบุ';counts[province]=(counts[province]||0)+1});return counts}
+    function renderProvinceOptions(){
+        const query=document.getElementById('provinceSearch').value.trim().toLowerCase();
+        const selected=currentProvinceMode==='table'?activeProvinceFilter:currentProvinceMode==='trend'?activeTrendProvinceFilter:(plantMasterData[currentProvincePlant]?.province||'ไม่ระบุ');
+        const counts=currentProvinceMode==='trend'?trendProvinceCounts():null;
+        const usedTrendProvinces=counts?Object.keys(counts).filter(name=>counts[name]>0).sort((a,b)=>provinceLabel(a).localeCompare(provinceLabel(b))):[];
+        const names=currentProvinceMode==='plant'?THAI_PROVINCES:currentProvinceMode==='trend'?['ALL',...usedTrendProvinces]:['ALL',...THAI_PROVINCES];
+        const total=counts?Object.values(counts).reduce((sum,value)=>sum+value,0):0;
+        document.getElementById('provinceOptionList').innerHTML=names.filter(name=>{const label=name==='ALL'?(giLanguage()==='en'?'All provinces':'ทุกจังหวัด'):provinceLabel(name);return !query||name.toLowerCase().includes(query)||label.toLowerCase().includes(query)||(PROVINCE_EN[name]||'').toLowerCase().includes(query)}).map(name=>{
+            const label=name==='ALL'?(giLanguage()==='en'?'All provinces':'ทุกจังหวัด'):provinceLabel(name),secondary=name==='ALL'?'All':(giLanguage()==='en'?name:PROVINCE_EN[name]),count=name==='ALL'?total:(counts?.[name]||0);
+            return `<button class="province-option ${name===selected?'active':''}" onclick="selectProvince('${name}')"><span class="province-option-row"><span>${escapeHtml(label)}</span>${counts?`<b class="province-count">${count}</b>`:''}</span><small>${escapeHtml(secondary||'')}</small></button>`
+        }).join('')
+    }
+    function selectProvince(value){if(currentProvinceMode==='table'){setProvinceFilter(value);closeProvincePopup()}else if(currentProvinceMode==='trend'){activeTrendProvinceFilter=value||'ALL';selectedTrendPlants=new Set(trendAvailablePlants());syncTrendProvinceSelect();renderTrendPlantList();updateTrendChart();closeProvincePopup()}else{updateProvinceData(currentProvincePlant,value);closeProvincePopup();renderTableAndMetrics()}}
     function renderProvinceFilterOptions(){const used=[...new Set([...selectedPlants].map(name=>plantMasterData[name]?.province||'ไม่ระบุ'))].sort((a,b)=>provinceLabel(a).localeCompare(provinceLabel(b)));if(activeProvinceFilter!=='ALL'&&!used.includes(activeProvinceFilter))activeProvinceFilter='ALL';const label=document.getElementById('provinceStatusFilterLabel');if(label)label.textContent=activeProvinceFilter==='ALL'?(giLanguage()==='en'?'All provinces':'ทุกจังหวัด'):provinceLabel(activeProvinceFilter);syncTrendProvinceSelect()}
 
-    let trendChart = null, selectedTrendPlants = new Set(), restoredTrendYears = [], restoredTrendMonths = [];
+    let trendChart = null, selectedTrendPlants = new Set(), restoredTrendYears = [], restoredTrendMonths = [], trendGranularity='daily';
     const chartColors = [
         '#38bdf8', '#34d399', '#f87171', '#a78bfa', '#f472b6',
         '#38cae4', '#f97316', '#10b981', '#6366f1', '#e11d48',
@@ -942,12 +963,14 @@
         });
         yearSel.innerHTML = Array.from(years).sort().map(y => `<option value="${y}" ${!restoredTrendYears.length||restoredTrendYears.includes(y)?'selected':''}>${y}</option>`).join('');
         monthSel.innerHTML = Array.from(months).sort().map(m => `<option value="${m}" ${!restoredTrendMonths.length||restoredTrendMonths.includes(m)?'selected':''}>Month ${m}</option>`).join('');
-        syncTrendProvinceSelect();updateTrendToolbarLabels();
+        document.getElementById('trendGranularitySel').value=trendGranularity;updateTrendControlVisibility();syncTrendProvinceSelect();updateTrendToolbarLabels();
         renderTrendPlantList();
     }
 
-    function syncTrendProvinceSelect(){const label=document.getElementById('trendProvinceLabel');if(label)label.textContent=activeTrendProvinceFilter==='ALL'?(giLanguage()==='en'?'All provinces':'ทุกจังหวัด'):provinceLabel(activeTrendProvinceFilter)}
+    function syncTrendProvinceSelect(){const label=document.getElementById('trendProvinceLabel');if(!label)return;const counts=trendProvinceCounts();if(activeTrendProvinceFilter!=='ALL'&&!counts[activeTrendProvinceFilter])activeTrendProvinceFilter='ALL';const count=activeTrendProvinceFilter==='ALL'?Object.values(counts).reduce((sum,value)=>sum+value,0):(counts[activeTrendProvinceFilter]||0),name=activeTrendProvinceFilter==='ALL'?(giLanguage()==='en'?'All provinces':'ทุกจังหวัด'):provinceLabel(activeTrendProvinceFilter);label.textContent=`${name} (${count})`}
     function trendAvailablePlants(){return Array.from(allPlantsSet).filter(plant=>activeTrendProvinceFilter==='ALL'||(plantMasterData[plant]?.province||'ไม่ระบุ')===activeTrendProvinceFilter).sort()}
+    function updateTrendControlVisibility(){const monthBox=document.getElementById('trendMonthFilterBox');if(monthBox)monthBox.style.display=trendGranularity==='daily'?'block':'none'}
+    function setTrendGranularity(value){trendGranularity=['daily','monthly','yearly'].includes(value)?value:'daily';updateTrendControlVisibility();updateTrendChart()}
     function updateTrendPopupLanguage(){
         const en=giLanguage()==='en',label=document.getElementById('trendPlantSectionLabel'),count=document.getElementById('trendSelectedCount'),available=document.getElementById('trendAvailableCount');
         if(label&&count&&available)label.innerHTML=`${en?'Select Plants':'เลือกโครงการ'} (<span id="trendSelectedCount" style="color:var(--accent-yellow)">${selectedTrendPlants.size}</span>/<span id="trendAvailableCount">${trendAvailablePlants().length}</span>)`;
@@ -959,12 +982,14 @@
         const allYears=document.getElementById('trendYearSel')?.options.length||0,allMonths=document.getElementById('trendMonthSel')?.options.length||0;
         const monthNames=giLanguage()==='en'?['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']:['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
         let dateLabel=giLanguage()==='en'?'All periods':'ทุกช่วงเวลา';
-        if(years.length===1&&months.length===1)dateLabel=`${monthNames[Math.max(0,Number(months[0])-1)]} ${years[0]}`;
-        else if(years.length!==allYears||months.length!==allMonths)dateLabel=giLanguage()==='en'?`${years.length} year · ${months.length} month`:`${years.length} ปี · ${months.length} เดือน`;
+        if(trendGranularity==='daily'&&years.length===1&&months.length===1)dateLabel=`${monthNames[Math.max(0,Number(months[0])-1)]} ${years[0]}`;
+        else if(trendGranularity==='daily'&&(years.length!==allYears||months.length!==allMonths))dateLabel=giLanguage()==='en'?`${years.length} year · ${months.length} month`:`${years.length} ปี · ${months.length} เดือน`;
+        else if(trendGranularity!=='daily'&&years.length===1)dateLabel=years[0];
+        else if(trendGranularity!=='daily'&&years.length!==allYears)dateLabel=giLanguage()==='en'?`${years.length} years`:`${years.length} ปี`;
         const dateNode=document.getElementById('trendDatePickerLabel');if(dateNode)dateNode.textContent=dateLabel;
         const plantNode=document.getElementById('trendPlantPickerCount');if(plantNode)plantNode.textContent=`${selectedTrendPlants.size}/${trendAvailablePlants().length}`;
-        const dateCaption=document.getElementById('trendDatePickerCaption'),plantCaption=document.getElementById('trendPlantPickerCaption'),plantText=document.getElementById('trendPlantPickerText');
-        if(dateCaption)dateCaption.textContent=giLanguage()==='en'?'Select month / year':'เลือกเดือน / ปี';if(plantCaption)plantCaption.textContent=giLanguage()==='en'?'Plants':'โครงการ';if(plantText)plantText.textContent=giLanguage()==='en'?'Select plants':'เลือกโครงการ';
+        const dateCaption=document.getElementById('trendDatePickerCaption'),plantCaption=document.getElementById('trendPlantPickerCaption'),plantText=document.getElementById('trendPlantPickerText'),viewName=trendGranularity==='daily'?(giLanguage()==='en'?'Daily':'รายวัน'):trendGranularity==='monthly'?(giLanguage()==='en'?'Monthly':'รายเดือน'):(giLanguage()==='en'?'Yearly':'รายปี');
+        if(dateCaption)dateCaption.textContent=trendGranularity==='daily'?(giLanguage()==='en'?'Select month / year':'เลือกเดือน / ปี'):(giLanguage()==='en'?`Select year · ${viewName}`:`เลือกปี · ${viewName}`);if(plantCaption)plantCaption.textContent=giLanguage()==='en'?'Plants':'โครงการ';if(plantText)plantText.textContent=giLanguage()==='en'?'Select plants':'เลือกโครงการ';
     }
 
     function selectAllTrendOptions(selectId, selectAll) {
@@ -1019,124 +1044,50 @@
 
     function selectAllTrendPlants(){selectedTrendPlants=new Set(trendAvailablePlants());renderTrendPlantList();updateTrendToolbarLabels();updateTrendChart()}
 
+    function trendPeriodKey(date){return trendGranularity==='daily'?date:trendGranularity==='monthly'?date.slice(0,7):date.slice(0,4)}
+    function trendModeLabel(){return trendGranularity==='daily'?(giLanguage()==='en'?'Daily':'รายวัน'):trendGranularity==='monthly'?(giLanguage()==='en'?'Monthly':'รายเดือน'):(giLanguage()==='en'?'Yearly':'รายปี')}
+    function renderTrendSummaryTable(rows,periodCount){
+        const en=giLanguage()==='en',header=document.getElementById('trendSummaryHeader'),body=document.getElementById('trendSummaryBody'),title=document.getElementById('trendSummaryTitle'),meta=document.getElementById('trendSummaryMeta');
+        title.textContent=en?'Selected project GI summary':'ตารางสรุป GI ของโครงการที่เลือก';
+        meta.textContent=en?`${trendModeLabel()} · ${periodCount} periods · ${rows.length} projects`:`${trendModeLabel()} · ${periodCount} ช่วง · ${rows.length} โครงการ`;
+        header.innerHTML=`<th>#</th><th>${en?'Project':'โครงการ'}</th><th>${en?'Province':'จังหวัด'}</th><th>${en?'Periods':'ช่วงข้อมูล'}</th><th>${en?'Data days':'วันที่มีข้อมูล'}</th><th>Min GI</th><th>${en?'Average GI':'GI เฉลี่ย'}</th><th>Max GI</th>`;
+        body.innerHTML=rows.length?rows.map((row,index)=>`<tr><td>${index+1}</td><td>${escapeHtml(row.plant)}</td><td>${escapeHtml(provinceLabel(row.province))}</td><td>${row.periods}</td><td>${row.days}</td><td>${row.min==null?'-':row.min.toFixed(3)}</td><td>${row.avg==null?'-':row.avg.toFixed(3)}</td><td>${row.max==null?'-':row.max.toFixed(3)}</td></tr>`).join(''):`<tr><td colspan="8" class="trend-summary-empty">${en?'No data for the selected filters':'ไม่พบข้อมูลตามตัวกรองที่เลือก'}</td></tr>`;
+    }
+
     function updateTrendChart() {
-        const selYears = Array.from(document.getElementById('trendYearSel').selectedOptions).map(o => o.value);
-        const selMonths = Array.from(document.getElementById('trendMonthSel').selectedOptions).map(o => o.value);
+        const yearNode=document.getElementById('trendYearSel'),monthNode=document.getElementById('trendMonthSel');
+        if(!yearNode||!monthNode)return;
+        const selYears=Array.from(yearNode.selectedOptions).map(o=>o.value),selMonths=Array.from(monthNode.selectedOptions).map(o=>o.value);
         restoredTrendYears=[...selYears];restoredTrendMonths=[...selMonths];
-        const showAvgLine = document.getElementById('chkShowAvgLine').checked;
+        const showAvgLine=document.getElementById('chkShowAvgLine').checked;
         updateTrendToolbarLabels();
 
-        let filteredDates = Array.from(datesSet).filter(d => {
-            let parts = d.split('-');
-            return (selYears.length === 0 || selYears.includes(parts[0])) && 
-                   (selMonths.length === 0 || selMonths.includes(parts[1]));
-        }).sort();
+        const filteredDates=Array.from(datesSet).filter(date=>{const parts=date.split('-'),yearOk=!selYears.length||selYears.includes(parts[0]),monthOk=trendGranularity!=='daily'||!selMonths.length||selMonths.includes(parts[1]);return yearOk&&monthOk}).sort();
+        const periods=[...new Set(filteredDates.map(trendPeriodKey))].sort(),selected=Array.from(selectedTrendPlants).filter(plant=>activeTrendProvinceFilter==='ALL'||(plantMasterData[plant]?.province||'ไม่ระบุ')===activeTrendProvinceFilter).sort();
+        const periodAverage=Object.fromEntries(periods.map(period=>[period,{sum:0,count:0}]));
+        const datasets=[],summaryRows=[];
+        let minObj={val:Infinity,plant:'-',date:'-'},maxObj={val:-Infinity,plant:'-',date:'-'},totalValSum=0,totalValCount=0;
 
-        let datasets = [];
-        let minObj = { val: Infinity, plant: '-', date: '-' };
-        let maxObj = { val: -Infinity, plant: '-', date: '-' };
-        let totalValSum = 0, totalValCount = 0;
-
-        let dailyAvgMap = {};
-        filteredDates.forEach(d => dailyAvgMap[d] = { sum: 0, count: 0 });
-
-        Array.from(selectedTrendPlants).filter(plant=>activeTrendProvinceFilter==='ALL'||(plantMasterData[plant]?.province||'ไม่ระบุ')===activeTrendProvinceFilter).forEach((plant, idx) => {
-            let pData = plantMasterData[plant];
-            if (!pData) return;
-
-            let dataPoints = filteredDates.map(d => {
-                let val = pData.dates[d];
-                if (val !== undefined && val !== null && !isNaN(val)) {
-                    totalValSum += val; totalValCount++;
-                    dailyAvgMap[d].sum += val; dailyAvgMap[d].count++;
-
-                    if (val < minObj.val) minObj = { val, plant, date: d };
-                    if (val > maxObj.val) maxObj = { val, plant, date: d };
-                    return val;
-                }
-                return null;
-            });
-
-            datasets.push({
-                label: plant,
-                data: dataPoints,
-                borderColor: chartColors[idx % chartColors.length],
-                backgroundColor: chartColors[idx % chartColors.length],
-                tension: 0.15,
-                spanGaps: true,
-                borderWidth: 2,
-                pointRadius: 2,
-                pointHoverRadius: 5
-            });
+        selected.forEach((plant,index)=>{
+            const pData=plantMasterData[plant];if(!pData)return;
+            const buckets=Object.fromEntries(periods.map(period=>[period,{sum:0,count:0}]));let dayCount=0;
+            filteredDates.forEach(date=>{const numeric=Number(pData.dates?.[date]);if(pData.dates?.[date]===undefined||pData.dates?.[date]===null||!Number.isFinite(numeric))return;const bucket=buckets[trendPeriodKey(date)];bucket.sum+=numeric;bucket.count++;dayCount++});
+            const dataPoints=periods.map(period=>buckets[period].count?buckets[period].sum/buckets[period].count:null),valid=dataPoints.filter(value=>value!==null&&Number.isFinite(value));
+            dataPoints.forEach((value,periodIndex)=>{if(value===null)return;const period=periods[periodIndex];totalValSum+=value;totalValCount++;periodAverage[period].sum+=value;periodAverage[period].count++;if(value<minObj.val)minObj={val:value,plant,date:period};if(value>maxObj.val)maxObj={val:value,plant,date:period}});
+            summaryRows.push({plant,province:pData.province||'ไม่ระบุ',periods:valid.length,days:dayCount,min:valid.length?Math.min(...valid):null,avg:valid.length?valid.reduce((sum,value)=>sum+value,0)/valid.length:null,max:valid.length?Math.max(...valid):null});
+            datasets.push({label:plant,data:dataPoints,borderColor:chartColors[index%chartColors.length],backgroundColor:chartColors[index%chartColors.length],tension:.15,spanGaps:true,borderWidth:2,pointRadius:trendGranularity==='daily'?2:3,pointHoverRadius:5});
         });
 
-        // Add Baseline Average Dataset Line
-        if (showAvgLine && selectedTrendPlants.size > 0) {
-            let avgPoints = filteredDates.map(d => dailyAvgMap[d].count > 0 ? (dailyAvgMap[d].sum / dailyAvgMap[d].count) : null);
-            datasets.unshift({
-                label: '★ Baseline Daily Avg',
-                data: avgPoints,
-                borderColor: '#fbbf24',
-                borderDash: [5, 5],
-                borderWidth: 2.5,
-                pointRadius: 0,
-                fill: false,
-                order: -1
-            });
-        }
+        if(showAvgLine&&selected.length){const avgPoints=periods.map(period=>periodAverage[period].count?periodAverage[period].sum/periodAverage[period].count:null);datasets.unshift({label:`★ Baseline ${trendModeLabel()} Avg`,data:avgPoints,borderColor:'#fbbf24',borderDash:[5,5],borderWidth:2.5,pointRadius:0,fill:false,order:-1})}
+        renderTrendSummaryTable(summaryRows,periods.length);
 
-        // Stats UI Updates
-        if (totalValCount > 0) {
-            document.getElementById('chartMinVal').innerText = minObj.val.toFixed(3);
-            document.getElementById('chartMinInfo').innerText = `${minObj.plant} (${minObj.date})`;
-            document.getElementById('chartMaxVal').innerText = maxObj.val.toFixed(3);
-            document.getElementById('chartMaxInfo').innerText = `${maxObj.plant} (${maxObj.date})`;
-            document.getElementById('chartAvgVal').innerText = (totalValSum / totalValCount).toFixed(3);
-        } else {
-            document.getElementById('chartMinVal').innerText = '0.000';
-            document.getElementById('chartMinInfo').innerText = '-';
-            document.getElementById('chartMaxVal').innerText = '0.000';
-            document.getElementById('chartMaxInfo').innerText = '-';
-            document.getElementById('chartAvgVal').innerText = '0.000';
-        }
+        if(totalValCount){document.getElementById('chartMinVal').innerText=minObj.val.toFixed(3);document.getElementById('chartMinInfo').innerText=`${minObj.plant} (${minObj.date})`;document.getElementById('chartMaxVal').innerText=maxObj.val.toFixed(3);document.getElementById('chartMaxInfo').innerText=`${maxObj.plant} (${maxObj.date})`;document.getElementById('chartAvgVal').innerText=(totalValSum/totalValCount).toFixed(3)}
+        else{document.getElementById('chartMinVal').innerText='0.000';document.getElementById('chartMinInfo').innerText='-';document.getElementById('chartMaxVal').innerText='0.000';document.getElementById('chartMaxInfo').innerText='-';document.getElementById('chartAvgVal').innerText='0.000'}
 
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        const textColor = isDark ? '#cbd5e1' : '#475569';
-        const gridColor = isDark ? '#47556944' : '#cbd5e177';
-
-        if (trendChart) trendChart.destroy();
-
-        const ctx = document.getElementById('irrTrendChart').getContext('2d');
-        trendChart = new Chart(ctx, {
-            type: 'line',
-            data: { labels: filteredDates, datasets: datasets },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: { color: textColor, font: { family: 'Bai Jamjuree', size: 11 }, boxWidth: 12 }
-                    },
-                    tooltip: {
-                        itemSort: (a, b) => b.raw - a.raw, // Sort high to low
-                        callbacks: {
-                            label: (ctx) => ` ${ctx.dataset.label}: ${ctx.raw !== null ? ctx.raw.toFixed(3) : '-'} kWh/m²`
-                        }
-                    }
-                },
-                scales: {
-                    x: { ticks: { color: textColor, font: { family: 'Bai Jamjuree' } }, grid: { color: gridColor } },
-                    y: {
-                        title: { display: true, text: 'Global Irradiation (kWh/m²)', color: textColor, font: { family: 'Bai Jamjuree' } },
-                        ticks: { color: textColor, font: { family: 'Bai Jamjuree' } },
-                        grid: { color: gridColor },
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
+        const isDark=document.documentElement.getAttribute('data-theme')==='dark',textColor=isDark?'#cbd5e1':'#475569',gridColor=isDark?'#47556944':'#cbd5e177';
+        if(trendChart)trendChart.destroy();
+        const ctx=document.getElementById('irrTrendChart').getContext('2d');
+        trendChart=new Chart(ctx,{type:'line',data:{labels:periods,datasets},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{color:textColor,font:{family:'Bai Jamjuree',size:11},boxWidth:12}},tooltip:{itemSort:(a,b)=>(Number(b.raw)||0)-(Number(a.raw)||0),callbacks:{label:context=>` ${context.dataset.label}: ${context.raw!==null&&Number.isFinite(Number(context.raw))?Number(context.raw).toFixed(3):'-'} kWh/m²`}}},scales:{x:{ticks:{color:textColor,font:{family:'Bai Jamjuree'}},grid:{color:gridColor}},y:{title:{display:true,text:'Average Global Irradiation (kWh/m²)',color:textColor,font:{family:'Bai Jamjuree'}},ticks:{color:textColor,font:{family:'Bai Jamjuree'}},grid:{color:gridColor},beginAtZero:true}}}});
     }
 
     async function resetData() {
@@ -1198,7 +1149,7 @@
       const sortedDates=[...datesSet].sort();
       return {
         baseData:{plants:originalPlantData,dates:sortedDates,availableMonths:[...availableIrrMonths],loadedMonth:loadedIrrMonth,sourceFiles:[...sourceFileNames]},
-        userState:{overrides,provinceOverrides:{...persistentProvinceByPlant},selectedPlants:[...selectedPlants],allPlantsSelected:selectedPlants.size===allPlantsSet.size&&[...allPlantsSet].every(name=>selectedPlants.has(name)),selectedTrendPlants:[...selectedTrendPlants],minIrr:document.getElementById('minIrr').value,maxIrr:document.getElementById('maxIrr').value,activeStatusFilter,activeProvinceFilter,activeTrendProvinceFilter,selectedPeriod:loadedIrrMonth,fullDataLoaded:giFullDataLoaded,filters:{years:irrSelection('yearFilter'),months:irrSelection('monthFilter'),days:irrSelection('dayFilter')},trendFilters:{years:document.getElementById('trendYearSel')?.options.length?irrSelection('trendYearSel'):[...restoredTrendYears],months:document.getElementById('trendMonthSel')?.options.length?irrSelection('trendMonthSel'):[...restoredTrendMonths]}},
+        userState:{overrides,provinceOverrides:{...persistentProvinceByPlant},selectedPlants:[...selectedPlants],allPlantsSelected:selectedPlants.size===allPlantsSet.size&&[...allPlantsSet].every(name=>selectedPlants.has(name)),selectedTrendPlants:[...selectedTrendPlants],minIrr:document.getElementById('minIrr').value,maxIrr:document.getElementById('maxIrr').value,activeStatusFilter,activeProvinceFilter,activeTrendProvinceFilter,selectedPeriod:loadedIrrMonth,fullDataLoaded:giFullDataLoaded,filters:{years:irrSelection('yearFilter'),months:irrSelection('monthFilter'),days:irrSelection('dayFilter')},trendFilters:{years:document.getElementById('trendYearSel')?.options.length?irrSelection('trendYearSel'):[...restoredTrendYears],months:document.getElementById('trendMonthSel')?.options.length?irrSelection('trendMonthSel'):[...restoredTrendMonths],granularity:trendGranularity}},
         periodKey:sortedDates.length?sortedDates[0].slice(0,7):null,
         sourceFiles:[...sourceFileNames]
       };
@@ -1218,7 +1169,7 @@
       selectedPlants=state.allPlantsSelected===false?new Set(savedSelectedPlants.filter(name=>allPlantsSet.has(name))):new Set(basePlantNames);
       selectedTrendPlants=new Set(Array.isArray(state.selectedTrendPlants)?state.selectedTrendPlants:[]);
       if(state.minIrr!=null)document.getElementById('minIrr').value=state.minIrr;if(state.maxIrr!=null)document.getElementById('maxIrr').value=state.maxIrr;
-      activeStatusFilter=state.activeStatusFilter||'ALL';activeProvinceFilter=state.activeProvinceFilter||'ALL';activeTrendProvinceFilter=state.activeTrendProvinceFilter||'ALL';restoredTrendYears=Array.isArray(state.trendFilters?.years)?state.trendFilters.years:[];restoredTrendMonths=Array.isArray(state.trendFilters?.months)?state.trendFilters.months:[];isFileUploaded=Object.keys(plantMasterData).length>0;
+      activeStatusFilter=state.activeStatusFilter||'ALL';activeProvinceFilter=state.activeProvinceFilter||'ALL';activeTrendProvinceFilter=state.activeTrendProvinceFilter||'ALL';restoredTrendYears=Array.isArray(state.trendFilters?.years)?state.trendFilters.years:[];restoredTrendMonths=Array.isArray(state.trendFilters?.months)?state.trendFilters.months:[];trendGranularity=['daily','monthly','yearly'].includes(state.trendFilters?.granularity)?state.trendFilters.granularity:'daily';isFileUploaded=Object.keys(plantMasterData).length>0;
       sourceFileNames=Array.isArray(base.sourceFiles)?base.sourceFiles:[];
       populateDateFilters();
       const filters=state.filters||{};[['yearFilter',filters.years],['monthFilter',filters.months],['dayFilter',filters.days]].forEach(([id,values])=>{if(!Array.isArray(values))return;Array.from(document.getElementById(id).options).forEach(option=>option.selected=values.includes(option.value))});
