@@ -2,6 +2,9 @@
 <html lang="th" data-theme="dark">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FusionSolar Multi-Plant Analysis</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -10,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20260921-trendpopup1"></script>
+    <script src="cloud-core.js?v=20260922-pr-province1"></script>
 
     <style>
         :root[data-theme="dark"] {
@@ -493,14 +496,15 @@
 
     let allPlantsSet = new Set(), selectedPlants = new Set(), datesSet = new Set(), sourceFileNames = [];
     let availableIrrMonths = [], loadedIrrMonth = null, giFullDataLoaded = false, giPeriodLoading = false;
-    let plantMasterData = {}, originalPlantData = {}, copiedIrrData = null;
+    let plantMasterData = {}, originalPlantData = {}, copiedIrrData = null, persistentProvinceByPlant = {};
     let isEditMode = false, isFileUploaded = false, activeStatusFilter = 'ALL', activeProvinceFilter = 'ALL', activeTrendProvinceFilter = 'ALL', currentProvincePlant = null, currentProvinceMode='plant';
 
     const THAI_PROVINCES=['ไม่ระบุ','กรุงเทพมหานคร','กระบี่','กาญจนบุรี','กาฬสินธุ์','กำแพงเพชร','ขอนแก่น','จันทบุรี','ฉะเชิงเทรา','ชลบุรี','ชัยนาท','ชัยภูมิ','ชุมพร','เชียงราย','เชียงใหม่','ตรัง','ตราด','ตาก','นครนายก','นครปฐม','นครพนม','นครราชสีมา','นครศรีธรรมราช','นครสวรรค์','นนทบุรี','นราธิวาส','น่าน','บึงกาฬ','บุรีรัมย์','ปทุมธานี','ประจวบคีรีขันธ์','ปราจีนบุรี','ปัตตานี','พระนครศรีอยุธยา','พะเยา','พังงา','พัทลุง','พิจิตร','พิษณุโลก','เพชรบุรี','เพชรบูรณ์','แพร่','ภูเก็ต','มหาสารคาม','มุกดาหาร','แม่ฮ่องสอน','ยโสธร','ยะลา','ร้อยเอ็ด','ระนอง','ระยอง','ราชบุรี','ลพบุรี','ลำปาง','ลำพูน','เลย','ศรีสะเกษ','สกลนคร','สงขลา','สตูล','สมุทรปราการ','สมุทรสงคราม','สมุทรสาคร','สระแก้ว','สระบุรี','สิงห์บุรี','สุโขทัย','สุพรรณบุรี','สุราษฎร์ธานี','สุรินทร์','หนองคาย','หนองบัวลำภู','อ่างทอง','อำนาจเจริญ','อุดรธานี','อุตรดิตถ์','อุทัยธานี','อุบลราชธานี'];
     const EN_PROVINCES=['Not specified','Bangkok','Krabi','Kanchanaburi','Kalasin','Kamphaeng Phet','Khon Kaen','Chanthaburi','Chachoengsao','Chon Buri','Chai Nat','Chaiyaphum','Chumphon','Chiang Rai','Chiang Mai','Trang','Trat','Tak','Nakhon Nayok','Nakhon Pathom','Nakhon Phanom','Nakhon Ratchasima','Nakhon Si Thammarat','Nakhon Sawan','Nonthaburi','Narathiwat','Nan','Bueng Kan','Buri Ram','Pathum Thani','Prachuap Khiri Khan','Prachin Buri','Pattani','Phra Nakhon Si Ayutthaya','Phayao','Phang Nga','Phatthalung','Phichit','Phitsanulok','Phetchaburi','Phetchabun','Phrae','Phuket','Maha Sarakham','Mukdahan','Mae Hong Son','Yasothon','Yala','Roi Et','Ranong','Rayong','Ratchaburi','Lop Buri','Lampang','Lamphun','Loei','Si Sa Ket','Sakon Nakhon','Songkhla','Satun','Samut Prakan','Samut Songkhram','Samut Sakhon','Sa Kaeo','Saraburi','Sing Buri','Sukhothai','Suphan Buri','Surat Thani','Surin','Nong Khai','Nong Bua Lam Phu','Ang Thong','Amnat Charoen','Udon Thani','Uttaradit','Uthai Thani','Ubon Ratchathani'];
     const PROVINCE_EN=Object.fromEntries(THAI_PROVINCES.map((name,index)=>[name,EN_PROVINCES[index]]));
     const PROVINCE_ALIASES={'กรุงเทพมหานคร':['bangkok'],'ชลบุรี':['chon buri','chonburi'],'ระยอง':['rayong'],'สมุทรปราการ':['samut prakan'],'สมุทรสาคร':['samut sakhon'],'นครปฐม':['nakhon pathom'],'ปทุมธานี':['pathum thani','pathumthani'],'พระนครศรีอยุธยา':['ayutthaya'],'ฉะเชิงเทรา':['chachoengsao'],'จันทบุรี':['chanthaburi'],'นครราชสีมา':['nakhon ratchasima','korat'],'เพชรบุรี':['phetchaburi'],'ภูเก็ต':['phuket'],'พะเยา':['phayao'],'สระบุรี':['saraburi'],'ราชบุรี':['ratchaburi'],'นนทบุรี':['nonthaburi'],'เชียงใหม่':['chiang mai'],'เชียงราย':['chiang rai'],'สงขลา':['songkhla'],'ขอนแก่น':['khon kaen']};
-    function detectProvince(address){const source=String(address||'').toLowerCase().replace(/\s+/g,' ');if(!source)return 'ไม่ระบุ';const thai=THAI_PROVINCES.slice(1).sort((a,b)=>b.length-a.length).find(name=>source.includes(name.toLowerCase()));if(thai)return thai;for(const [province,aliases] of Object.entries(PROVINCE_ALIASES))if(aliases.some(alias=>source.includes(alias)))return province;return 'ไม่ระบุ'}
+    const normalizeProvinceText=value=>String(value||'').toLowerCase().replace(/[.,()/_-]+/g,' ').replace(/\s+/g,' ').trim();
+    function detectProvince(address){const source=normalizeProvinceText(address);if(!source)return 'ไม่ระบุ';const thai=THAI_PROVINCES.slice(1).sort((a,b)=>b.length-a.length).find(name=>source.includes(normalizeProvinceText(name)));if(thai)return thai;const padded=` ${source} `;for(const [province,english] of Object.entries(PROVINCE_EN)){const key=normalizeProvinceText(english);if(province!=='ไม่ระบุ'&&key&&padded.includes(` ${key} `))return province}for(const [province,aliases] of Object.entries(PROVINCE_ALIASES))if(aliases.some(alias=>padded.includes(` ${normalizeProvinceText(alias)} `)))return province;return 'ไม่ระบุ'}
     const giLanguage=()=>window.FusionUI?.getLanguage?.()||document.documentElement.lang||'th';
     const provinceLabel=name=>giLanguage()==='en'?(PROVINCE_EN[name]||name):name;
     function toggleGiLanguage(){FusionUI.setLanguage(FusionUI.getLanguage()==='th'?'en':'th');renderProvinceFilterOptions();updateTrendToolbarLabels();updateTrendPopupLanguage();if(isFileUploaded)renderTableAndMetrics();if(document.getElementById('provinceModal').style.display==='flex')renderProvinceOptions()}
@@ -789,7 +793,7 @@
     }
 
     function updateNoteData(plantKey, val) { if (plantMasterData[plantKey]) plantMasterData[plantKey].note = val; }
-    function updateProvinceData(plantKey,val){if(plantMasterData[plantKey])plantMasterData[plantKey].province=val||'ไม่ระบุ'}
+    function updateProvinceData(plantKey,val){if(plantMasterData[plantKey]){const province=val||'ไม่ระบุ';plantMasterData[plantKey].province=province;persistentProvinceByPlant[plantKey]=province}}
 
     function copyPlantIrr(plantKey) {
         if (plantMasterData[plantKey]) {
@@ -1194,7 +1198,7 @@
       const sortedDates=[...datesSet].sort();
       return {
         baseData:{plants:originalPlantData,dates:sortedDates,availableMonths:[...availableIrrMonths],loadedMonth:loadedIrrMonth,sourceFiles:[...sourceFileNames]},
-        userState:{overrides,selectedPlants:[...selectedPlants],selectedTrendPlants:[...selectedTrendPlants],minIrr:document.getElementById('minIrr').value,maxIrr:document.getElementById('maxIrr').value,activeStatusFilter,activeProvinceFilter,activeTrendProvinceFilter,selectedPeriod:loadedIrrMonth,fullDataLoaded:giFullDataLoaded,filters:{years:irrSelection('yearFilter'),months:irrSelection('monthFilter'),days:irrSelection('dayFilter')},trendFilters:{years:document.getElementById('trendYearSel')?.options.length?irrSelection('trendYearSel'):[...restoredTrendYears],months:document.getElementById('trendMonthSel')?.options.length?irrSelection('trendMonthSel'):[...restoredTrendMonths]}},
+        userState:{overrides,provinceOverrides:{...persistentProvinceByPlant},selectedPlants:[...selectedPlants],allPlantsSelected:selectedPlants.size===allPlantsSet.size&&[...allPlantsSet].every(name=>selectedPlants.has(name)),selectedTrendPlants:[...selectedTrendPlants],minIrr:document.getElementById('minIrr').value,maxIrr:document.getElementById('maxIrr').value,activeStatusFilter,activeProvinceFilter,activeTrendProvinceFilter,selectedPeriod:loadedIrrMonth,fullDataLoaded:giFullDataLoaded,filters:{years:irrSelection('yearFilter'),months:irrSelection('monthFilter'),days:irrSelection('dayFilter')},trendFilters:{years:document.getElementById('trendYearSel')?.options.length?irrSelection('trendYearSel'):[...restoredTrendYears],months:document.getElementById('trendMonthSel')?.options.length?irrSelection('trendMonthSel'):[...restoredTrendMonths]}},
         periodKey:sortedDates.length?sortedDates[0].slice(0,7):null,
         sourceFiles:[...sourceFileNames]
       };
@@ -1207,8 +1211,11 @@
       availableIrrMonths=Array.isArray(base.availableMonths)?base.availableMonths:[...new Set((base.dates||[]).map(date=>String(date).slice(0,7)))].sort().reverse();
       loadedIrrMonth=base.loadedMonth||state.selectedPeriod||null;
       giFullDataLoaded=!!state.fullDataLoaded&&!base.loadedMonth;
-      Object.entries(state.overrides||{}).forEach(([name,saved])=>{if(!plantMasterData[name])return;if(saved.capacity!=null)plantMasterData[name].capacity=saved.capacity;if(saved.province)plantMasterData[name].province=saved.province;if(saved.note!=null)plantMasterData[name].note=saved.note;Object.entries(saved.dates||{}).forEach(([date,value])=>{if(value===null)delete plantMasterData[name].dates[date];else plantMasterData[name].dates[date]=value})});
-      selectedPlants=new Set(Array.isArray(state.selectedPlants)?state.selectedPlants:Object.keys(plantMasterData));
+      persistentProvinceByPlant={...(state.provinceOverrides||{})};
+      Object.entries(state.overrides||{}).forEach(([name,saved])=>{if(saved.province)persistentProvinceByPlant[name]=saved.province;if(!plantMasterData[name])return;if(saved.capacity!=null)plantMasterData[name].capacity=saved.capacity;if(saved.province)plantMasterData[name].province=saved.province;if(saved.note!=null)plantMasterData[name].note=saved.note;Object.entries(saved.dates||{}).forEach(([date,value])=>{if(value===null)delete plantMasterData[name].dates[date];else plantMasterData[name].dates[date]=value})});
+      Object.entries(persistentProvinceByPlant).forEach(([name,province])=>{if(plantMasterData[name])plantMasterData[name].province=province||'ไม่ระบุ'});
+      const basePlantNames=Object.keys(plantMasterData),savedSelectedPlants=Array.isArray(state.selectedPlants)?state.selectedPlants:basePlantNames;
+      selectedPlants=state.allPlantsSelected===false?new Set(savedSelectedPlants.filter(name=>allPlantsSet.has(name))):new Set(basePlantNames);
       selectedTrendPlants=new Set(Array.isArray(state.selectedTrendPlants)?state.selectedTrendPlants:[]);
       if(state.minIrr!=null)document.getElementById('minIrr').value=state.minIrr;if(state.maxIrr!=null)document.getElementById('maxIrr').value=state.maxIrr;
       activeStatusFilter=state.activeStatusFilter||'ALL';activeProvinceFilter=state.activeProvinceFilter||'ALL';activeTrendProvinceFilter=state.activeTrendProvinceFilter||'ALL';restoredTrendYears=Array.isArray(state.trendFilters?.years)?state.trendFilters.years:[];restoredTrendMonths=Array.isArray(state.trendFilters?.months)?state.trendFilters.months:[];isFileUploaded=Object.keys(plantMasterData).length>0;
