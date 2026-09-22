@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<script src="cloud-core.js?v=20260922-pr-chart13"></script>
+<script src="cloud-core.js?v=20260922-pr-sticky1"></script>
 <link rel="stylesheet" href="unified-ui.css?v=20260915-unified-ui1">
 <style>
 :root{--bg:#f3f7fb;--card:#fff;--soft:#f8fafc;--line:#dce5ef;--text:#172033;--muted:#64748b;--blue:#2563eb;--green:#059669;--amber:#d97706;--red:#dc2626;--purple:#7c3aed;--shadow:0 10px 30px #15304b12}
@@ -36,6 +36,9 @@ html[data-fs-theme=dark]{--bg:#08141f;--card:#102131;--soft:#14293b;--line:#2942
 .modal{position:fixed;inset:0;background:#071521b8;display:none;place-items:center;padding:18px;z-index:11000}.modal.open{display:grid}.modal-card{width:min(650px,100%);max-height:88vh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 25px 70px #0008}.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.modal-head h2{margin:0;font-size:1.05rem}.note-types{display:flex;gap:6px;flex-wrap:wrap}.note-types label{font-size:.72rem;border:1px solid var(--line);border-radius:8px;padding:6px 8px;cursor:pointer}.note-types input{margin-right:4px}
 @media(max-width:1250px){.topbar{grid-template-columns:minmax(300px,1fr) auto}.topbar .solar-cloud-topbar-host{grid-column:1/-1;grid-row:2;margin:0!important;padding:4px 0 0!important;justify-content:center}.header-controls{flex-wrap:wrap}.toolbar{grid-template-columns:repeat(3,1fr)}.metrics{grid-template-columns:repeat(3,1fr)}.detail-grid{grid-template-columns:1fr}}
 @media(max-width:650px){body{padding:12px}.topbar{align-items:flex-start;display:flex;flex-direction:column}.topbar h1{white-space:normal}.header-controls{justify-content:flex-start;flex-wrap:wrap;margin-top:4px}.topbar .solar-cloud-topbar-host{order:3;width:100%;justify-content:flex-start!important}.toolbar{grid-template-columns:1fr 1fr}.filter-layout{grid-template-columns:1fr}.filter-summary{display:flex}.metrics{grid-template-columns:1fr 1fr}.settings-grid{grid-template-columns:1fr 1fr}.chart-box{height:290px}}
+.topbar{position:sticky;top:12px;z-index:50}
+#overviewView>.panel>.panel-head{position:sticky;top:var(--pr-sticky-second-top,150px);z-index:40;margin:-12px -12px 12px;padding:12px 14px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 18px #0715211a}
+@media(max-width:650px){.topbar{top:8px}}
 </style>
 </head>
 <body>
@@ -178,6 +181,8 @@ async function changeReportMonth(){
  catch(error){warning.textContent=tr(`โหลดข้อมูลไม่สำเร็จ: ${error.message}`,`Unable to load data: ${error.message}`);warning.className='filter-warning show'}
 }
 document.addEventListener('DOMContentLoaded',()=>{Chart.defaults.font.family="'Bai Jamjuree', sans-serif";$('trendMode').value='month';$('monthFilter').addEventListener('change',changeReportMonth);syncControls();populateDetailPeriods();updateDetailRange();renderAll();SolarCloud.initAnalysis('pr_report',adapter)});
+function syncStickyRows(){const header=document.querySelector('.topbar');if(!header)return;const top=parseFloat(getComputedStyle(header).top)||0;document.documentElement.style.setProperty('--pr-sticky-second-top',`${Math.ceil(top+header.getBoundingClientRect().height+10)}px`)}
+document.addEventListener('DOMContentLoaded',()=>{syncStickyRows();if('ResizeObserver'in window)new ResizeObserver(syncStickyRows).observe(document.querySelector('.topbar'));window.addEventListener('resize',syncStickyRows,{passive:true})});
 </script>
 <script src="unified-ui.js?v=20260922-pr-i18n2"></script>
 </body>
