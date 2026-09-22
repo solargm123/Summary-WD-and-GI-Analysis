@@ -69,7 +69,7 @@
     const {data,error}=await getClient().rpc('create_analysis_project',{p_workspace:m.workspace_id,p_analysis_type:type,p_name:(name||fallback).trim()});
     if(error)throw error;return data.id;
   }
-  function analysisUrl(project){const page=project.analysis_type==='working_day'?'working-day-analysis.html':project.analysis_type==='global_irradiance'?'global-irradiance-analysis.html':'pr-report.html';return `${page}?v=20260922-gi-province2&project=${encodeURIComponent(project.id)}`}
+  function analysisUrl(project){const page=project.analysis_type==='working_day'?'working-day-analysis.html':project.analysis_type==='global_irradiance'?'global-irradiance-analysis.html':'pr-report.html';return `${page}?v=20260922-gi-trend3&project=${encodeURIComponent(project.id)}`}
   async function signIn(email,password){const {data,error}=await getClient().auth.signInWithPassword({email,password});if(error)throw error;return data}
   async function signOut(){await getClient().auth.signOut();location.replace(indexUrl())}
   async function loadProject(id){
@@ -360,7 +360,7 @@
   function cacheDb(){return new Promise((resolve,reject)=>{const request=indexedDB.open(CENTRAL_CACHE_DB,1);request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains(CENTRAL_CACHE_STORE))request.result.createObjectStore(CENTRAL_CACHE_STORE)};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)})}
   async function cacheRead(key){try{const db=await cacheDb();return await new Promise((resolve,reject)=>{const tx=db.transaction(CENTRAL_CACHE_STORE,'readonly'),request=tx.objectStore(CENTRAL_CACHE_STORE).get(key);request.onsuccess=()=>resolve(request.result||null);request.onerror=()=>reject(request.error)})}catch{return null}}
   async function cacheWrite(key,value){try{const db=await cacheDb();await new Promise((resolve,reject)=>{const tx=db.transaction(CENTRAL_CACHE_STORE,'readwrite');tx.objectStore(CENTRAL_CACHE_STORE).put(value,key);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch{}}
-  function cacheKey(workspace,type,summary){return [workspace,type,type==='pr_report'?'cursor-v2':'v1',summary?.updated_at||summary?.date_end||'current',summary?.record_count||0].join(':')}
+  function cacheKey(workspace,type,summary){const variant=type==='pr_report'?'cursor-v2':type==='global_irradiance'?'province-v2':'v1';return [workspace,type,variant,summary?.updated_at||summary?.date_end||'current',summary?.record_count||0].join(':')}
   async function loadGiOverridesForPr(){
     if(!currentMembership?.workspace_id)return{};
     const {data,error}=await getClient().from('analysis_projects').select('user_state,updated_at').eq('workspace_id',currentMembership.workspace_id).eq('analysis_type','global_irradiance').is('deleted_at',null).order('updated_at',{ascending:false}).limit(1).maybeSingle();
