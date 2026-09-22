@@ -69,7 +69,7 @@
     const {data,error}=await getClient().rpc('create_analysis_project',{p_workspace:m.workspace_id,p_analysis_type:type,p_name:(name||fallback).trim()});
     if(error)throw error;return data.id;
   }
-  function analysisUrl(project){const page=project.analysis_type==='working_day'?'working-day-analysis.html':project.analysis_type==='global_irradiance'?'global-irradiance-analysis.html':'pr-report.html';return `${page}?v=20260921-pr-ui2&project=${encodeURIComponent(project.id)}`}
+  function analysisUrl(project){const page=project.analysis_type==='working_day'?'working-day-analysis.html':project.analysis_type==='global_irradiance'?'global-irradiance-analysis.html':'pr-report.html';return `${page}?v=20260922-pr-month2&project=${encodeURIComponent(project.id)}`}
   async function signIn(email,password){const {data,error}=await getClient().auth.signInWithPassword({email,password});if(error)throw error;return data}
   async function signOut(){await getClient().auth.signOut();location.replace(indexUrl())}
   async function loadProject(id){
@@ -367,6 +367,16 @@
     if(error){console.warn('Cannot load GI overrides for PR:',error.message);return{}}
     return cloneJson(data?.user_state?.overrides||{});
   }
+  async function fetchPrReportMonth(month){
+    if(!currentMembership?.workspace_id||!/^\d{4}-\d{2}$/.test(String(month||'')))return null;
+    const start=month+'-01',endDate=new Date(start+'T00:00:00Z');endDate.setUTCMonth(endDate.getUTCMonth()+1);const end=endDate.toISOString().slice(0,10),pageSize=1000,rows=[];
+    for(let offset=0;;offset+=pageSize){
+      const {data,error}=await getClient().from('central_daily_records').select('record_date,capacity_kwp,global_irradiance,theoretical_yield_kwh,pv_yield_kwh,specific_energy,loss_due_export_kwh,source_file,central_projects!inner(standard_name,address)').eq('workspace_id',currentMembership.workspace_id).gte('record_date',start).lt('record_date',end).order('record_date',{ascending:true}).order('project_id',{ascending:true}).range(offset,offset+pageSize-1);
+      if(error)throw error;rows.push(...(data||[]));if(!data||data.length<pageSize)break;
+    }
+    const records=rows.map(r=>({fileName:r.source_file||'',project:r.central_projects?.standard_name||'',address:r.central_projects?.address||'',date:r.record_date,capacity:Number(r.capacity_kwp)||0,gi:Number(r.global_irradiance)||0,specific:Number(r.specific_energy)||0,theoretical:Number(r.theoretical_yield_kwh)||0,pv:Number(r.pv_yield_kwh)||0,loss:Number(r.loss_due_export_kwh)||0})).filter(r=>r.project),sourceFiles=[...new Set(rows.map(r=>r.source_file).filter(Boolean))].sort();
+    return{pr_report:{records,sourceFiles},sourceFiles,selectedMonth:month};
+  }
   async function initAnalysis(expectedType,projectAdapter){
     adapter=projectAdapter;injectDock();setStatus('กำลังเชื่อมต่อ...','busy');const loading=document.createElement('div');loading.id='solarPageLoading';loading.innerHTML='<div><i class="fa-solid fa-spinner fa-spin"></i><b>กำลังเตรียมข้อมูล...</b><span>Loading central data</span></div>';loading.style.cssText='position:fixed;inset:0;z-index:30000;display:grid;place-items:center;background:#0f172ae8;color:#f8fafc;font-family:Bai Jamjuree,sans-serif;backdrop-filter:blur(5px)';loading.firstElementChild.style.cssText='display:grid;gap:8px;text-align:center;padding:24px';loading.querySelector('i').style.cssText='font-size:26px;color:#38bdf8';loading.querySelector('span').style.cssText='font-size:12px;color:#94a3b8';document.body.appendChild(loading);
     try{
@@ -380,14 +390,13 @@
         let shared=null,summary=bootstrapSummary;if(!summary){const summaryResult=await getClient().rpc('get_central_summary',{p_workspace:currentMembership.workspace_id});if(!summaryResult.error)summary=summaryResult.data}
         const localView=loadLocalViewState(),restoredUserState=mergeRemoteWithLocal(currentProject.user_state||{},localView);
         if(expectedType==='pr_report')restoredUserState.giOverrides=await loadGiOverridesForPr();
-        const preferredMonth=(expectedType==='working_day'||expectedType==='global_irradiance')?(localView.selectedMonth||localView.selectedPeriod||currentProject.user_state?.selectedMonth||currentProject.user_state?.selectedPeriod||String(summary?.date_end||'').slice(0,7)):null;
+        const preferredMonth=(expectedType==='working_day'||expectedType==='global_irradiance'||expectedType==='pr_report')?(expectedType==='pr_report'?(localView.month||currentProject.user_state?.month||currentProject.period_key||String(summary?.date_end||'').slice(0,7)):(localView.selectedMonth||localView.selectedPeriod||currentProject.user_state?.selectedMonth||currentProject.user_state?.selectedPeriod||String(summary?.date_end||'').slice(0,7))):null;
         const key=cacheKey(currentMembership.workspace_id,expectedType,summary)+(preferredMonth?':'+preferredMonth:''),cached=await cacheRead(key);
         if(cached?.payload){shared=cached.payload;setStatus('กำลังเปิดข้อมูลจาก Cache...','busy')}
         else{
-          if(expectedType==='working_day'||expectedType==='global_irradiance'){
-            const rpcName=expectedType==='working_day'?'get_working_day_month':'get_global_irradiance_month';
-            const monthly=await getClient().rpc(rpcName,{p_workspace:currentMembership.workspace_id,p_month:preferredMonth||null});
-            if(!monthly.error&&monthly.data&&Object.keys(monthly.data).length)shared=monthly.data;
+          if(expectedType==='working_day'||expectedType==='global_irradiance'||expectedType==='pr_report'){
+            if(expectedType==='pr_report')shared=await fetchPrReportMonth(preferredMonth);
+            else{const rpcName=expectedType==='working_day'?'get_working_day_month':'get_global_irradiance_month';const monthly=await getClient().rpc(rpcName,{p_workspace:currentMembership.workspace_id,p_month:preferredMonth||null});if(!monthly.error&&monthly.data&&Object.keys(monthly.data).length)shared=monthly.data}
           }
           if(!shared){const fast=await getClient().rpc('get_central_analysis_payload',{p_workspace:currentMembership.workspace_id,p_analysis_type:expectedType});if(!fast.error&&fast.data&&Object.keys(fast.data).length)shared=fast.data}
           if(!shared){const {data:ds,error:dsError}=await getClient().from('shared_datasets').select('id,name,normalized_data').eq('id',currentProject.dataset_id).single();if(dsError)throw dsError;shared=expectedType==='pr_report'?ds.normalized_data:ds.normalized_data?.[expectedType]}
@@ -403,12 +412,13 @@
   }
   async function loadCentralPeriod(month){
     const type=currentProject?.analysis_type;
-    if(!currentProject||!adapter||!['working_day','global_irradiance'].includes(type)||!/^\d{4}-\d{2}$/.test(String(month||'')))return false;
-    const rpcName=type==='working_day'?'get_working_day_month':'get_global_irradiance_month';
+    if(!currentProject||!adapter||!['working_day','global_irradiance','pr_report'].includes(type)||!/^\d{4}-\d{2}$/.test(String(month||'')))return false;
+    const rpcName=type==='working_day'?'get_working_day_month':type==='global_irradiance'?'get_global_irradiance_month':null;
     const captured=adapter.capture(),summaryResult=await getClient().rpc('get_central_summary',{p_workspace:currentMembership.workspace_id}),summary=summaryResult.data||{},key=cacheKey(currentMembership.workspace_id,type,summary)+':'+month,cached=await cacheRead(key);
     setStatus('กำลังโหลดเดือน '+month+'...','busy');let payload=cached?.payload||null;
-    if(!payload){const result=await getClient().rpc(rpcName,{p_workspace:currentMembership.workspace_id,p_month:month});if(result.error)throw result.error;payload=result.data;cacheWrite(key,{savedAt:Date.now(),payload})}
-    await adapter.restore(payload,{...(captured.userState||{}),selectedMonth:month,selectedPeriod:month});saveLocalViewState();setStatus('เชื่อมต่อแล้ว','ok');return true
+    if(!payload){if(type==='pr_report')payload=await fetchPrReportMonth(month);else{const result=await getClient().rpc(rpcName,{p_workspace:currentMembership.workspace_id,p_month:month});if(result.error)throw result.error;payload=result.data}cacheWrite(key,{savedAt:Date.now(),payload})}
+    const nextUser={...(captured.userState||{}),selectedMonth:month,selectedPeriod:month};if(type==='pr_report'){nextUser.month=month;nextUser.giOverrides=await loadGiOverridesForPr()}
+    await adapter.restore(payload,nextUser);saveLocalViewState();setStatus('เชื่อมต่อแล้ว','ok');return true
   }
   async function loadCentralFullData(){
     const type=currentProject?.analysis_type;
