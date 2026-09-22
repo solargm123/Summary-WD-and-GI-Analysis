@@ -242,7 +242,7 @@
                                     <input type="radio" name="sunHoursMode" value="custom" checked onchange="toggleSunHoursMode()" class="text-blue-600 focus:ring-0">
                                     <span class="text-slate-700 dark:text-slate-300 font-medium">1.1 ค่ามาตรฐาน Default (4.0 ชม.)</span>
                                 </div>
-                                <input type="number" id="inputSunHoursCustom" min="0.1" max="24" step="0.1" value="4.0" oninput="calculateAndRender()" class="w-16 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-700 rounded px-2 py-0.5 text-amber-900 dark:text-amber-200 font-mono font-bold text-center text-xs">
+                                <input type="number" id="inputSunHoursCustom" min="0.1" max="24" step="0.1" value="4.0" oninput="scheduleCalculateAndRender()" class="w-16 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-700 rounded px-2 py-0.5 text-amber-900 dark:text-amber-200 font-mono font-bold text-center text-xs">
                             </label>
 
                             <!-- 1.2 Monthly Avg from Specific Energy -->
@@ -451,7 +451,7 @@
                 <h3 class="text-sm font-bold text-blue-800 dark:text-blue-400"><i class="fa-solid fa-list-check mr-2"></i><span id="projectSelectorTitle">เลือกโครงการที่ต้องการแสดง</span></h3>
                 <button onclick="closeProjectSelector()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <input id="projectPopupSearch" type="text" oninput="renderProjectSelectorList()" placeholder="ค้นหาชื่อโครงการ..." class="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded-lg px-3 py-2">
+            <input id="projectPopupSearch" type="text" oninput="scheduleProjectSelectorRender()" placeholder="ค้นหาชื่อโครงการ..." class="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded-lg px-3 py-2">
             <div class="flex gap-2">
                 <button onclick="setAllProjectsVisible(true)" class="text-xs px-3 py-1.5 rounded bg-blue-50 text-blue-700 border border-blue-200">เลือกทั้งหมด</button>
                 <button onclick="setAllProjectsVisible(false)" class="text-xs px-3 py-1.5 rounded bg-slate-50 text-slate-700 border border-slate-200">ไม่เลือกทั้งหมด</button>
@@ -564,9 +564,18 @@
             const top = document.getElementById('topTableScroll');
             const table = document.getElementById('tableScrollContainer');
             if (!top || !table || top.dataset.synced) return;
-            let syncing = false;
-            top.addEventListener('scroll', () => { if (!syncing) { syncing = true; table.scrollLeft = top.scrollLeft; syncing = false; } });
-            table.addEventListener('scroll', () => { if (!syncing) { syncing = true; top.scrollLeft = table.scrollLeft; syncing = false; } });
+            let frame = 0, source = null;
+            const sync = from => {
+                source = from;
+                if (frame) return;
+                frame = requestAnimationFrame(() => {
+                    const target = source === top ? table : top;
+                    if (Math.abs(target.scrollLeft - source.scrollLeft) > 1) target.scrollLeft = source.scrollLeft;
+                    frame = 0;
+                });
+            };
+            top.addEventListener('scroll', () => sync(top), { passive: true });
+            table.addEventListener('scroll', () => sync(table), { passive: true });
             top.dataset.synced = 'true';
         }
 
@@ -587,6 +596,15 @@
                 label.className = 'flex items-center gap-3 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer';
                 label.innerHTML = `<input type="checkbox" ${plant.visible ? 'checked' : ''} onchange="togglePlantFromPopup(${plant.id}, this.checked)" class="rounded text-blue-600"><span>${escapeHtml(plant.name)}</span>`;
                 list.appendChild(label);
+            });
+        }
+
+        let projectSelectorRenderFrame = 0;
+        function scheduleProjectSelectorRender() {
+            cancelAnimationFrame(projectSelectorRenderFrame);
+            projectSelectorRenderFrame = requestAnimationFrame(() => {
+                projectSelectorRenderFrame = 0;
+                renderProjectSelectorList();
             });
         }
 
@@ -1321,10 +1339,19 @@
         }
 
         // Logic การคำนวณ Sun Hours 3 รูปแบบ (อิง Specific Energy แยกตามโครงการ)
-        function getCalculatedSunHours(plant) {
-            const mode = document.querySelector('input[name="sunHoursMode"]:checked')?.value || 'custom';
+        function getCalculationContext() {
             const customInput = parseFloat(document.getElementById('inputSunHoursCustom').value);
-            const customVal = Number.isFinite(customInput) && customInput > 0 ? customInput : 4.0;
+            const lossInput = parseFloat(document.getElementById('inputLossFactor').value);
+            return {
+                mode: document.querySelector('input[name="sunHoursMode"]:checked')?.value || 'custom',
+                customVal: Number.isFinite(customInput) && customInput > 0 ? customInput : 4.0,
+                lossFactor: Number.isFinite(lossInput) ? Math.min(1, Math.max(0, lossInput)) : 0.9,
+                targetMethod: document.getElementById('sunHoursTarget').value
+            };
+        }
+
+        function getCalculatedSunHours(plant, context = getCalculationContext()) {
+            const { mode, customVal } = context;
             const days = Math.max(1,Math.min(31,Number(plant.customDaysInMonth)||currentDaysInMonth));
 
             // Specific Energy รวม
@@ -1364,15 +1391,11 @@
             };
         }
 
-        function calculatePlantMetrics(item) {
+        function calculatePlantMetrics(item, context = getCalculationContext()) {
             const cap = Number(item.cap);
             const daysInMonth = Math.max(1,Math.min(31,Number(item.customDaysInMonth)||currentDaysInMonth));
-            const shObj = getCalculatedSunHours(item);
-            const lossInput = parseFloat(document.getElementById('inputLossFactor').value);
-            const lossFactor = Number.isFinite(lossInput) ? Math.min(1, Math.max(0, lossInput)) : 0.9;
-            const customInput = parseFloat(document.getElementById('inputSunHoursCustom').value);
-            const customVal = Number.isFinite(customInput) && customInput > 0 ? customInput : 4.0;
-            const targetMethod = document.getElementById('sunHoursTarget').value;
+            const shObj = getCalculatedSunHours(item, context);
+            const { lossFactor, customVal, targetMethod } = context;
             let shM1 = shObj.chosenSH;
             let shM2 = shObj.chosenSH;
             if (targetMethod === 'm1') shM2 = customVal;
@@ -1417,9 +1440,23 @@
             lastFormulaContext = null;
         }
 
+        let calculateRenderFrame = 0;
+        function scheduleCalculateAndRender() {
+            cancelAnimationFrame(calculateRenderFrame);
+            calculateRenderFrame = requestAnimationFrame(() => {
+                calculateRenderFrame = 0;
+                calculateAndRender();
+            });
+        }
+
         function calculateAndRender() {
+            if (calculateRenderFrame) {
+                cancelAnimationFrame(calculateRenderFrame);
+                calculateRenderFrame = 0;
+            }
             const tbody = document.getElementById('tableBody');
             const searchText = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+            const calculationContext = getCalculationContext();
 
             const filteredData = plantData.filter(p =>
                 p.visible &&
@@ -1444,12 +1481,12 @@
                 return;
             }
 
-            tbody.innerHTML = '';
+            let rowsHtml = '';
             let totalCap = 0, sumM1 = 0, sumM2 = 0, count = 0;
             let avgMonthlySHSum = 0, avgNonLossSHSum = 0;
 
             filteredData.forEach(item => {
-                const metrics = calculatePlantMetrics(item);
+                const metrics = calculatePlantMetrics(item, calculationContext);
                 const { cap, daysInMonth, shObj, shM1, shM2, selected, lossDaysCount, method1Days, method2Days } = metrics;
 
                 avgMonthlySHSum += shObj.monthlyAvgSH;
@@ -1467,9 +1504,8 @@
                     lossDatesDisplay = `<span class="flex flex-wrap justify-center gap-1">${item.lossDaysArray.map(day=>`<span class="inline-flex min-w-7 h-7 items-center justify-center bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 rounded-md font-mono text-[10px] font-bold">${day}</span>`).join('')}</span>`;
                 }
 
-                const tr = document.createElement('tr');
-                tr.className = `hover:bg-slate-50 dark:hover:bg-slate-800/40 transition border-b border-slate-200 dark:border-slate-800/60 ${!item.visible ? 'opacity-40' : ''}`;
-                tr.innerHTML = `
+                rowsHtml += `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800/60 ${!item.visible ? 'opacity-40' : ''}">
                     <td class="p-3 text-center sticky-col-1">
                         <input type="checkbox" ${item.visible ? 'checked' : ''} onchange="togglePlant(${item.id}, this.checked)" class="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-0 w-4 h-4 cursor-pointer">
                     </td>
@@ -1511,9 +1547,9 @@
                             <button onclick="openNoteModal(${item.id})" class="${item.note ? 'bg-amber-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'} border border-slate-300 dark:border-slate-700 rounded px-2 py-1.5" title="Note"><i class="fa-solid fa-note-sticky"></i></button>
                         </div>
                     </td>
-                `;
-                tbody.appendChild(tr);
+                    </tr>`;
             });
+            tbody.innerHTML = rowsHtml;
 
             if (filteredData.length > 0) {
                 document.getElementById('valMonthlyAvg').innerText = (avgMonthlySHSum / filteredData.length).toFixed(2) + ` ${t('hours')} ${t('overall')}`;
