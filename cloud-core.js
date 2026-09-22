@@ -69,7 +69,7 @@
     const {data,error}=await getClient().rpc('create_analysis_project',{p_workspace:m.workspace_id,p_analysis_type:type,p_name:(name||fallback).trim()});
     if(error)throw error;return data.id;
   }
-  function analysisUrl(project){const page=project.analysis_type==='working_day'?'working-day-analysis.html':project.analysis_type==='global_irradiance'?'global-irradiance-analysis.html':'pr-report.html';return `${page}?v=20260922-pr-province1&project=${encodeURIComponent(project.id)}`}
+  function analysisUrl(project){const page=project.analysis_type==='working_day'?'working-day-analysis.html':project.analysis_type==='global_irradiance'?'global-irradiance-analysis.html':'pr-report.html';return `${page}?v=20260922-gi-province2&project=${encodeURIComponent(project.id)}`}
   async function signIn(email,password){const {data,error}=await getClient().auth.signInWithPassword({email,password});if(error)throw error;return data}
   async function signOut(){await getClient().auth.signOut();location.replace(indexUrl())}
   async function loadProject(id){
@@ -441,7 +441,10 @@
     const type=currentProject?.analysis_type;
     if(!currentProject||!adapter||type!=='global_irradiance')return false;
     const captured=adapter.capture(),summaryResult=await getClient().rpc('get_central_summary',{p_workspace:currentMembership.workspace_id}),summary=summaryResult.data||{},key=cacheKey(currentMembership.workspace_id,type,summary)+':full',cached=await cacheRead(key);
-    setStatus('กำลังเตรียมข้อมูล Trend...','busy');let payload=cached?.payload||null;
+    const cachedPayload=cached?.payload||null;
+    const cachedPlants=Object.values(cachedPayload?.plants||{});
+    const cacheHasAddresses=cachedPlants.length>0&&cachedPlants.every(plant=>Object.prototype.hasOwnProperty.call(plant,'address'));
+    setStatus('กำลังเตรียมข้อมูล Trend...','busy');let payload=cacheHasAddresses?cachedPayload:null;
     if(!payload){
       const result=await getClient().rpc('get_central_analysis_payload',{p_workspace:currentMembership.workspace_id,p_analysis_type:type});
       if(result.error)throw result.error;
