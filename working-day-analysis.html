@@ -135,7 +135,7 @@
 <style id="wdCompactUi">
 .analysis-flow{display:none!important}main{margin-top:.5rem!important;gap:.65rem}#wdTopPanel{gap:.65rem;align-items:stretch}#centralDataCard,#solarParamsCard{padding:.75rem!important}#centralDataCard #dropZone{display:none!important}#centralDataCard #fileList{margin-top:.35rem!important;max-height:none!important}#centralDataCard #wdKpis{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem;margin-top:.65rem}#centralDataCard #wdKpis>div{min-width:0;padding:.65rem!important}#solarParamsCard .space-y-1\.5{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.35rem}#solarParamsCard .space-y-1\.5>label{margin:0!important}#wdKpis{gap:.65rem}#wdKpis>div{padding:.65rem!important}#wdKpis h3{font-size:1rem!important;margin-top:.15rem!important}#wdTableToolbar{padding:.55rem .7rem!important;gap:.5rem!important}#tableScrollContainer{height:calc(100vh - 110px);min-height:640px;max-height:none;overflow:auto}#tableScrollContainer thead{position:sticky;top:0;z-index:20}#monthPickerButton{min-width:180px}@media(min-width:1024px){#centralDataCard{grid-column:span 3/span 3}#solarParamsCard{grid-column:span 9/span 9}}@media(max-width:900px){#solarParamsCard .space-y-1\.5{grid-template-columns:1fr}#tableScrollContainer{height:auto;max-height:none;min-height:0}#centralDataCard #wdKpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 #wdTableCard{overflow:visible!important}#wdTableToolbar{position:sticky;top:106px;z-index:38;border-radius:.75rem .75rem 0 0;box-shadow:0 5px 12px -10px rgba(15,23,42,.65)}#tableScrollContainer{border-radius:0 0 .75rem .75rem}@media(max-width:760px){#wdTableToolbar{top:0}}
-.mkt-select{border-radius:999px!important;font-weight:700!important;text-align:center!important;padding:.45rem 2rem .45rem .75rem!important;transition:.2s;background-color:#fff}.dark .mkt-select{background-color:#0f172a!important;border-color:#475569!important;color-scheme:dark}.dark .mkt-select option{background:#0f172a;color:#e2e8f0}.mkt-estimated{background:#ecfdf5!important;border-color:#6ee7b7!important}.mkt-misestimated{background:#fffbeb!important;border-color:#fbbf24!important}.mkt-haveno{background:#fff1f2!important;border-color:#fda4af!important}.mkt-question{background:#f5f3ff!important;border-color:#c4b5fd!important}.dark .mkt-estimated{background:#064e3b!important}.dark .mkt-misestimated{background:#78350f!important}.dark .mkt-haveno{background:#881337!important}.dark .mkt-question{background:#4c1d95!important}#mktFilterBox{min-height:42px;box-sizing:border-box}#mktEstimateFilter{width:230px;min-width:230px;min-height:26px;color:inherit;background-color:transparent}#mktEstimateFilter option{color:#1e293b;background:#fff}.dark #mktEstimateFilter{color-scheme:dark}.dark #mktEstimateFilter option{color:#e2e8f0;background:#0f172a}#monthPickerButton{width:320px!important;min-width:320px!important;min-height:50px;font-size:15px!important;padding:.8rem 1.1rem!important}#monthYearModal>div{max-width:540px!important;padding:1.6rem!important}#monthYearTitle{font-size:18px!important}#monthPopupYear,#monthPopupMonth{min-height:52px;font-size:16px!important;padding:.75rem 1rem!important}@media(max-width:640px){#mktEstimateFilter{width:190px;min-width:190px}#monthPickerButton{width:100%!important;min-width:0!important}#monthYearModal>div{max-width:100%!important}}#lossModal>div{max-width:520px!important;border-radius:18px!important}#modalDaysGrid button{min-height:38px;font-size:13px!important;text-align:center}
+.mkt-select{border-radius:999px!important;font-weight:700!important;text-align:center!important;padding:.45rem 2rem .45rem .75rem!important;transition:.2s;background-color:#fff}.dark .mkt-select{background-color:#0f172a!important;border-color:#475569!important;color-scheme:dark}.dark .mkt-select option{background:#0f172a;color:#e2e8f0}.mkt-estimated{background:#ecfdf5!important;border-color:#6ee7b7!important}.mkt-misestimated{background:#fffbeb!important;border-color:#fbbf24!important}.mkt-haveno{background:#fff1f2!important;border-color:#fda4af!important}.mkt-question{background:#f5f3ff!important;border-color:#c4b5fd!important}.dark .mkt-estimated{background:#064e3b!important}.dark .mkt-misestimated{background:#78350f!important}.dark .mkt-haveno{background:#881337!important}.dark .mkt-question{background:#4c1d95!important}#mktFilterButton{min-width:270px;min-height:42px;box-sizing:border-box}#mktFilterList button{min-height:46px}#monthPickerButton{width:320px!important;min-width:320px!important;min-height:50px;font-size:15px!important;padding:.8rem 1.1rem!important}#monthYearModal>div{max-width:540px!important;padding:1.6rem!important}#monthYearTitle{font-size:18px!important}#monthPopupYear,#monthPopupMonth{min-height:52px;font-size:16px!important;padding:.75rem 1rem!important}@media(max-width:640px){#mktFilterButton{width:100%;min-width:0}#monthPickerButton{width:100%!important;min-width:0!important}#monthYearModal>div{max-width:100%!important}}#lossModal>div{max-width:520px!important;border-radius:18px!important}#modalDaysGrid button{min-height:38px;font-size:13px!important;text-align:center}
 </style>
 <link rel="stylesheet" href="unified-ui.css?v=20260915-wd-header-visible1">
 </head>
@@ -330,7 +330,7 @@
                     </h2>
                 </div>
                 <div class="flex flex-wrap items-center justify-end gap-2">
-                    <label id="mktFilterBox" class="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs"><i class="fa-solid fa-filter text-violet-500"></i><span class="font-semibold">MKT</span><select id="mktEstimateFilter" onchange="setMktEstimateFilter(this.value)" class="bg-transparent focus:outline-none"><option id="mktTotalOption" value="all">Total</option><option value="Estimated 12:00 L">Estimated 12:00 L</option><option value="Misestimated 12:00 L">Misestimated 12:00 L</option><option value="Haveno 12:00 L">Haveno 12:00 L</option><option value="Misestimated?">Misestimated?</option><option value="">Not specified</option></select></label><button id="method1FilterButton" onclick="setMethodFilter('m1')" class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg px-3 py-2 flex items-center gap-2 transition">
+                    <button id="mktFilterButton" type="button" onclick="openMktFilterPopup()" class="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-700 dark:text-slate-200"><span class="flex items-center gap-2 min-w-0"><i class="fa-solid fa-filter text-violet-500"></i><span class="font-semibold">MKT</span><span id="mktFilterButtonText" class="truncate">Total</span></span><span class="flex items-center gap-2"><strong id="mktFilterCount" class="text-violet-600 dark:text-violet-300">0</strong><i class="fa-solid fa-chevron-down text-slate-400"></i></span></button><button id="method1FilterButton" onclick="setMethodFilter('m1')" class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg px-3 py-2 flex items-center gap-2 transition">
                         <i class="fa-solid fa-calculator"></i><span>วิธีที่ 1</span><strong id="method1ProjectCount" class="bg-blue-600 text-white rounded-full px-2 py-0.5">0</strong>
                     </button>
                     <button id="method2FilterButton" onclick="setMethodFilter('m2')" class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-lg px-3 py-2 flex items-center gap-2 transition">
@@ -429,6 +429,18 @@
     </div>
 
     <div id="monthYearModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[90] hidden items-center justify-center p-4"><div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl w-full max-w-sm p-5 space-y-4"><div class="flex justify-between items-center"><h3 id="monthYearTitle" class="font-bold text-slate-800 dark:text-slate-100">เลือกเดือนและปี</h3><button onclick="closeMonthYearPopup()" class="text-slate-400"><i class="fa-solid fa-xmark"></i></button></div><div class="grid grid-cols-2 gap-3"><label class="text-xs text-slate-500"><span id="monthYearYearLabel">ปี</span><select id="monthPopupYear" onchange="refreshMonthPopupOptions()" class="mt-1 w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-100"></select></label><label class="text-xs text-slate-500"><span id="monthYearMonthLabel">เดือน</span><select id="monthPopupMonth" class="mt-1 w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-100"></select></label></div><div class="flex justify-end gap-2"><button id="monthYearCancel" onclick="closeMonthYearPopup()" class="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-xs">ยกเลิก</button><button id="monthYearApply" onclick="applyMonthYearPopup()" class="px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold">ใช้เดือนนี้</button></div></div></div>
+
+    <!-- MKT filter modal -->
+    <div id="mktFilterModal" class="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm hidden p-4" onclick="if(event.target===this) closeMktFilterPopup()">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 w-full max-w-lg shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+                <div><h3 id="mktFilterTitle" class="text-sm font-bold text-violet-700 dark:text-violet-300"><i class="fa-solid fa-filter mr-2"></i>กรองสถานะ MKT Estimate</h3><p id="mktFilterSubtitle" class="text-[11px] text-slate-500 mt-1">เลือกสถานะเพื่อกรองโครงการในตาราง</p></div>
+                <button type="button" onclick="closeMktFilterPopup()" class="text-slate-400 hover:text-slate-700 dark:hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="mktFilterList" class="grid gap-2"></div>
+            <div class="flex justify-end pt-2 border-t border-slate-200 dark:border-slate-800"><button id="mktFilterClose" type="button" onclick="closeMktFilterPopup()" class="px-4 py-2 rounded-lg bg-violet-600 text-white text-xs font-semibold">ปิด</button></div>
+        </div>
+    </div>
 
     <!-- Formula details modal -->
     <div id="formulaModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm hidden">
@@ -633,7 +645,44 @@
             if(status==='Misestimated?')return 'mkt-question text-violet-700 dark:text-violet-200';
             return 'text-slate-500 dark:text-slate-300';
         }
-        function setMktEstimateFilter(value) { currentMktFilter=value;calculateAndRender(); }
+        function mktFilterLabel(value) {
+            return value === 'all' ? 'Total' : value === '' ? 'Not specified' : value;
+        }
+        function mktFilterCounts() {
+            const counts = { all: 0, '': 0 };
+            MKT_ESTIMATE_OPTIONS.forEach(value => counts[value] = 0);
+            plantData.filter(plant => plant.visible).forEach(plant => {
+                counts.all++;
+                const value = plant.mktEstimate || '';
+                counts[value] = (counts[value] || 0) + 1;
+            });
+            return counts;
+        }
+        function renderMktFilterPopup() {
+            const list = document.getElementById('mktFilterList');
+            if (!list) return;
+            const counts = mktFilterCounts();
+            list.innerHTML = '';
+            [{value:'all'}, ...MKT_ESTIMATE_OPTIONS.map(value => ({value})), {value:''}].forEach(option => {
+                const active = currentMktFilter === option.value;
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = `w-full flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left text-xs transition ${active ? 'border-violet-500 bg-violet-50 text-violet-800 dark:bg-violet-950/40 dark:text-violet-200' : 'border-slate-200 bg-white text-slate-700 hover:border-violet-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-violet-700'}`;
+                button.innerHTML = `<span class="flex items-center gap-3"><i class="fa-solid ${active ? 'fa-circle-check text-violet-600' : 'fa-circle text-slate-300 dark:text-slate-600'}"></i><strong>${escapeHtml(mktFilterLabel(option.value))}</strong></span><span class="rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-1 font-bold ${active ? 'text-violet-600 dark:text-violet-300' : 'text-slate-500'}">${counts[option.value] || 0}</span>`;
+                button.onclick = () => setMktEstimateFilter(option.value);
+                list.appendChild(button);
+            });
+        }
+        function openMktFilterPopup() {
+            renderMktFilterPopup();
+            document.getElementById('mktFilterModal').classList.remove('hidden');
+        }
+        function closeMktFilterPopup() { document.getElementById('mktFilterModal').classList.add('hidden'); }
+        function setMktEstimateFilter(value) {
+            currentMktFilter = value;
+            closeMktFilterPopup();
+            calculateAndRender();
+        }
         function matchesMktFilter(plant) { return currentMktFilter==='all'||(plant.mktEstimate||'')===currentMktFilter; }
         function updateMktEstimate(id,status) {
             const plant=plantData.find(p=>p.id===id);if(!plant||(!MKT_ESTIMATE_OPTIONS.includes(status)&&status!==''))return;
@@ -642,7 +691,7 @@
             methodOverridesByMonth[month]=methodOverridesByMonth[month]||{};
             methodOverridesByMonth[month][key]=null;
             plant.calculationMethod=defaultMethodForMkt(status);plant.methodSource='auto';
-            currentMktFilter='all';const filter=document.getElementById('mktEstimateFilter');if(filter)filter.value='all';
+            currentMktFilter='all';
             calculateAndRender();
         }
         function updateCalculationMethod(id, method) {
@@ -661,8 +710,11 @@
         }
 
         function updateMethodSummary() {
-            const allVisiblePlants = plantData.filter(p => p.visible);
-            const totalOption=document.getElementById('mktTotalOption');if(totalOption)totalOption.textContent=`Total (${allVisiblePlants.length})`;
+            const counts = mktFilterCounts();
+            const mktLabel = document.getElementById('mktFilterButtonText');
+            const mktCount = document.getElementById('mktFilterCount');
+            if (mktLabel) mktLabel.textContent = mktFilterLabel(currentMktFilter);
+            if (mktCount) mktCount.textContent = counts[currentMktFilter] || 0;
             const visiblePlants = plantData.filter(p => p.visible && matchesMktFilter(p));
             document.getElementById('method1ProjectCount').textContent = visiblePlants.filter(p => p.calculationMethod === 'm1').length;
             document.getElementById('method2ProjectCount').textContent = visiblePlants.filter(p => p.calculationMethod === 'm2').length;
@@ -748,6 +800,7 @@
             applyLanguage();
             renderMonthSelectOptions(document.getElementById('monthSelect').value, false);
             calculateAndRender();
+            if (!document.getElementById('mktFilterModal').classList.contains('hidden')) renderMktFilterPopup();
             if (!document.getElementById('lossModal').classList.contains('hidden') && currentEditingPlantId !== null) openLossModal(currentEditingPlantId);
             if (!document.getElementById('formulaModal').classList.contains('hidden') && lastFormulaContext) openFormulaModal(lastFormulaContext.id, lastFormulaContext.method);
         }
@@ -765,6 +818,9 @@
             if(document.getElementById('monthYearMonthLabel'))document.getElementById('monthYearMonthLabel').textContent=th?'เดือน':'Month';
             if(document.getElementById('monthYearCancel'))document.getElementById('monthYearCancel').textContent=th?'ยกเลิก':'Cancel';
             if(document.getElementById('monthYearApply'))document.getElementById('monthYearApply').textContent=th?'ใช้เดือนนี้':'Apply month';
+            if(document.getElementById('mktFilterTitle'))document.getElementById('mktFilterTitle').innerHTML=`<i class="fa-solid fa-filter mr-2"></i>${th?'กรองสถานะ MKT Estimate':'Filter MKT Estimate'}`;
+            if(document.getElementById('mktFilterSubtitle'))document.getElementById('mktFilterSubtitle').textContent=th?'เลือกสถานะเพื่อกรองโครงการในตาราง':'Select a status to filter projects in the table';
+            if(document.getElementById('mktFilterClose'))document.getElementById('mktFilterClose').textContent=th?'ปิด':'Close';
             document.getElementById('thSelectedLossEnergy').innerHTML = `${t('selectedLoss')}<br><span class="text-[10px] font-normal text-slate-400">(kWh)</span>`;
             document.getElementById('thMonthlyLossEnergy').innerHTML = `${t('monthlyLoss')}<br><span class="text-[10px] font-normal text-slate-400">(kWh)</span>`;
             document.getElementById('thSelectedPvYield').innerHTML = `${t('selectedPv')}<br><span class="text-[10px] font-normal text-slate-400">(kWh)</span>`;
