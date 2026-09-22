@@ -1,3 +1,4 @@
 date,task_type,primary_skill,files_read,files_changed,tool_calls,commits,rework_count,clarification_used,first_pass_success,notes
 2026-09-22,ui-state-bug,ui-consistency+bug-triage,9,5,15,1,0,no,yes,"Removed PR settings clutter; preserved province overrides across months and expanded province detection"
 2026-09-22,gi-province-trend-bug,supabase-safety+bug-triage,8,6,18,1,0,no,yes,"Full GI payload omitted project addresses; added a backward-compatible RPC migration and rejected stale address-less trend cache"
+2026-09-22,gi-trend-controls-and-project-merge,ui-consistency+supabase-safety,7,5,20,1,0,yes,yes,"Merged duplicate SANKI project without overlapping dates; added province counts, daily/monthly/yearly chart views, and selected-project GI summary"
