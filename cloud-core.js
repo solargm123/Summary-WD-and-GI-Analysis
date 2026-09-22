@@ -69,7 +69,7 @@
     const {data,error}=await getClient().rpc('create_analysis_project',{p_workspace:m.workspace_id,p_analysis_type:type,p_name:(name||fallback).trim()});
     if(error)throw error;return data.id;
   }
-  function analysisUrl(project){const page=project.analysis_type==='working_day'?'working-day-analysis.html':project.analysis_type==='global_irradiance'?'global-irradiance-analysis.html':'pr-report.html';return `${page}?v=20260922-pr-period4&project=${encodeURIComponent(project.id)}`}
+  function analysisUrl(project){const page=project.analysis_type==='working_day'?'working-day-analysis.html':project.analysis_type==='global_irradiance'?'global-irradiance-analysis.html':'pr-report.html';return `${page}?v=20260922-pr-perf5&project=${encodeURIComponent(project.id)}`}
   async function signIn(email,password){const {data,error}=await getClient().auth.signInWithPassword({email,password});if(error)throw error;return data}
   async function signOut(){await getClient().auth.signOut();location.replace(indexUrl())}
   async function loadProject(id){
@@ -360,7 +360,7 @@
   function cacheDb(){return new Promise((resolve,reject)=>{const request=indexedDB.open(CENTRAL_CACHE_DB,1);request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains(CENTRAL_CACHE_STORE))request.result.createObjectStore(CENTRAL_CACHE_STORE)};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)})}
   async function cacheRead(key){try{const db=await cacheDb();return await new Promise((resolve,reject)=>{const tx=db.transaction(CENTRAL_CACHE_STORE,'readonly'),request=tx.objectStore(CENTRAL_CACHE_STORE).get(key);request.onsuccess=()=>resolve(request.result||null);request.onerror=()=>reject(request.error)})}catch{return null}}
   async function cacheWrite(key,value){try{const db=await cacheDb();await new Promise((resolve,reject)=>{const tx=db.transaction(CENTRAL_CACHE_STORE,'readwrite');tx.objectStore(CENTRAL_CACHE_STORE).put(value,key);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch{}}
-  function cacheKey(workspace,type,summary){return [workspace,type,summary?.updated_at||summary?.date_end||'current',summary?.record_count||0].join(':')}
+  function cacheKey(workspace,type,summary){return [workspace,type,type==='pr_report'?'cursor-v2':'v1',summary?.updated_at||summary?.date_end||'current',summary?.record_count||0].join(':')}
   async function loadGiOverridesForPr(){
     if(!currentMembership?.workspace_id)return{};
     const {data,error}=await getClient().from('analysis_projects').select('user_state,updated_at').eq('workspace_id',currentMembership.workspace_id).eq('analysis_type','global_irradiance').is('deleted_at',null).order('updated_at',{ascending:false}).limit(1).maybeSingle();
@@ -368,16 +368,14 @@
     return cloneJson(data?.user_state?.overrides||{});
   }
   async function fetchPrProjectStarts(){
-    const {data,error}=await getClient().from('central_projects').select('standard_name,central_daily_records(record_date)').eq('workspace_id',currentMembership.workspace_id).order('record_date',{referencedTable:'central_daily_records',ascending:true}).limit(1,{referencedTable:'central_daily_records'});
-    if(error)throw error;const starts={};for(const project of data||[]){const first=project.central_daily_records?.[0]?.record_date;if(project.standard_name&&first)starts[project.standard_name]=first}return starts;
+    const {data,error}=await getClient().rpc('get_pr_project_starts',{p_workspace:currentMembership.workspace_id});if(error)throw error;return data||{};
   }
   async function fetchPrReportRange(start,end,periodKey){
-    if(!currentMembership?.workspace_id)return null;const pageSize=1000,rows=[];
-    for(let offset=0;;offset+=pageSize){
-      let query=getClient().from('central_daily_records').select('record_date,capacity_kwp,global_irradiance,theoretical_yield_kwh,pv_yield_kwh,specific_energy,loss_due_export_kwh,source_file,central_projects!inner(standard_name,address)').eq('workspace_id',currentMembership.workspace_id).order('record_date',{ascending:true}).order('project_id',{ascending:true}).range(offset,offset+pageSize-1);if(start)query=query.gte('record_date',start);if(end)query=query.lt('record_date',end);const {data,error}=await query;
-      if(error)throw error;rows.push(...(data||[]));if(!data||data.length<pageSize)break;
+    if(!currentMembership?.workspace_id)return null;const pageSize=5000,rows=[];let afterDate=null,afterProject=null;
+    for(;;){
+      const {data,error}=await getClient().rpc('get_pr_report_page',{p_workspace:currentMembership.workspace_id,p_date_from:start||null,p_date_to:end||null,p_after_date:afterDate,p_after_project:afterProject,p_limit:pageSize});if(error)throw error;const page=Array.isArray(data?.records)?data.records:[];rows.push(...page);if(page.length<pageSize||!data?.nextDate||!data?.nextProject)break;afterDate=data.nextDate;afterProject=data.nextProject;
     }
-    const records=rows.map(r=>({fileName:r.source_file||'',project:r.central_projects?.standard_name||'',address:r.central_projects?.address||'',date:r.record_date,capacity:Number(r.capacity_kwp)||0,gi:Number(r.global_irradiance)||0,specific:Number(r.specific_energy)||0,theoretical:Number(r.theoretical_yield_kwh)||0,pv:Number(r.pv_yield_kwh)||0,loss:Number(r.loss_due_export_kwh)||0})).filter(r=>r.project),sourceFiles=[...new Set(rows.map(r=>r.source_file).filter(Boolean))].sort();
+    const records=rows.map(r=>({...r,capacity:Number(r.capacity)||0,gi:Number(r.gi)||0,specific:Number(r.specific)||0,theoretical:Number(r.theoretical)||0,pv:Number(r.pv)||0,loss:Number(r.loss)||0})).filter(r=>r.project),sourceFiles=[...new Set(rows.map(r=>r.fileName).filter(Boolean))].sort();
     return{pr_report:{records,sourceFiles},sourceFiles,projectStarts:await fetchPrProjectStarts(),selectedPeriod:periodKey||null};
   }
   async function fetchPrReportMonth(month){
