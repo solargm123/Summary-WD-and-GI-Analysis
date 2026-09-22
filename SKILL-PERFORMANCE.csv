@@ -4,3 +4,4 @@ date,task_type,primary_skill,files_read,files_changed,tool_calls,commits,rework_
 2026-09-22,gi-trend-controls-and-project-merge,ui-consistency+supabase-safety,7,5,20,1,0,yes,yes,"Merged duplicate SANKI project without overlapping dates; added province counts, daily/monthly/yearly chart views, and selected-project GI summary"
 2026-09-22,working-day-sticky-table-toolbar,ui-consistency+regression-guard,5,4,5,1,0,no,yes,"Locked the Solar Projects toolbar below the existing sticky app header; calculation and data logic unchanged"
 2026-09-22,working-day-sticky-spacing,ui-consistency+regression-guard,4,4,4,1,1,no,yes,"Adjusted the locked table toolbar offset to preserve the requested gap below the app header"
+2026-09-22,working-day-render-performance,bug-triage+regression-guard,5,4,7,1,0,no,yes,"Batched 129-row table rendering, cached per-render calculation controls, and throttled scrollbar/search/input work to animation frames without changing formulas"
