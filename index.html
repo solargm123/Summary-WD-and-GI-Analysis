@@ -23,10 +23,20 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{
   min-height:100vh; font-family:'Bai Jamjuree',sans-serif;
-  background:radial-gradient(circle at top,#1e3a5f 0%,var(--bg) 48%);
+  background:var(--bg);
   color:var(--text); display:flex; align-items:center; justify-content:center;
   padding:24px;
 }
+.main-ambient{position:fixed;inset:0;z-index:-2;overflow:hidden;pointer-events:none}
+.main-ambient-orb{position:absolute;border-radius:999px;filter:blur(70px);opacity:.30;animation:mainAmbientFloat 16s ease-in-out infinite alternate}
+.main-ambient-orb.one{width:420px;height:420px;left:-110px;top:-80px;background:rgba(77,117,216,.46)}
+.main-ambient-orb.two{width:500px;height:500px;right:-130px;top:8%;background:rgba(190,164,99,.34);animation-delay:-5s}
+.main-ambient-orb.three{width:400px;height:400px;left:28%;bottom:-220px;background:rgba(89,172,172,.26);animation-delay:-9s}
+@keyframes mainAmbientFloat{from{transform:translate3d(-10px,-4px,0) scale(1)}to{transform:translate3d(24px,20px,0) scale(1.08)}}
+.main-grain{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.035;background-image:radial-gradient(circle at 20% 20%,currentColor 0 .6px,transparent .8px),radial-gradient(circle at 80% 60%,currentColor 0 .5px,transparent .7px);background-size:9px 9px,11px 11px}
+html[data-fs-theme="light"] .main-ambient-orb{opacity:.18}
+html[data-fs-theme="light"] .main-grain{opacity:.025}
+@media(prefers-reduced-motion:reduce){.main-ambient-orb{animation:none}}
 .container{width:min(1050px,100%)}
 .header{text-align:center;margin-bottom:32px}
 .logo{
@@ -57,6 +67,8 @@ h1{font-size:clamp(1.7rem,4vw,2.5rem);font-weight:700}
 .working .icon{background:rgba(52,211,153,.14);color:var(--green)}
 .irr .icon{background:rgba(56,189,248,.14);color:var(--blue)}
 .pr .icon{background:rgba(251,191,36,.14);color:var(--yellow)}
+.om .icon{background:rgba(167,139,250,.14);color:#c4b5fd}
+.om .open{color:#c4b5fd}
 .card h2{font-size:1.2rem;margin-bottom:8px;position:relative}
 .card p{color:var(--muted);font-size:.86rem;line-height:1.65;position:relative}
 .open{margin-top:22px;font-size:.8rem;font-weight:600;position:relative}
@@ -104,6 +116,8 @@ html[data-fs-theme="light"] .central-source b{color:#24334a}
 <link rel="stylesheet" href="unified-ui.css?v=20260915-unified-ui1">
 </head>
 <body>
+<div class="main-ambient" aria-hidden="true"><div class="main-ambient-orb one"></div><div class="main-ambient-orb two"></div><div class="main-ambient-orb three"></div></div>
+<div class="main-grain" aria-hidden="true"></div>
 <section id="loginView" class="container hidden">
   <div class="header"><div class="logo"><i class="fa-solid fa-sun"></i></div><h1>FusionSolar Analysis Center</h1><div class="subtitle">BGPL Solar Engineering Cloud Workspace</div></div>
   <form class="auth-card" id="loginForm">
@@ -136,6 +150,7 @@ html[data-fs-theme="light"] .central-source b{color:#24334a}
     <button type="button" class="card working" onclick="openCentralTool('working_day')" style="text-align:left;font-family:inherit"><span class="card-tag">พร้อมใช้งาน</span><div class="icon"><i class="fa-solid fa-calendar-check"></i></div><h2>Working Day Analysis</h2><p>คำนวณ Working Days, Loss Days, Method และ Note จากข้อมูลกลาง</p><div class="open"><span>เปิดใช้งาน</span><i class="fa-solid fa-arrow-right"></i></div></button>
     <button type="button" class="card irr" onclick="openCentralTool('global_irradiance')" style="text-align:left;font-family:inherit"><span class="card-tag">พร้อมใช้งาน</span><div class="icon"><i class="fa-solid fa-sun"></i></div><h2>Global Irradiance Analysis</h2><p>ตรวจ Irradiation รายวันและเปรียบเทียบ Normal / Abnormal จากข้อมูลกลาง</p><div class="open"><span>เปิดใช้งาน</span><i class="fa-solid fa-arrow-right"></i></div></button>
     <button type="button" class="card pr" onclick="openCentralTool('pr_report')" style="text-align:left;font-family:inherit"><span class="card-tag paused">พักการพัฒนา</span><div class="icon"><i class="fa-solid fa-chart-line"></i></div><h2>PR Report</h2><p>โครง PR ยังเก็บไว้ แต่พักการพัฒนาตามที่กำหนด</p><div class="open"><span>เปิดข้อมูลปัจจุบัน</span><i class="fa-solid fa-arrow-right"></i></div></button>
+    <button type="button" class="card om standalone-tool" data-standalone-tool onclick="location.href='OM_Alarm_Log_V4_7_ClosureWorkflow_TrackingUX.html'" style="text-align:left;font-family:inherit"><span class="card-tag">พร้อมใช้งาน</span><div class="icon"><i class="fa-solid fa-screwdriver-wrench"></i></div><h2>O&amp;M Alarm Log</h2><p>ติดตาม Alarm, Device Fault, O&amp;M Incidents และ Case Tracking จากหน้า O&amp;M โดยตรง</p><div class="open"><span>เปิด O&amp;M</span><i class="fa-solid fa-arrow-right"></i></div></button>
   </div>
   <details class="center-description" open>
     <summary>
@@ -321,7 +336,7 @@ async function renderCenter(){
     const [status,storage]=await Promise.all([SolarCloud.centralDatasetStatus(),SolarCloud.databaseStorageStatus()]);activeMembership=status.membership;
     byId('workspaceName').textContent=status.membership.workspaces?.name||'Workspace';byId('currentRole').textContent=roleLabel(status.membership.role);byId('manageMembersButton').classList.toggle('hidden',status.membership.role!=='admin');byId('adminDataButton').classList.toggle('hidden',status.membership.role!=='admin');
     byId('centralFiles').textContent=status.files.length;byId('centralProjects').textContent=status.projectCount;byId('centralRecords').textContent=status.recordCount;byId('centralRange').textContent=status.dateStart?(status.dateStart===status.dateEnd?status.dateStart:`${status.dateStart} – ${status.dateEnd}`):'—';byId('centralUpdated').textContent=status.dataset?`อัปเดต ${new Date(status.dataset.updated_at).toLocaleString('th-TH')}`:'ยังไม่มีข้อมูล';byId('centralSourceList').textContent=status.files.length?`ข้อมูลพร้อมใช้งาน ${status.files.length.toLocaleString()} ไฟล์ · ดูรายชื่อและรายละเอียดได้ที่ “ประวัติอัปโหลด”`:'ยังไม่มีข้อมูล กรุณาอัปโหลดไฟล์เพื่อเริ่มใช้งาน';const formatMB=value=>(Number(value||0)/1048576).toLocaleString(undefined,{maximumFractionDigits:1})+' MB';byId('databaseRemaining').textContent=storage.available?formatMB(storage.remaining_bytes):'รอติดตั้ง SQL';byId('databaseRemaining').title=storage.available?`ใช้ฐานข้อมูลแล้ว ${formatMB(storage.database_bytes)} · Central Data ${formatMB(storage.central_data_bytes)} · ค่าอ้างอิง Free/Nano 500 MB`:storage.error||'';
-    const canEdit=['admin','editor'].includes(status.membership.role);byId('centralUploadLabel').style.display=canEdit?'inline-flex':'none';document.querySelectorAll('.central-tools .card').forEach(button=>{button.disabled=!status.dataset});
+    const canEdit=['admin','editor'].includes(status.membership.role);byId('centralUploadLabel').style.display=canEdit?'inline-flex':'none';document.querySelectorAll('.central-tools .card:not([data-standalone-tool])').forEach(button=>{button.disabled=!status.dataset});
     byId('centralMessage').className='central-message';byId('centralMessage').textContent=status.dataset?'ข้อมูลกลางพร้อมใช้งาน ทุกเครื่องมือจะเปิดข้อมูลชุดนี้อัตโนมัติ':'ยังไม่มีข้อมูลกลาง กรุณาอัปโหลดไฟล์ FusionSolar ก่อน';
   }catch(error){byId('centralMessage').className='central-message error';byId('centralMessage').textContent=error.message}
 }
