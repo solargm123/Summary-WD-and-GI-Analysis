@@ -25,3 +25,141 @@ html[data-fs-theme="light"] .workspace-modal{background:rgba(15,23,42,.42)!impor
 html[data-fs-theme="dark"] body{color-scheme:dark}
 html[data-fs-theme="dark"] .fs-ui-control{background:#0f172a!important;color:#f8fafc!important;border-color:#475569!important}
 @media(max-width:760px){.fs-ui-toolbar{width:100%;justify-content:flex-end}.fs-ui-control{padding:7px 9px!important}.head{flex-wrap:wrap}}
+
+/* Solar analysis shell: visual tokens based on the O&M Log desktop theme. */
+html[data-fs-theme="light"],html[data-theme="light"],html.light{
+  --solar-bg:#f3eee4;--solar-bg2:#fbf7ef;--solar-panel:rgba(255,252,246,.94);
+  --solar-solid:#fffaf2;--solar-text:#26303a;--solar-muted:#687078;
+  --solar-line:rgba(40,48,58,.15);--solar-accent:#265dff;--solar-accent2:#4f7cff;
+  --solar-teal:#087e78;--solar-shadow:0 20px 54px rgba(70,58,42,.09);
+  --solar-glow-a:rgba(74,111,255,.11);--solar-glow-b:rgba(205,171,111,.11);
+  --solar-glow-c:rgba(105,173,163,.08);color-scheme:light;
+}
+html[data-fs-theme="dark"],html[data-theme="dark"],html.dark{
+  --solar-bg:#071121;--solar-bg2:#0b1730;--solar-panel:rgba(11,24,49,.88);
+  --solar-solid:#10243e;--solar-text:#eef4ff;--solar-muted:#a7b8d0;
+  --solar-line:rgba(225,236,255,.19);--solar-accent:#7ba2ff;--solar-accent2:#9f84ff;
+  --solar-teal:#3fd7ca;--solar-shadow:0 26px 70px rgba(0,0,0,.27);
+  --solar-glow-a:rgba(59,130,246,.23);--solar-glow-b:rgba(130,103,255,.18);
+  --solar-glow-c:rgba(74,222,208,.12);color-scheme:dark;
+}
+body.solar-center,body.solar-wd,body.solar-gi,body.solar-pr{
+  color:var(--solar-text)!important;
+  background:radial-gradient(circle at 16% 12%,var(--solar-glow-a),transparent 29%),
+    radial-gradient(circle at 82% 19%,var(--solar-glow-b),transparent 27%),
+    radial-gradient(circle at 50% 96%,var(--solar-glow-c),transparent 29%),
+    linear-gradient(180deg,var(--solar-bg2),var(--solar-bg))!important;
+  background-attachment:fixed!important;
+}
+/* Keep each page's existing selectors and data behavior; align their palette. */
+body.solar-center{--bg:var(--solar-bg);--card:var(--solar-panel);--border:var(--solar-line);--text:var(--solar-text);--muted:var(--solar-muted);--blue:var(--solar-accent)}
+body.solar-wd{--app-bg:var(--solar-bg);--app-surface:var(--solar-panel);--app-surface-muted:var(--solar-solid);--app-border:var(--solar-line);--app-text:var(--solar-text)}
+body.solar-gi{--bg-main:var(--solar-bg);--card-bg:var(--solar-panel);--card-border:var(--solar-line);--text-main:var(--solar-text);--text-muted:var(--solar-muted);--input-bg:var(--solar-solid);--sticky-bg:var(--solar-solid);--accent-blue:var(--solar-accent)}
+body.solar-pr{--bg:var(--solar-bg);--card:var(--solar-panel);--soft:var(--solar-solid);--line:var(--solar-line);--text:var(--solar-text);--muted:var(--solar-muted);--blue:var(--solar-accent);--shadow:var(--solar-shadow)}
+
+/* Login and Main share the same readable panels and brighter actions. */
+body.solar-center .auth-card,body.solar-center .workspace-head,
+body.solar-center .central-hub,body.solar-center .central-tools .card{
+  background:var(--solar-panel)!important;color:var(--solar-text)!important;
+  border:1px solid var(--solar-line)!important;box-shadow:var(--solar-shadow)!important;
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+}
+body.solar-center .container{max-width:1050px}
+body.solar-center .auth-card{width:min(460px,100%);padding:32px;border-radius:24px}
+body.solar-center .auth-card h2{font-size:1.3rem;margin-bottom:8px}
+body.solar-center .auth-card p{line-height:1.55}
+body.solar-center .field input,body.solar-center .project-filters input,
+body.solar-center .project-filters select{
+  background:var(--solar-solid)!important;color:var(--solar-text)!important;
+  border:1px solid var(--solar-line)!important;border-radius:12px;
+}
+body.solar-center .field input:focus-visible{outline:3px solid color-mix(in srgb,var(--solar-accent) 30%,transparent);outline-offset:2px}
+body.solar-center .workspace-head{min-height:92px}
+body.solar-center .central-head p,body.solar-center .central-tools .card p{color:var(--solar-muted)!important}
+body.solar-center .central-tools .card{min-height:220px;border-radius:20px}
+body.solar-center .central-tools .card:hover{border-color:var(--solar-accent)!important;box-shadow:0 22px 52px color-mix(in srgb,var(--solar-accent) 18%,transparent)!important}
+body.solar-center .central-tools .card .open{font-weight:800}
+body.solar-center .central-tools .working .open{color:#087a56}
+body.solar-center .central-tools .irr .open{color:var(--solar-accent)}
+body.solar-center .central-tools .pr .open{color:#b36d0b}
+body.solar-center .central-tools .om .open{color:#7962d7}
+html[data-fs-theme="dark"] body.solar-center .central-tools .working .open{color:#6ee7b7}
+html[data-fs-theme="dark"] body.solar-center .central-tools .pr .open{color:#fde68a}
+html[data-fs-theme="dark"] body.solar-center .central-tools .om .open{color:#c4b5fd}
+
+/* Bright primary actions; outlined secondary actions remain visible on either surface. */
+body.solar-center .primary,body.solar-pr .btn.primary,body.solar-pr .upload,
+body.solar-gi .btn:not(.btn-secondary):not(.btn-danger):not(.btn-edit):not(.btn-action):not(.btn-revert):not(.btn-theme):not(.btn-xs){
+  background:linear-gradient(135deg,#2458f5,#537dff 62%,#5078ea)!important;
+  border:1px solid rgba(255,255,255,.22)!important;color:#fff!important;
+  box-shadow:0 9px 24px rgba(38,93,255,.27)!important;
+}
+body.solar-center .small-btn,body.solar-center .link-button,
+body.solar-pr .btn:not(.primary),body.solar-gi .btn-secondary,
+body.solar-gi .tab-btn,body.solar-gi .btn-filter-status,
+body.solar-wd .wd-header-action,body.solar-center .fs-ui-control,
+body.solar-gi .fs-ui-control,body.solar-pr .fs-ui-control,body.solar-wd .fs-ui-control{
+  background:color-mix(in srgb,var(--solar-accent) 10%,var(--solar-panel))!important;
+  border:1px solid color-mix(in srgb,var(--solar-accent) 35%,var(--solar-line))!important;
+  color:var(--solar-text)!important;border-radius:13px!important;
+  box-shadow:0 5px 16px color-mix(in srgb,var(--solar-accent) 9%,transparent)!important;
+}
+body.solar-center button,body.solar-center label.primary,body.solar-wd button,
+body.solar-gi button,body.solar-pr button,body.solar-pr .upload{
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease,background .18s ease;
+}
+body.solar-center button:not(:disabled):hover,body.solar-center label.primary:hover,
+body.solar-wd button:not(:disabled):hover,body.solar-gi button:not(:disabled):hover,
+body.solar-pr button:not(:disabled):hover,body.solar-pr .upload:hover{
+  transform:translateY(-2px);box-shadow:0 12px 28px color-mix(in srgb,var(--solar-accent) 22%,transparent)!important;
+}
+body.solar-center button:focus-visible,body.solar-center label.primary:focus-within,
+body.solar-wd button:focus-visible,body.solar-gi button:focus-visible,body.solar-pr button:focus-visible{
+  outline:3px solid color-mix(in srgb,var(--solar-accent) 45%,transparent);outline-offset:2px;
+}
+body.solar-center button:disabled,body.solar-wd button:disabled,
+body.solar-gi button:disabled,body.solar-pr button:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+body.solar-center #loginButton{min-height:46px;font-size:.9rem;border-radius:13px}
+body.solar-center .link-button{display:inline-flex;align-items:center;justify-content:center;margin-top:10px;min-height:36px;padding:7px 12px}
+body.solar-center .central-upload{min-height:42px;border-radius:13px}
+body.solar-center .central-tools .card .card-tag{color:var(--solar-text);background:var(--solar-solid);border-color:var(--solar-line)}
+body.solar-center .central-tools .card .card-tag.paused{color:#9a5a08;background:rgba(245,158,11,.13);border-color:rgba(217,119,6,.38)}
+html[data-fs-theme="dark"] body.solar-center .central-tools .card .card-tag.paused{color:#fde68a}
+
+body.solar-gi .card,body.solar-gi .upload-card,body.solar-gi .modal-content,
+body.solar-pr .topbar,body.solar-pr .panel,body.solar-pr .metric,body.solar-pr .toolbar,
+body.solar-wd .bg-white.dark\:bg-slate-900{
+  background:var(--solar-panel)!important;border-color:var(--solar-line)!important;
+  color:var(--solar-text);box-shadow:var(--solar-shadow)!important;
+}
+body.solar-gi .table-scroll-container,body.solar-pr .table-wrap,
+body.solar-wd #tableScrollContainer{min-width:0;scrollbar-color:var(--solar-accent) var(--solar-solid)}
+body.solar-gi th,body.solar-pr th{background:var(--solar-solid)!important;color:var(--solar-muted)!important}
+body.solar-gi .tab-btn.active,body.solar-gi .btn-filter-status.active{
+  background:color-mix(in srgb,var(--solar-accent) 22%,var(--solar-panel))!important;
+  color:var(--solar-text)!important;border-color:var(--solar-accent)!important;
+}
+body.solar-pr .tab.active{color:var(--solar-accent);border-color:var(--solar-accent)}
+body.solar-pr .filter-block,body.solar-pr .modal-card{background:var(--solar-panel);border-color:var(--solar-line)}
+body.solar-pr .field input,body.solar-pr .field select,body.solar-pr .note-input,
+body.solar-gi .threshold-box,body.solar-gi .search-input,body.solar-gi .cell-input{
+  background:var(--solar-solid)!important;color:var(--solar-text)!important;border-color:var(--solar-line)!important;
+}
+
+/* Desktop: use the available width while leaving wide day-by-day tables scrollable. */
+@media(min-width:1200px){
+  body.solar-center .workspace{width:min(1680px,100%)}
+  body.solar-wd header>div,body.solar-wd main{max-width:none;width:100%;padding-left:clamp(18px,2vw,36px);padding-right:clamp(18px,2vw,36px)}
+  body.solar-gi .container,body.solar-pr .app{max-width:none;width:100%}
+  body.solar-pr .toolbar{grid-template-columns:repeat(6,minmax(0,1fr))}
+  body.solar-pr .metrics{grid-template-columns:repeat(6,minmax(0,1fr))}
+}
+@media(max-width:760px){
+  body.solar-center .auth-card{padding:24px}
+  body.solar-center .workspace-head{min-height:0}
+  body.solar-gi .container,body.solar-pr .app{width:100%}
+}
+@media(prefers-reduced-motion:reduce){
+  body.solar-center button,body.solar-center label.primary,body.solar-wd button,
+  body.solar-gi button,body.solar-pr button{transition:none!important}
+}
