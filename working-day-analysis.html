@@ -998,6 +998,86 @@ body.wd-theme-switching *::after{
 }
 </style>
 
+
+<style id="wdV174SmoothControls">
+/* V17.4 — smoother Sun Hours interaction, opaque sticky columns, compact full Loss Dates. */
+@media (min-width:1024px){
+  /* The first four frozen columns stay fully opaque while the data grid moves underneath. */
+  #tableScrollContainer thead .sticky-col-1,
+  #tableScrollContainer thead .sticky-col-2{background:#eef2f7!important;backdrop-filter:none!important}
+  #tableScrollContainer tbody .sticky-col-1,
+  #tableScrollContainer tbody .sticky-col-2{background:#ffffff!important;backdrop-filter:none!important}
+  #tableScrollContainer thead .sticky-col-3{background:#dbeafe!important;backdrop-filter:none!important}
+  #tableScrollContainer tbody .sticky-col-3{background:#eff6ff!important;backdrop-filter:none!important}
+  #tableScrollContainer thead .sticky-col-4{background:#d1fae5!important;backdrop-filter:none!important}
+  #tableScrollContainer tbody .sticky-col-4{background:#ecfdf5!important;backdrop-filter:none!important}
+  .dark #tableScrollContainer thead .sticky-col-1,
+  .dark #tableScrollContainer thead .sticky-col-2{background:#0f172a!important}
+  .dark #tableScrollContainer tbody .sticky-col-1,
+  .dark #tableScrollContainer tbody .sticky-col-2{background:#1e293b!important}
+  .dark #tableScrollContainer thead .sticky-col-3{background:#172554!important}
+  .dark #tableScrollContainer tbody .sticky-col-3{background:#1e3150!important}
+  .dark #tableScrollContainer thead .sticky-col-4{background:#064e3b!important}
+  .dark #tableScrollContainer tbody .sticky-col-4{background:#193b36!important}
+
+  /* Keep all Loss Due dates visible inside the existing 150 px column / 36 px row. */
+  #tableBody td:nth-child(8)>div{gap:3px!important;min-height:27px!important;height:27px!important}
+  #tableBody td:nth-child(8)>div>span.flex-1{height:24px!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important}
+  .wd-loss-days-preview.wd-loss-days-all{
+    width:100%;height:24px;display:grid!important;
+    grid-template-columns:repeat(12,8px);grid-auto-rows:7px;
+    gap:1px;align-content:center;justify-content:center;
+    white-space:normal!important;overflow:visible!important;
+  }
+  .wd-loss-day-micro{
+    width:8px;height:7px;display:grid;place-items:center;
+    border-radius:2px;background:#fef3c7;color:#92400e;
+    border:1px solid #fcd34d;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+    font-size:5.8px;font-weight:800;line-height:1;letter-spacing:-.25px;
+  }
+  .dark .wd-loss-day-micro{background:#78350f;color:#fef3c7;border-color:#b45309}
+  .wd-loss-none{font-size:8px!important;white-space:nowrap!important}
+
+  /* Smooth Sun Hours selection: no layout jump, only visual state change. */
+  #solarParamsCard .space-y-1\.5>label{
+    transform:none!important;
+    transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease,color .18s ease!important;
+    will-change:auto;
+  }
+  #solarParamsCard .space-y-1\.5>label:hover{transform:none!important}
+  #solarParamsCard .space-y-1\.5>label:has(input[name="sunHoursMode"]:checked){
+    border-color:#38bdf8!important;
+    background:linear-gradient(90deg,rgba(14,165,233,.10),rgba(14,165,233,.025)),var(--app-surface)!important;
+    box-shadow:inset 3px 0 0 #0ea5e9,0 2px 8px rgba(14,165,233,.08)!important;
+  }
+  .dark #solarParamsCard .space-y-1\.5>label:has(input[name="sunHoursMode"]:checked){
+    border-color:#0ea5e9!important;
+    background:linear-gradient(90deg,rgba(14,165,233,.16),rgba(14,165,233,.035)),#1e293b!important;
+  }
+  #solarParamsCard input[name="sunHoursMode"]{transition:transform .14s ease,box-shadow .14s ease!important}
+  #solarParamsCard input[name="sunHoursMode"]:checked{transform:scale(1.08)}
+
+  /* Dark control surfaces with white selected text in both themes. */
+  #sunHoursTarget,.wd-method-select{
+    background:#0f172a!important;color:#ffffff!important;border-color:#334155!important;
+    color-scheme:dark!important;font-weight:700!important;
+    transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease!important;
+  }
+  #sunHoursTarget:hover,.wd-method-select:hover{background:#1e293b!important;border-color:#64748b!important}
+  #sunHoursTarget:focus,.wd-method-select:focus{outline:none!important;border-color:#38bdf8!important;box-shadow:0 0 0 2px rgba(56,189,248,.18)!important}
+  #sunHoursTarget option,.wd-method-select option{background:#0f172a!important;color:#ffffff!important}
+
+  /* MKT status keeps semantic color but always uses high-contrast white text. */
+  #tableBody .mkt-select{color:#ffffff!important;color-scheme:dark!important;font-weight:800!important;text-shadow:0 1px 1px rgba(0,0,0,.16)}
+  #tableBody .mkt-select.mkt-estimated{background:#047857!important;border-color:#059669!important;color:#ffffff!important}
+  #tableBody .mkt-select.mkt-misestimated{background:#b45309!important;border-color:#d97706!important;color:#ffffff!important}
+  #tableBody .mkt-select.mkt-haveno{background:#be123c!important;border-color:#e11d48!important;color:#ffffff!important}
+  #tableBody .mkt-select.mkt-question{background:#7c3aed!important;border-color:#8b5cf6!important;color:#ffffff!important}
+  #tableBody .mkt-select:not(.mkt-estimated):not(.mkt-misestimated):not(.mkt-haveno):not(.mkt-question){background:#334155!important;border-color:#475569!important;color:#ffffff!important}
+  #tableBody .mkt-select option{background:#0f172a!important;color:#ffffff!important;text-shadow:none}
+}
+</style>
+
 </head>
 <body class="solar-wd bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen pb-2 transition-colors duration-200">
 
@@ -2458,12 +2538,10 @@ body.wd-theme-switching *::after{
                     count++;
                 }
 
-                let lossDatesDisplay = `<span class="text-slate-400 italic">${t('noLoss')}</span>`;
+                let lossDatesDisplay = `<span class="text-slate-400 italic wd-loss-none">${t('noLoss')}</span>`;
                 if (lossDaysCount > 0) {
-                    const previewDates = item.lossDaysArray.slice(0, 4);
-                    const hiddenDateCount = Math.max(0, item.lossDaysArray.length - previewDates.length);
                     const allLossDates = item.lossDaysArray.join(', ');
-                    lossDatesDisplay = `<span class="wd-loss-days-preview" title="${escapeHtml(allLossDates)}">${previewDates.map(day=>`<span class="wd-loss-day-chip">${day}</span>`).join('')}${hiddenDateCount ? `<span class="wd-loss-day-more">+${hiddenDateCount}</span>` : ''}</span>`;
+                    lossDatesDisplay = `<span class="wd-loss-days-preview wd-loss-days-all" title="${escapeHtml(allLossDates)}">${item.lossDaysArray.map(day=>`<span class="wd-loss-day-micro">${day}</span>`).join('')}</span>`;
                 }
 
                 rowsHtml += `
@@ -2501,7 +2579,7 @@ body.wd-theme-switching *::after{
                     
                     <td class="p-3 text-center">
                         <div class="flex items-center justify-center gap-2">
-                            <div class="flex flex-col items-start gap-0.5"><select onchange="updateCalculationMethod(${item.id}, this.value)" class="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded px-2 py-1.5 text-xs">
+                            <div class="flex flex-col items-start gap-0.5"><select onchange="updateCalculationMethod(${item.id}, this.value)" class="wd-method-select border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded px-2 py-1.5 text-xs">
                                 <option value="m1" ${item.calculationMethod === 'm1' ? 'selected' : ''}>${currentLanguage === 'th' ? 'วิธีที่ 1' : 'Method 1'}</option>
                                 <option value="m2" ${item.calculationMethod === 'm2' ? 'selected' : ''}>${currentLanguage === 'th' ? 'วิธีที่ 2' : 'Method 2'}</option>
                                 <option value="other" ${item.calculationMethod === 'other' ? 'selected' : ''}>${currentLanguage === 'th' ? 'อื่นๆ' : 'Other'}</option>
