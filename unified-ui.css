@@ -163,3 +163,51 @@ body.solar-gi .threshold-box,body.solar-gi .search-input,body.solar-gi .cell-inp
   body.solar-center button,body.solar-center label.primary,body.solar-wd button,
   body.solar-gi button,body.solar-pr button{transition:none!important}
 }
+
+/* Scroll behavior and horizontal scrollbar colors for the three analysis pages. */
+@media(min-width:901px){
+  body.solar-wd #tableScrollContainer{
+    height:auto;min-height:min(520px,72vh);max-height:72vh;
+    overscroll-behavior-y:contain;
+  }
+}
+body.solar-wd #topTableScroll,body.solar-wd #tableScrollContainer,
+body.solar-gi #topScrollWrapper,body.solar-gi #mainTableContainer,
+body.solar-pr .table-wrap{
+  scrollbar-color:#94a3b8 #e5e7eb;
+}
+html.dark body.solar-wd #topTableScroll,html.dark body.solar-wd #tableScrollContainer,
+html[data-theme="dark"] body.solar-gi #topScrollWrapper,
+html[data-theme="dark"] body.solar-gi #mainTableContainer,
+html[data-fs-theme="dark"] body.solar-pr .table-wrap{
+  scrollbar-color:#8795a8 #253449;
+}
+body.solar-wd #topTableScroll::-webkit-scrollbar:horizontal,
+body.solar-wd #tableScrollContainer::-webkit-scrollbar:horizontal,
+body.solar-gi #topScrollWrapper::-webkit-scrollbar:horizontal,
+body.solar-gi #mainTableContainer::-webkit-scrollbar:horizontal,
+body.solar-pr .table-wrap::-webkit-scrollbar:horizontal{height:12px}
+body.solar-wd #topTableScroll::-webkit-scrollbar-track:horizontal,
+body.solar-wd #tableScrollContainer::-webkit-scrollbar-track:horizontal,
+body.solar-gi #topScrollWrapper::-webkit-scrollbar-track:horizontal,
+body.solar-gi #mainTableContainer::-webkit-scrollbar-track:horizontal,
+body.solar-pr .table-wrap::-webkit-scrollbar-track:horizontal{background:#e5e7eb}
+body.solar-wd #topTableScroll::-webkit-scrollbar-thumb:horizontal,
+body.solar-wd #tableScrollContainer::-webkit-scrollbar-thumb:horizontal,
+body.solar-gi #topScrollWrapper::-webkit-scrollbar-thumb:horizontal,
+body.solar-gi #mainTableContainer::-webkit-scrollbar-thumb:horizontal,
+body.solar-pr .table-wrap::-webkit-scrollbar-thumb:horizontal{
+  background:#94a3b8;border:2px solid #e5e7eb;border-radius:999px;
+}
+html.dark body.solar-wd #topTableScroll::-webkit-scrollbar-track:horizontal,
+html.dark body.solar-wd #tableScrollContainer::-webkit-scrollbar-track:horizontal,
+html[data-theme="dark"] body.solar-gi #topScrollWrapper::-webkit-scrollbar-track:horizontal,
+html[data-theme="dark"] body.solar-gi #mainTableContainer::-webkit-scrollbar-track:horizontal,
+html[data-fs-theme="dark"] body.solar-pr .table-wrap::-webkit-scrollbar-track:horizontal{background:#253449}
+html.dark body.solar-wd #topTableScroll::-webkit-scrollbar-thumb:horizontal,
+html.dark body.solar-wd #tableScrollContainer::-webkit-scrollbar-thumb:horizontal,
+html[data-theme="dark"] body.solar-gi #topScrollWrapper::-webkit-scrollbar-thumb:horizontal,
+html[data-theme="dark"] body.solar-gi #mainTableContainer::-webkit-scrollbar-thumb:horizontal,
+html[data-fs-theme="dark"] body.solar-pr .table-wrap::-webkit-scrollbar-thumb:horizontal{
+  background:#8795a8;border-color:#253449;
+}
