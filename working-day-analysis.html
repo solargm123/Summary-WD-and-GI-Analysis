@@ -841,6 +841,163 @@ html{scroll-behavior:auto!important}
 }
 </style>
 
+
+<style id="wdV173PcCompactPatch">
+/* ==========================================================
+   V17.3 — PC 100% zoom / compact analytics table
+   Goal: show substantially more columns + rows without changing
+   calculations, filters, edits, loss modal, MKT or export behavior.
+   ========================================================== */
+html.light{color-scheme:light}
+html.dark{color-scheme:dark}
+
+/* Theme switch is intentionally instantaneous to avoid mixed light/dark frames. */
+body.wd-theme-switching,
+body.wd-theme-switching *,
+body.wd-theme-switching *::before,
+body.wd-theme-switching *::after{
+  transition:none!important;
+  animation:none!important;
+}
+
+@media(min-width:1024px){
+  /* Slightly reclaim horizontal room for the data grid on ordinary PC screens. */
+  :root{--wd-dock-w:310px!important;--wd-gap:8px!important}
+
+  /* Compact workspace chrome so the table receives more vertical room. */
+  #wdWorkspaceIntro{min-height:44px!important;padding:6px 9px 6px 11px!important;border-radius:13px!important}
+  #wdWorkspaceIntro .wd-work-mark{width:28px!important;height:28px!important;flex-basis:28px!important;border-radius:8px!important}
+  #wdWorkspaceIntro h2{font-size:11.5px!important}
+  #wdWorkspaceIntro p{font-size:8.8px!important}
+  #wdWorkspaceStatus,.wd-work-btn{height:29px!important;font-size:9.5px!important}
+
+  #wdTableToolbar{
+    min-height:44px!important;
+    padding:6px 8px!important;
+    gap:6px!important;
+  }
+  #wdTableToolbar>div:first-child{min-width:160px!important;max-width:245px!important}
+  #wdTableToolbar h2{font-size:9.6px!important;line-height:1.2!important}
+  #wdTableToolbar>div:last-child{gap:4px!important}
+  #wdTableToolbar button{min-height:29px!important;height:29px!important;padding:4px 7px!important;font-size:9.5px!important}
+  #mktFilterButton{min-width:156px!important;min-height:29px!important;height:29px!important}
+  #method1ProjectCount,#method2ProjectCount,#otherProjectCount{font-size:8px!important;min-width:19px!important;padding-left:5px!important;padding-right:5px!important}
+
+  /* Keep the upper scrollbar useful but not disproportionately tall. */
+  #topTableScroll{
+    flex-basis:18px!important;
+    height:18px!important;
+    min-height:18px!important;
+    max-height:18px!important;
+    padding:1px 0!important;
+  }
+  #topTableScroll::-webkit-scrollbar{height:12px!important}
+
+  /* Main table: sized for 100% browser zoom. */
+  #tableScrollContainer{scrollbar-gutter:stable both-edges!important}
+  #tableScrollContainer table{
+    width:100%!important;
+    min-width:1576px!important;
+    table-layout:fixed!important;
+  }
+  #tableScrollContainer table th{
+    height:36px!important;
+    padding:5px 6px!important;
+    font-size:9.4px!important;
+    line-height:1.15!important;
+    vertical-align:middle!important;
+    white-space:normal!important;
+    overflow-wrap:anywhere!important;
+  }
+  #tableScrollContainer table td{
+    height:36px!important;
+    padding:4px 6px!important;
+    font-size:10.6px!important;
+    line-height:1.18!important;
+    vertical-align:middle!important;
+  }
+  #tableScrollContainer tbody tr{height:36px!important}
+
+  /* Fixed column budget (~1,576 px total) keeps most/all fields visible on a 1920px PC. */
+  #tableScrollContainer table th:nth-child(1),#tableScrollContainer table td:nth-child(1){width:44px!important;min-width:44px!important;max-width:44px!important}
+  #tableScrollContainer table th:nth-child(2),#tableScrollContainer table td:nth-child(2){width:220px!important;min-width:220px!important;max-width:220px!important}
+  #tableScrollContainer table th:nth-child(3),#tableScrollContainer table td:nth-child(3){width:92px!important;min-width:92px!important;max-width:92px!important}
+  #tableScrollContainer table th:nth-child(4),#tableScrollContainer table td:nth-child(4){width:92px!important;min-width:92px!important;max-width:92px!important}
+  #tableScrollContainer table th:nth-child(5),#tableScrollContainer table td:nth-child(5){width:96px!important;min-width:96px!important;max-width:96px!important}
+  #tableScrollContainer table th:nth-child(6),#tableScrollContainer table td:nth-child(6){width:82px!important;min-width:82px!important;max-width:82px!important}
+  #tableScrollContainer table th:nth-child(7),#tableScrollContainer table td:nth-child(7){width:64px!important;min-width:64px!important;max-width:64px!important}
+  #tableScrollContainer table th:nth-child(8),#tableScrollContainer table td:nth-child(8){width:150px!important;min-width:150px!important;max-width:150px!important}
+  #tableScrollContainer table th:nth-child(9),#tableScrollContainer table td:nth-child(9){width:104px!important;min-width:104px!important;max-width:104px!important}
+  #tableScrollContainer table th:nth-child(10),#tableScrollContainer table td:nth-child(10){width:104px!important;min-width:104px!important;max-width:104px!important}
+  #tableScrollContainer table th:nth-child(11),#tableScrollContainer table td:nth-child(11){width:104px!important;min-width:104px!important;max-width:104px!important}
+  #tableScrollContainer table th:nth-child(12),#tableScrollContainer table td:nth-child(12){width:152px!important;min-width:152px!important;max-width:152px!important}
+  #tableScrollContainer table th:nth-child(13),#tableScrollContainer table td:nth-child(13){width:92px!important;min-width:92px!important;max-width:92px!important}
+  #tableScrollContainer table th:nth-child(14),#tableScrollContainer table td:nth-child(14){width:180px!important;min-width:180px!important;max-width:180px!important}
+
+  /* Sticky widths must exactly match the compact column budget. */
+  .sticky-col-1{left:0!important;width:44px!important;min-width:44px!important;max-width:44px!important}
+  .sticky-col-2{left:44px!important;width:220px!important;min-width:220px!important;max-width:220px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+  .sticky-col-3{left:264px!important;width:92px!important;min-width:92px!important;max-width:92px!important}
+  .sticky-col-4{left:356px!important;width:92px!important;min-width:92px!important;max-width:92px!important}
+
+  /* Inputs remain comfortably clickable while no longer dictating row height. */
+  #tableBody input[type="checkbox"]{width:14px!important;height:14px!important}
+  #tableBody input[type="number"]{
+    min-height:26px!important;height:26px!important;
+    padding:2px 5px!important;font-size:10px!important;border-radius:6px!important;
+  }
+  #tableBody td:nth-child(5) input{width:72px!important}
+  #tableBody td:nth-child(6) input{width:52px!important}
+  #tableBody select{
+    min-height:27px!important;height:27px!important;
+    padding-top:2px!important;padding-bottom:2px!important;
+    font-size:9.5px!important;border-radius:7px!important;
+  }
+  #tableBody .mkt-select{min-width:0!important;width:100%!important;padding-left:6px!important;padding-right:20px!important;font-size:9px!important}
+  #tableBody td:nth-child(14) select{max-width:118px!important;padding-left:6px!important;padding-right:18px!important}
+  #tableBody td:nth-child(14) small{font-size:7.5px!important;line-height:1!important;white-space:nowrap!important}
+  #tableBody td:nth-child(14)>div{gap:4px!important}
+  #tableBody button[title="Note"]{width:26px!important;height:26px!important;min-width:26px!important}
+
+  /* Loss dates: one-line preview (first 4 + count) and full list remains on hover / pencil modal. */
+  #tableBody td:nth-child(8)>div{min-height:27px!important;gap:4px!important}
+  #tableBody td:nth-child(8)>div>span.flex-1{min-width:0!important}
+  .wd-loss-days-preview{display:flex;align-items:center;justify-content:center;gap:3px;white-space:nowrap;overflow:hidden}
+  .wd-loss-day-chip,.wd-loss-day-more{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:21px;height:21px;padding:0 4px;border-radius:5px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+    font-size:8.5px;font-weight:700;line-height:1;
+  }
+  .wd-loss-day-chip{background:#fef3c7;color:#92400e;border:1px solid #fcd34d}
+  .wd-loss-day-more{background:#f1f5f9;color:#475569;border:1px solid #cbd5e1}
+  .dark .wd-loss-day-chip{background:#451a03;color:#fde68a;border-color:#92400e}
+  .dark .wd-loss-day-more{background:#1e293b;color:#cbd5e1;border-color:#475569}
+  #tableBody td:nth-child(8) button{width:26px!important;height:26px!important;border-radius:7px!important}
+
+  /* Numeric columns stay on one line and align cleanly. */
+  #tableBody td:nth-child(3),#tableBody td:nth-child(4),#tableBody td:nth-child(5),
+  #tableBody td:nth-child(6),#tableBody td:nth-child(7),#tableBody td:nth-child(9),
+  #tableBody td:nth-child(10),#tableBody td:nth-child(11),#tableBody td:nth-child(13){white-space:nowrap!important}
+
+  /* Native controls and scrollbar repaint consistently after theme changes. */
+  .dark #tableScrollContainer input,.dark #tableScrollContainer select{color-scheme:dark}
+  .light #tableScrollContainer input,.light #tableScrollContainer select{color-scheme:light}
+}
+
+@media(min-width:1024px) and (max-width:1365px){
+  :root{--wd-dock-w:280px!important;--wd-gap:7px!important}
+  #wdTableToolbar>div:first-child{display:none!important}
+  #wdWorkspaceIntro p{display:none!important}
+  #wdTableToolbar>div:last-child{justify-content:flex-start!important;flex-wrap:wrap!important}
+}
+
+/* Focus mode gets a nearly no-scroll table on common 1920px desktops. */
+@media(min-width:1600px){
+  body.wd-dock-collapsed #tableScrollContainer table{min-width:100%!important}
+}
+</style>
+
 </head>
 <body class="solar-wd bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen pb-2 transition-colors duration-200">
 
@@ -1589,22 +1746,36 @@ html{scroll-behavior:auto!important}
 
         function toggleTheme() {
             const html = document.documentElement;
+            const body = document.body;
             const icon = document.getElementById('themeIcon');
             const text = document.getElementById('themeText');
-            
-            if (html.classList.contains('dark')) {
-                html.classList.remove('dark');
-                html.classList.add('light');
-                icon.className = 'fa-solid fa-moon text-slate-600';
-                text.innerText = 'Dark';
-                localStorage.setItem('fusionTheme', 'light');
-            } else {
-                html.classList.remove('light');
-                html.classList.add('dark');
-                icon.className = 'fa-solid fa-sun text-amber-400';
-                text.innerText = 'Light';
-                localStorage.setItem('fusionTheme', 'dark');
-            }
+            const tableScroller = document.getElementById('tableScrollContainer');
+            const topScroller = document.getElementById('topTableScroll');
+            const tableLeft = tableScroller ? tableScroller.scrollLeft : 0;
+            const tableTop = tableScroller ? tableScroller.scrollTop : 0;
+            const topLeft = topScroller ? topScroller.scrollLeft : tableLeft;
+            const toDark = !html.classList.contains('dark');
+
+            // Disable broad color/layout transitions during the class swap. This prevents
+            // sticky cells, native selects and scrollbars from repainting at different times.
+            body?.classList.add('wd-theme-switching');
+            html.classList.toggle('dark', toDark);
+            html.classList.toggle('light', !toDark);
+            html.style.colorScheme = toDark ? 'dark' : 'light';
+
+            if (icon) icon.className = toDark ? 'fa-solid fa-sun text-amber-400' : 'fa-solid fa-moon text-slate-600';
+            if (text) text.innerText = toDark ? 'Light' : 'Dark';
+            localStorage.setItem('fusionTheme', toDark ? 'dark' : 'light');
+
+            requestAnimationFrame(() => {
+                if (tableScroller) {
+                    tableScroller.scrollLeft = tableLeft;
+                    tableScroller.scrollTop = tableTop;
+                }
+                if (topScroller) topScroller.scrollLeft = topLeft;
+                if (typeof syncTableScrollbars === 'function') syncTableScrollbars();
+                requestAnimationFrame(() => body?.classList.remove('wd-theme-switching'));
+            });
         }
 
         function clearAllData() {
@@ -2289,7 +2460,10 @@ html{scroll-behavior:auto!important}
 
                 let lossDatesDisplay = `<span class="text-slate-400 italic">${t('noLoss')}</span>`;
                 if (lossDaysCount > 0) {
-                    lossDatesDisplay = `<span class="flex flex-wrap justify-center gap-1">${item.lossDaysArray.map(day=>`<span class="inline-flex min-w-7 h-7 items-center justify-center bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 rounded-md font-mono text-[10px] font-bold">${day}</span>`).join('')}</span>`;
+                    const previewDates = item.lossDaysArray.slice(0, 4);
+                    const hiddenDateCount = Math.max(0, item.lossDaysArray.length - previewDates.length);
+                    const allLossDates = item.lossDaysArray.join(', ');
+                    lossDatesDisplay = `<span class="wd-loss-days-preview" title="${escapeHtml(allLossDates)}">${previewDates.map(day=>`<span class="wd-loss-day-chip">${day}</span>`).join('')}${hiddenDateCount ? `<span class="wd-loss-day-more">+${hiddenDateCount}</span>` : ''}</span>`;
                 }
 
                 rowsHtml += `
@@ -2297,7 +2471,7 @@ html{scroll-behavior:auto!important}
                     <td class="p-3 text-center sticky-col-1">
                         <input type="checkbox" ${item.visible ? 'checked' : ''} onchange="togglePlant(${item.id}, this.checked)" class="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-0 w-4 h-4 cursor-pointer">
                     </td>
-                    <td class="p-3 font-semibold text-slate-800 dark:text-slate-200 sticky-col-2">${escapeHtml(item.name)}</td>
+                    <td class="p-3 font-semibold text-slate-800 dark:text-slate-200 sticky-col-2" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</td>
 
                     <td class="p-3 text-right font-mono text-blue-700 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/70 font-bold sticky-col-3"><button onclick="openFormulaModal(${item.id}, 1)" class="underline decoration-dotted underline-offset-4" title="${t('formula')}">${metrics.valid ? method1Days.toFixed(2) : 'Invalid'}</button></td>
                     <td class="p-3 text-right font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/70 font-bold sticky-col-4 sticky-divider"><button onclick="openFormulaModal(${item.id}, 2)" class="underline decoration-dotted underline-offset-4" title="${t('formula')}">${metrics.valid ? method2Days.toFixed(2) : 'Invalid'}</button></td>
