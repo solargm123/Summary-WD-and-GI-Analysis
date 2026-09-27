@@ -258,6 +258,7 @@
       setConflictState(true);setStatus('แก้ไขช่องเดียวกัน — กรุณาเลือกข้อมูล','conflict');showFieldConflict();return false;
     }
     setProjectFromRpc(data);pendingFieldConflict=null;dirty=false;setConflictState(false);setStatus('บันทึกแล้ว','ok');
+    adapter?.onSaved?.(cloneJson(lastSharedState),payload.userState||{});
     if(channel)channel.send({type:'broadcast',event:'project_saved',payload:{userId:presenceSession?.userId||'',name:presenceSession?.name||'ผู้ใช้อื่น',version:currentProject.version,paths:patches.map(p=>p.path),at:new Date().toISOString()}}).catch(()=>{});
     return true;
   }
@@ -303,6 +304,7 @@
   }
   function renderPresence(){
     presenceUsers=flattenPresence();
+    adapter?.onPresence?.(Object.values(channel?.presenceState()||{}).flat(),true);
     const count=Math.max(1,presenceUsers.length),button=$('solarPresenceButton'),node=$('solarPresenceCount');
     if(node)node.textContent=String(count);
     if(button){button.dataset.count=String(count);button.title=count>1?'มี '+count+' คนกำลังเปิดงานนี้':'คุณกำลังเปิดงานนี้'}
@@ -315,8 +317,11 @@
   async function updatePresence(force=false){
     if(!channel||!presenceSession)return;
     const area=activePresenceArea();
-    if(!force&&area===lastPresenceArea)return;
-    lastPresenceArea=area;presenceSession.area=area;presenceSession.lastSeen=new Date().toISOString();
+    const context=adapter?.presenceContext?.()||null;
+    const signature=context?JSON.stringify([area,context]):area;
+    if(!force&&signature===lastPresenceArea)return;
+    lastPresenceArea=signature;presenceSession.area=area;presenceSession.lastSeen=new Date().toISOString();
+    if(adapter?.presenceContext)presenceSession.workingDay=context;
     try{await channel.track(presenceSession)}catch{}
   }
   async function refreshRemoteState(message='อัปเดตข้อมูลล่าสุดแล้ว'){
@@ -351,7 +356,7 @@
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'analysis_projects',filter:`id=eq.${currentProject.id}`},payload=>{
         if(payload.new.version>currentProject.version&&!saving&&!dirty)scheduleRemoteRefresh();
       })
-      .subscribe(status=>{if(status==='SUBSCRIBED')updatePresence(true)});
+      .subscribe(status=>{if(status==='SUBSCRIBED')updatePresence(true);else adapter?.onPresence?.([],false)});
     document.addEventListener('click',()=>setTimeout(()=>updatePresence(false),250),true);
     global.addEventListener('focus',()=>updatePresence(true));
     global.addEventListener('beforeunload',()=>{try{channel?.untrack()}catch{}},{once:true});
@@ -614,5 +619,5 @@
     location.assign(indexUrl());
   }
   async function openCentralAnalysis(type){const project=await ensureCentralProject(type);if(!project.dataset_id){const {data:dataset,error}=await getClient().from('shared_datasets').select('id').eq('workspace_id',(currentMembership||await membership()).workspace_id).order('updated_at',{ascending:false}).limit(1).maybeSingle();if(error)throw error;if(dataset){const attached=await getClient().rpc('attach_dataset_to_project',{p_project_id:project.id,p_dataset_id:dataset.id});if(attached.error)throw attached.error}}location.href=analysisUrl(project)}
-  global.SolarCloud={CONFIG,dialog,notice,confirmDialog,setLanguage,getLanguage,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,datasets,useDataset,resolveConflict,downloadLocalDraft,reloadLatest,back:backToCenter,roleCanEdit,roleCanAdmin,centralDatasetStatus,databaseStorageStatus,loadCentralPeriod,loadCentralPrRange,loadCentralPrSummary,loadPrProjectRecords,loadCentralFullData,showPresence,useLatestConflict,keepMyConflict,prepareCentralUpload,commitCentralUpload,prepareCentralBatchUpload,commitCentralBatchUpload,uploadCentralDataset,openCentralAnalysis};
+  global.SolarCloud={refreshPresence:()=>updatePresence(true),collaborationActor:()=>presenceSession?{userId:presenceSession.userId,name:presenceSession.name}:null,isSharedValueSaved:(path,value)=>JSON.stringify(valueAtPath(lastSharedState,path))===JSON.stringify(value),CONFIG,dialog,notice,confirmDialog,setLanguage,getLanguage,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,datasets,useDataset,resolveConflict,downloadLocalDraft,reloadLatest,back:backToCenter,roleCanEdit,roleCanAdmin,centralDatasetStatus,databaseStorageStatus,loadCentralPeriod,loadCentralPrRange,loadCentralPrSummary,loadPrProjectRecords,loadCentralFullData,showPresence,useLatestConflict,keepMyConflict,prepareCentralUpload,commitCentralUpload,prepareCentralBatchUpload,commitCentralBatchUpload,uploadCentralDataset,openCentralAnalysis};
 })(window);
