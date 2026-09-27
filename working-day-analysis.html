@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="th" class="light">
-<head>\n<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">\n<meta http-equiv="Pragma" content="no-cache">\n<meta http-equiv="Expires" content="0">
+<head>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FusionSolar Working Days Calculator - Pro Edition (Rev.15)</title>
+    <title>FusionSolar Working Days Calculator - Pro Edition (Rev.17.2 PC)</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -138,6 +141,706 @@
 .mkt-select{border-radius:999px!important;font-weight:700!important;text-align:center!important;padding:.45rem 2rem .45rem .75rem!important;transition:.2s;background-color:#fff}.dark .mkt-select{background-color:#0f172a!important;border-color:#475569!important;color-scheme:dark}.dark .mkt-select option{background:#0f172a;color:#e2e8f0}.mkt-estimated{background:#ecfdf5!important;border-color:#6ee7b7!important}.mkt-misestimated{background:#fffbeb!important;border-color:#fbbf24!important}.mkt-haveno{background:#fff1f2!important;border-color:#fda4af!important}.mkt-question{background:#f5f3ff!important;border-color:#c4b5fd!important}.dark .mkt-estimated{background:#064e3b!important}.dark .mkt-misestimated{background:#78350f!important}.dark .mkt-haveno{background:#881337!important}.dark .mkt-question{background:#4c1d95!important}#mktFilterButton{min-width:270px;min-height:42px;box-sizing:border-box}#mktFilterList button{min-height:46px}#monthPickerButton{width:320px!important;min-width:320px!important;min-height:50px;font-size:15px!important;padding:.8rem 1.1rem!important}#monthYearModal>div{max-width:540px!important;padding:1.6rem!important}#monthYearTitle{font-size:18px!important}#monthPopupYear,#monthPopupMonth{min-height:52px;font-size:16px!important;padding:.75rem 1rem!important}@media(max-width:640px){#mktFilterButton{width:100%;min-width:0}#monthPickerButton{width:100%!important;min-width:0!important}#monthYearModal>div{max-width:100%!important}}#lossModal>div{max-width:520px!important;border-radius:18px!important}#modalDaysGrid button{min-height:38px;font-size:13px!important;text-align:center}
 </style>
 <link rel="stylesheet" href="unified-ui.css?v=20260927-wd-scroll2">
+
+<style id="wdUiRefreshV16">
+/* ==========================================================
+   Working Day Analysis — UI Refresh V16
+   Presentation-only overrides. Functional IDs/handlers remain unchanged.
+   ========================================================== */
+:root{
+  --wd-radius-xl:20px;
+  --wd-radius-lg:15px;
+  --wd-radius-md:11px;
+  --wd-shadow:0 10px 30px rgba(15,23,42,.07);
+  --wd-shadow-hover:0 15px 34px rgba(15,23,42,.10);
+  --wd-blue:#2563eb;
+  --wd-green:#059669;
+  --wd-amber:#d97706;
+  --wd-violet:#7c3aed;
+}
+html{scroll-behavior:smooth}
+body.solar-wd{
+  font-size:14px;
+  background:
+    radial-gradient(circle at 14% -12%,rgba(59,130,246,.10),transparent 28rem),
+    radial-gradient(circle at 88% -8%,rgba(16,185,129,.08),transparent 28rem),
+    var(--app-bg)!important;
+}
+.dark body.solar-wd{
+  background:
+    radial-gradient(circle at 12% -10%,rgba(37,99,235,.18),transparent 30rem),
+    radial-gradient(circle at 88% -10%,rgba(5,150,105,.13),transparent 28rem),
+    var(--app-bg)!important;
+}
+
+/* Header: quieter, cleaner, stronger hierarchy */
+body>header{
+  top:8px!important;
+  margin:8px 12px 0!important;
+  border-radius:18px!important;
+  border:1px solid color-mix(in srgb,var(--app-border) 82%,transparent)!important;
+  background:color-mix(in srgb,var(--app-surface) 90%,transparent)!important;
+  backdrop-filter:blur(18px) saturate(135%);
+  box-shadow:0 10px 28px rgba(15,23,42,.08)!important;
+}
+body>header>div{padding:10px 16px!important;max-width:2200px!important}
+body>header .w-10.h-10{width:38px!important;height:38px!important;border-radius:11px!important}
+body>header h1{font-size:15px!important;letter-spacing:-.01em}
+body>header p{font-size:11px!important;margin-top:2px}
+body>header span.rounded.uppercase{border-radius:999px!important;padding:.22rem .55rem!important;letter-spacing:.02em}
+#wdHeaderActions{gap:7px!important}
+#wdHeaderActions .wd-header-action{
+  height:36px!important;
+  padding:0 12px!important;
+  border-radius:10px!important;
+  font-size:11.5px!important;
+  box-shadow:none!important;
+}
+#wdHeaderActions .wd-header-action-dark{
+  background:color-mix(in srgb,var(--app-surface) 78%,#0f172a 22%)!important;
+  border-color:var(--app-border)!important;
+  color:var(--app-text)!important;
+}
+.dark #wdHeaderActions .wd-header-action-dark{background:#0f172a!important;color:#f8fafc!important}
+#wdHeaderActions .wd-header-export{background:#0284c7!important;border-color:#0284c7!important}
+#wdHeaderActions .wd-header-export:hover{background:#0369a1!important}
+
+/* Main workspace */
+main{margin-top:12px!important;padding:0 12px 28px!important;max-width:2200px!important;space-y:0!important}
+main.space-y-5>*+*{margin-top:12px!important}
+#wdTopPanel{gap:12px!important;align-items:stretch!important}
+#centralDataCard,#solarParamsCard,#wdKpis>div,#wdTableCard{
+  border:1px solid color-mix(in srgb,var(--app-border) 92%,transparent)!important;
+  box-shadow:var(--wd-shadow)!important;
+}
+#centralDataCard,#solarParamsCard{border-radius:var(--wd-radius-xl)!important;padding:14px!important;overflow:hidden}
+#centralDataCard{position:relative;background:
+  linear-gradient(145deg,rgba(37,99,235,.045),transparent 52%),var(--app-surface)!important}
+#centralDataCard:before{
+  content:"";position:absolute;inset:0 auto 0 0;width:3px;background:linear-gradient(#2563eb,#38bdf8);opacity:.85
+}
+#solarParamsCard{background:
+  linear-gradient(145deg,rgba(5,150,105,.04),transparent 48%),var(--app-surface)!important}
+#centralDataCard label,#solarParamsCard>div>div:first-child label{font-size:11px!important;letter-spacing:.04em}
+#centralDataCard #fileList{
+  margin-top:8px!important;padding:8px 10px!important;border-radius:10px!important;
+  background:color-mix(in srgb,var(--app-surface-muted) 68%,transparent)!important;
+  border:1px solid color-mix(in srgb,var(--app-border) 76%,transparent)!important;
+  min-height:38px;color:#64748b!important
+}
+.dark #centralDataCard #fileList{color:#cbd5e1!important}
+#statusMessage{border-radius:10px!important}
+
+/* Month and Sun Hours controls */
+#solarParamsCard>div>div.flex.flex-wrap.items-end{margin-bottom:8px!important}
+#monthPickerButton{
+  width:auto!important;min-width:260px!important;min-height:43px!important;
+  padding:9px 13px!important;border-width:1px!important;border-radius:11px!important;
+  background:linear-gradient(180deg,#fffbeb,#fff7ed)!important;
+  box-shadow:inset 0 0 0 1px rgba(245,158,11,.05)!important;
+  font-size:12.5px!important;
+}
+.dark #monthPickerButton{background:rgba(120,53,15,.22)!important}
+#solarParamsCard .bg-slate-50.dark\:bg-slate-950\/60{
+  border-radius:13px!important;padding:10px 11px!important;
+  background:color-mix(in srgb,var(--app-surface-muted) 58%,transparent)!important;
+  border-color:color-mix(in srgb,var(--app-border) 82%,transparent)!important;
+}
+#solarParamsCard .space-y-1\.5{gap:6px!important}
+#solarParamsCard .space-y-1\.5>label{
+  min-height:43px;padding:7px 9px!important;border:1px solid transparent;border-radius:10px!important;
+  background:color-mix(in srgb,var(--app-surface) 82%,transparent)!important;
+  transition:.15s ease;
+}
+#solarParamsCard .space-y-1\.5>label:hover{
+  border-color:#bae6fd!important;background:color-mix(in srgb,var(--app-surface) 94%,#eff6ff 6%)!important;
+  transform:translateY(-1px)
+}
+.dark #solarParamsCard .space-y-1\.5>label:hover{border-color:#334155!important}
+#sunHoursTarget{height:30px!important;border-radius:8px!important;padding:0 26px 0 9px!important;font-size:10.5px!important}
+#inputSunHoursCustom{height:29px!important;width:66px!important;border-radius:8px!important}
+#valMonthlyAvg,#valNonLossAvg{font-size:10.5px!important;white-space:nowrap}
+
+/* KPI row: compact but scan-friendly */
+#wdKpis{gap:10px!important;grid-template-columns:repeat(4,minmax(0,1fr))!important}
+#wdKpis>div{
+  position:relative;min-height:92px;padding:13px 14px!important;border-radius:16px!important;
+  background:var(--app-surface)!important;overflow:hidden;transition:.18s ease
+}
+#wdKpis>div:hover{transform:translateY(-1px);box-shadow:var(--wd-shadow-hover)!important}
+#wdKpis>div:after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:#94a3b8;opacity:.72}
+#wdKpis>div:nth-child(3):after{background:var(--wd-blue)}
+#wdKpis>div:nth-child(4):after{background:var(--wd-green)}
+#wdKpis>div:nth-child(3){background:linear-gradient(145deg,rgba(37,99,235,.055),transparent 60%),var(--app-surface)!important}
+#wdKpis>div:nth-child(4){background:linear-gradient(145deg,rgba(5,150,105,.055),transparent 60%),var(--app-surface)!important}
+#wdKpis p{font-size:10.5px!important;letter-spacing:.035em!important}
+#wdKpis h3{font-size:19px!important;line-height:1.15!important;margin-top:6px!important}
+#wdKpis .w-8.h-8{width:31px!important;height:31px!important;border-radius:9px!important}
+
+/* Table card & control strip */
+#wdTableCard{border-radius:18px!important;overflow:visible!important;background:var(--app-surface)!important}
+#wdTableToolbar{
+  position:sticky!important;top:76px!important;z-index:38!important;
+  padding:10px 12px!important;gap:10px!important;border-radius:18px 18px 0 0!important;
+  background:color-mix(in srgb,var(--app-surface) 93%,transparent)!important;
+  backdrop-filter:blur(16px);box-shadow:0 9px 18px -16px rgba(15,23,42,.7)!important
+}
+#wdTableToolbar h2{font-size:11px!important;letter-spacing:.04em!important}
+#wdTableToolbar>div:last-child{gap:6px!important}
+#wdTableToolbar button{
+  min-height:36px!important;padding:7px 10px!important;border-radius:10px!important;
+  font-size:11px!important;font-weight:650;box-shadow:none!important;transition:.15s ease
+}
+#wdTableToolbar button:hover{transform:translateY(-1px);filter:saturate(1.04)}
+#mktFilterButton{min-width:205px!important;min-height:36px!important}
+#method1FilterButton,#method2FilterButton,#otherFilterButton{min-width:auto!important}
+#method1ProjectCount,#method2ProjectCount,#otherProjectCount{font-size:9px!important;min-width:22px;text-align:center}
+
+/* horizontal scrollbar: available but visually quiet */
+#topTableScroll{
+  height:12px!important;background:color-mix(in srgb,var(--app-surface-muted) 62%,transparent)!important;
+  border-color:var(--app-border)!important;border-radius:0!important
+}
+#topTableScroll::-webkit-scrollbar{height:9px!important}
+#topTableScroll::-webkit-scrollbar-thumb{border:2px solid transparent!important;background-clip:padding-box!important}
+#tableScrollContainer{
+  height:calc(100vh - 96px)!important;min-height:560px!important;
+  border-radius:0 0 18px 18px!important;background:var(--app-surface)!important;
+  overscroll-behavior:contain;scroll-behavior:smooth
+}
+#tableScrollContainer::-webkit-scrollbar{width:11px!important;height:11px!important}
+#tableScrollContainer::-webkit-scrollbar-thumb{border:3px solid transparent!important;background-clip:padding-box!important;border-radius:999px!important}
+
+/* Data table */
+table{min-width:1900px!important}
+table thead tr{box-shadow:0 1px 0 var(--app-border)}
+table th{
+  font-size:10.8px!important;line-height:1.3!important;padding:9px 10px!important;
+  text-transform:none!important;letter-spacing:.015em!important;
+  background:color-mix(in srgb,var(--app-surface-muted) 86%,var(--app-surface) 14%)!important
+}
+table td{font-size:11.7px!important;line-height:1.35!important;padding:8px 10px!important;vertical-align:middle}
+tbody tr{transition:background-color .12s ease}
+tbody tr:hover{background:color-mix(in srgb,var(--app-surface-muted) 55%,transparent)!important}
+.sticky-col-1{min-width:52px!important;width:52px!important}
+.sticky-col-2{left:52px!important;min-width:285px!important;width:285px!important}
+.sticky-col-3{left:337px!important;min-width:118px!important;width:118px!important}
+.sticky-col-4{left:455px!important;min-width:118px!important;width:118px!important}
+tbody .sticky-col-1,tbody .sticky-col-2{background:var(--app-surface)!important}
+thead .sticky-col-1,thead .sticky-col-2{background:color-mix(in srgb,var(--app-surface-muted) 90%,var(--app-surface) 10%)!important}
+thead .sticky-col-3,tbody .sticky-col-3{background:color-mix(in srgb,#eff6ff 88%,var(--app-surface) 12%)!important}
+thead .sticky-col-4,tbody .sticky-col-4{background:color-mix(in srgb,#ecfdf5 88%,var(--app-surface) 12%)!important}
+.dark thead .sticky-col-3,.dark tbody .sticky-col-3{background:#1e3150!important}
+.dark thead .sticky-col-4,.dark tbody .sticky-col-4{background:#193b36!important}
+.sticky-divider{box-shadow:7px 0 12px -10px rgba(15,23,42,.75)!important}
+table input[type="number"],table select{
+  min-height:31px!important;border-radius:8px!important;font-size:11px!important
+}
+table button{font-size:11px!important}
+table button[title="Note"]{width:31px;height:31px;padding:0!important;display:grid;place-items:center;border-radius:8px!important}
+.mkt-select{min-height:32px!important;padding:5px 26px 5px 8px!important;font-size:10.5px!important;border-radius:9px!important}
+
+/* Editability cue is consistent across the table */
+table td.bg-amber-50\/20, table th.bg-amber-50\/40{box-shadow:inset 0 0 0 9999px rgba(245,158,11,.025)}
+
+/* Modal system */
+#lossModal,#monthYearModal,#mktFilterModal,#formulaModal,#projectSelectorModal,#formulaGuideModal,#methodProjectsModal,#noteModal{
+  backdrop-filter:blur(7px)!important
+}
+#lossModal>div,#monthYearModal>div,#mktFilterModal>div,#formulaModal>div,#projectSelectorModal>div,#formulaGuideModal>div,#methodProjectsModal>div,#noteModal>div{
+  border-radius:18px!important;border-color:color-mix(in srgb,var(--app-border) 88%,transparent)!important;
+  box-shadow:0 30px 80px rgba(15,23,42,.25)!important
+}
+#projectSelectorModal>div{max-width:780px!important;padding:18px!important}
+#projectPopupSearch{height:42px!important;border-radius:11px!important;font-size:12px!important}
+#projectSelectorList{border-radius:12px!important;max-height:58vh!important}
+#formulaGuideModal>div{max-width:900px!important}
+#noteTextarea{border-radius:12px!important;min-height:150px!important}
+#modalDaysGrid{border-radius:12px!important}
+#modalDaysGrid button{border-radius:9px!important}
+
+/* Focus visibility */
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:2px solid rgba(14,165,233,.55)!important;outline-offset:2px!important
+}
+
+/* PC-first layout; gracefully collapses */
+@media(min-width:1024px){
+  #centralDataCard{grid-column:span 3/span 3!important}
+  #solarParamsCard{grid-column:span 9/span 9!important}
+}
+@media(max-width:1100px){
+  #wdTableToolbar{top:0!important}
+  #wdKpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #tableScrollContainer{height:auto!important;max-height:72vh!important;min-height:420px!important}
+}
+@media(max-width:760px){
+  body>header{position:relative!important;top:0!important;margin:6px!important}
+  body>header>div{padding:10px!important}
+  #wdHeaderActions{width:100%!important;justify-content:stretch!important}
+  #wdHeaderActions .wd-header-action{flex:1!important}
+  main{padding:0 7px 18px!important}
+  #centralDataCard,#solarParamsCard{border-radius:15px!important}
+  #wdKpis{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
+  #wdKpis>div{min-height:82px!important;padding:11px!important}
+  #monthPickerButton{width:100%!important;min-width:0!important}
+  #wdTableToolbar{position:relative!important;top:0!important;align-items:stretch!important}
+  #wdTableToolbar>div:last-child{width:100%!important;justify-content:flex-start!important}
+  #mktFilterButton{width:100%!important;min-width:0!important}
+  #tableScrollContainer{max-height:68vh!important}
+}
+</style>
+
+
+<style id="wdWorkspaceV17">
+/* ==========================================================
+   Working Day Analysis — Workspace UI V17
+   Structural UX layer only. Existing functional IDs/handlers are preserved.
+   ========================================================== */
+:root{
+  --wd-dock-w:348px;
+  --wd-gap:12px;
+  --wd-topbar-h:66px;
+  --wd-panel:#ffffff;
+  --wd-panel-soft:#f8fafc;
+  --wd-line:#dbe4ee;
+  --wd-ink:#0f172a;
+  --wd-muted:#64748b;
+  --wd-blue:#2563eb;
+  --wd-green:#059669;
+  --wd-amber:#d97706;
+}
+.dark{
+  --wd-panel:#111c2e;
+  --wd-panel-soft:#0c1627;
+  --wd-line:#334155;
+  --wd-ink:#e5edf8;
+  --wd-muted:#94a3b8;
+}
+body.solar-wd{
+  overflow-x:hidden;
+  background:
+    radial-gradient(circle at 8% 2%,rgba(14,165,233,.10),transparent 22rem),
+    radial-gradient(circle at 95% 8%,rgba(16,185,129,.075),transparent 25rem),
+    var(--app-bg)!important;
+}
+
+/* App bar */
+body>header{
+  margin:8px 10px 0!important;
+  border-radius:16px!important;
+  box-shadow:0 8px 24px rgba(15,23,42,.07)!important;
+}
+body>header>div{max-width:none!important;padding:9px 14px!important}
+body>header h1{font-size:14px!important}
+body>header p{display:none!important}
+body>header .w-10.h-10{width:34px!important;height:34px!important}
+#wdHeaderActions .wd-header-action{height:34px!important}
+
+/* Main desktop workbench */
+main{
+  max-width:none!important;
+  width:100%!important;
+  margin:10px 0 0!important;
+  padding:0 10px 12px!important;
+}
+main.space-y-5>*+*{margin-top:0!important}
+#wdWorkbench{
+  display:grid;
+  grid-template-columns:var(--wd-dock-w) minmax(0,1fr);
+  gap:var(--wd-gap);
+  align-items:start;
+}
+#wdControlDock{
+  position:sticky;
+  top:74px;
+  height:calc(100vh - 84px);
+  min-height:560px;
+  display:flex;
+  flex-direction:column;
+  gap:9px;
+  min-width:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding:0 3px 6px 0;
+  scrollbar-width:thin;
+}
+#wdControlDock::-webkit-scrollbar{width:5px}
+#wdControlDock::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:999px}
+#wdDockHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 11px;
+  min-height:50px;
+  border:1px solid var(--wd-line);
+  border-radius:15px;
+  background:color-mix(in srgb,var(--wd-panel) 93%,transparent);
+  box-shadow:0 8px 22px rgba(15,23,42,.055);
+}
+#wdDockHeader .wd-dock-title{display:flex;align-items:center;gap:9px;min-width:0}
+#wdDockHeader .wd-dock-icon{
+  width:31px;height:31px;border-radius:9px;display:grid;place-items:center;flex:0 0 31px;
+  background:linear-gradient(145deg,#e0f2fe,#dbeafe);color:#0369a1;border:1px solid #bae6fd
+}
+.dark #wdDockHeader .wd-dock-icon{background:#102844;border-color:#1e4b70;color:#7dd3fc}
+#wdDockHeader strong{display:block;font-size:11.5px;color:var(--wd-ink);line-height:1.2}
+#wdDockHeader small{display:block;font-size:9.5px;color:var(--wd-muted);margin-top:2px;white-space:nowrap}
+.wd-icon-btn{
+  width:31px;height:31px;border-radius:9px!important;display:grid!important;place-items:center!important;
+  border:1px solid var(--wd-line)!important;background:var(--wd-panel-soft)!important;color:var(--wd-muted)!important;
+  padding:0!important;flex:0 0 31px
+}
+.wd-icon-btn:hover{color:var(--wd-blue)!important;border-color:#93c5fd!important}
+
+#wdTopPanel{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:9px!important;
+  min-width:0!important;
+}
+#centralDataCard,#solarParamsCard{
+  width:100%!important;
+  padding:11px!important;
+  border-radius:15px!important;
+  box-shadow:0 7px 22px rgba(15,23,42,.045)!important;
+}
+#centralDataCard{order:1}
+#solarParamsCard{order:2}
+#wdKpis{order:3}
+#centralDataCard:before{width:2px!important}
+#centralDataCard>div:first-child .mb-3{margin-bottom:4px!important}
+#centralDataCard #fileList{
+  min-height:0!important;margin-top:5px!important;padding:7px 8px!important;
+  font-size:10.5px!important;line-height:1.35!important
+}
+#statusMessage{font-size:10.5px!important;padding:7px 8px!important;margin-top:5px!important}
+
+/* Settings are intentionally vertical in the dock */
+#solarParamsCard>div>div.flex.flex-wrap.items-end{display:block!important;margin-bottom:8px!important}
+#monthPickerButton{
+  width:100%!important;min-width:0!important;min-height:43px!important;
+  display:flex!important;align-items:center!important;justify-content:flex-start!important;
+  font-size:11.5px!important
+}
+#solarParamsCard .bg-slate-50.dark\:bg-slate-950\/60{padding:9px!important;border-radius:12px!important}
+#solarParamsCard .space-y-1\.5{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:5px!important;
+}
+#solarParamsCard .space-y-1\.5>label{
+  min-height:38px!important;padding:6px 7px!important;
+}
+#solarParamsCard .space-y-1\.5>label span{font-size:10.5px!important}
+#solarParamsCard .space-y-1\.5>label .font-mono{font-size:10px!important}
+#sunHoursTarget{max-width:132px!important}
+
+/* KPI becomes a 2x2 instrument cluster */
+#wdKpis{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:7px!important;
+}
+#wdKpis>div{
+  min-height:76px!important;
+  padding:10px!important;
+  border-radius:13px!important;
+  box-shadow:0 6px 18px rgba(15,23,42,.04)!important;
+}
+#wdKpis p{font-size:9px!important;line-height:1.25!important;letter-spacing:.015em!important}
+#wdKpis h3{font-size:16px!important;margin-top:4px!important}
+#wdKpis .w-8.h-8{width:27px!important;height:27px!important;border-radius:8px!important;font-size:11px!important}
+
+/* Main data workspace */
+#wdMainWorkspace{min-width:0;display:flex;flex-direction:column;gap:8px}
+#wdWorkspaceIntro{
+  min-height:50px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:8px 10px 8px 13px;
+  border:1px solid var(--wd-line);
+  border-radius:15px;
+  background:color-mix(in srgb,var(--wd-panel) 94%,transparent);
+  box-shadow:0 8px 22px rgba(15,23,42,.05);
+}
+#wdWorkspaceIntro .wd-work-title{display:flex;align-items:center;gap:9px;min-width:0}
+#wdWorkspaceIntro .wd-work-mark{
+  width:32px;height:32px;border-radius:10px;display:grid;place-items:center;
+  background:linear-gradient(145deg,#0f172a,#334155);color:#fff;flex:0 0 32px
+}
+.dark #wdWorkspaceIntro .wd-work-mark{background:linear-gradient(145deg,#0369a1,#0f766e)}
+#wdWorkspaceIntro h2{font-size:12.5px!important;color:var(--wd-ink);font-weight:800;line-height:1.2}
+#wdWorkspaceIntro p{font-size:9.5px;color:var(--wd-muted);margin-top:2px}
+#wdWorkspaceIntro .wd-work-actions{display:flex;align-items:center;gap:6px}
+.wd-work-btn{
+  height:32px;display:inline-flex;align-items:center;gap:6px;padding:0 9px!important;
+  border-radius:9px!important;border:1px solid var(--wd-line)!important;
+  background:var(--wd-panel-soft)!important;color:var(--wd-ink)!important;font-size:10.5px!important;font-weight:700!important
+}
+.wd-work-btn:hover{border-color:#93c5fd!important;color:#1d4ed8!important}
+#wdWorkspaceStatus{
+  height:32px;display:inline-flex;align-items:center;gap:6px;padding:0 9px;border-radius:999px;
+  border:1px solid #bbf7d0;background:#f0fdf4;color:#047857;font-size:10px;font-weight:750;white-space:nowrap
+}
+.dark #wdWorkspaceStatus{border-color:#14532d;background:#052e24;color:#6ee7b7}
+#wdWorkspaceStatus:before{content:"";width:6px;height:6px;border-radius:50%;background:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.12)}
+
+/* Table is now the primary surface */
+#wdTableCard{
+  min-width:0!important;
+  border-radius:15px!important;
+  box-shadow:0 8px 24px rgba(15,23,42,.055)!important;
+}
+#wdTableToolbar{
+  position:relative!important;
+  top:auto!important;
+  min-height:50px!important;
+  padding:8px 10px!important;
+  border-radius:15px 15px 0 0!important;
+  background:var(--wd-panel)!important;
+  backdrop-filter:none!important;
+}
+#wdTableToolbar>div:first-child{min-width:190px}
+#wdTableToolbar h2{font-size:10.5px!important;color:var(--wd-muted)!important}
+#wdTableToolbar>div:last-child{flex:1;justify-content:flex-end!important;gap:5px!important}
+#wdTableToolbar button{min-height:32px!important;padding:5px 8px!important;font-size:10px!important;border-radius:9px!important}
+#mktFilterButton{min-width:180px!important;min-height:32px!important}
+#topTableScroll{height:10px!important}
+#tableScrollContainer{
+  height:calc(100vh - 151px)!important;
+  min-height:610px!important;
+  border-radius:0 0 15px 15px!important;
+}
+table{min-width:1880px!important}
+table th{font-size:10.2px!important;padding:8px 9px!important}
+table td{font-size:11.2px!important;padding:7px 9px!important}
+.sticky-col-2{min-width:268px!important;width:268px!important}
+.sticky-col-3{left:320px!important}
+.sticky-col-4{left:438px!important}
+
+/* Focus mode: instant table-first view */
+body.wd-dock-collapsed #wdWorkbench{grid-template-columns:0 minmax(0,1fr)!important;gap:0!important}
+body.wd-dock-collapsed #wdControlDock{opacity:0;pointer-events:none;width:0;padding:0;margin:0;overflow:hidden}
+body.wd-dock-collapsed #wdMainWorkspace{width:100%}
+body.wd-dock-collapsed #wdWorkspaceIntro{border-radius:15px 15px 0 0}
+body.wd-dock-collapsed #tableScrollContainer{height:calc(100vh - 151px)!important}
+#wdDockReveal{display:none}
+body.wd-dock-collapsed #wdDockReveal{display:inline-flex!important}
+
+/* Give the control dock a compact application feel */
+#autoDetectBadge{font-size:8.5px!important;padding:2px 6px!important}
+#solarParamsCard label{letter-spacing:.015em!important}
+#solarParamsCard .text-\[11px\]{font-size:10px!important}
+
+@media(max-width:1180px){
+  :root{--wd-dock-w:318px}
+  #wdTableToolbar{align-items:flex-start!important}
+  #wdTableToolbar>div:last-child{justify-content:flex-start!important}
+  #tableScrollContainer{min-height:540px!important}
+}
+@media(max-width:900px){
+  body.solar-wd{overflow-x:auto}
+  #wdWorkbench{display:block!important}
+  #wdControlDock{position:relative!important;top:auto!important;height:auto!important;min-height:0!important;overflow:visible!important;padding:0!important;margin-bottom:8px}
+  #wdDockHeader{display:none!important}
+  #wdTopPanel{display:grid!important;grid-template-columns:1fr!important}
+  #wdKpis{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+  #wdWorkspaceIntro{position:sticky;top:0;z-index:39}
+  #wdWorkspaceStatus{display:none}
+  #wdDockCollapse,#wdDockReveal{display:none!important}
+  #tableScrollContainer{height:auto!important;max-height:72vh!important;min-height:460px!important}
+  body.wd-dock-collapsed #wdControlDock{display:block!important;opacity:1!important;width:auto!important;pointer-events:auto!important}
+}
+@media(max-width:620px){
+  #wdKpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #wdWorkspaceIntro{align-items:flex-start;flex-direction:column}
+  #wdWorkspaceIntro .wd-work-actions{width:100%;justify-content:flex-end}
+  #wdTableToolbar>div:last-child{width:100%!important}
+  #mktFilterButton{width:100%!important;min-width:0!important}
+}
+</style>
+
+
+<style id="wdV171Patch">
+/* V17.1 — requested position + top scrollbar visibility fixes */
+#centralDataCard{
+  order:initial!important;
+  flex:0 0 auto!important;
+}
+/* The original Center card should lead the left column, before the new dock header. */
+#wdControlDock>#centralDataCard{
+  margin:0!important;
+}
+
+/* Make the synchronized horizontal scrollbar clearly visible and easy to grab. */
+#topTableScroll{
+  display:block!important;
+  height:22px!important;
+  min-height:22px!important;
+  max-height:22px!important;
+  overflow-x:scroll!important;
+  overflow-y:hidden!important;
+  padding:2px 0 1px!important;
+  border-top:1px solid var(--wd-line)!important;
+  border-bottom:1px solid var(--wd-line)!important;
+  background:color-mix(in srgb,var(--wd-panel-soft) 96%,#cbd5e1)!important;
+  scrollbar-width:auto!important;
+  scrollbar-color:#64748b #e2e8f0!important;
+}
+#topTableScroll::-webkit-scrollbar{height:15px!important;display:block!important}
+#topTableScroll::-webkit-scrollbar-track{
+  background:#e2e8f0!important;
+  border-radius:999px!important;
+}
+#topTableScroll::-webkit-scrollbar-thumb{
+  background:#64748b!important;
+  border:3px solid #e2e8f0!important;
+  border-radius:999px!important;
+  background-clip:border-box!important;
+}
+#topTableScroll::-webkit-scrollbar-thumb:hover{background:#475569!important}
+.dark #topTableScroll{
+  background:#101a2b!important;
+  scrollbar-color:#94a3b8 #1e293b!important;
+}
+.dark #topTableScroll::-webkit-scrollbar-track{background:#1e293b!important}
+.dark #topTableScroll::-webkit-scrollbar-thumb{
+  background:#94a3b8!important;
+  border-color:#1e293b!important;
+}
+
+/* Slightly compensate the table viewport for the taller top scrollbar. */
+#tableScrollContainer{height:calc(100vh - 163px)!important}
+body.wd-dock-collapsed #tableScrollContainer{height:calc(100vh - 163px)!important}
+@media(max-width:900px){
+  #topTableScroll{height:20px!important;min-height:20px!important;max-height:20px!important}
+  #tableScrollContainer{height:auto!important;max-height:72vh!important}
+}
+</style>
+
+
+<style id="wdV172PcPatch">
+/* ==========================================================
+   V17.2 PC usability patch
+   - removes layered page/sticky scrolling on desktop
+   - keeps Control Center in the requested left/top position
+   - table + dock become stable independent scroll surfaces
+   - top horizontal scrollbar follows the real table width
+   ========================================================== */
+html{scroll-behavior:auto!important}
+
+@media(min-width:1024px){
+  html,body{height:100%;}
+  body.solar-wd{
+    height:100dvh!important;
+    min-height:100dvh!important;
+    overflow:hidden!important;
+    display:flex!important;
+    flex-direction:column!important;
+  }
+
+  /* Keep the header stable without another sticky-scroll layer. */
+  body>header{
+    position:relative!important;
+    top:0!important;
+    flex:0 0 auto!important;
+    margin:7px 10px 0!important;
+    contain:layout paint;
+  }
+
+  main{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    height:auto!important;
+    overflow:hidden!important;
+    margin:8px 0 0!important;
+    padding:0 10px 9px!important;
+  }
+  #wdWorkbench{
+    height:100%!important;
+    min-height:0!important;
+    align-items:stretch!important;
+  }
+
+  /* Left side: one predictable scroll surface. */
+  #wdControlDock{
+    position:relative!important;
+    top:auto!important;
+    height:100%!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    overscroll-behavior:contain!important;
+    scrollbar-gutter:stable!important;
+    padding-right:5px!important;
+  }
+  #wdControlDock>#centralDataCard{margin-top:0!important}
+
+  /* Right side: workspace always fits the available viewport. */
+  #wdMainWorkspace{
+    height:100%!important;
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  #wdWorkspaceIntro{
+    position:relative!important;
+    top:auto!important;
+    flex:0 0 auto!important;
+  }
+  #wdTableCard{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    overflow:hidden!important;
+    display:flex!important;
+    flex-direction:column!important;
+  }
+  #wdTableToolbar{
+    position:relative!important;
+    top:auto!important;
+    flex:0 0 auto!important;
+  }
+
+  /* Top scrollbar remains visible; the data area takes the rest. */
+  #topTableScroll{
+    flex:0 0 22px!important;
+    height:22px!important;
+    min-height:22px!important;
+    max-height:22px!important;
+  }
+  #tableScrollContainer,
+  body.wd-dock-collapsed #tableScrollContainer{
+    flex:1 1 auto!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:auto!important;
+    overscroll-behavior:contain!important;
+    scroll-behavior:auto!important;
+    scrollbar-gutter:stable!important;
+  }
+
+  /* Avoid tiny hover movements while checking rows/buttons with a mouse. */
+  #wdTableToolbar button:hover,#wdKpis>div:hover{transform:none!important}
+  #wdHeaderActions .wd-header-action{transition:background-color .14s ease,border-color .14s ease,box-shadow .14s ease!important}
+
+  /* Stable focus-mode switch: no intermediate layout animation/jump. */
+  #wdWorkbench,#wdControlDock,#wdMainWorkspace,#wdTableCard{transition:none!important}
+}
+
+/* Mid-size notebooks: keep controls usable without crushing the table. */
+@media(min-width:1024px) and (max-width:1365px){
+  :root{--wd-dock-w:300px!important;--wd-gap:8px!important}
+  #wdWorkspaceIntro p{display:none!important}
+  #wdTableToolbar{align-items:flex-start!important}
+  #wdTableToolbar>div:last-child{justify-content:flex-start!important}
+  #mktFilterButton{min-width:165px!important}
+}
+</style>
+
 </head>
 <body class="solar-wd bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen pb-2 transition-colors duration-200">
 
@@ -151,7 +854,7 @@
                 <div>
                     <div class="flex items-center gap-2">
                         <h1 class="text-base font-bold text-blue-900 dark:text-slate-100">FusionSolar Working Days Calculator</h1>
-                        <span class="bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[10px] px-2 py-0.5 rounded uppercase font-semibold">Solar Engineer Pro Rev.15</span>
+                        <span class="bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[10px] px-2 py-0.5 rounded uppercase font-semibold">Solar Engineer Pro Rev.17.2</span>
                     </div>
                     <p class="text-xs text-slate-500 dark:text-slate-400">ระบบประมวลผลประสิทธิภาพและคำนวณวันทำงานสำหรับวิศวกรโซลาร์</p>
                 </div>
@@ -325,9 +1028,10 @@
         <div id="wdTableCard" class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors duration-200">
             <div id="wdTableToolbar" class="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col xl:flex-row justify-between items-center gap-4 bg-slate-50/50 dark:bg-slate-950/50">
                 <div class="flex items-center gap-2">
-                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                        ตารางแสดงผลโครงการและการคำนวณวันทำงาน (Solar Projects Analytics)
-                    </h2>
+                    <div>
+                        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">ตารางแสดงผลโครงการและการคำนวณวันทำงาน (Solar Projects Analytics)</h2>
+                        <p class="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">Blue = Method 1 · Green = Method 2 · Amber = Editable field</p>
+                    </div>
                 </div>
                 <div class="flex flex-wrap items-center justify-end gap-2">
                     <button id="mktFilterButton" type="button" onclick="openMktFilterPopup()" class="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-700 dark:text-slate-200"><span class="flex items-center gap-2 min-w-0"><i class="fa-solid fa-filter text-violet-500"></i><span class="font-semibold">MKT</span><span id="mktFilterButtonText" class="truncate">Total</span></span><span class="flex items-center gap-2"><strong id="mktFilterCount" class="text-violet-600 dark:text-violet-300">0</strong><i class="fa-solid fa-chevron-down text-slate-400"></i></span></button><button id="method1FilterButton" onclick="setMethodFilter('m1')" class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg px-3 py-2 flex items-center gap-2 transition">
@@ -575,13 +1279,48 @@
         function syncTableScrollbars() {
             const top = document.getElementById('topTableScroll');
             const table = document.getElementById('tableScrollContainer');
-            if (!top || !table || top.dataset.synced) return;
-            const sync = (from, target) => {
-                if (Math.abs(target.scrollLeft - from.scrollLeft) > 1) target.scrollLeft = from.scrollLeft;
+            const inner = document.getElementById('topTableScrollInner');
+            if (!top || !table || !inner) return;
+
+            const updateTopScrollbarWidth = () => {
+                const width = Math.max(table.scrollWidth, table.clientWidth);
+                inner.style.width = `${width}px`;
             };
-            top.addEventListener('scroll', () => sync(top, table), { passive: true });
-            table.addEventListener('scroll', () => sync(table, top), { passive: true });
-            top.dataset.synced = 'true';
+
+            // Width must follow the real table width, especially after window resize,
+            // language changes, filtering, or dock focus mode changes.
+            updateTopScrollbarWidth();
+            requestAnimationFrame(updateTopScrollbarWidth);
+
+            if (!top.dataset.synced) {
+                let syncFrame = 0;
+                const sync = (from, target) => {
+                    cancelAnimationFrame(syncFrame);
+                    syncFrame = requestAnimationFrame(() => {
+                        if (Math.abs(target.scrollLeft - from.scrollLeft) > 1) {
+                            target.scrollLeft = from.scrollLeft;
+                        }
+                    });
+                };
+                top.addEventListener('scroll', () => sync(top, table), { passive: true });
+                table.addEventListener('scroll', () => sync(table, top), { passive: true });
+                top.dataset.synced = 'true';
+
+                if (window.ResizeObserver) {
+                    const ro = new ResizeObserver(() => requestAnimationFrame(updateTopScrollbarWidth));
+                    ro.observe(table);
+                    const dataTable = table.querySelector('table');
+                    if (dataTable) ro.observe(dataTable);
+                } else {
+                    window.addEventListener('resize', updateTopScrollbarWidth, { passive: true });
+                }
+
+                const body = document.getElementById('tableBody');
+                if (body && window.MutationObserver) {
+                    const mo = new MutationObserver(() => requestAnimationFrame(updateTopScrollbarWidth));
+                    mo.observe(body, { childList: true, subtree: true });
+                }
+            }
         }
 
         function openProjectSelector() {
@@ -1784,6 +2523,102 @@
       if(centralCard&&kpis)centralCard.appendChild(kpis);
       SolarCloud.initAnalysis('working_day',workingDayCloudAdapter);
     </script>
+
+<script id="wdWorkspaceV17Script">
+(function(){
+  function buildWorkspace(){
+    const main=document.querySelector('main');
+    const topPanel=document.getElementById('wdTopPanel');
+    const tableCard=document.getElementById('wdTableCard');
+    const kpis=document.getElementById('wdKpis');
+    const central=document.getElementById('centralDataCard');
+    const params=document.getElementById('solarParamsCard');
+    if(!main||!topPanel||!tableCard||!kpis||!central||!params||document.getElementById('wdWorkbench')) return;
+
+    // Previous versions placed KPI inside Central Data. Put it back as its own instrument cluster.
+    if(kpis.parentElement!==topPanel) topPanel.appendChild(kpis);
+
+    const shell=document.createElement('div');
+    shell.id='wdWorkbench';
+
+    const dock=document.createElement('aside');
+    dock.id='wdControlDock';
+    dock.setAttribute('aria-label','Working Day controls');
+
+    const dockHeader=document.createElement('div');
+    dockHeader.id='wdDockHeader';
+    dockHeader.innerHTML=`
+      <div class="wd-dock-title">
+        <span class="wd-dock-icon"><i class="fa-solid fa-sliders"></i></span>
+        <span><strong>Control Dock</strong><small>Period · Sun Hours · Project status</small></span>
+      </div>
+      <button id="wdDockCollapse" type="button" class="wd-icon-btn" title="ซ่อนแผงตั้งค่า" aria-label="Hide control dock"><i class="fa-solid fa-chevron-left"></i></button>`;
+
+    const workspace=document.createElement('section');
+    workspace.id='wdMainWorkspace';
+
+    const intro=document.createElement('div');
+    intro.id='wdWorkspaceIntro';
+    intro.innerHTML=`
+      <div class="wd-work-title">
+        <span class="wd-work-mark"><i class="fa-solid fa-table-list"></i></span>
+        <span><h2>Working Days Workspace</h2><p>Review · filter · edit · export in one workspace</p></span>
+      </div>
+      <div class="wd-work-actions">
+        <span id="wdWorkspaceStatus">Ready</span>
+        <button id="wdDockReveal" type="button" class="wd-work-btn"><i class="fa-solid fa-sliders"></i><span>Controls</span></button>
+        <button id="wdFocusTable" type="button" class="wd-work-btn"><i class="fa-solid fa-expand"></i><span>Focus table</span></button>
+      </div>`;
+
+    main.insertBefore(shell, topPanel);
+    shell.appendChild(dock);
+    shell.appendChild(workspace);
+
+    // Keep Central Data / Center card at the original top-left position.
+    // Only the remaining controls stay inside the dock below it.
+    dock.appendChild(central);
+    dock.appendChild(dockHeader);
+    dock.appendChild(topPanel);
+    workspace.appendChild(intro);
+    workspace.appendChild(tableCard);
+
+    const collapse=document.getElementById('wdDockCollapse');
+    const reveal=document.getElementById('wdDockReveal');
+    const focus=document.getElementById('wdFocusTable');
+    function setCollapsed(on){
+      document.body.classList.toggle('wd-dock-collapsed',on);
+      if(focus){
+        focus.innerHTML=on?'<i class="fa-solid fa-compress"></i><span>Show controls</span>':'<i class="fa-solid fa-expand"></i><span>Focus table</span>';
+        focus.setAttribute('aria-pressed',on?'true':'false');
+      }
+      setTimeout(()=>{ if(typeof syncTableScrollbars==='function') syncTableScrollbars(); },60);
+    }
+    collapse?.addEventListener('click',()=>setCollapsed(true));
+    reveal?.addEventListener('click',()=>setCollapsed(false));
+    focus?.addEventListener('click',()=>setCollapsed(!document.body.classList.contains('wd-dock-collapsed')));
+
+    // Keep workspace status useful without introducing a new data model.
+    const status=document.getElementById('wdWorkspaceStatus');
+    const monthLabel=document.getElementById('monthPickerLabel');
+    const plantCount=document.getElementById('statPlantCount');
+    const updateStatus=()=>{
+      if(!status) return;
+      const m=(monthLabel?.textContent||'').trim();
+      const p=(plantCount?.textContent||'0').trim();
+      status.textContent=(m && !m.includes('รอ') && !m.toLowerCase().includes('waiting')) ? `${m} · ${p} projects` : 'Ready';
+    };
+    updateStatus();
+    if(window.MutationObserver){
+      const obs=new MutationObserver(updateStatus);
+      if(monthLabel) obs.observe(monthLabel,{childList:true,subtree:true,characterData:true});
+      if(plantCount) obs.observe(plantCount,{childList:true,subtree:true,characterData:true});
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',buildWorkspace,{once:true});
+  else buildWorkspace();
+})();
+</script>
+
 <script src="unified-ui.js?v=20260915-wd-header-fix1"></script>
 </body>
 </html>
