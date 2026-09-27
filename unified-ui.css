@@ -164,6 +164,20 @@ body.solar-gi .threshold-box,body.solar-gi .search-input,body.solar-gi .cell-inp
   body.solar-gi button,body.solar-pr button{transition:none!important}
 }
 
+/* Working Day: keep scrolling surfaces opaque and avoid viewport-wide fixed paint. */
+body.solar-wd{background-attachment:scroll!important}
+body.solar-wd > header{
+  background:var(--solar-solid)!important;
+  -webkit-backdrop-filter:none!important;backdrop-filter:none!important;
+}
+body.solar-wd #tableScrollContainer{
+  background:var(--solar-solid);
+}
+body.solar-wd #tableScrollContainer tbody .sticky-col-1,
+body.solar-wd #tableScrollContainer tbody .sticky-col-2{
+  background:var(--solar-solid);
+}
+
 /* Scroll behavior and horizontal scrollbar colors for the three analysis pages. */
 @media(min-width:901px){
   body.solar-wd #tableScrollContainer{
