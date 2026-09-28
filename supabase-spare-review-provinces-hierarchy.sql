@@ -47,7 +47,7 @@ create function public.spare_log_project_review() returns trigger language plpgs
 begin
  if tg_op='DELETE' then
   insert into public.spare_project_review_events(workspace_id,spare_project_id,project_code,action,before_data,reviewed_by)
-  values(old.workspace_id,old.id,old.project_code,'delete',to_jsonb(old),auth.uid());return old;
+  values(old.workspace_id,null,old.project_code,'delete',to_jsonb(old),auth.uid());return old;
  end if;
  if old.match_status is distinct from new.match_status or old.central_project_id is distinct from new.central_project_id or old.capacity_kwp is distinct from new.capacity_kwp or old.province_id is distinct from new.province_id then
   insert into public.spare_project_review_events(workspace_id,spare_project_id,project_code,action,before_data,after_data,reviewed_by)
