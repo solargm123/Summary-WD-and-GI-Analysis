@@ -1078,7 +1078,7 @@ body.wd-theme-switching *::after{
 }
 </style>
 
-<link rel="stylesheet" href="working-day-summary.css?v=20260928-4">
+<link rel="stylesheet" href="working-day-summary.css?v=20260928-5">
 </head>
 <body class="solar-wd bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen pb-2 transition-colors duration-200">
 
@@ -1269,6 +1269,7 @@ body.wd-theme-switching *::after{
                 <button id="wdSummaryTab" role="tab" aria-selected="false" aria-controls="wdSummaryPanel" onclick="WDReview.setTab('summary')"><i class="fa-solid fa-list-check" aria-hidden="true"></i><span>สรุปวันทำงาน</span></button>
             </div>
             <div id="wdSearchStatus" class="wd-search-status" hidden></div>
+            <div id="wdReviewWarning" class="wd-review-warning" role="status" aria-live="polite" hidden></div>
             <div id="wdTableToolbar" class="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col xl:flex-row justify-between items-center gap-4 bg-slate-50/50 dark:bg-slate-950/50">
                 <div class="flex items-center gap-2">
                     <div>
@@ -2732,7 +2733,7 @@ body.wd-theme-switching *::after{
 
         syncTableScrollbars();
     </script>
-    <script src="working-day-summary.js?v=20260928-3"></script>
+    <script src="working-day-summary.js?v=20260928-4"></script>
     <script>
       const workingDayCloudAdapter={
         presenceContext:()=>WDReview.presenceContext(),
