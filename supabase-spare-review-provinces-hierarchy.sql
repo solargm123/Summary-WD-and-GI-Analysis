@@ -56,8 +56,6 @@ begin
  return new;
 end $$;
 revoke all on function public.spare_log_project_review() from public,anon,authenticated;
-create trigger spare_review_update after update on public.spare_project_catalog for each row execute function public.spare_log_project_review();
-create trigger spare_review_delete after delete on public.spare_project_catalog for each row execute function public.spare_log_project_review();
 
 -- A brand is reusable under several categories; models belong to one category/brand pair.
 create table public.spare_category_brands (
@@ -201,3 +199,7 @@ select w.workspace_id,p.name_th,p.name_en from (select distinct workspace_id fro
  ('อุบลราชธานี','Ubon Ratchathani')
 ) p(name_th,name_en) on conflict(workspace_id,name_th) do nothing;
 update public.spare_project_catalog s set province_id=p.id from public.province_catalog p where s.workspace_id=p.workspace_id and s.province=p.name_th and s.province_id is null;
+
+-- Activate audit only after province backfill, so migration updates are not mistaken for admin reviews.
+create trigger spare_review_update after update on public.spare_project_catalog for each row execute function public.spare_log_project_review();
+create trigger spare_review_delete after delete on public.spare_project_catalog for each row execute function public.spare_log_project_review();
