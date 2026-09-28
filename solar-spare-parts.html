@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Solar Spare Parts Platform V2.0.0 Desktop Workspace</title>
+<title>Solar Spare Parts Platform V2.1.0 Desktop Workspace</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -1001,6 +1001,7 @@ main .section .table-wrap.smart-page-scroll thead th{position:sticky;top:0;z-ind
 </section>
 
 <section class="section" id="inventory">
+  <div class="notice" id="stockSourceNote">กำลังตรวจสอบ Inventory บนฐานข้อมูล…</div>
   <div class="page-head">
     <div><div class="eyebrow" data-i18n="inventoryEyebrow">คลังอะไหล่</div><h2 class="page-title" data-i18n="inventoryTitle">Inventory / คลังอะไหล่</h2><p class="subtitle" data-i18n="inventoryDesc">ตารางหลักสำหรับค้นหา กรอง ดูรายละเอียด และทำ Stock Movement</p></div>
     <div style="display:flex;gap:8px"><button class="btn ghost" id="inventoryOpenImportCenter">⇧ <span data-i18n="openImportCenter">Import Center</span></button><button class="btn primary" id="addBtn">＋ <span data-i18n="addSpare">เพิ่มอะไหล่</span></button><button hidden id="excelImportBtn"></button><button hidden id="inventoryImportBtn"></button></div>
@@ -1043,6 +1044,7 @@ main .section .table-wrap.smart-page-scroll thead th{position:sticky;top:0;z-ind
 </section>
 
 <section class="section" id="movement">
+  <div class="notice" id="movementSourceNote">กำลังตรวจสอบ Movement บนฐานข้อมูล…</div>
   <div class="page-head"><div><div class="eyebrow" data-i18n="movementEyebrow">ความเคลื่อนไหว</div><h2 class="page-title" data-i18n="movement">Movement</h2><p class="subtitle" data-i18n="movementDesc">ประวัติ Receive, Issue, Reserve, Return, Repair และ Repair Return</p></div><button class="btn primary" id="newMovementBtn">＋ <span data-i18n="newMovement">New Movement</span></button></div>
 
   <div class="card movement-filter-card">
@@ -1435,8 +1437,8 @@ main .section .table-wrap.smart-page-scroll thead th{position:sticky;top:0;z-ind
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="cloud-core.js?v=20260928-spare-catalog"></script>
 <script>
-const APP_VERSION="2.0.0";
-const DATA_SCHEMA_VERSION="2.0.0";
+const APP_VERSION="2.1.0";
+const DATA_SCHEMA_VERSION="2.1.0";
 const DATA_BACKEND={mode:"local",future:"supabase"};
 const DATA_KEYS={
  master:"solarSpareMasterV171Fresh",inventory:"solarSpareInventoryV171Fresh",movements:"solarSpareMovementsV171Fresh",
@@ -1485,12 +1487,19 @@ let projectDetails=DataRepository.getJSON(DATA_KEYS.projectDetails,[])||[];
 // Cloud catalogue is displayed separately from local edits and never saved into LocalStorage.
 let cloudProjects=[],cloudMaster={categories:[],brands:[],models:[],locations:[],units:[]};
 let cloudCatalogueStatus="กำลังตรวจสอบข้อมูลโครงการในฐานข้อมูล…";
-let spareRole="loading",spareWorkspaceId="",editingCloudProjectId="",editingCloudMasterId="";
+let spareRole="loading",spareWorkspaceId="",editingCloudProjectId="",editingCloudMasterId="",cloudStockActive=false;
+function requireLocalStock(){if(!requireSpareAdmin())return false;if(cloudStockActive){alert("Inventory และ Movement ใช้ฐานข้อมูลกลางแล้ว การ Import/Restore แบบ Local ถูกพักไว้เพื่อป้องกันข้อมูลทับกัน");return false}return true}
 function requireSpareAdmin(){if(spareRole==="admin")return true;toast(lang==="en"?"Only workspace admins can edit Spare Parts":"เฉพาะแอดมินของ Workspace เท่านั้นที่แก้ไขข้อมูลได้");return false}
+async function loadSpareRows(client,workspace,table,sortColumn){
+ const all=[];for(let from=0;;from+=500){const page=await client.from(table).select("*").eq("workspace_id",workspace).order(sortColumn).order("id").range(from,from+499);if(page.error)throw page.error;all.push(...(page.data||[]));if((page.data||[]).length<500)break}return all;
+}
 function updateSpareRoleUI(){
  document.body.classList.toggle("spare-read-only",spareRole!=="admin");
  const role=document.getElementById("spareRoleStatus");
  if(role)role.textContent=spareRole==="admin"?"Admin · แก้ไขได้":spareRole==="loading"?"กำลังตรวจสิทธิ์…":"ดูอย่างเดียว · "+spareRole;
+ const source=cloudStockActive?`☁ ฐานข้อมูลกลาง · Inventory ${inventory.length} รายการ · Movement ${movements.length} รายการ`:`ข้อมูลเฉพาะเครื่อง · กรุณาเข้าสู่ระบบเพื่อดูข้อมูลส่วนกลาง`;
+ for(const id of ["stockSourceNote","movementSourceNote"]){const el=document.getElementById(id);if(el)el.textContent=source}
+ for(const id of ["clearWorkspaceBtn","chooseImportFileBtn","chooseImportFileBtn2","freshImportBtn","inventoryOpenImportCenter","masterOpenImportCenter","inventoryImportBtn","masterImportBtn","excelImportBtn"]){const el=document.getElementById(id);if(el){el.disabled=cloudStockActive;el.title=cloudStockActive?"Import / Restore แบบ Local ถูกพักไว้เมื่อใช้ Inventory กลาง":""}}
  const addProject=document.getElementById("addProjectBtn"),addMaster=document.getElementById("addMasterBtn");
  if(addProject)addProject.title=lang==="th"?"เพิ่มโครงการในข้อมูลของเครื่องนี้":"Add a project to this device only";
  if(addMaster)addMaster.title=lang==="th"?"เพิ่ม Master Data ในเครื่องนี้":"Add master data to this device only";
@@ -1502,20 +1511,25 @@ async function loadCloudCatalogue(){
  try{
   if(!window.SolarCloud)throw new Error("ไม่สามารถโหลดตัวเชื่อมต่อฐานข้อมูล");
   const session=await SolarCloud.session();
-  if(!session){spareRole="guest";cloudCatalogueStatus="กรุณาเข้าสู่ระบบที่หน้าแรกเพื่อดูข้อมูลในฐานข้อมูล";render();return}
+  if(!session){spareRole="guest";spareWorkspaceId="";cloudStockActive=false;cloudProjects=[];cloudMaster={categories:[],brands:[],models:[],locations:[],units:[]};inventory=DataRepository.getJSON(DATA_KEYS.inventory,[])||[];movements=DataRepository.getJSON(DATA_KEYS.movements,[])||[];cloudCatalogueStatus="กรุณาเข้าสู่ระบบที่หน้าแรกเพื่อดูข้อมูลในฐานข้อมูล";render();return}
   const member=await SolarCloud.membership(),client=SolarCloud.getClient();
   spareRole=member.role||"viewer";
   spareWorkspaceId=member.workspace_id;
-  const [projects,masters]=await Promise.all([
+  const [projects,masters,items,history]=await Promise.all([
    client.from("spare_project_catalog").select("id,project_code,project_name,capacity_kwp,province,match_status,details").eq("workspace_id",member.workspace_id).order("project_name"),
-   client.from("spare_master_data").select("id,master_type,source_id,name,brand,note").eq("workspace_id",member.workspace_id).order("name")
+   client.from("spare_master_data").select("id,master_type,source_id,name,brand,note").eq("workspace_id",member.workspace_id).order("name"),
+   loadSpareRows(client,member.workspace_id,"spare_items","spare_code"),
+   loadSpareRows(client,member.workspace_id,"spare_stock_movements","occurred_at")
   ]);
   if(projects.error)throw projects.error;if(masters.error)throw masters.error;
   cloudProjects=(projects.data||[]).map(p=>({...p.details,id:p.id,projectCode:p.project_code||"",projectName:p.project_name,capacity:p.capacity_kwp??"",province:p.province||"",matchStatus:p.match_status,cloudOnly:true}));
   cloudMaster={categories:[],brands:[],models:[],locations:[],units:[]};
   (masters.data||[]).forEach(m=>{if(cloudMaster[m.master_type])cloudMaster[m.master_type].push({id:m.source_id,cloudId:m.id,name:m.name,brand:m.brand||"",note:m.note||"",cloudOnly:true})});
-  cloudCatalogueStatus=`ฐานข้อมูล: ${cloudProjects.length} โครงการ · ${(masters.data||[]).length} Master Data (${spareRole==="admin"?"แอดมินแก้ไขได้":"อ่านอย่างเดียว"})`;
- }catch(err){spareRole="unavailable";cloudCatalogueStatus=`อ่านฐานข้อมูลไม่ได้: ${err.message||err}`}
+  inventory=items.map(i=>({...i.details,id:i.spare_code,part:i.part,category:i.category,brand:i.brand,model:i.model,unit:i.unit,location:i.location,project:i.project,projectCode:i.project_code,available:Number(i.available),reserved:Number(i.reserved),repair:Number(i.repair),min:Number(i.min_stock),cloudId:i.id,revision:i.revision,cloudOnly:true}));
+  movements=history.map(m=>({...m.details,id:m.movement_code,date:m.occurred_at,type:m.movement_type,spareId:m.spare_code,qty:Number(m.quantity),project:m.project,projectCode:m.project_code,historicalOnly:m.historical_only,cloudOnly:true}));
+  cloudStockActive=true;
+  cloudCatalogueStatus=`ฐานข้อมูล: ${cloudProjects.length} โครงการ · ${(masters.data||[]).length} Master Data · ${inventory.length} Inventory · ${movements.length} Movement (${spareRole==="admin"?"แอดมินแก้ไขได้":"อ่านอย่างเดียว"})`;
+ }catch(err){spareRole="unavailable";cloudStockActive=false;cloudProjects=[];cloudMaster={categories:[],brands:[],models:[],locations:[],units:[]};inventory=DataRepository.getJSON(DATA_KEYS.inventory,[])||[];movements=DataRepository.getJSON(DATA_KEYS.movements,[])||[];cloudCatalogueStatus=`อ่านฐานข้อมูลไม่ได้: ${err.message||err}`}
  render();
 }
 let compatibility=DataRepository.getJSON(DATA_KEYS.compatibility,[])||[];
@@ -1613,8 +1627,7 @@ function monthText(n){return t("month"+Number(n))}
 function saveAll(){
  if(!requireSpareAdmin())throw new Error("Admin access required to save Spare Parts data");
  DataRepository.setJSON(DATA_KEYS.master,master);
- DataRepository.setJSON(DATA_KEYS.inventory,inventory);
- DataRepository.setJSON(DATA_KEYS.movements,movements);
+ if(!cloudStockActive){DataRepository.setJSON(DATA_KEYS.inventory,inventory);DataRepository.setJSON(DATA_KEYS.movements,movements)}
  DataRepository.setJSON(DATA_KEYS.projectDetails,projectDetails);
  DataRepository.setJSON(DATA_KEYS.compatibility,compatibility);
  DataRepository.setJSON(DATA_KEYS.replacementHistory,replacementHistory);
@@ -1631,7 +1644,7 @@ function projectConflictFor(incoming,exclude=null){const name=normText(incoming?
 function conflictReason(existing,incoming){const code=String(incoming?.projectCode||"").trim();return code&&String(existing?.projectCode||"").trim()===code?"code":"name"}
 function nonBlank(v){return v!==undefined&&v!==null&&String(v).trim()!==""}
 function mergeProjectRecord(existing,incoming,mode="merge"){if(!existing)return ensureProjectIdentity({...incoming},incoming.source||"import");if(mode==="skip")return existing;Object.keys(incoming).forEach(k=>{if(k==="id")return;const v=incoming[k];if(!nonBlank(v))return;if(mode==="update"||!nonBlank(existing[k]))existing[k]=v});existing.normalizedProjectName=normText(existing.projectName);existing.updatedAt=new Date().toISOString();return ensureProjectIdentity(existing,existing.source||incoming.source||"local")}
-function projectCodeForName(name){const d=findProjectDetail(name,"");return d?String(d.projectCode||"").trim():""}
+function projectCodeForName(name){const d=findProjectDetail(name,"")||cloudProjects.find(p=>normText(p.projectName)===normText(name));return d?String(d.projectCode||"").trim():""}
 function syncProjectMasterEntry(detail,oldName="",oldCode=""){
  if(!detail)return;let m=master.projects.find(x=>(oldCode&&String(x.projectCode||"")===oldCode)||normText(x.name)===normText(oldName)||normText(x.name)===normText(detail.projectName));
  if(!m){m={id:nextId("PRJ",master.projects),name:detail.projectName,projectCode:detail.projectCode||"",note:""};master.projects.push(m)}
@@ -1642,7 +1655,7 @@ function normalizeProjectReferences(){
  projectDetails.forEach(d=>ensureProjectIdentity(d,d.source||"local"));
  const byName=new Map(projectDetails.filter(x=>x.projectName).map(x=>[normText(x.projectName),x])),byCode=new Map(projectDetails.filter(x=>x.projectCode).map(x=>[String(x.projectCode).trim(),x]));
  const sync=x=>{if(!x)return;let d=null;if(x.projectId)d=projectDetails.find(p=>p.id===x.projectId)||null;if(!d&&x.projectCode)d=byCode.get(String(x.projectCode).trim())||null;if(!d&&x.project)d=byName.get(normText(x.project))||null;if(d){x.project=d.projectName||x.project;x.projectCode=d.projectCode||x.projectCode||"";x.projectId=d.id||x.projectId||""}};
- inventory.forEach(sync);movements.forEach(sync);replacementHistory.forEach(sync);inverterHistory.forEach(sync);projectDetails.forEach(d=>syncProjectMasterEntry(d));
+ inventory.filter(x=>!x.cloudOnly).forEach(sync);movements.filter(x=>!x.cloudOnly).forEach(sync);replacementHistory.forEach(sync);inverterHistory.forEach(sync);projectDetails.forEach(d=>syncProjectMasterEntry(d));
 }
 function propagateProjectChange(oldName,oldCode,newDetail){
  const matches=x=>x&&((oldCode&&String(x.projectCode||"").trim()===String(oldCode).trim())||(oldName&&normText(x.project)===normText(oldName)));
@@ -1677,6 +1690,7 @@ function render(){
  document.documentElement.dataset.theme=theme;document.documentElement.lang=lang;
  const sv=document.getElementById("sidebarVersion");if(sv)sv.textContent=APP_VERSION;
  document.querySelectorAll("[data-i18n]").forEach(e=>e.textContent=t(e.dataset.i18n));
+ const storageLabel=document.querySelector('[data-i18n="localMode"]');if(storageLabel)storageLabel.textContent=cloudStockActive?(lang==="th"?"Inventory กลาง":"Shared inventory"):t("localMode");
  document.querySelectorAll("[data-i18n-placeholder]").forEach(e=>e.placeholder=t(e.dataset.i18nPlaceholder));
  projectSearch.placeholder=lang==="th"?"ค้นหา PPA / โครงการ...":"Search PPA / project...";
  applySidebarState();
@@ -1866,20 +1880,21 @@ async function deleteLocalProject(id){
  saveAll();render();toast(t("deletedMsg"))
 }
 function fillSpareFormMasters(){
- sCategory.innerHTML=opts(master.categories);sBrand.innerHTML=opts(master.brands);sUnit.innerHTML=opts(master.units);sLocation.innerHTML=opts(master.locations);sProject.innerHTML=opts(master.projects);updateModelSelect();
+ sCategory.innerHTML=opts([...cloudMaster.categories,...master.categories]);sBrand.innerHTML=opts([...cloudMaster.brands,...master.brands]);sUnit.innerHTML=opts([...cloudMaster.units,...master.units]);sLocation.innerHTML=opts([...cloudMaster.locations,...master.locations]);sProject.innerHTML=opts([...cloudProjects.map(p=>({name:p.projectName})),...master.projects]);updateModelSelect();
 }
 function updateModelSelect(selected=""){
- const brand=sBrand.value;const list=brand?master.models.filter(x=>x.brand===brand):master.models;sModel.innerHTML=opts(list,selected);
+ const brand=sBrand.value;const models=[...cloudMaster.models,...master.models],list=brand?models.filter(x=>x.brand===brand):models;sModel.innerHTML=opts(list,selected);
 }
 function fillMovementMasters(){
- mSpare.innerHTML=inventory.map(x=>`<option value="${esc(x.id)}">${esc(x.id)} · ${esc(x.part)} · Avail ${+x.available||0}</option>`).join("");mProject.innerHTML=opts(master.projects);
+ mSpare.innerHTML=inventory.map(x=>`<option value="${esc(x.id)}">${esc(x.id)} · ${esc(x.part)} · Avail ${+x.available||0}</option>`).join("");mProject.innerHTML=opts([...cloudProjects.map(p=>({name:p.projectName})),...master.projects]);
 }
 function getDataHealth(){
- const sets={categories:new Set(master.categories.map(x=>x.name)),brands:new Set(master.brands.map(x=>x.name)),models:new Set(master.models.map(x=>x.name)),locations:new Set(master.locations.map(x=>x.name)),projects:new Set(master.projects.map(x=>x.name)),units:new Set(master.units.map(x=>x.name))};
+ const names=type=>new Set([...master[type],...(cloudMaster[type]||[])].map(x=>x.name));
+ const sets={categories:names("categories"),brands:names("brands"),models:names("models"),locations:names("locations"),projects:new Set([...master.projects.map(x=>x.name),...cloudProjects.map(x=>x.projectName)]),units:names("units")};
  const unknown=[];inventory.forEach(x=>{[["Category",x.category,sets.categories],["Brand",x.brand,sets.brands],["Model",x.model,sets.models],["Location",x.location,sets.locations],["Project",x.project,sets.projects],["Unit",x.unit,sets.units]].forEach(([type,val,set])=>{if(val&&!set.has(val))unknown.push(`${x.id}: ${type} = ${val}`)})});
  const seen=new Set(),dups=[];inventory.forEach(x=>{if(seen.has(x.id))dups.push(x.id);else seen.add(x.id)});
  const invIds=new Set(inventory.map(x=>x.id));const orphanMov=movements.filter(m=>m.spareId&&!invIds.has(m.spareId));
- const brandMap=new Map(master.models.map(x=>[x.name,x.brand||""]));const mismatch=inventory.filter(x=>x.model&&x.brand&&brandMap.has(x.model)&&brandMap.get(x.model)&&brandMap.get(x.model)!==x.brand);
+ const brandMap=new Map([...master.models,...cloudMaster.models].map(x=>[x.name,x.brand||""]));const mismatch=inventory.filter(x=>x.model&&x.brand&&brandMap.has(x.model)&&brandMap.get(x.model)&&brandMap.get(x.model)!==x.brand);
  return{unknown,dups:[...new Set(dups)],orphanMov,mismatch};
 }
 function renderDataHealth(){
@@ -1890,21 +1905,21 @@ function renderDataHealth(){
  detail.innerHTML=lines.length?`<div class="notice"><b>${t("healthReviewTitle")}:</b><br>${lines.map(esc).join("<br>")}${(h.unknown.length+h.dups.length+h.orphanMov.length+h.mismatch.length)>lines.length?"<br>…":""}</div>`:`<div class="notice" style="background:var(--green-soft);color:var(--green)"><b>${t("healthOk")}</b> · ${t("dataHealthOk")}</div>`;
 }
 
-function openClearWorkspace(){if(!requireSpareAdmin())return;
+function openClearWorkspace(){if(!requireLocalStock())return;
  clearWorkspaceConfirmInput.value="";confirmClearWorkspaceBtn.disabled=true;
  clearModalCounts.innerHTML=workspaceCountsHTML();openModal("clearWorkspaceModal");
 }
-function clearWorkspaceData(){if(!requireSpareAdmin())return;
+function clearWorkspaceData(){if(!requireLocalStock())return;
  master=structuredClone(DEFAULT_MASTER);inventory=[];movements=[];projectDetails=[];compatibility=[];replacementHistory=[];inverterHistory=[];
  for(const key of [DATA_KEYS.master,DATA_KEYS.inventory,DATA_KEYS.movements,DATA_KEYS.projectDetails,DATA_KEYS.compatibility,DATA_KEYS.replacementHistory,DATA_KEYS.inverterHistory])SafeStorage.removeItem(key);
  currentPage=1;movementFilters={search:"",type:"",project:"",year:"",month:""};projectFilters={search:"",status:"",province:""};
  closeModal("clearWorkspaceModal");render();toast(t("workspaceCleared"));
 }
 function exportWorkspaceBackup(){
- const payload={app:"Solar Spare Parts Platform",version:APP_VERSION,schemaVersion:DATA_SCHEMA_VERSION,backend:DATA_BACKEND.mode,exportedAt:new Date().toISOString(),master,inventory,movements,projectDetails,compatibility,replacementHistory,inverterHistory,settings:{lang,theme}};
+ const payload={app:"Solar Spare Parts Platform",version:APP_VERSION,schemaVersion:DATA_SCHEMA_VERSION,backend:cloudStockActive?"supabase":DATA_BACKEND.mode,exportedAt:new Date().toISOString(),master,inventory,movements,projectDetails,compatibility,replacementHistory,inverterHistory,settings:{lang,theme}};
  downloadText(`Solar_Spare_Workspace_Backup_${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(payload,null,2),"application/json;charset=utf-8");toast(t("workspaceBackupExported"));
 }
-function restoreWorkspaceObject(obj){if(!requireSpareAdmin())return;
+function restoreWorkspaceObject(obj){if(!requireLocalStock())throw Error("ไม่สามารถ Restore Inventory กลางด้วย Backup เฉพาะเครื่อง");
  if(!obj||!obj.master||!Array.isArray(obj.inventory)||!Array.isArray(obj.movements))throw new Error("Invalid workspace backup");
  const required=["categories","brands","models","locations","projects","units"];if(!required.every(k=>Array.isArray(obj.master[k])))throw new Error("Master Data structure is incomplete");
  master=structuredClone(obj.master);inventory=structuredClone(obj.inventory);movements=structuredClone(obj.movements);projectDetails=structuredClone(obj.projectDetails||[]);compatibility=structuredClone(obj.compatibility||[]);replacementHistory=structuredClone(obj.replacementHistory||[]);inverterHistory=structuredClone(obj.inverterHistory||[]);if(obj.settings?.lang)lang=obj.settings.lang;if(obj.settings?.theme)theme=obj.settings.theme;saveAll();DataRepository.setSetting(DATA_KEYS.lang,lang);DataRepository.setSetting(DATA_KEYS.theme,theme);render();
@@ -2159,7 +2174,7 @@ function renderAnalytics(){
 function renderProjectHandoff(){
  const code=document.getElementById("dataContractCode"),note=document.getElementById("handoffNote");if(!code||!note)return;
  const contract={
-   app:"Solar Spare Parts Platform",version:APP_VERSION,schemaVersion:DATA_SCHEMA_VERSION,backend:DATA_BACKEND.mode,
+   app:"Solar Spare Parts Platform",version:APP_VERSION,schemaVersion:DATA_SCHEMA_VERSION,backend:cloudStockActive?"supabase":DATA_BACKEND.mode,
    entities:{
      inventory:["id","part","category","brand","model","unit","available","reserved","repair","min","location","project","compatibleModels","note"],
      movement:["id","date","type","spareId","part","qty","project","fromTo","ref","remark"],
@@ -2167,7 +2182,10 @@ function renderProjectHandoff(){
    }
  };
  code.textContent=JSON.stringify(contract,null,2);
- note.innerHTML=lang==="th"
+ note.innerHTML=cloudStockActive?(lang==="th"
+ ? `<b>Checkpoint V${APP_VERSION}</b><br>Inventory และ Movement อยู่ในฐานข้อมูลกลาง · รายการเก่าจาก Excel เป็นประวัติ ไม่หักยอดคงเหลือซ้ำ · เฉพาะแอดมินแก้ไขได้ · ข้อมูล Backup เฉพาะเครื่องไม่ถูกนำขึ้นฐานข้อมูลอัตโนมัติ.`
+ : `<b>Checkpoint V${APP_VERSION}</b><br>Inventory and Movement use shared storage. Imported history does not recalculate current stock. Admins can edit; device backups are not uploaded automatically.`)
+ :lang==="th"
  ? `<b>Checkpoint V${APP_VERSION}</b><br>Standalone Desktop · Fresh Import Workspace · Local Repository · มี Master Data, Inventory, Stock Movement, Dashboard Analytics (Month/Year/Lifetime), TH/EN, Light/Dark, Backup/Restore และ Data Health.<br><br><b>กติกาสำคัญ:</b> Movement เป็นแหล่งข้อมูลย้อนหลังของกราฟ; Current Stock อยู่ใน Inventory. หากย้ายไป Supabase ให้คง Spare ID เป็น business code แต่สร้าง UUID สำหรับ PK/FK, ทำ stock_movements แบบ append-only และใช้ RLS เมื่อมี Multi-user.<br><br><b>ยังค้าง:</b> Import Preview/Validation, Reverse Transaction, Supabase Auth/RLS/Realtime และการ Sync หลายผู้ใช้.`
  : `<b>Checkpoint V${APP_VERSION}</b><br>Standalone Desktop · Fresh Import Workspace · Local Repository · Master Data, Inventory, Stock Movement, Dashboard Analytics (Month/Year/Lifetime), TH/EN, Light/Dark, Backup/Restore and Data Health are included.<br><br><b>Important rule:</b> Movement is the historical source for analytics; Current Stock lives in Inventory. When moving to Supabase, keep Spare ID as a business code, introduce UUID PK/FK, keep stock_movements append-only, and add RLS for multi-user access.<br><br><b>Pending:</b> Import Preview/Validation, Reverse Transaction, Supabase Auth/RLS/Realtime and multi-user synchronization.`;
 }
@@ -2189,8 +2207,12 @@ function editSpare(id){if(!requireSpareAdmin())return;
  fillSpareFormMasters();sId.value=x.id;sPart.value=x.part;sCategory.value=x.category||"";sBrand.value=x.brand||"";updateModelSelect(x.model||"");sUnit.value=x.unit||"";sLocation.value=x.location||"";sProject.value=x.project||"";
  sAvailable.value=+x.available||0;sReserved.value=+x.reserved||0;sRepair.value=+x.repair||0;sMin.value=+x.min||0;sNote.value=x.note||"";openModal("spareModal")
 }
-function deleteSpare(id){if(!requireSpareAdmin())return;
- const x=inventory.find(v=>v.id===id);if(!x)return;if(!confirm(`${t("deleteConfirm")}: ${x.id} - ${x.part}?`))return;inventory=inventory.filter(v=>v.id!==id);saveAll();render();toast(t("deletedMsg"))
+async function deleteSpare(id){if(!requireSpareAdmin())return;
+ const x=inventory.find(v=>v.id===id);if(!x)return;
+ if(movements.some(m=>m.spareId===id)){await showSpareDeletionBlocked(x.part,["Movements: "+movements.filter(m=>m.spareId===id).length]);return}
+ if(!await confirmSpareDeletion(x.id+" · "+x.part,"ลบ Inventory จาก Spare Parts"))return;
+ if(x.cloudOnly){try{const {data,error}=await SolarCloud.getClient().from("spare_items").delete().eq("id",x.cloudId).eq("workspace_id",spareWorkspaceId).eq("revision",x.revision).select("id");if(error)throw error;if(!data?.length)throw Error("ข้อมูลถูกแก้ไขแล้ว กรุณาโหลดใหม่");await loadCloudCatalogue();toast(t("deletedMsg"))}catch(err){alert("ลบ Inventory ไม่สำเร็จ: "+err.message)}return}
+ inventory=inventory.filter(v=>v.id!==id);saveAll();render();toast(t("deletedMsg"))
 }
 function viewSpare(id){
  const x=inventory.find(v=>v.id===id);if(!x)return;const hist=movements.filter(m=>m.spareId===id).slice().reverse();
@@ -2351,8 +2373,8 @@ function openImportDuplicateConflict(p,fileName){pendingExcelImport=p;pendingImp
 function resolveImportConflict(action){if(!pendingExcelImport)return;pendingExcelImport.conflictAction=action;closeModal("importDuplicateModal");renderExcelImportPreview(pendingExcelImport,pendingImportFileName)}
 function importStatus(text){const el=document.getElementById("importCenterStatus");if(el)el.innerHTML=`<span class="import-center-status-dot"></span><span>${esc(text)}</span>`}
 function prepareCSVImport(text){const rows=parseCSV(text);if(rows.length<2)throw new Error("CSV has no data");const headers=rows[0].map(x=>String(x||"").trim()),lower=headers.map(headerNorm);let name="";if(lower.some(h=>["project name","project","customer name"].includes(h)))name="Projects";else if(lower.includes("spare id")||lower.includes("part name"))name="Inventory";else if(lower.includes("type")&&lower.includes("name"))name="Master_Data";else if(lower.includes("movement id")&&lower.includes("date"))name="Historical_Movements";else throw new Error(t("unrecognizedImport"));return prepareExcelImport({sheetNames:[name],sheets:{[name]:rows}})}
-async function handleUnifiedImportFile(file){if(!file||!requireSpareAdmin())return;pendingImportFileName=file.name;importStatus(`${file.name} · reading...`);try{const ext=(file.name.split(".").pop()||"").toLowerCase();if(ext==="json"){const obj=JSON.parse(await file.text());if(confirm(t("restoreConfirm"))){restoreWorkspaceObject(obj);toast(t("workspaceRestored"));importStatus(`${file.name} · restored`)}return}let p;if(ext==="csv")p=prepareCSVImport(await file.text());else p=prepareExcelImport(await MiniXLSX.read(file));pendingExcelImport=p;importStatus(`${file.name} · ready`);if(p.duplicates?.length)openImportDuplicateConflict(p,file.name);else renderExcelImportPreview(p,file.name)}catch(err){pendingExcelImport=null;alert(t("importFailed")+": "+err.message);importStatus(`${file.name} · error`)}}
-function chooseUnifiedImport(){if(requireSpareAdmin())unifiedImportInput.click()}
+async function handleUnifiedImportFile(file){if(!file||!requireLocalStock())return;pendingImportFileName=file.name;importStatus(`${file.name} · reading...`);try{const ext=(file.name.split(".").pop()||"").toLowerCase();if(ext==="json"){const obj=JSON.parse(await file.text());if(confirm(t("restoreConfirm"))){restoreWorkspaceObject(obj);toast(t("workspaceRestored"));importStatus(`${file.name} · restored`)}return}let p;if(ext==="csv")p=prepareCSVImport(await file.text());else p=prepareExcelImport(await MiniXLSX.read(file));pendingExcelImport=p;importStatus(`${file.name} · ready`);if(p.duplicates?.length)openImportDuplicateConflict(p,file.name);else renderExcelImportPreview(p,file.name)}catch(err){pendingExcelImport=null;alert(t("importFailed")+": "+err.message);importStatus(`${file.name} · error`)}}
+function chooseUnifiedImport(){if(requireLocalStock())unifiedImportInput.click()}
 function renderExcelImportPreview(p,fileName){
  excelImportFileName.textContent=fileName||"";const strategy=document.getElementById("importPreviewStrategy");if(strategy){strategy.classList.toggle("hidden",!(p.duplicates&&p.duplicates.length));strategy.textContent=(p.duplicates&&p.duplicates.length)?`${t("conflictStrategy")}: ${String(p.conflictAction||"merge").toUpperCase()} · ${p.duplicates.length} duplicate project(s)`:""}
  const cards=[
@@ -2372,7 +2394,7 @@ function renderExcelImportPreview(p,fileName){
  openModal("excelImportModal");
 }
 function closeExcelImportPreview(){pendingExcelImport=null;closeModal("excelImportModal");excelImportInput.value=""}
-function mergeExcelImport(p){if(!requireSpareAdmin())return;
+function mergeExcelImport(p){if(!requireLocalStock())throw Error("ไม่สามารถ Import แบบ Local ขณะใช้ Inventory กลาง");
  if(!p||p.errors.length)throw new Error("Import has validation errors");
  for(const m of p.master){const arr=master[m.type];let x=arr.find(v=>normText(v.name)===normText(m.name));if(x){if(m.brand)x.brand=m.brand;if(m.note)x.note=m.note}else arr.push({id:m.id&&!arr.some(v=>v.id===m.id)?m.id:nextId(prefixFor(m.type),arr),name:m.name,brand:m.brand,note:m.note})}
  const action=p.conflictAction||"merge";for(const raw of p.projects){const d=ensureProjectIdentity({...raw},"import");let x=projectConflictFor(d);if(x)mergeProjectRecord(x,d,action);else projectDetails.push(d);const effective=x||d;if(effective.projectName&&!master.projects.some(v=>normText(v.name)===normText(effective.projectName)))master.projects.push({id:nextId("PRJ",master.projects),name:effective.projectName,projectCode:effective.projectCode||"",note:effective.projectCode?`PPA Contract No.: ${effective.projectCode}`:""})}
@@ -2392,7 +2414,7 @@ function importMasterText(text){if(!requireSpareAdmin())return;
  rows.slice(1).forEach(r=>{const o={};h.forEach((k,i)=>o[k]=r[i]||"");const type=o.type;if(!master[type])return;const found=master[type].find(x=>x.id===o.id||x.name.toLowerCase()===String(o.name).toLowerCase());if(found){found.name=o.name||found.name;found.brand=o.brand||found.brand||"";found.note=o.note||found.note||"";updated++}else if(o.name){master[type].push({id:o.id||nextId(prefixFor(type),master[type]),name:o.name,brand:o.brand||"",note:o.note||""});added++}});
  saveAll();render();return{added,updated}
 }
-function importInventoryText(text){if(!requireSpareAdmin())return;
+function importInventoryText(text){if(!requireLocalStock())return;
  const rows=parseCSV(text);if(rows.length<2)throw new Error("CSV has no data");const h=rows[0].map(x=>x.trim().toLowerCase());let added=0,updated=0;
  rows.slice(1).forEach(r=>{const o={};h.forEach((k,i)=>o[k]=r[i]||"");const id=o["spare id"]||o["id"];const part=o["part name"]||o["part"];if(!id||!part)return;let x=inventory.find(v=>v.id===id);const val={id,part,category:o.category||"",brand:o.brand||"",model:o.model||"",unit:o.unit||"pcs",available:+o.available||0,reserved:+o.reserved||0,repair:+o.repair||0,min:+o["min stock"]||+o.min||0,location:o.location||"",project:o.project||"",note:o.note||""};if(x){Object.assign(x,val);updated++}else{inventory.push(val);added++}});
  saveAll();render();return{added,updated}
@@ -2437,9 +2459,36 @@ movementClearFilters.onclick=()=>{
  movementSearch.value="";
  renderMovements();
 };sBrand.addEventListener("change",()=>updateModelSelect());
-spareForm.addEventListener("submit",e=>{e.preventDefault();if(!requireSpareAdmin())return;const id=sId.value.trim();if(inventory.some(x=>x.id===id&&x.id!==editingSpareId)){alert(t("duplicateSpareError"));return}const val={id,part:sPart.value.trim(),category:sCategory.value,brand:sBrand.value,model:sModel.value,unit:sUnit.value,available:+sAvailable.value||0,reserved:+sReserved.value||0,repair:+sRepair.value||0,min:+sMin.value||0,location:sLocation.value,project:sProject.value,projectCode:projectCodeForName(sProject.value),note:sNote.value.trim()};if(editingSpareId){const x=inventory.find(v=>v.id===editingSpareId);if(x){const oldId=x.id,oldPart=x.part;Object.assign(x,val);movements.forEach(m=>{if(m.spareId===oldId){m.spareId=id;if(m.part===oldPart)m.part=val.part}})}}else inventory.push(val);saveAll();closeModal("spareModal");render();toast(t("savedMsg"))});
+spareForm.addEventListener("submit",async e=>{
+ e.preventDefault();if(!requireSpareAdmin())return;
+ const id=sId.value.trim();if(inventory.some(x=>x.id===id&&x.id!==editingSpareId)){alert(t("duplicateSpareError"));return}
+ const val={id,part:sPart.value.trim(),category:sCategory.value,brand:sBrand.value,model:sModel.value,unit:sUnit.value,available:+sAvailable.value||0,reserved:+sReserved.value||0,repair:+sRepair.value||0,min:+sMin.value||0,location:sLocation.value,project:sProject.value,projectCode:projectCodeForName(sProject.value),note:sNote.value.trim()};
+ if(cloudStockActive){
+  const old=inventory.find(x=>x.id===editingSpareId),linked=cloudProjects.find(p=>p.projectCode&&p.projectCode===val.projectCode);
+  const fields={workspace_id:spareWorkspaceId,spare_code:val.id,part:val.part,category:val.category,brand:val.brand,model:val.model,unit:val.unit,location:val.location,project:val.project,project_code:val.projectCode,project_id:linked?.id||null,available:val.available,reserved:val.reserved,repair:val.repair,min_stock:val.min,details:{note:val.note,compatibleModels:old?.compatibleModels||""}};
+  try{
+   if(old){if(movements.some(m=>m.spareId===old.id)&&val.id!==old.id)throw Error("รหัสอะไหล่นี้มี Movement แล้ว ไม่สามารถเปลี่ยนรหัสได้");fields.revision=old.revision+1;const {data,error}=await SolarCloud.getClient().from("spare_items").update(fields).eq("id",old.cloudId).eq("workspace_id",spareWorkspaceId).eq("revision",old.revision).select("id");if(error)throw error;if(!data?.length)throw Error("ข้อมูลถูกแก้ไขในเครื่องอื่นแล้ว กรุณาโหลดใหม่")}
+   else{const {error}=await SolarCloud.getClient().from("spare_items").insert(fields);if(error)throw error}
+   closeModal("spareModal");await loadCloudCatalogue();toast(t("savedMsg"));
+  }catch(err){alert("บันทึก Inventory ไม่สำเร็จ: "+err.message)}return;
+ }
+ if(editingSpareId){const x=inventory.find(v=>v.id===editingSpareId);if(x){const oldId=x.id,oldPart=x.part;Object.assign(x,val);movements.forEach(m=>{if(m.spareId===oldId){m.spareId=id;if(m.part===oldPart)m.part=val.part}})}}else inventory.push(val);saveAll();closeModal("spareModal");render();toast(t("savedMsg"))
+});
+
 mSpare.addEventListener("change",updateMovementHint);mType.addEventListener("change",updateMovementHint);
-movementForm.addEventListener("submit",e=>{e.preventDefault();if(!requireSpareAdmin())return;const x=inventory.find(v=>v.id===mSpare.value);if(!x)return;const qty=+mQty.value||0,err=applyMovement(x,mType.value,qty);if(err){alert(err);return}const project=mProject.value;movements.push({id:nextId("MOV",movements),date:nowStr(),type:mType.value,spareId:x.id,part:x.part,category:x.category||"",brand:x.brand||"",model:x.model||"",unit:x.unit||"",qty,project,projectCode:projectCodeForName(project),fromTo:mFromTo.value.trim(),ref:mRef.value.trim(),remark:mRemark.value.trim()});saveAll();closeModal("movementModal");render();toast(t("movementSavedMsg"))});
+movementForm.addEventListener("submit",async e=>{
+ e.preventDefault();if(!requireSpareAdmin())return;
+ const x=inventory.find(v=>v.id===mSpare.value);if(!x)return;
+ const qty=+mQty.value||0,project=mProject.value;
+ const row={id:cloudStockActive?"MOV-"+makeUUID():nextId("MOV",movements),date:nowStr(),type:mType.value,spareId:x.id,part:x.part,category:x.category||"",brand:x.brand||"",model:x.model||"",unit:x.unit||"",qty,project,projectCode:projectCodeForName(project),fromTo:mFromTo.value.trim(),ref:mRef.value.trim(),remark:mRemark.value.trim()};
+ if(cloudStockActive){
+  if(!Number.isFinite(qty)||qty<=0){alert(t("qtyGreaterZero"));return}
+  try{const {error}=await SolarCloud.getClient().rpc("spare_post_movement",{p_workspace:spareWorkspaceId,p_spare_code:x.id,p_payload:row,p_revision:x.revision});if(error)throw error;closeModal("movementModal");await loadCloudCatalogue();toast(t("movementSavedMsg"))}catch(err){alert("บันทึก Movement ไม่สำเร็จ: "+err.message)}return;
+ }
+ const err=applyMovement(x,row.type,qty);if(err){alert(err);return}
+ movements.push(row);saveAll();closeModal("movementModal");render();toast(t("movementSavedMsg"))
+});
+
 addMasterBtn.onclick=openMasterAdd;mdType.addEventListener("change",()=>{brandRelationField.classList.toggle("hidden",mdType.value!=="models");mdBrand.innerHTML=opts(master.brands)});
 masterForm.addEventListener("submit",async e=>{
  e.preventDefault();if(!requireSpareAdmin())return;
@@ -2499,6 +2548,7 @@ document.addEventListener("pointerdown",e=>{
 document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)m.classList.remove("show")}));
 render();
 loadCloudCatalogue();
+if(window.SolarCloud)SolarCloud.getClient().auth.onAuthStateChange(event=>{if(event==="SIGNED_OUT")loadCloudCatalogue()});
 </script>
 </body>
 </html>
