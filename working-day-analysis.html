@@ -1078,7 +1078,7 @@ body.wd-theme-switching *::after{
 }
 </style>
 
-<link rel="stylesheet" href="working-day-summary.css?v=20260928-7">
+<link rel="stylesheet" href="working-day-summary.css?v=20260928-8">
 </head>
 <body class="solar-wd bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen pb-2 transition-colors duration-200">
 
@@ -1278,6 +1278,7 @@ body.wd-theme-switching *::after{
                     </div>
                 </div>
                 <div class="flex flex-wrap items-center justify-end gap-2">
+                    <div id="wdReviewFilterToolbar" class="wd-review-filter-toolbar" hidden></div>
                     <button id="mktFilterButton" type="button" onclick="openMktFilterPopup()" class="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-700 dark:text-slate-200"><span class="flex items-center gap-2 min-w-0"><i class="fa-solid fa-filter text-violet-500"></i><span class="font-semibold">MKT</span><span id="mktFilterButtonText" class="truncate">Total</span></span><span class="flex items-center gap-2"><strong id="mktFilterCount" class="text-violet-600 dark:text-violet-300">0</strong><i class="fa-solid fa-chevron-down text-slate-400"></i></span></button><button id="method1FilterButton" onclick="setMethodFilter('m1')" class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg px-3 py-2 flex items-center gap-2 transition">
                         <i class="fa-solid fa-calculator"></i><span>วิธีที่ 1</span><strong id="method1ProjectCount" class="bg-blue-600 text-white rounded-full px-2 py-0.5">0</strong>
                     </button>
@@ -2733,7 +2734,7 @@ body.wd-theme-switching *::after{
 
         syncTableScrollbars();
     </script>
-    <script src="working-day-summary.js?v=20260928-6"></script>
+    <script src="working-day-summary.js?v=20260928-7"></script>
     <script>
       const workingDayCloudAdapter={
         presenceContext:()=>WDReview.presenceContext(),
