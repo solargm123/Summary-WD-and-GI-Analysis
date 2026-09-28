@@ -1067,7 +1067,7 @@ main .section .table-wrap.smart-page-scroll thead th{position:sticky;top:0;z-ind
       <div class="field"><label data-i18n="provinceLabel">จังหวัด</label><select class="control" id="projectProvinceFilter"></select></div>
       <div class="field project-clear-field"><label>&nbsp;</label><button class="btn" id="projectClearFilters" data-i18n="clear">ล้างตัวกรอง</button></div>
     </div>
-    <div class="project-filter-summary"><span id="projectResultCount"></span><span data-i18n="projectKeyHint">Relationship key: PPA Contract No.</span></div>
+    <div class="project-filter-summary"><span id="projectResultCount"></span><span id="cloudCatalogueStatus" role="status"></span></div>
   </div>
   <div class="card">
     <div class="table-wrap project-table-wrap"><table class="project-table"><thead><tr>
@@ -1093,7 +1093,7 @@ main .section .table-wrap.smart-page-scroll thead th{position:sticky;top:0;z-ind
     <div>
       <div class="master-stat-grid" id="masterStats"></div>
       <div class="card master-table">
-        <div class="card-head"><div><div class="card-title" id="masterTableTitle">Categories</div><div class="card-sub" id="masterTableSub"></div></div><input class="control" id="masterSearch" style="width:300px" data-i18n-placeholder="masterSearchPlaceholder" placeholder="Search master data"></div>
+        <div class="card-head"><div><div class="card-title" id="masterTableTitle">Categories</div><div class="card-sub" id="masterTableSub"></div><div class="card-sub" id="masterCloudStatus" role="status"></div></div><input class="control" id="masterSearch" style="width:300px" data-i18n-placeholder="masterSearchPlaceholder" placeholder="Search master data"></div>
         <div class="table-wrap" style="max-height:590px"><table><thead id="masterHead"></thead><tbody id="masterBody"></tbody></table></div>
       </div>
     </div>
@@ -1397,6 +1397,8 @@ main .section .table-wrap.smart-page-scroll thead th{position:sticky;top:0;z-ind
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="cloud-core.js?v=20260928-spare-catalog"></script>
 <script>
 const APP_VERSION="2.0.0";
 const DATA_SCHEMA_VERSION="2.0.0";
@@ -1445,6 +1447,27 @@ let master=DataRepository.getJSON(DATA_KEYS.master,null)||structuredClone(DEFAUL
 let inventory=DataRepository.getJSON(DATA_KEYS.inventory,null)||structuredClone(DEFAULT_INVENTORY);
 let movements=DataRepository.getJSON(DATA_KEYS.movements,null)||structuredClone(DEFAULT_MOVEMENTS);
 let projectDetails=DataRepository.getJSON(DATA_KEYS.projectDetails,[])||[];
+// Cloud catalogue is displayed separately from local edits and never saved into LocalStorage.
+let cloudProjects=[],cloudMaster={categories:[],brands:[],models:[],locations:[],units:[]};
+let cloudCatalogueStatus="กำลังตรวจสอบข้อมูลโครงการในฐานข้อมูล…";
+async function loadCloudCatalogue(){
+ try{
+  if(!window.SolarCloud)throw new Error("ไม่สามารถโหลดตัวเชื่อมต่อฐานข้อมูล");
+  const session=await SolarCloud.session();
+  if(!session){cloudCatalogueStatus="กรุณาเข้าสู่ระบบที่หน้าแรกเพื่อดูข้อมูลในฐานข้อมูล";render();return}
+  const member=await SolarCloud.membership(),client=SolarCloud.getClient();
+  const [projects,masters]=await Promise.all([
+   client.from("spare_project_catalog").select("id,project_code,project_name,capacity_kwp,province,match_status,details").eq("workspace_id",member.workspace_id).order("project_name"),
+   client.from("spare_master_data").select("id,master_type,source_id,name,brand,note").eq("workspace_id",member.workspace_id).order("name")
+  ]);
+  if(projects.error)throw projects.error;if(masters.error)throw masters.error;
+  cloudProjects=(projects.data||[]).map(p=>({...p.details,id:p.id,projectCode:p.project_code||"",projectName:p.project_name,capacity:p.capacity_kwp??"",province:p.province||"",matchStatus:p.match_status,cloudOnly:true}));
+  cloudMaster={categories:[],brands:[],models:[],locations:[],units:[]};
+  (masters.data||[]).forEach(m=>{if(cloudMaster[m.master_type])cloudMaster[m.master_type].push({id:m.source_id,name:m.name,brand:m.brand||"",note:m.note||"",cloudOnly:true})});
+  cloudCatalogueStatus=`ฐานข้อมูล: ${cloudProjects.length} โครงการ · ${(masters.data||[]).length} Master Data (อ่านอย่างเดียว)`;
+ }catch(err){cloudCatalogueStatus=`อ่านฐานข้อมูลไม่ได้: ${err.message||err}`}
+ render();
+}
 let compatibility=DataRepository.getJSON(DATA_KEYS.compatibility,[])||[];
 let replacementHistory=DataRepository.getJSON(DATA_KEYS.replacementHistory,[])||[];
 let inverterHistory=DataRepository.getJSON(DATA_KEYS.inverterHistory,[])||[];
@@ -1691,26 +1714,32 @@ function renderMovements(){
 }
 function renderProjects(){
  const q=(projectFilters.search||"").trim().toLowerCase();
- const statuses=[...new Set(projectDetails.map(x=>String(x.status||"").trim()).filter(Boolean))].sort(),provinces=[...new Set(projectDetails.map(x=>String(x.province||"").trim()).filter(Boolean))].sort();
+ const localKeys=new Set(projectDetails.map(x=>x.projectCode?`code:${normText(x.projectCode)}`:`name:${normText(x.projectName)}`));
+ const visibleCloud=cloudProjects.filter(x=>!localKeys.has(x.projectCode?`code:${normText(x.projectCode)}`:`name:${normText(x.projectName)}`));
+ const allProjects=[...projectDetails,...visibleCloud];
+ document.getElementById("cloudCatalogueStatus").textContent=cloudCatalogueStatus;
+ const statuses=[...new Set(allProjects.map(x=>String(x.status||"").trim()).filter(Boolean))].sort(),provinces=[...new Set(allProjects.map(x=>String(x.province||"").trim()).filter(Boolean))].sort();
  const statusSel=document.getElementById("projectStatusFilter"),provinceSel=document.getElementById("projectProvinceFilter");
  if(statusSel){statusSel.innerHTML=`<option value="">${t("all")}</option>`+statuses.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("");statusSel.value=projectFilters.status}
  if(provinceSel){provinceSel.innerHTML=`<option value="">${t("all")}</option>`+provinces.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("");provinceSel.value=projectFilters.province}
- const rows=projectDetails.filter(d=>{const equipment=[d.pvModuleModel,d.inverterBrand,d.inverter1,d.inverter2,d.inverter3,d.optimizerRsd].join(" ");const hay=[d.projectCode,d.projectName,d.epc,d.province,d.location,d.status,equipment].join(" ").toLowerCase();return(!q||hay.includes(q))&&(!projectFilters.status||d.status===projectFilters.status)&&(!projectFilters.province||d.province===projectFilters.province)}).slice().sort((x,y)=>String(x.projectCode||x.projectName).localeCompare(String(y.projectCode||y.projectName)));
- projectResultCount.textContent=fmtTemplate("projectResults",{shown:rows.length,total:projectDetails.length});
- projectTableBody.innerHTML=rows.map(d=>{const code=String(d.projectCode||"").trim(),name=String(d.projectName||"").trim(),pvCount=replacementHistory.filter(x=>sameProject(x,d,name)).length,invCount=inverterHistory.filter(x=>sameProject(x,d,name)).length,movCount=movements.filter(x=>sameProject(x,d,name)).length;const invs=[[d.inverter1,d.inverterQty1],[d.inverter2,d.inverterQty2],[d.inverter3,d.inverterQty3]].filter(x=>x[0]);const eq=[d.pvModuleModel?`PV: ${d.pvModuleModel}`:"",invs.length?`INV: ${invs.map(x=>x[0]).join(", ")}`:"",d.optimizerRsd?`OPT: ${d.optimizerRsd}`:""].filter(Boolean);return `<tr><td><div class="project-code">${esc(code||"—")}</div></td><td><div class="project-name-cell">${esc(name||"—")}</div><div class="part-sub">${esc(d.location||d.plantType||"")}</div></td><td>${d.capacity!==undefined&&d.capacity!==""?`${esc(d.capacity)} kWp`:"—"}</td><td>${esc(d.status||"—")}</td><td>${esc(d.province||"—")}</td><td>${esc(d.epc||"—")}</td><td><div class="project-eq-summary">${eq.map(esc).join("<br>")||"—"}</div></td><td><div class="project-history-mini"><span class="mini-count">PV ${pvCount}</span><span class="mini-count">INV ${invCount}</span><span class="mini-count">MOV ${movCount}</span></div></td><td><div class="row-actions"><button class="btn small" data-project-view="${esc(code||name)}">ⓘ ${t("viewBtn")}</button><button class="btn small" data-project-edit="${esc(code||name)}">✎ ${t("editBtn")}</button></div></td></tr>`}).join("")||`<tr><td colspan="9" style="padding:35px;text-align:center;color:var(--muted)">${t("noData")}</td></tr>`;
+ const rows=allProjects.filter(d=>{const equipment=[d.pvModuleModel,d.inverterBrand,d.inverter1,d.inverter2,d.inverter3,d.optimizerRsd].join(" ");const hay=[d.projectCode,d.projectName,d.epc,d.province,d.location,d.status,equipment].join(" ").toLowerCase();return(!q||hay.includes(q))&&(!projectFilters.status||d.status===projectFilters.status)&&(!projectFilters.province||d.province===projectFilters.province)}).slice().sort((x,y)=>String(x.projectCode||x.projectName).localeCompare(String(y.projectCode||y.projectName)));
+ projectResultCount.textContent=fmtTemplate("projectResults",{shown:rows.length,total:allProjects.length});
+ projectTableBody.innerHTML=rows.map(d=>{const code=String(d.projectCode||"").trim(),name=String(d.projectName||"").trim(),pvCount=replacementHistory.filter(x=>sameProject(x,d,name)).length,invCount=inverterHistory.filter(x=>sameProject(x,d,name)).length,movCount=movements.filter(x=>sameProject(x,d,name)).length;const invs=[[d.inverter1,d.inverterQty1],[d.inverter2,d.inverterQty2],[d.inverter3,d.inverterQty3]].filter(x=>x[0]&&x[0]!=="None");const eq=[d.pvModuleModel?`PV: ${d.pvModuleModel}`:"",invs.length?`INV: ${invs.map(x=>x[0]).join(", ")}`:"",d.optimizerRsd?`OPT: ${d.optimizerRsd}`:""].filter(Boolean);return `<tr><td><div class="project-code">${esc(code||"—")}</div></td><td><div class="project-name-cell">${esc(name||"—")}</div><div class="part-sub">${d.cloudOnly?`☁ ${d.matchStatus==="needs_review"?"รอตรวจจับคู่ · ":"เชื่อม Central · "}`:""}${esc(d.location||d.plantType||"")}</div></td><td>${d.capacity!==undefined&&d.capacity!==""?`${esc(d.capacity)} kWp`:"—"}</td><td>${esc(d.status||"—")}</td><td>${esc(d.province||"—")}</td><td>${esc(d.epc||"—")}</td><td><div class="project-eq-summary">${eq.map(esc).join("<br>")||"—"}</div></td><td><div class="project-history-mini"><span class="mini-count">PV ${pvCount}</span><span class="mini-count">INV ${invCount}</span><span class="mini-count">MOV ${movCount}</span></div></td><td>${d.cloudOnly?'<span class="muted">ฐานข้อมูล · ดูอย่างเดียว</span>':`<div class="row-actions"><button class="btn small" data-project-view="${esc(code||name)}">ⓘ ${t("viewBtn")}</button><button class="btn small" data-project-edit="${esc(code||name)}">✎ ${t("editBtn")}</button></div>`}</td></tr>`}).join("")||`<tr><td colspan="9" style="padding:35px;text-align:center;color:var(--muted)">${t("noData")}</td></tr>`;
  document.querySelectorAll("[data-project-view]").forEach(btn=>btn.onclick=()=>{const ref=btn.dataset.projectView,d=findProjectDetail("",ref)||findProjectDetail(ref,"");if(d)openProjectDetail(d.projectName,d.projectCode)});
  document.querySelectorAll("[data-project-edit]").forEach(btn=>btn.onclick=()=>{const ref=btn.dataset.projectEdit,d=findProjectDetail("",ref)||findProjectDetail(ref,"");if(d)openProjectEditor(d)});
 }
 function renderMaster(){
- masterStats.innerHTML=["categories","brands","models","locations"].map(k=>`<div class="master-stat"><div class="muted">${t(k)||k}</div><div class="n">${master[k].length}</div></div>`).join("");
- const q=masterSearch.value.trim().toLowerCase(),rows=master[currentMaster].filter(x=>[x.id,x.name,x.brand,x.note].join(" ").toLowerCase().includes(q));
+ const masterRows=type=>{const local=master[type],keys=new Set(local.map(x=>normText(x.name)));const cloud=type==="projects"?cloudProjects.map(p=>({id:p.projectCode||p.id,name:p.projectName,note:p.matchStatus==="needs_review"?"รอตรวจจับคู่":"เชื่อม Central",cloudOnly:true})):cloudMaster[type]||[];return [...local,...cloud.filter(x=>!keys.has(normText(x.name)))]};
+ masterStats.innerHTML=["categories","brands","models","locations"].map(k=>`<div class="master-stat"><div class="muted">${t(k)||k}</div><div class="n">${masterRows(k).length}</div></div>`).join("");
+ document.getElementById("masterCloudStatus").textContent=cloudCatalogueStatus;
+ const q=masterSearch.value.trim().toLowerCase(),rows=masterRows(currentMaster).filter(x=>[x.id,x.name,x.brand,x.note].join(" ").toLowerCase().includes(q));
  masterTableTitle.textContent=t(currentMaster)||currentMaster;masterTableSub.textContent=`${rows.length} ${t("recordsLabel")}`;
  if(currentMaster==="models"){
   masterHead.innerHTML=`<tr><th>${t("idLabel")}</th><th>${t("name")}</th><th>${t("brandHeader")}</th><th>${t("noteHeader")}</th><th>${t("action")}</th></tr>`;
-  masterBody.innerHTML=rows.map(x=>`<tr><td><b>${esc(x.id)}</b></td><td>${esc(x.name)}</td><td>${esc(x.brand||"-")}</td><td>${esc(x.note||"-")}</td><td><div class="row-actions"><button class="btn small" onclick="editMaster('${currentMaster}','${esc(x.id)}')">${t("editBtn")}</button><button class="btn small danger" onclick="deleteMaster('${currentMaster}','${esc(x.id)}')">${t("deleteBtn")}</button></div></td></tr>`).join("");
+  masterBody.innerHTML=rows.map(x=>`<tr><td><b>${esc(x.id)}</b></td><td>${esc(x.name)}</td><td>${esc(x.brand||"-")}</td><td>${esc(x.note||"-")}</td><td>${x.cloudOnly?'☁ ฐานข้อมูล · ดูอย่างเดียว':`<div class="row-actions"><button class="btn small" onclick="editMaster('${currentMaster}','${esc(x.id)}')">${t("editBtn")}</button><button class="btn small danger" onclick="deleteMaster('${currentMaster}','${esc(x.id)}')">${t("deleteBtn")}</button></div>`}</td></tr>`).join("");
  }else{
   masterHead.innerHTML=`<tr><th>${t("idLabel")}</th><th>${t("name")}</th><th>${t("noteHeader")}</th><th>${t("usedByLabel")}</th><th>${t("action")}</th></tr>`;
-  masterBody.innerHTML=rows.map(x=>`<tr><td><b>${esc(x.id)}</b></td><td>${esc(x.name)}</td><td>${esc(x.note||"-")}</td><td>${masterUsage(currentMaster,x.name)}</td><td><div class="row-actions"><button class="btn small" onclick="editMaster('${currentMaster}','${esc(x.id)}')">${t("editBtn")}</button><button class="btn small danger" onclick="deleteMaster('${currentMaster}','${esc(x.id)}')">${t("deleteBtn")}</button></div></td></tr>`).join("");
+  masterBody.innerHTML=rows.map(x=>`<tr><td><b>${esc(x.id)}</b></td><td>${esc(x.name)}</td><td>${esc(x.note||"-")}</td><td>${masterUsage(currentMaster,x.name)}</td><td>${x.cloudOnly?'☁ ฐานข้อมูล · ดูอย่างเดียว':`<div class="row-actions"><button class="btn small" onclick="editMaster('${currentMaster}','${esc(x.id)}')">${t("editBtn")}</button><button class="btn small danger" onclick="deleteMaster('${currentMaster}','${esc(x.id)}')">${t("deleteBtn")}</button></div>`}</td></tr>`).join("");
  }
 }
 function masterUsage(type,name){
@@ -2295,6 +2324,7 @@ document.addEventListener("pointerdown",e=>{
 });
 document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)m.classList.remove("show")}));
 render();
+loadCloudCatalogue();
 </script>
 </body>
 </html>
