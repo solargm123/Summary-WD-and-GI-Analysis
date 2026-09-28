@@ -1349,6 +1349,7 @@ main .section .table-wrap.smart-page-scroll thead th{position:sticky;top:0;z-ind
       <div class="field"><label data-i18n="provinceLabel">จังหวัด</label><input class="control" id="peProvince"></div>
       <div class="field"><label data-i18n="location">สถานที่</label><input class="control" id="peLocation"></div>
       <div class="field"><label data-i18n="plantTypeLabel">ประเภทโครงการ</label><input class="control" id="pePlantType"></div>
+      <div class="field full hidden" id="peNoteWrap"><label data-i18n="note">หมายเหตุ</label><textarea class="control" id="peNote" rows="2" placeholder="ข้อความเพิ่มเติมของโครงการใน Spare Parts"></textarea></div>
     </div></div>
     <div class="project-edit-section"><div class="project-edit-section-title" data-i18n="pvModuleLabel">PV Module</div><div class="form-grid project-edit-grid">
       <div class="field full"><label data-i18n="modelLabel">รุ่น</label><input class="control" id="pePvModel"></div>
@@ -1634,7 +1635,8 @@ function projectCodeForName(name){const d=findProjectDetail(name,"");return d?St
 function syncProjectMasterEntry(detail,oldName="",oldCode=""){
  if(!detail)return;let m=master.projects.find(x=>(oldCode&&String(x.projectCode||"")===oldCode)||normText(x.name)===normText(oldName)||normText(x.name)===normText(detail.projectName));
  if(!m){m={id:nextId("PRJ",master.projects),name:detail.projectName,projectCode:detail.projectCode||"",note:""};master.projects.push(m)}
- m.name=detail.projectName||m.name;m.projectCode=detail.projectCode||"";m.note=detail.projectCode?`PPA Contract No.: ${detail.projectCode}`:(m.note||"");
+ m.name=detail.projectName||m.name;m.projectCode=detail.projectCode||"";
+ if(!m.note||String(m.note).startsWith("PPA Contract No.:"))m.note=detail.projectCode?`PPA Contract No.: ${detail.projectCode}`:"";
 }
 function normalizeProjectReferences(){
  projectDetails.forEach(d=>ensureProjectIdentity(d,d.source||"local"));
@@ -1646,7 +1648,7 @@ function propagateProjectChange(oldName,oldCode,newDetail){
  const matches=x=>x&&((oldCode&&String(x.projectCode||"").trim()===String(oldCode).trim())||(oldName&&normText(x.project)===normText(oldName)));
  [inventory,movements,replacementHistory,inverterHistory].forEach(arr=>arr.forEach(x=>{if(matches(x)){x.project=newDetail.projectName;x.projectCode=newDetail.projectCode||""}}));
  const m=master.projects.find(x=>(oldCode&&String(x.projectCode||"").trim()===String(oldCode).trim())||normText(x.name)===normText(oldName));
- if(m){m.name=newDetail.projectName;m.projectCode=newDetail.projectCode||"";m.note=newDetail.projectCode?`PPA Contract No.: ${newDetail.projectCode}`:(m.note||"")}else syncProjectMasterEntry(newDetail);
+ if(m){m.name=newDetail.projectName;m.projectCode=newDetail.projectCode||"";if(!m.note||String(m.note).startsWith("PPA Contract No.:"))m.note=newDetail.projectCode?`PPA Contract No.: ${newDetail.projectCode}`:""}else syncProjectMasterEntry(newDetail);
 }
 function statusOf(x){if(+x.available<=0)return"Out of Stock";if(+x.available<+x.min)return"Low Stock";return"Normal"}
 function statusClass(s){return s==="Normal"?"normal":s==="Low Stock"?"low":"out"}
@@ -1776,29 +1778,92 @@ function renderProjects(){
  if(provinceSel){provinceSel.innerHTML=`<option value="">${t("all")}</option>`+provinces.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("");provinceSel.value=projectFilters.province}
  const rows=allProjects.filter(d=>{const equipment=[d.pvModuleModel,d.inverterBrand,d.inverter1,d.inverter2,d.inverter3,d.optimizerRsd].join(" ");const hay=[d.projectCode,d.projectName,d.epc,d.province,d.location,d.status,equipment].join(" ").toLowerCase();return(!q||hay.includes(q))&&(!projectFilters.status||d.status===projectFilters.status)&&(!projectFilters.province||d.province===projectFilters.province)}).slice().sort((x,y)=>String(x.projectCode||x.projectName).localeCompare(String(y.projectCode||y.projectName)));
  projectResultCount.textContent=fmtTemplate("projectResults",{shown:rows.length,total:allProjects.length});
- projectTableBody.innerHTML=rows.map(d=>{const code=String(d.projectCode||"").trim(),name=String(d.projectName||"").trim(),pvCount=replacementHistory.filter(x=>sameProject(x,d,name)).length,invCount=inverterHistory.filter(x=>sameProject(x,d,name)).length,movCount=movements.filter(x=>sameProject(x,d,name)).length;const invs=[[d.inverter1,d.inverterQty1],[d.inverter2,d.inverterQty2],[d.inverter3,d.inverterQty3]].filter(x=>x[0]&&x[0]!=="None");const eq=[d.pvModuleModel?`PV: ${d.pvModuleModel}`:"",invs.length?`INV: ${invs.map(x=>x[0]).join(", ")}`:"",d.optimizerRsd?`OPT: ${d.optimizerRsd}`:""].filter(Boolean);return `<tr><td><div class="project-code">${esc(code||"—")}</div></td><td><div class="project-name-cell">${esc(name||"—")}</div><div class="part-sub">${d.cloudOnly?`☁ ${d.matchStatus==="needs_review"?"รอตรวจจับคู่ · ":"เชื่อม Central · "}`:""}${esc(d.location||d.plantType||"")}</div></td><td>${d.capacity!==undefined&&d.capacity!==""?`${esc(d.capacity)} kWp`:"—"}</td><td>${esc(d.status||"—")}</td><td>${esc(d.province||"—")}</td><td>${esc(d.epc||"—")}</td><td><div class="project-eq-summary">${eq.map(esc).join("<br>")||"—"}</div></td><td><div class="project-history-mini"><span class="mini-count">PV ${pvCount}</span><span class="mini-count">INV ${invCount}</span><span class="mini-count">MOV ${movCount}</span></div></td><td>${d.cloudOnly?`<div class="row-actions"><button class="btn small" data-cloud-project-view="${esc(d.id)}">ⓘ ${t("viewBtn")}</button>${spareRole==="admin"?`<button class="btn small" data-cloud-project-edit="${esc(d.id)}" data-spare-write>✎ ${t("editBtn")}</button>`:""}</div>`:`<div class="row-actions"><button class="btn small" data-project-view="${esc(code||name)}">ⓘ ${t("viewBtn")}</button><button class="btn small" data-project-edit="${esc(code||name)}">✎ ${t("editBtn")}</button></div>`}</td></tr>`}).join("")||`<tr><td colspan="9" style="padding:35px;text-align:center;color:var(--muted)">${t("noData")}</td></tr>`;
+ projectTableBody.innerHTML=rows.map(d=>{const code=String(d.projectCode||"").trim(),name=String(d.projectName||"").trim(),pvCount=replacementHistory.filter(x=>sameProject(x,d,name)).length,invCount=inverterHistory.filter(x=>sameProject(x,d,name)).length,movCount=movements.filter(x=>sameProject(x,d,name)).length;const invs=[[d.inverter1,d.inverterQty1],[d.inverter2,d.inverterQty2],[d.inverter3,d.inverterQty3]].filter(x=>x[0]&&x[0]!=="None");const eq=[d.pvModuleModel?`PV: ${d.pvModuleModel}`:"",invs.length?`INV: ${invs.map(x=>x[0]).join(", ")}`:"",d.optimizerRsd?`OPT: ${d.optimizerRsd}`:""].filter(Boolean);return `<tr><td><div class="project-code">${esc(code||"—")}</div></td><td><div class="project-name-cell">${esc(name||"—")}</div><div class="part-sub">${d.cloudOnly?`☁ ${d.matchStatus==="needs_review"?"รอตรวจจับคู่ · ":"เชื่อม Central · "}`:""}${esc(d.location||d.plantType||"")}</div></td><td>${d.capacity!==undefined&&d.capacity!==""?`${esc(d.capacity)} kWp`:"—"}</td><td>${esc(d.status||"—")}</td><td>${esc(d.province||"—")}</td><td>${esc(d.epc||"—")}</td><td><div class="project-eq-summary">${eq.map(esc).join("<br>")||"—"}</div></td><td><div class="project-history-mini"><span class="mini-count">PV ${pvCount}</span><span class="mini-count">INV ${invCount}</span><span class="mini-count">MOV ${movCount}</span></div></td><td>${d.cloudOnly?`<div class="row-actions"><button class="btn small" data-cloud-project-view="${esc(d.id)}">ⓘ ${t("viewBtn")}</button>${spareRole==="admin"?`<button class="btn small" data-cloud-project-edit="${esc(d.id)}" data-spare-write>✎ ${t("editBtn")}</button><button class="btn small danger" data-cloud-project-delete="${esc(d.id)}" data-spare-write>× ${t("deleteBtn")}</button>`:""}</div>`:`<div class="row-actions"><button class="btn small" data-project-view="${esc(code||name)}">ⓘ ${t("viewBtn")}</button><button class="btn small" data-project-edit="${esc(code||name)}" data-spare-write>✎ ${t("editBtn")}</button><button class="btn small danger" data-local-project-delete="${esc(d.id)}" data-spare-write>× ${t("deleteBtn")}</button></div>`}</td></tr>`}).join("")||`<tr><td colspan="9" style="padding:35px;text-align:center;color:var(--muted)">${t("noData")}</td></tr>`;
  document.querySelectorAll("[data-project-view]").forEach(btn=>btn.onclick=()=>{const ref=btn.dataset.projectView,d=findProjectDetail("",ref)||findProjectDetail(ref,"");if(d)openProjectDetail(d.projectName,d.projectCode)});
  document.querySelectorAll("[data-project-edit]").forEach(btn=>btn.onclick=()=>{const ref=btn.dataset.projectEdit,d=findProjectDetail("",ref)||findProjectDetail(ref,"");if(d)openProjectEditor(d)});
  document.querySelectorAll("[data-cloud-project-view]").forEach(btn=>btn.onclick=()=>{const d=cloudProjects.find(p=>p.id===btn.dataset.cloudProjectView);if(d)openProjectDetail(d.projectName,d.projectCode,d)});
  document.querySelectorAll("[data-cloud-project-edit]").forEach(btn=>btn.onclick=()=>{const d=cloudProjects.find(p=>p.id===btn.dataset.cloudProjectEdit);if(d)openProjectEditor(d)});
+ document.querySelectorAll("[data-cloud-project-delete]").forEach(btn=>btn.onclick=()=>deleteCloudProject(btn.dataset.cloudProjectDelete));
+ document.querySelectorAll("[data-local-project-delete]").forEach(btn=>btn.onclick=()=>deleteLocalProject(btn.dataset.localProjectDelete));
 }
 function renderMaster(){
- const masterRows=type=>{const local=master[type],keys=new Set(local.map(x=>normText(x.name)));const cloud=type==="projects"?cloudProjects.map(p=>({id:p.projectCode||p.id,name:p.projectName,note:p.matchStatus==="needs_review"?"รอตรวจจับคู่":"เชื่อม Central",cloudOnly:true})):cloudMaster[type]||[];return [...local,...cloud.filter(x=>!keys.has(normText(x.name)))]};
+ const masterRows=type=>{const local=master[type],keys=new Set(local.map(x=>normText(x.name)));const cloud=type==="projects"?cloudProjects.map(p=>({id:p.projectCode||p.id,cloudId:p.id,name:p.projectName,note:p.note||"",matchStatus:p.matchStatus,cloudOnly:true})):cloudMaster[type]||[];return [...local,...cloud.filter(x=>!keys.has(normText(x.name)))]};
  masterStats.innerHTML=["categories","brands","models","locations"].map(k=>`<div class="master-stat"><div class="muted">${t(k)||k}</div><div class="n">${masterRows(k).length}</div></div>`).join("");
  document.getElementById("masterCloudStatus").textContent=cloudCatalogueStatus;
  const q=masterSearch.value.trim().toLowerCase(),rows=masterRows(currentMaster).filter(x=>[x.id,x.name,x.brand,x.note].join(" ").toLowerCase().includes(q));
- masterTableTitle.textContent=t(currentMaster)||currentMaster;masterTableSub.textContent=`${rows.length} ${t("recordsLabel")}`;
+ masterTableTitle.textContent=t(currentMaster)||currentMaster;masterTableSub.textContent=`${rows.length} ${t("recordsLabel")}`+(currentMaster==="projects"?" · รอตรวจจับคู่ = ยังไม่ยืนยันว่าเป็นโครงการเดียวกับ Central":"");
  if(currentMaster==="models"){
   masterHead.innerHTML=`<tr><th>${t("idLabel")}</th><th>${t("name")}</th><th>${t("brandHeader")}</th><th>${t("noteHeader")}</th><th>${t("action")}</th></tr>`;
-  masterBody.innerHTML=rows.map(x=>`<tr><td><b>${esc(x.id)}</b></td><td>${esc(x.name)}</td><td>${esc(x.brand||"-")}</td><td>${esc(x.note||"-")}</td><td>${x.cloudOnly?`<button class="btn small" data-cloud-master-edit="${esc(x.cloudId||x.id)}" data-spare-write>✎ ${t("editBtn")}</button>`:`<div class="row-actions"><button class="btn small" onclick="editMaster('${currentMaster}','${esc(x.id)}')">${t("editBtn")}</button><button class="btn small danger" onclick="deleteMaster('${currentMaster}','${esc(x.id)}')">${t("deleteBtn")}</button></div>`}</td></tr>`).join("");
+  masterBody.innerHTML=rows.map(x=>`<tr><td><b>${esc(x.id)}</b></td><td>${esc(x.name)}</td><td>${esc(x.brand||"-")}</td><td>${esc(x.note||"-")}</td><td>${x.cloudOnly?`<div class="row-actions"><button class="btn small" data-cloud-master-edit="${esc(x.cloudId||x.id)}" data-spare-write>✎ ${t("editBtn")}</button><button class="btn small danger" data-cloud-master-delete="${esc(x.cloudId||x.id)}" data-spare-write>× ${t("deleteBtn")}</button></div>`:`<div class="row-actions"><button class="btn small" onclick="editMaster('${currentMaster}','${esc(x.id)}')">${t("editBtn")}</button><button class="btn small danger" onclick="deleteMaster('${currentMaster}','${esc(x.id)}')">${t("deleteBtn")}</button></div>`}</td></tr>`).join("");
  }else{
   masterHead.innerHTML=`<tr><th>${t("idLabel")}</th><th>${t("name")}</th><th>${t("noteHeader")}</th><th>${t("usedByLabel")}</th><th>${t("action")}</th></tr>`;
-  masterBody.innerHTML=rows.map(x=>`<tr><td><b>${esc(x.id)}</b></td><td>${esc(x.name)}</td><td>${esc(x.note||"-")}</td><td>${masterUsage(currentMaster,x.name)}</td><td>${x.cloudOnly?`<button class="btn small" data-cloud-master-edit="${esc(x.cloudId||x.id)}" data-spare-write>✎ ${t("editBtn")}</button>`:`<div class="row-actions"><button class="btn small" onclick="editMaster('${currentMaster}','${esc(x.id)}')">${t("editBtn")}</button><button class="btn small danger" onclick="deleteMaster('${currentMaster}','${esc(x.id)}')">${t("deleteBtn")}</button></div>`}</td></tr>`).join("");
+  masterBody.innerHTML=rows.map(x=>`<tr><td><b>${esc(x.id)}</b></td><td>${esc(x.name)}${currentMaster==="projects"&&x.cloudOnly?`<div class="part-sub" title="ยังไม่ยืนยันว่าตรงกับโครงการใน Central Data Hub">☁ ${x.matchStatus==="needs_review"?"รอตรวจจับคู่":"เชื่อม Central"}</div>`:""}</td><td>${esc(x.note||"-")}</td><td>${masterReferenceCount(currentMaster,x.name)}</td><td>${x.cloudOnly?`<div class="row-actions"><button class="btn small" data-cloud-master-edit="${esc(x.cloudId||x.id)}" data-spare-write>✎ ${t("editBtn")}</button><button class="btn small danger" data-cloud-master-delete="${esc(x.cloudId||x.id)}" data-spare-write>× ${t("deleteBtn")}</button></div>`:`<div class="row-actions"><button class="btn small" onclick="editMaster('${currentMaster}','${esc(x.id)}')">${t("editBtn")}</button><button class="btn small danger" onclick="deleteMaster('${currentMaster}','${esc(x.id)}')">${t("deleteBtn")}</button></div>`}</td></tr>`).join("");
  }
  document.querySelectorAll("[data-cloud-master-edit]").forEach(btn=>btn.onclick=()=>{if(currentMaster==="projects"){const d=cloudProjects.find(p=>p.id===btn.dataset.cloudMasterEdit);if(d)openProjectEditor(d)}else{const d=cloudMaster[currentMaster]?.find(m=>m.cloudId===btn.dataset.cloudMasterEdit);if(d)openCloudMasterEditor(currentMaster,d)}});
+ document.querySelectorAll("[data-cloud-master-delete]").forEach(btn=>btn.onclick=()=>{if(currentMaster==="projects")deleteCloudProject(btn.dataset.cloudMasterDelete);else deleteCloudMaster(currentMaster,btn.dataset.cloudMasterDelete)});
 }
 function masterUsage(type,name){
  const map={categories:"category",brands:"brand",locations:"location",projects:"project",units:"unit"};const key=map[type];if(!key)return 0;return inventory.filter(x=>x[key]===name).length;
+}
+function masterReferenceCount(type,name){return masterReferences(type,name).reduce((total,entry)=>total+Number(entry.split(": ").pop()||0),0)}
+// These are the Spare Parts data currently stored on this device plus the cloud catalogue.
+// Working Day, irradiance and PR are separate and are never modified by deletion below.
+function masterReferences(type,name){
+ const equal=value=>normText(value)===normText(name),count=(rows,keys)=>rows.filter(row=>keys.some(key=>equal(row[key]))).length;
+ const projects=[...projectDetails,...cloudProjects],models=[...master.models,...cloudMaster.models];
+ const refs=[];const add=(label,n)=>{if(n)refs.push(`${label}: ${n}`)};
+ const fields={categories:["category"],brands:["brand"],models:["model"],locations:["location"],units:["unit"]};
+ if(fields[type]){add("Inventory",count(inventory,fields[type]));add("Movements",count(movements,fields[type]))}
+ if(type==="brands"){add("Models",count(models,["brand"]));add("Projects",count(projects,["inverterBrand"]));add("Compatibility",count(compatibility,["brand"]))}
+ if(type==="models"){
+  add("Projects",count(projects,["pvModuleModel","inverter1","inverter2","inverter3","optimizerRsd"]));
+  add("PV history",count(replacementHistory,["oldModel","newModel"]));add("Inverter history",count(inverterHistory,["model"]));add("Compatibility",count(compatibility,["sourceModel","compatibleModel"]));
+ }
+ if(type==="locations")add("Projects",count(projects,["location"]));
+ if(type==="projects")add("Project details",count(projectDetails,["projectName"]));
+ return refs;
+}
+function projectSpareReferences(project){
+ const name=project.projectName,entries=[
+  ["Inventory",inventory],["Movements",movements],["PV history",replacementHistory],["Inverter history",inverterHistory]
+ ];
+ return entries.map(([label,rows])=>[label,rows.filter(row=>sameProject(row,project,name)).length]).filter(([,n])=>n).map(([label,n])=>`${label}: ${n}`);
+}
+async function showSpareDeletionBlocked(name,refs){
+ const message=`${name}\nยังมีข้อมูลอ้างอิงใน Spare Parts\n${refs.join(" · ")}\nกรุณาย้ายหรือแก้ไขรายการที่อ้างอิงก่อนเปลี่ยนชื่อหรือลบ`;
+ if(window.SolarCloud?.notice)await SolarCloud.notice("มีข้อมูลใช้งานอยู่",message,"danger");else alert(message);
+}
+async function confirmSpareDeletion(name,detail){
+ const message=`${name}\n${detail}\nข้อมูล Working Day, ค่าแสง, PR และ Central Data Hub จะไม่ถูกลบ`;
+ if(window.SolarCloud?.confirmDialog)return SolarCloud.confirmDialog("ยืนยันลบจาก Spare Parts",message,{tone:"danger",confirmText:"ลบเฉพาะ Spare Parts",fields:[{key:"ack",type:"checkbox",required:true,label:"ยืนยันว่าตรวจสอบขอบเขตการลบแล้ว"}]});
+ return confirm(message);
+}
+async function deleteCloudMaster(type,id){
+ if(!requireSpareAdmin()||type==="projects")return;
+ const row=cloudMaster[type]?.find(item=>item.cloudId===id);if(!row)return;
+ const refs=masterReferences(type,row.name);if(refs.length){await showSpareDeletionBlocked(row.name,refs);return}
+ if(!await confirmSpareDeletion(row.name,`ลบ ${t(type)||type} จาก Master Data บนฐานข้อมูล`))return;
+ if(masterReferences(type,row.name).length){await showSpareDeletionBlocked(row.name,masterReferences(type,row.name));return}
+ try{const {data,error}=await SolarCloud.getClient().from("spare_master_data").delete().eq("id",id).eq("workspace_id",spareWorkspaceId).eq("master_type",type).select("id");if(error)throw error;if(!data?.length)throw new Error("ไม่พบรายการหรือไม่มีสิทธิ์");await loadCloudCatalogue();toast(t("masterDeleted"))}catch(err){alert("ลบ Master Data ไม่สำเร็จ: "+err.message)}
+}
+async function deleteCloudProject(id){
+ if(!requireSpareAdmin())return;
+ const row=cloudProjects.find(item=>item.id===id);if(!row)return;
+ const refs=projectSpareReferences(row);if(refs.length){await showSpareDeletionBlocked(row.projectName,refs);return}
+ const detail=row.matchStatus==="linked"?"โครงการนี้เชื่อม Central อยู่ การลบจะเอาออกเฉพาะรายการ Spare Parts":"โครงการนี้ยังรอตรวจจับคู่ การลบจะเอาออกเฉพาะรายการ Spare Parts";
+ if(!await confirmSpareDeletion(row.projectName,detail))return;
+ if(projectSpareReferences(row).length){await showSpareDeletionBlocked(row.projectName,projectSpareReferences(row));return}
+ try{const {data,error}=await SolarCloud.getClient().from("spare_project_catalog").delete().eq("id",id).eq("workspace_id",spareWorkspaceId).select("id");if(error)throw error;if(!data?.length)throw new Error("ไม่พบโครงการหรือไม่มีสิทธิ์");await loadCloudCatalogue();toast(t("deletedMsg"))}catch(err){alert("ลบโครงการไม่สำเร็จ: "+err.message)}
+}
+async function deleteLocalProject(id){
+ if(!requireSpareAdmin())return;
+ const row=projectDetails.find(item=>item.id===id);if(!row)return;
+ const refs=projectSpareReferences(row);if(refs.length){await showSpareDeletionBlocked(row.projectName,refs);return}
+ if(!await confirmSpareDeletion(row.projectName,"ลบเฉพาะโครงการที่บันทึกในเครื่องนี้"))return;
+ if(projectSpareReferences(row).length){await showSpareDeletionBlocked(row.projectName,projectSpareReferences(row));return}
+ projectDetails=projectDetails.filter(item=>item.id!==id);
+ master.projects=master.projects.filter(item=>!(row.projectCode&&item.projectCode===row.projectCode)&&normText(item.name)!==normText(row.projectName));
+ saveAll();render();toast(t("deletedMsg"))
 }
 function fillSpareFormMasters(){
  sCategory.innerHTML=opts(master.categories);sBrand.innerHTML=opts(master.brands);sUnit.innerHTML=opts(master.units);sLocation.innerHTML=opts(master.locations);sProject.innerHTML=opts(master.projects);updateModelSelect();
@@ -2011,6 +2076,7 @@ function openProjectEditor(detail=null){if(!requireSpareAdmin())return;
  const d=detail||blankProjectDetail();editingCloudProjectId=d.cloudOnly?d.id:"";editingProjectCode=detail?String(d.projectCode||""):"";editingProjectName=detail?String(d.projectName||""):"";projectEditTitle.textContent=detail?t("editProject"):t("addProject");
  peCode.value=d.projectCode||"";peName.value=d.projectName||"";peCapacity.value=d.capacity??"";peStatus.value=d.status||"";peCod.value=d.codDate||"";peEpc.value=d.epc||"";peProvince.value=d.province||"";peLocation.value=d.location||"";pePlantType.value=d.plantType||"";pePvModel.value=d.pvModuleModel||"";pePvQty.value=d.pvModuleQty??"";peInvBrand.value=d.inverterBrand||"";peInv1.value=d.inverter1||"";peInvQty1.value=d.inverterQty1??"";peInv2.value=d.inverter2||"";peInvQty2.value=d.inverterQty2??"";peInv3.value=d.inverter3||"";peInvQty3.value=d.inverterQty3??"";peOptimizer.value=d.optimizerRsd||"";
  peCode.disabled=!!editingCloudProjectId;peName.disabled=!!editingCloudProjectId&&d.matchStatus==="linked";peCapacity.disabled=!!editingCloudProjectId&&d.matchStatus==="linked";
+ peNoteWrap.classList.toggle("hidden",!editingCloudProjectId);peNote.value=d.note||"";
  projectRelationNote.textContent=editingCloudProjectId?"☁ บันทึกการแก้ไขลงฐานข้อมูล · โครงการที่เชื่อม Central แล้วล็อกชื่อและ Capacity":t("projectRelationImpact");openModal("projectEditModal")
 }
 function projectEditorValue(){return ensureProjectIdentity({projectCode:peCode.value.trim(),projectName:peName.value.trim(),capacity:peCapacity.value===""?"":Number(peCapacity.value),status:peStatus.value.trim(),codDate:peCod.value.trim(),epc:peEpc.value.trim(),province:peProvince.value.trim(),location:peLocation.value.trim(),plantType:pePlantType.value.trim(),pvModuleModel:pePvModel.value.trim(),pvModuleQty:pePvQty.value===""?"":Number(pePvQty.value),inverterBrand:peInvBrand.value.trim(),inverter1:peInv1.value.trim(),inverterQty1:peInvQty1.value===""?"":Number(peInvQty1.value),inverter2:peInv2.value.trim(),inverterQty2:peInvQty2.value===""?"":Number(peInvQty2.value),inverter3:peInv3.value.trim(),inverterQty3:peInvQty3.value===""?"":Number(peInvQty3.value),optimizerRsd:peOptimizer.value.trim(),source:"manual"},"manual")}
@@ -2020,7 +2086,7 @@ async function saveProjectEditor(){if(!requireSpareAdmin())return;const d=projec
   const current=cloudProjects.find(p=>p.id===editingCloudProjectId);if(!current)return;
   if(cloudProjects.some(p=>p.id!==current.id&&normText(p.projectName)===normText(d.projectName))||projectDetails.some(p=>normText(p.projectName)===normText(d.projectName))){alert(lang==="th"?"ชื่อโครงการซ้ำ":"Duplicate project name");return}
   const fields=["status","codDate","epc","location","plantType","pvModuleModel","pvModuleQty","inverterBrand","inverter1","inverterQty1","inverter2","inverterQty2","inverter3","inverterQty3","optimizerRsd"];
-  const details={...current.details};fields.forEach(key=>details[key]=d[key]);details.province=d.province||null;
+  const details={...current.details};fields.forEach(key=>details[key]=d[key]);details.province=d.province||null;details.note=peNote.value.trim();
   const update={details,province:d.province||null,updated_at:new Date().toISOString()};
   if(current.matchStatus!=="linked"){update.project_name=d.projectName;update.capacity_kwp=d.capacity===""?null:d.capacity;details.projectName=d.projectName;details.capacityKwp=update.capacity_kwp}
   const submit=projectEditForm.querySelector('[type="submit"]');submit.disabled=true;
@@ -2152,8 +2218,12 @@ function editMaster(type,id){if(!requireSpareAdmin())return;
  editingCloudMasterId="";
  const x=master[type].find(v=>v.id===id);if(!x)return;editingMasterId=id;mdType.value=type;mdType.disabled=true;mdName.value=x.name;mdNote.value=x.note||"";mdBrand.innerHTML=opts(master.brands,x.brand||"");brandRelationField.classList.toggle("hidden",type!=="models");masterModalTitle.textContent=t("editMasterTitle");openModal("masterModal")
 }
-function deleteMaster(type,id){if(!requireSpareAdmin())return;
- const x=master[type].find(v=>v.id===id);if(!x)return;const use=type==="models"?inventory.filter(v=>v.model===x.name).length:masterUsage(type,x.name);if(use>0){alert(`${t("cannotDeleteUsed")}: ${x.name} (${use})`);return}if(!confirm(`${t("deleteConfirm")}: ${x.name}?`))return;master[type]=master[type].filter(v=>v.id!==id);saveAll();render();toast(t("masterDeleted"))
+async function deleteMaster(type,id){if(!requireSpareAdmin())return;
+ const x=master[type].find(v=>v.id===id);if(!x)return;
+ const refs=masterReferences(type,x.name);if(refs.length){await showSpareDeletionBlocked(x.name,refs);return}
+ if(!await confirmSpareDeletion(x.name,"ลบเฉพาะ Master Data ในเครื่องนี้"))return;
+ if(masterReferences(type,x.name).length){await showSpareDeletionBlocked(x.name,masterReferences(type,x.name));return}
+ master[type]=master[type].filter(v=>v.id!==id);saveAll();render();toast(t("masterDeleted"))
 }
 function openMasterAdd(){if(!requireSpareAdmin())return;
  editingCloudMasterId="";
@@ -2375,6 +2445,10 @@ masterForm.addEventListener("submit",async e=>{
  e.preventDefault();if(!requireSpareAdmin())return;
  const type=mdType.value,name=mdName.value.trim();if(!name)return;
  if(editingCloudMasterId){
+  const existing=cloudMaster[type]?.find(item=>item.cloudId===editingCloudMasterId);
+  if(existing&&normText(existing.name)!==normText(name)){
+   const refs=masterReferences(type,existing.name);if(refs.length){await showSpareDeletionBlocked(existing.name,refs);return}
+  }
   if([...master[type],...(cloudMaster[type]||[])].some(x=>x.cloudId!==editingCloudMasterId&&normText(x.name)===normText(name))){alert(t("duplicateMasterError"));return}
   const submit=masterForm.querySelector('[type="submit"]');submit.disabled=true;
   try{
@@ -2385,6 +2459,9 @@ masterForm.addEventListener("submit",async e=>{
   return;
  }
  const dup=master[type].find(x=>x.name.toLowerCase()===name.toLowerCase()&&x.id!==editingMasterId);if(dup){alert(t("duplicateMasterError"));return}
+ if(editingMasterId){const existing=master[type].find(x=>x.id===editingMasterId);if(existing&&normText(existing.name)!==normText(name)){
+  const refs=masterReferences(type,existing.name);if(refs.length){await showSpareDeletionBlocked(existing.name,refs);return}
+ }}
  if(editingMasterId){const x=master[type].find(v=>v.id===editingMasterId);if(x){const oldName=x.name;propagateMasterRename(type,oldName,name);x.name=name;x.brand=type==="models"?mdBrand.value:"";x.note=mdNote.value.trim()}}
  else master[type].push({id:nextId(prefixFor(type),master[type]),name,brand:type==="models"?mdBrand.value:"",note:mdNote.value.trim()});
  mdType.disabled=false;saveAll();currentMaster=type;document.querySelectorAll("#masterNav button").forEach(b=>b.classList.toggle("active",b.dataset.master===type));closeModal("masterModal");render();toast(t("masterSaved"))
