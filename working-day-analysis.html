@@ -1078,7 +1078,7 @@ body.wd-theme-switching *::after{
 }
 </style>
 
-<link rel="stylesheet" href="working-day-summary.css?v=20260928-6">
+<link rel="stylesheet" href="working-day-summary.css?v=20260928-7">
 </head>
 <body class="solar-wd bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen pb-2 transition-colors duration-200">
 
@@ -2579,7 +2579,7 @@ body.wd-theme-switching *::after{
                     <td class="p-3 text-center sticky-col-1">
                         <input type="checkbox" ${item.visible ? 'checked' : ''} onchange="togglePlant(${item.id}, this.checked)" class="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-0 w-4 h-4 cursor-pointer">
                     </td>
-                    <td class="p-3 font-semibold text-slate-800 dark:text-slate-200 sticky-col-2" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}<span data-wd-detail-review="${item.id}">${WDReview.detailBadge(item)}</span></td>
+                    <td class="p-3 font-semibold text-slate-800 dark:text-slate-200 sticky-col-2" title="${escapeHtml(item.name)}"><span data-wd-detail-review="${item.id}">${WDReview.detailBadge(item)}</span>${escapeHtml(item.name)}</td>
 
                     <td class="p-3 text-right font-mono text-blue-700 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/70 font-bold sticky-col-3"><button onclick="openFormulaModal(${item.id}, 1)" class="underline decoration-dotted underline-offset-4" title="${t('formula')}">${metrics.valid ? method1Days.toFixed(2) : 'Invalid'}</button></td>
                     <td class="p-3 text-right font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/70 font-bold sticky-col-4 sticky-divider"><button onclick="openFormulaModal(${item.id}, 2)" class="underline decoration-dotted underline-offset-4" title="${t('formula')}">${metrics.valid ? method2Days.toFixed(2) : 'Invalid'}</button></td>
@@ -2733,7 +2733,7 @@ body.wd-theme-switching *::after{
 
         syncTableScrollbars();
     </script>
-    <script src="working-day-summary.js?v=20260928-5"></script>
+    <script src="working-day-summary.js?v=20260928-6"></script>
     <script>
       const workingDayCloudAdapter={
         presenceContext:()=>WDReview.presenceContext(),
