@@ -1078,7 +1078,7 @@ body.wd-theme-switching *::after{
 }
 </style>
 
-<link rel="stylesheet" href="working-day-summary.css?v=20260928-2">
+<link rel="stylesheet" href="working-day-summary.css?v=20260928-3">
 </head>
 <body class="solar-wd bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen pb-2 transition-colors duration-200">
 
@@ -2726,7 +2726,7 @@ body.wd-theme-switching *::after{
 
         syncTableScrollbars();
     </script>
-    <script src="working-day-summary.js?v=20260928-1"></script>
+    <script src="working-day-summary.js?v=20260928-2"></script>
     <script>
       const workingDayCloudAdapter={
         presenceContext:()=>WDReview.presenceContext(),
@@ -2850,6 +2850,8 @@ body.wd-theme-switching *::after{
         <button id="wdDockReveal" type="button" class="wd-work-btn"><i class="fa-solid fa-sliders"></i><span>Controls</span></button>
         <button id="wdFocusTable" type="button" class="wd-work-btn"><i class="fa-solid fa-expand"></i><span>Focus table</span></button>
       </div>`;
+    const tabs=tableCard.querySelector('.wd-summary-tabs');
+    if(tabs) intro.insertBefore(tabs,intro.querySelector('.wd-work-actions'));
 
     main.insertBefore(shell, topPanel);
     shell.appendChild(dock);
