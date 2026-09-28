@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Solar Spare Parts Platform V2.2.0 Desktop Workspace</title>
+<title>Solar Spare Parts Platform V2.3.0 Desktop Workspace</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -132,6 +132,9 @@ tbody tr:hover{background:color-mix(in srgb,var(--primary-soft) 37%,transparent)
 .master-table table{min-width:850px}
 .relation{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
 .relation-chip{background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:4px 7px;font-size:11px}
+.master-relation-list{display:flex;flex-wrap:wrap;gap:5px;max-width:440px}
+.master-relation-list .relation-chip{font-size:10px;padding:3px 7px;cursor:pointer;color:var(--primary)}
+.master-relation-hint{font-size:11px;color:var(--muted);line-height:1.5;margin-top:4px}
 .simple-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
 .simple-card{padding:18px}.simple-card h3{margin:0 0 8px}.simple-card p{margin:4px 0;color:var(--muted)}
 .modal{position:fixed;inset:0;background:rgba(4,15,25,.5);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}
@@ -1001,7 +1004,7 @@ main .section .table-wrap.smart-page-scroll thead th{position:sticky;top:0;z-ind
 </section>
 
 <section class="section" id="inventory">
-  <div class="notice" id="stockSourceNote">กำลังตรวจสอบ Inventory บนฐานข้อมูล…</div>
+  <div class="notice" id="stockSourceNote" data-i18n="loadingCloud">กำลังตรวจสอบ Inventory บนฐานข้อมูล…</div>
   <div class="page-head">
     <div><div class="eyebrow" data-i18n="inventoryEyebrow">คลังอะไหล่</div><h2 class="page-title" data-i18n="inventoryTitle">Inventory / คลังอะไหล่</h2><p class="subtitle" data-i18n="inventoryDesc">ตารางหลักสำหรับค้นหา กรอง ดูรายละเอียด และทำ Stock Movement</p></div>
     <div style="display:flex;gap:8px"><button class="btn ghost" id="inventoryOpenImportCenter">⇧ <span data-i18n="openImportCenter">Import Center</span></button><button class="btn primary" id="addBtn">＋ <span data-i18n="addSpare">เพิ่มอะไหล่</span></button><button hidden id="excelImportBtn"></button><button hidden id="inventoryImportBtn"></button></div>
@@ -1044,7 +1047,7 @@ main .section .table-wrap.smart-page-scroll thead th{position:sticky;top:0;z-ind
 </section>
 
 <section class="section" id="movement">
-  <div class="notice" id="movementSourceNote">กำลังตรวจสอบ Movement บนฐานข้อมูล…</div>
+  <div class="notice" id="movementSourceNote" data-i18n="loadingCloud">กำลังตรวจสอบ Movement บนฐานข้อมูล…</div>
   <div class="page-head"><div><div class="eyebrow" data-i18n="movementEyebrow">ความเคลื่อนไหว</div><h2 class="page-title" data-i18n="movement">Movement</h2><p class="subtitle" data-i18n="movementDesc">ประวัติ Receive, Issue, Reserve, Return, Repair และ Repair Return</p></div><button class="btn primary" id="newMovementBtn">＋ <span data-i18n="newMovement">New Movement</span></button></div>
 
   <div class="card movement-filter-card">
@@ -1090,12 +1093,12 @@ main .section .table-wrap.smart-page-scroll thead th{position:sticky;top:0;z-ind
   </div>
   <div class="spare-project-workspace">
    <aside class="spare-project-dock" aria-label="Project controls">
-    <div class="spare-dock-header"><span class="spare-dock-title"><span class="spare-dock-icon">☷</span><span>Control Center</span></span><button class="btn small" id="spareDockToggle" type="button" aria-label="Hide project controls">‹</button></div>
+    <div class="spare-dock-header"><span class="spare-dock-title"><span class="spare-dock-icon">☷</span><span data-i18n="controlCenter">Control Center</span></span><button class="btn small" id="spareDockToggle" type="button" aria-label="Hide project controls">‹</button></div>
   <div class="card project-filter-card">
     <div class="project-filter-grid">
       <div class="field project-search-field"><label data-i18n="search">ค้นหา</label><input class="control" id="projectSearch" placeholder="ค้นหา PPA / โครงการ..."></div>
       <div class="field"><label data-i18n="statusLabel">สถานะ</label><select class="control" id="projectStatusFilter"></select></div>
-      <div class="field"><label>การจับคู่</label><select class="control" id="projectMatchFilter"><option value="">ทั้งหมด</option><option value="needs_review">รอตรวจจับคู่</option><option value="linked">เชื่อม Central</option><option value="independent">โครงการอิสระ</option></select></div>
+      <div class="field"><label data-i18n="matchFilter">การจับคู่</label><select class="control" id="projectMatchFilter"><option value="" data-i18n="all">ทั้งหมด</option><option value="needs_review" data-i18n="matchPending">รอตรวจจับคู่</option><option value="linked" data-i18n="matchLinked">เชื่อม Central</option><option value="independent" data-i18n="matchIndependent">โครงการอิสระ</option></select></div>
       <div class="field"><label data-i18n="provinceLabel">จังหวัด</label><select class="control" id="projectProvinceFilter"></select></div>
       <div class="field project-clear-field"><label>&nbsp;</label><button class="btn" id="projectClearFilters" data-i18n="clear">ล้างตัวกรอง</button></div>
     </div>
@@ -1103,7 +1106,7 @@ main .section .table-wrap.smart-page-scroll thead th{position:sticky;top:0;z-ind
   </div>
    </aside>
    <div class="spare-project-main">
-    <div class="spare-project-intro"><div><strong>Projects Workspace</strong><small>Search · filter · review</small></div><div class="spare-project-actions"><span class="spare-role-chip" id="spareRoleStatus" role="status"></span><button class="btn small" id="spareDockReveal" type="button">☷ Controls</button><button class="btn small" id="spareFocusTable" type="button">⛶ Focus table</button></div></div>
+    <div class="spare-project-intro"><div><strong data-i18n="projectsWorkspace">Projects Workspace</strong><small data-i18n="projectsWorkspaceSub">Search · filter · review</small></div><div class="spare-project-actions"><span class="spare-role-chip" id="spareRoleStatus" role="status"></span><button class="btn small" id="spareDockReveal" type="button">☷ <span data-i18n="controls">Controls</span></button><button class="btn small" id="spareFocusTable" type="button">⛶ <span data-i18n="focusTable">Focus table</span></button></div></div>
   <div class="card">
     <div class="table-wrap project-table-wrap"><table class="project-table"><thead><tr>
       <th data-i18n="projectCodeLabel">PPA Contract No.</th><th data-i18n="projectLabel">โครงการ</th><th data-i18n="capacityLabel">กำลังติดตั้ง</th><th data-i18n="projectStatusLabel">สถานะ</th><th data-i18n="provinceLabel">จังหวัด</th><th data-i18n="epcLabel">EPC</th><th data-i18n="projectEquipment">อุปกรณ์ติดตั้ง</th><th data-i18n="replacementHistoryLabel">ประวัติเปลี่ยน</th><th data-i18n="action">จัดการ</th>
@@ -1352,7 +1355,7 @@ main .section .table-wrap.smart-page-scroll thead th{position:sticky;top:0;z-ind
       <div class="field"><label data-i18n="provinceLabel">จังหวัด</label><input class="control" id="peProvince"></div>
       <div class="field"><label data-i18n="location">สถานที่</label><input class="control" id="peLocation"></div>
       <div class="field"><label data-i18n="plantTypeLabel">ประเภทโครงการ</label><input class="control" id="pePlantType"></div>
-      <div class="field full hidden" id="peNoteWrap"><label data-i18n="note">หมายเหตุ</label><textarea class="control" id="peNote" rows="2" placeholder="ข้อความเพิ่มเติมของโครงการใน Spare Parts"></textarea></div>
+      <div class="field full hidden" id="peNoteWrap"><label data-i18n="note">หมายเหตุ</label><textarea class="control" id="peNote" rows="2" data-i18n-placeholder="spareProjectNoteHint" placeholder="ข้อความเพิ่มเติมของโครงการใน Spare Parts"></textarea></div>
     </div></div>
     <div class="project-edit-section"><div class="project-edit-section-title" data-i18n="pvModuleLabel">PV Module</div><div class="form-grid project-edit-grid">
       <div class="field full"><label data-i18n="modelLabel">รุ่น</label><input class="control" id="pePvModel"></div>
@@ -1392,7 +1395,7 @@ main .section .table-wrap.smart-page-scroll thead th{position:sticky;top:0;z-ind
   <form id="masterForm"><div class="modal-body"><div class="form-grid">
     <div class="field"><label data-i18n="masterType">Master Type</label><select class="control" id="mdType"><option value="categories" data-i18n="categoryLabel">ประเภท</option><option value="brands" data-i18n="brandLabel">ยี่ห้อ</option><option value="models" data-i18n="modelLabel">รุ่น</option><option value="locations" data-i18n="location">สถานที่</option><option value="projects" data-i18n="projectLabel">โครงการ</option><option value="units" data-i18n="unitLabel">หน่วย</option></select></div>
     <div class="field"><label data-i18n="name">Name</label><input class="control" id="mdName" required></div>
-    <div class="field" id="categoryRelationField"><label>Category หลัก</label><select class="control" id="mdCategory"></select></div>
+    <div class="field" id="categoryRelationField"><label data-i18n="parentCategory">Category หลัก</label><select class="control" id="mdCategory"></select><div id="masterRelationHint" class="master-relation-hint"></div></div>
     <div class="field" id="brandRelationField"><label data-i18n="brandLabel">ยี่ห้อ</label><select class="control" id="mdBrand"></select></div>
     <div class="field full"><label data-i18n="note">Note</label><textarea class="control" id="mdNote" rows="3"></textarea></div>
   </div></div><div class="modal-foot"><button type="button" class="btn" onclick="closeModal('masterModal')" data-i18n="cancel">Cancel</button><button type="submit" class="btn primary" data-i18n="save">Save</button></div></form>
@@ -1403,17 +1406,17 @@ main .section .table-wrap.smart-page-scroll thead th{position:sticky;top:0;z-ind
 <div class="modal" id="manualProjectDuplicateModal"><div class="modal-card duplicate-manual-modal"><div class="modal-head"><div><div class="card-title" data-i18n="duplicateProjectEntryTitle">ชื่อโครงการนี้มีอยู่แล้ว</div><div class="card-sub" data-i18n="duplicateProjectEntrySub">เลือกว่าให้รวมข้อมูลกับ Project เดิมหรืออัปเดต Project เดิม</div></div><button class="btn" id="manualDuplicateCancel">✕</button></div><div class="modal-body" id="manualDuplicateBody"></div><div class="modal-foot"><button class="btn" id="manualDuplicateCancel2" data-i18n="cancel">ยกเลิก</button><button class="btn" id="manualDuplicateMerge">⊕ <span data-i18n="mergeOption">Merge</span></button><button class="btn primary" id="manualDuplicateUpdate">↻ <span data-i18n="updateOption">Update</span></button></div></div></div>
 
 <div class="modal" id="spareReviewModal"><div class="modal-card wide">
- <div class="modal-head"><div><div class="card-title">ตรวจจับคู่โครงการ · Central / Excel</div><div class="card-sub" id="spareReviewProject"></div></div><button class="btn" type="button" onclick="closeModal('spareReviewModal')">✕</button></div>
+ <div class="modal-head"><div><div class="card-title" data-i18n="reviewProjectTitle">ตรวจจับคู่โครงการ · Central / Excel</div><div class="card-sub" id="spareReviewProject"></div></div><button class="btn" type="button" onclick="closeModal('spareReviewModal')">✕</button></div>
  <div class="modal-body">
-  <div class="notice" id="spareReviewHelp">ระบบแนะนำชื่อที่คล้ายกัน แอดมินเป็นผู้ยืนยันผลการจับคู่</div>
-  <div class="field" style="margin:12px 0"><label>ค้นหาโครงการใน Central Data Hub</label><input class="control" id="spareCandidateSearch" type="search" placeholder="ชื่อโครงการหรือชื่อแฝง"></div>
+  <div class="notice" id="spareReviewHelp" data-i18n="reviewHelp">ระบบแนะนำชื่อที่คล้ายกัน แอดมินเป็นผู้ยืนยันผลการจับคู่</div>
+  <div class="field" style="margin:12px 0"><label data-i18n="searchCentral">ค้นหาโครงการใน Central Data Hub</label><input class="control" id="spareCandidateSearch" type="search" data-i18n-placeholder="searchCentralHint" placeholder="ชื่อโครงการหรือชื่อแฝง"></div>
   <div id="spareCandidateList" class="spare-review-candidates"></div>
   <div id="spareReviewComparison"></div>
-  <div class="field" style="margin-top:12px"><label>จังหวัดกลางที่ต้องการใช้</label><select class="control" id="spareReviewProvince"></select></div>
-  <div class="field" style="margin-top:8px"><label>จังหวัดใหม่ (ใช้เมื่อไม่มีในรายการกลาง; แอดมินเพิ่มได้)</label><input class="control" id="spareNewProvince" placeholder="ชื่อจังหวัดภาษาไทย"></div>
-  <div class="field" style="margin-top:8px"><label>เหตุผลการตัดสินใจ</label><input class="control" id="spareReviewNote" placeholder="เช่น รหัสตรงกัน / เป็นโครงการคนละเฟส"></div>
+  <div class="field" style="margin-top:12px"><label data-i18n="sharedProvinceChoice">จังหวัดกลางที่ต้องการใช้</label><select class="control" id="spareReviewProvince"></select></div>
+  <div class="field" style="margin-top:8px"><label data-i18n="newProvinceLabel">จังหวัดใหม่ (ใช้เมื่อไม่มีในรายการกลาง; แอดมินเพิ่มได้)</label><input class="control" id="spareNewProvince" data-i18n-placeholder="newProvinceHint" placeholder="ชื่อจังหวัดภาษาไทย"></div>
+  <div class="field" style="margin-top:8px"><label data-i18n="reviewReason">เหตุผลการตัดสินใจ</label><input class="control" id="spareReviewNote" data-i18n-placeholder="reviewReasonHint" placeholder="เช่น รหัสตรงกัน / เป็นโครงการคนละเฟส"></div>
  </div>
- <div class="modal-foot"><button class="btn" type="button" onclick="closeModal('spareReviewModal')">ยกเลิก</button><button class="btn" type="button" id="spareKeepIndependent" data-spare-write>เก็บเป็นโครงการอิสระ</button><button class="btn primary" type="button" id="spareConfirmLink" data-spare-write>ยืนยันจับคู่</button></div>
+ <div class="modal-foot"><button class="btn" type="button" onclick="closeModal('spareReviewModal')" data-i18n="cancel">ยกเลิก</button><button class="btn" type="button" id="spareKeepIndependent" data-spare-write data-i18n="keepIndependent">เก็บเป็นโครงการอิสระ</button><button class="btn primary" type="button" id="spareConfirmLink" data-spare-write data-i18n="confirmLink">ยืนยันจับคู่</button></div>
 </div></div>
 
 <div class="modal" id="excelImportModal"><div class="modal-card wide import-preview-modal">
@@ -1453,7 +1456,7 @@ main .section .table-wrap.smart-page-scroll thead th{position:sticky;top:0;z-ind
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="cloud-core.js?v=20260928-spare-catalog"></script>
 <script>
-const APP_VERSION="2.2.0";
+const APP_VERSION="2.3.0";
 const DATA_SCHEMA_VERSION="2.2.0";
 const DATA_BACKEND={mode:"local",future:"supabase"};
 const DATA_KEYS={
@@ -1502,7 +1505,7 @@ let movements=DataRepository.getJSON(DATA_KEYS.movements,null)||structuredClone(
 let projectDetails=DataRepository.getJSON(DATA_KEYS.projectDetails,[])||[];
 // Cloud catalogue is displayed separately from local edits and never saved into LocalStorage.
 let cloudProjects=[],centralProjects=[],centralAliases=[],sharedProvinces=[],categoryBrandLinks=[],cloudMaster={categories:[],brands:[],models:[],locations:[],units:[]};
-let cloudCatalogueStatus="กำลังตรวจสอบข้อมูลโครงการในฐานข้อมูล…";
+let cloudCatalogueStatus="",cloudCatalogueError="";
 let spareRole="loading",spareWorkspaceId="",editingCloudProjectId="",editingCloudMasterId="",cloudStockActive=false;
 function requireLocalStock(){if(!requireSpareAdmin())return false;if(cloudStockActive){alert("Inventory และ Movement ใช้ฐานข้อมูลกลางแล้ว การ Import/Restore แบบ Local ถูกพักไว้เพื่อป้องกันข้อมูลทับกัน");return false}return true}
 function requireSpareAdmin(){if(spareRole==="admin")return true;toast(lang==="en"?"Only workspace admins can edit Spare Parts":"เฉพาะแอดมินของ Workspace เท่านั้นที่แก้ไขข้อมูลได้");return false}
@@ -1512,8 +1515,8 @@ async function loadSpareRows(client,workspace,table,sortColumn){
 function updateSpareRoleUI(){
  document.body.classList.toggle("spare-read-only",spareRole!=="admin");
  const role=document.getElementById("spareRoleStatus");
- if(role)role.textContent=spareRole==="admin"?"Admin · แก้ไขได้":spareRole==="loading"?"กำลังตรวจสิทธิ์…":"ดูอย่างเดียว · "+spareRole;
- const source=cloudStockActive?`☁ ฐานข้อมูลกลาง · Inventory ${inventory.length} รายการ · Movement ${movements.length} รายการ`:`ข้อมูลเฉพาะเครื่อง · กรุณาเข้าสู่ระบบเพื่อดูข้อมูลส่วนกลาง`;
+ if(role)role.textContent=spareRole==="admin"?t("roleAdmin"):spareRole==="loading"?t("roleLoading"):`${t("roleViewer")} · ${spareRole}`;
+ const source=cloudStockActive?`☁ ${t("sharedSource")} · ${t("inventory")} ${inventory.length} · ${t("movement")} ${movements.length}`:t("deviceSource");
  for(const id of ["stockSourceNote","movementSourceNote"]){const el=document.getElementById(id);if(el)el.textContent=source}
  for(const id of ["clearWorkspaceBtn","chooseImportFileBtn","chooseImportFileBtn2","freshImportBtn","inventoryOpenImportCenter","masterOpenImportCenter","inventoryImportBtn","masterImportBtn","excelImportBtn"]){const el=document.getElementById(id);if(el){el.disabled=cloudStockActive;el.title=cloudStockActive?"Import / Restore แบบ Local ถูกพักไว้เมื่อใช้ Inventory กลาง":""}}
  const addProject=document.getElementById("addProjectBtn"),addMaster=document.getElementById("addMasterBtn");
@@ -1527,7 +1530,7 @@ async function loadCloudCatalogue(){
  try{
   if(!window.SolarCloud)throw new Error("ไม่สามารถโหลดตัวเชื่อมต่อฐานข้อมูล");
   const session=await SolarCloud.session();
-  if(!session){spareRole="guest";spareWorkspaceId="";cloudStockActive=false;cloudProjects=[];centralProjects=[];centralAliases=[];sharedProvinces=[];categoryBrandLinks=[];cloudMaster={categories:[],brands:[],models:[],locations:[],units:[]};inventory=DataRepository.getJSON(DATA_KEYS.inventory,[])||[];movements=DataRepository.getJSON(DATA_KEYS.movements,[])||[];cloudCatalogueStatus="กรุณาเข้าสู่ระบบที่หน้าแรกเพื่อดูข้อมูลในฐานข้อมูล";render();return}
+  if(!session){spareRole="guest";spareWorkspaceId="";cloudStockActive=false;cloudProjects=[];centralProjects=[];centralAliases=[];sharedProvinces=[];categoryBrandLinks=[];cloudCatalogueError="";cloudMaster={categories:[],brands:[],models:[],locations:[],units:[]};inventory=DataRepository.getJSON(DATA_KEYS.inventory,[])||[];movements=DataRepository.getJSON(DATA_KEYS.movements,[])||[];cloudCatalogueStatus=t("loginForCloud");render();return}
   const member=await SolarCloud.membership(),client=SolarCloud.getClient();
   spareRole=member.role||"viewer";
   spareWorkspaceId=member.workspace_id;
@@ -1549,8 +1552,9 @@ async function loadCloudCatalogue(){
   inventory=items.map(i=>({...i.details,id:i.spare_code,part:i.part,category:i.category,brand:i.brand,model:i.model,unit:i.unit,location:i.location,project:i.project,projectCode:i.project_code,available:Number(i.available),reserved:Number(i.reserved),repair:Number(i.repair),min:Number(i.min_stock),cloudId:i.id,revision:i.revision,cloudOnly:true}));
   movements=history.map(m=>({...m.details,id:m.movement_code,date:m.occurred_at,type:m.movement_type,spareId:m.spare_code,qty:Number(m.quantity),project:m.project,projectCode:m.project_code,historicalOnly:m.historical_only,cloudOnly:true}));
   cloudStockActive=true;
-  cloudCatalogueStatus=`ฐานข้อมูล: ${cloudProjects.length} โครงการ · ${(masters.data||[]).length} Master Data · ${inventory.length} Inventory · ${movements.length} Movement (${spareRole==="admin"?"แอดมินแก้ไขได้":"อ่านอย่างเดียว"})`;
- }catch(err){spareRole="unavailable";cloudStockActive=false;cloudProjects=[];centralProjects=[];centralAliases=[];sharedProvinces=[];categoryBrandLinks=[];cloudMaster={categories:[],brands:[],models:[],locations:[],units:[]};inventory=DataRepository.getJSON(DATA_KEYS.inventory,[])||[];movements=DataRepository.getJSON(DATA_KEYS.movements,[])||[];cloudCatalogueStatus=`อ่านฐานข้อมูลไม่ได้: ${err.message||err}`}
+  cloudCatalogueError="";
+  cloudCatalogueStatus=fmtTemplate("cloudStatus",{projects:cloudProjects.length,masters:(masters.data||[]).length,items:inventory.length,movements:movements.length,access:spareRole==="admin"?t("adminEditable"):t("readOnly")});
+ }catch(err){spareRole="unavailable";cloudStockActive=false;cloudProjects=[];centralProjects=[];centralAliases=[];sharedProvinces=[];categoryBrandLinks=[];cloudCatalogueError=err.message||String(err);cloudMaster={categories:[],brands:[],models:[],locations:[],units:[]};inventory=DataRepository.getJSON(DATA_KEYS.inventory,[])||[];movements=DataRepository.getJSON(DATA_KEYS.movements,[])||[];cloudCatalogueStatus=`${t("cloudUnavailable")}: ${cloudCatalogueError}`}
  render();
 }
 let compatibility=DataRepository.getJSON(DATA_KEYS.compatibility,[])||[];
@@ -1640,6 +1644,18 @@ dataContractTitle:"โครงสร้างข้อมูลปัจจุ�
 healthUnknownMaster:"Unknown Master",healthDuplicate:"Duplicate Spare ID",healthOrphanMovement:"Orphan Movement",healthBrandModel:"Brand/Model mismatch",healthOk:"OK",healthReview:"Review required",healthReviewTitle:"Review",dataHealthOk:"Data Health OK · No broken Master references, duplicate Spare IDs, orphan Movements or Brand/Model mismatches found",
 step1:"STEP 1",step2:"STEP 2",step3:"STEP 3",step4:"STEP 4",step5:"STEP 5",supabaseSecurityNote:"When connecting Supabase: verify Data API grants separately from RLS, enable RLS on exposed tables, use a publishable key in the client, and never embed service-role/secret keys in the HTML.",statusDone:"Done",statusNext:"Next",statusFuture:"Future",statusColumn:"Status",inventoryDataLabel:"Inventory",stockMovementDataLabel:"Stock Movement",masterGroupDataLabel:"Category / Brand / Model / Unit",locationProjectDataLabel:"Location / Project",settingsSchemaDataLabel:"Settings / schema version",inventoryExportTitle:"Inventory Export",movementExportTitle:"Movement Export",masterExportTitle:"Master Data Export",exportBtnLabel:"Export",exportCSVLabel:"Export CSV",storageBackupTitle:"Storage & Backup",backupJSON:"Backup JSON",restoreJSON:"Restore JSON",addSpareTitle:"Add Spare Part",spareDetailTitle:"Spare Detail",addMasterTitle:"Add Master",editMasterTitle:"Edit Master",duplicateSpareError:"Duplicate Spare ID",duplicateMasterError:"Duplicate master name",cannotDeleteUsed:"Cannot delete because this value is in use",masterDeleted:"Master deleted",masterExported:"Master CSV exported",movementExported:"Movement CSV exported",excelExported:"Excel exported",masterSaved:"Master saved",restoreConfirm:"Restore this workspace? Current Inventory, Master Data and Movement will be overwritten.",restoreFailed:"Restore failed",qtyGreaterZero:"Qty must be greater than 0",notEnoughAvailable:"Not enough Available stock",repairQtyNotEnough:"Repair quantity is not enough",movementHintAvailable:"Available",movementHintReserved:"Reserved",movementHintRepair:"Repair",movementHintMin:"Min Stock",month1:"January",month2:"February",month3:"March",month4:"April",month5:"May",month6:"June",month7:"July",month8:"August",month9:"September",month10:"October",month11:"November",month12:"December",movementFilterLabel:"Movement Type",movementSearchPlaceholder:"Search Spare ID / part / reference / remark",movementFilterHint:"Use filters to find historical movements faster",movementResults:"Showing {shown} of {total} movements",desktopEdition:"เวิร์กสเปซเดสก์ท็อป",workspaceLabel:"Workspace",localMode:"โหมดภายในเครื่อง",supabaseFutureShort:"พร้อมต่อ Supabase",globalSearchPlaceholder:"Search Spare ID, part, brand, model...",collapseSidebar:"Collapse sidebar",expandSidebar:"Expand sidebar"
 }};
+Object.assign(D.th,{
+ matchFilter:"การจับคู่",matchPending:"รอตรวจจับคู่",matchLinked:"เชื่อม Central",matchIndependent:"โครงการอิสระ",reviewAction:"ตรวจจับคู่",reviewProjectTitle:"ตรวจจับคู่โครงการ · Central / Excel",reviewHelp:"ระบบแนะนำชื่อที่คล้ายกัน แอดมินเป็นผู้ยืนยันผลการจับคู่",searchCentral:"ค้นหาโครงการใน Central Data Hub",searchCentralHint:"ชื่อโครงการหรือชื่อแฝง",sharedProvinceChoice:"จังหวัดกลางที่ต้องการใช้",newProvinceLabel:"จังหวัดใหม่ (ใช้เมื่อไม่มีในรายการกลาง; แอดมินเพิ่มได้)",newProvinceHint:"ชื่อจังหวัดภาษาไทย",reviewReason:"เหตุผลการตัดสินใจ",reviewReasonHint:"เช่น รหัสตรงกัน / เป็นโครงการคนละเฟส",keepIndependent:"เก็บเป็นโครงการอิสระ",confirmLink:"ยืนยันจับคู่",spareProjectNoteHint:"ข้อความเพิ่มเติมของโครงการใน Spare Parts",
+ candidateSimilar:"ชื่อคล้ายข้อมูลนำเข้า",candidateEmpty:"ไม่พบชื่อที่ค้นหา ลองค้นด้วยชื่อแฝง หรือเก็บเป็นโครงการอิสระ",compareBeforeReview:"เทียบก่อนยืนยัน",excelCapacity:"Capacity จาก Excel",centralCapacity:"Capacity จาก Central",excelProvince:"จังหวัดจาก Excel",centralAddressProvince:"จังหวัดจากที่อยู่ Central",noProvinceFound:"ไม่พบ",spareOnlyEffect:"การเลือกด้านล่างมีผลกับข้อมูล Spare Parts เท่านั้น",capacityChoice:"Capacity ที่จะใช้",provinceUnspecified:"ยังไม่ระบุจังหวัด",chooseCentralFirst:"เลือกโครงการ Central ที่จะจับคู่ก่อน",thaiProvinceRequired:"ชื่อจังหวัดใหม่ต้องเป็นภาษาไทย",reviewConflict:"ข้อมูลถูกแก้ไขระหว่างตรวจ กรุณาโหลดใหม่",reviewSaved:"บันทึกผลตรวจจับคู่แล้ว",reviewFailed:"ตรวจจับคู่ไม่สำเร็จ",matchExplanation:"รอตรวจจับคู่ = ยังไม่ยืนยันว่าเป็นโครงการเดียวกับ Central",
+ parentCategory:"Category หลัก",relatedBrands:"Brand ภายใต้ Category",relatedCategories:"Category ที่ใช้ Brand นี้",modelCount:"Model",stockCount:"อะไหล่ในคลัง",pendingClassification:"รอจัดประเภท",noRelation:"ยังไม่ผูกความสัมพันธ์",linkExistingBrand:"ใช้ Brand ที่มีอยู่และเพิ่มความสัมพันธ์กับ Category",brandCategoryHint:"เลือก Category เพื่อเพิ่มความสัมพันธ์; Brand เดียวใช้ได้หลาย Category",brandCurrentCategories:"Category ที่ผูกอยู่",modelRelationHint:"เลือก Category ก่อน จากนั้นเลือก Brand และบันทึก Model",categoryBrandRequired:"เลือก Category และ Brand ที่อยู่ในฐานข้อมูลกลางก่อน",brandCategoryRequired:"เลือก Category ของ Brand",categoryCloudRequired:"Category ต้องอยู่ในฐานข้อมูลกลาง",masterCloudFailed:"บันทึก Master Data ไม่สำเร็จ",masterRecordMissing:"ไม่พบรายการ",masterRenameBlocked:"มีข้อมูลอ้างอิงอยู่ กรุณาตรวจสอบก่อนเปลี่ยนชื่อ",
+ adminEditable:"แอดมินแก้ไขได้",readOnly:"อ่านอย่างเดียว",cloudStatus:"ฐานข้อมูล: {projects} โครงการ · {masters} Master Data · {items} Inventory · {movements} Movement ({access})",cloudUnavailable:"อ่านฐานข้อมูลไม่ได้",loginForCloud:"กรุณาเข้าสู่ระบบที่หน้าแรกเพื่อดูข้อมูลในฐานข้อมูล",loadingCloud:"กำลังตรวจสอบข้อมูลโครงการในฐานข้อมูล…",sharedSource:"ฐานข้อมูลกลาง",deviceSource:"ข้อมูลเฉพาะเครื่อง · กรุณาเข้าสู่ระบบเพื่อดูข้อมูลส่วนกลาง",roleAdmin:"Admin · แก้ไขได้",roleLoading:"กำลังตรวจสิทธิ์…",roleViewer:"ดูอย่างเดียว",matchMissingImpact:"ยังไม่เชื่อมข้อมูล Central; ใช้ใน Spare Parts ได้ตามปกติ",controlCenter:"ศูนย์ควบคุม",projectsWorkspace:"พื้นที่จัดการโครงการ",projectsWorkspaceSub:"ค้นหา · กรอง · ตรวจจับคู่",controls:"ตัวกรอง",focusTable:"เน้นตาราง",cloudProjectEditHint:"☁ แก้ไขในฐานข้อมูลกลาง · โครงการที่เชื่อม Central แล้วล็อกชื่อ และให้ตรวจ Capacity ในหน้าจับคู่",usedRecordTitle:"มีข้อมูลใช้งานอยู่",usedRecordText:"ยังมีข้อมูลอ้างอิงใน Spare Parts",usedRecordFix:"กรุณาย้ายหรือแก้ไขรายการที่อ้างอิงก่อนเปลี่ยนชื่อหรือลบ",deleteScopeNote:"ข้อมูล Working Days, GI, PR และ Central Data Hub จะไม่ถูกลบ",confirmSpareTitle:"ยืนยันลบจาก Spare Parts",deleteSpareOnly:"ลบเฉพาะ Spare Parts",confirmScope:"ยืนยันว่าตรวจสอบขอบเขตการลบแล้ว",deleteCloudMasterDetail:"ลบ {type} จาก Master Data บนฐานข้อมูล",deleteMasterFailed:"ลบ Master Data ไม่สำเร็จ",deleteCloudProjectLinked:"โครงการนี้เชื่อม Central อยู่ การลบจะเอาออกเฉพาะรายการ Spare Parts",deleteCloudProjectOther:"การลบจะเอาออกเฉพาะรายการ Spare Parts",deleteCloudProjectFailed:"ลบโครงการไม่สำเร็จ",recordNotFound:"ไม่พบรายการหรือไม่มีสิทธิ์"
+});
+Object.assign(D.en,{
+ matchFilter:"Project match",matchPending:"Needs review",matchLinked:"Linked to Central",matchIndependent:"Independent project",reviewAction:"Review match",reviewProjectTitle:"Review project match · Central / Excel",reviewHelp:"The system suggests similar names. An admin confirms the match.",searchCentral:"Search Central Data Hub projects",searchCentralHint:"Project or alias name",sharedProvinceChoice:"Shared province to use",newProvinceLabel:"New province (add only if absent from the shared list)",newProvinceHint:"Thai province name",reviewReason:"Reason for decision",reviewReasonHint:"For example, same project code / separate project phase",keepIndependent:"Keep independent",confirmLink:"Confirm match",spareProjectNoteHint:"Additional notes for this Spare Parts project",
+ candidateSimilar:"Similar imported name",candidateEmpty:"No matching name. Search an alias or keep this project independent.",compareBeforeReview:"Compare before confirming",excelCapacity:"Excel capacity",centralCapacity:"Central capacity",excelProvince:"Excel province",centralAddressProvince:"Province from Central address",noProvinceFound:"Not found",spareOnlyEffect:"These choices update Spare Parts only.",capacityChoice:"Capacity to use",provinceUnspecified:"Province not specified",chooseCentralFirst:"Select a Central project before confirming.",thaiProvinceRequired:"New province names must be in Thai.",reviewConflict:"This project changed during review. Reload and try again.",reviewSaved:"Project match saved",reviewFailed:"Could not review project match",matchExplanation:"Needs review = no confirmed link to the Central project",
+ parentCategory:"Parent category",relatedBrands:"Brands under this category",relatedCategories:"Categories using this brand",modelCount:"Models",stockCount:"Inventory items",pendingClassification:"Needs classification",noRelation:"No relationship yet",linkExistingBrand:"Reuse an existing brand and link it to this category",brandCategoryHint:"Select a category to add a link; one brand can belong to several categories.",brandCurrentCategories:"Linked categories",modelRelationHint:"Choose a category, then a brand, and save the model.",categoryBrandRequired:"Choose a category and brand in the shared database first.",brandCategoryRequired:"Choose a category for this brand.",categoryCloudRequired:"The category must exist in the shared database.",masterCloudFailed:"Could not save Master Data",masterRecordMissing:"Record not found",masterRenameBlocked:"This name is in use. Check its references before renaming.",
+ adminEditable:"Admin can edit",readOnly:"Read only",cloudStatus:"Database: {projects} projects · {masters} Master Data · {items} inventory items · {movements} movements ({access})",cloudUnavailable:"Could not read the database",loginForCloud:"Sign in on the home page to view shared data",loadingCloud:"Checking projects in the database…",sharedSource:"Shared database",deviceSource:"Device data · Sign in to access shared data",roleAdmin:"Admin · Can edit",roleLoading:"Checking permissions…",roleViewer:"Read only",matchMissingImpact:"Not linked to Central; can still be used in Spare Parts",controlCenter:"Control Center",projectsWorkspace:"Projects Workspace",projectsWorkspaceSub:"Search · filter · review",controls:"Controls",focusTable:"Focus table",cloudProjectEditHint:"☁ Changes save to the shared database · Linked names are locked; review capacity in the matching dialog",usedRecordTitle:"This record is in use",usedRecordText:"Spare Parts still references this record",usedRecordFix:"Move or update the related items before renaming or deleting",deleteScopeNote:"Working Days, GI, PR and Central Data Hub will not be deleted",confirmSpareTitle:"Confirm deletion from Spare Parts",deleteSpareOnly:"Delete from Spare Parts only",confirmScope:"I have checked the scope of this deletion",deleteCloudMasterDetail:"Delete {type} from shared Master Data",deleteMasterFailed:"Could not delete Master Data",deleteCloudProjectLinked:"This project is linked to Central. Only its Spare Parts record will be deleted.",deleteCloudProjectOther:"Only this Spare Parts project record will be deleted.",deleteCloudProjectFailed:"Could not delete project",recordNotFound:"Record not found or insufficient permission"
+});
 function t(k){return D[lang][k]||k}
 function statusText(s){return s==="Normal"?t("statusNormal"):s==="Low Stock"?t("statusLowStock"):s==="Out of Stock"?t("statusOutOfStock"):s}
 function movementText(type){return ({Receive:t("receive"),Issue:t("issue"),Reserve:t("reserve"),Return:t("returnType"),Repair:t("repairType"),"Repair Return":t("repairReturn")})[type]||type}
@@ -1709,6 +1725,10 @@ function applySidebarState(){
 function render(){
  normalizeProjectReferences();
  document.documentElement.dataset.theme=theme;document.documentElement.lang=lang;
+ if(spareRole==="loading")cloudCatalogueStatus=t("loadingCloud");
+ else if(spareRole==="guest")cloudCatalogueStatus=t("loginForCloud");
+ else if(spareRole==="unavailable")cloudCatalogueStatus=`${t("cloudUnavailable")}: ${cloudCatalogueError}`;
+ else if(cloudStockActive)cloudCatalogueStatus=fmtTemplate("cloudStatus",{projects:cloudProjects.length,masters:Object.values(cloudMaster).reduce((sum,rows)=>sum+rows.length,0),items:inventory.length,movements:movements.length,access:spareRole==="admin"?t("adminEditable"):t("readOnly")});
  const sv=document.getElementById("sidebarVersion");if(sv)sv.textContent=APP_VERSION;
  document.querySelectorAll("[data-i18n]").forEach(e=>e.textContent=t(e.dataset.i18n));
  const storageLabel=document.querySelector('[data-i18n="localMode"]');if(storageLabel)storageLabel.textContent=cloudStockActive?(lang==="th"?"Inventory กลาง":"Shared inventory"):t("localMode");
@@ -1723,6 +1743,10 @@ function render(){
  const fresh=document.getElementById("freshWorkspaceNote");
  if(fresh)fresh.classList.toggle("hidden",inventory.length>0||movements.length>0||master.categories.length>0||master.brands.length>0||master.models.length>0||projectDetails.length>0);
  updateSpareRoleUI();
+ if(document.getElementById("spareReviewModal")?.classList.contains("show")){renderReviewCandidates();renderReviewComparison(true)}
+ if(document.getElementById("masterModal")?.classList.contains("show")){masterModalTitle.textContent=t(editingCloudMasterId||editingMasterId?"editMasterTitle":"addMasterTitle");updateMasterRelationHint()}
+ if(document.getElementById("projectEditModal")?.classList.contains("show")){projectEditTitle.textContent=t(editingCloudProjectId||editingProjectCode||editingProjectName?"editProject":"addProject");projectRelationNote.textContent=editingCloudProjectId?t("cloudProjectEditHint"):t("projectRelationImpact")}
+ if(document.getElementById("projectDetailModal")?.classList.contains("show")){const d=projectDetailEditBtn.dataset.cloudId?cloudProjects.find(p=>p.id===projectDetailEditBtn.dataset.cloudId):findProjectDetail(projectDetailEditBtn.dataset.projectName||"",projectDetailEditBtn.dataset.projectCode||"");if(d)openProjectDetail(d.projectName,d.projectCode,d)}
 }
 function renderKpis(){
  const totalQty=inventory.reduce((a,x)=>a+(+x.available||0)+(+x.reserved||0)+(+x.repair||0),0);
@@ -1802,37 +1826,39 @@ function renderMovements(){
  movementBody.innerHTML=rows.map(m=>`<tr><td>${esc(m.date)}</td><td><b>${esc(movementText(m.type))}</b></td><td>${esc(m.spareId)}</td><td>${esc(m.part)}</td><td>${m.qty}</td><td>${esc(m.project||"-")}</td><td>${esc(m.fromTo||"-")}</td><td>${esc(m.ref||"-")}</td><td>${esc(m.remark||"-")}</td></tr>`).join("")||`<tr><td colspan="9" style="padding:30px;text-align:center;color:var(--muted)">${t("noMovement")}</td></tr>`;
 }
 function projectDisplayName(row){return row?.centralProjectId?centralProjects.find(p=>p.id===row.centralProjectId)?.standard_name||row.projectName:row?.projectName||""}
-function projectMatchLabel(row){return row.matchStatus==="linked"?"เชื่อม Central":row.matchStatus==="independent"?"โครงการอิสระ":"รอตรวจจับคู่"}
+function projectMatchLabel(row){return t(row.matchStatus==="linked"?"matchLinked":row.matchStatus==="independent"?"matchIndependent":"matchPending")}
 let reviewProjectId="",reviewCentralId="";
 function reviewSourceProvince(address){const source=normText(address);return sharedProvinces.find(p=>[p.name_th,p.name_en,...(p.aliases||[])].some(name=>name&&source.includes(normText(name))))}
 function renderReviewCandidates(){
  const row=cloudProjects.find(p=>p.id===reviewProjectId);if(!row)return;
  const query=normText(spareCandidateSearch.value),source=normText(row.sourceName||row.projectName);
  const candidates=centralProjects.map(p=>{const names=[p.standard_name,...centralAliases.filter(a=>a.project_id===p.id).map(a=>a.alias_name)];const score=names.some(n=>normText(n)===source)?3:names.some(n=>normText(n).includes(source)||source.includes(normText(n)))?2:0;return {...p,names,score}}).filter(p=>!query||p.names.some(n=>normText(n).includes(query))).sort((a,b)=>(b.id===reviewCentralId)-(a.id===reviewCentralId)||b.score-a.score||a.standard_name.localeCompare(b.standard_name)).slice(0,12);
- spareCandidateList.innerHTML=candidates.map(p=>`<label class="notice" style="display:block;margin:5px 0;cursor:pointer"><input type="radio" name="reviewCandidate" value="${esc(p.id)}" ${p.id===reviewCentralId?"checked":""}> <b>${esc(p.standard_name)}</b> · ${Number(p.capacity_kwp||0).toLocaleString()} kWp ${p.score?"· ชื่อคล้ายข้อมูลนำเข้า":""}</label>`).join("")||'<div class="notice">ไม่พบชื่อที่ค้นหา ลองค้นด้วยชื่อแฝง หรือเก็บเป็นโครงการอิสระ</div>';
+ spareCandidateList.innerHTML=candidates.map(p=>`<label class="notice" style="display:block;margin:5px 0;cursor:pointer"><input type="radio" name="reviewCandidate" value="${esc(p.id)}" ${p.id===reviewCentralId?"checked":""}> <b>${esc(p.standard_name)}</b> · ${Number(p.capacity_kwp||0).toLocaleString()} kWp ${p.score?`· ${t("candidateSimilar")}`:""}</label>`).join("")||`<div class="notice">${t("candidateEmpty")}</div>`;
  spareCandidateList.querySelectorAll('input[name="reviewCandidate"]').forEach(input=>input.onchange=()=>{reviewCentralId=input.value;renderReviewCandidates();renderReviewComparison()});
 }
-function renderReviewComparison(){
+function renderReviewComparison(preserveChoice=false){
  const row=cloudProjects.find(p=>p.id===reviewProjectId),central=centralProjects.find(p=>p.id===reviewCentralId);if(!row)return;
+ const selectedCapacity=preserveChoice?document.getElementById("spareCapacityChoice")?.value:"",selectedProvince=preserveChoice?spareReviewProvince.value:"";
  const excelCapacity=Number(row.catalogCapacity??row.capacity),centralCapacity=Number(central?.capacity_kwp||0),province=central&&reviewSourceProvince(central.address);
- spareReviewComparison.innerHTML=`<div class="notice"><b>เทียบก่อนยืนยัน</b><br>Capacity จาก Excel: ${Number.isFinite(excelCapacity)?excelCapacity.toLocaleString():"—"} kWp · Central: ${centralCapacity||"—"} kWp<br>จังหวัดจาก Excel: ${esc(row.provinceOriginal||row.province||"—")} · จากที่อยู่ Central: ${esc(province?.name_th||"ไม่พบ")}<br>การเลือกด้านล่างมีผลกับข้อมูล Spare Parts เท่านั้น</div><div class="field" style="margin-top:8px"><label>Capacity ที่จะใช้</label><select class="control" id="spareCapacityChoice"><option value="excel">Excel · ${Number.isFinite(excelCapacity)?excelCapacity:"—"} kWp</option>${centralCapacity>0?`<option value="central" ${row.capacitySource==="central"?"selected":""}>Central · ${centralCapacity} kWp</option>`:""}</select></div>`;
- spareReviewProvince.innerHTML=`<option value="">ยังไม่ระบุจังหวัด</option>`+sharedProvinces.map(p=>`<option value="${esc(p.id)}">${esc(p.name_th)}</option>`).join("");spareReviewProvince.value=row.provinceId||province?.id||"";
+ spareReviewComparison.innerHTML=`<div class="notice"><b>${t("compareBeforeReview")}</b><br>${t("excelCapacity")}: ${Number.isFinite(excelCapacity)?excelCapacity.toLocaleString():"—"} kWp · ${t("centralCapacity")}: ${centralCapacity||"—"} kWp<br>${t("excelProvince")}: ${esc(row.provinceOriginal||row.province||"—")} · ${t("centralAddressProvince")}: ${esc(province?.name_th||t("noProvinceFound"))}<br>${t("spareOnlyEffect")}</div><div class="field" style="margin-top:8px"><label>${t("capacityChoice")}</label><select class="control" id="spareCapacityChoice"><option value="excel">${t("excelCapacity")} · ${Number.isFinite(excelCapacity)?excelCapacity:"—"} kWp</option>${centralCapacity>0?`<option value="central">${t("centralCapacity")} · ${centralCapacity} kWp</option>`:""}</select></div>`;
+ document.getElementById("spareCapacityChoice").value=selectedCapacity||row.capacitySource||"excel";
+ spareReviewProvince.innerHTML=`<option value="">${t("provinceUnspecified")}</option>`+sharedProvinces.map(p=>`<option value="${esc(p.id)}">${esc(p.name_th)}</option>`).join("");spareReviewProvince.value=preserveChoice?selectedProvince:row.provinceId||province?.id||"";
 }
 function openSpareReview(id){if(!requireSpareAdmin())return;const row=cloudProjects.find(p=>p.id===id);if(!row)return;reviewProjectId=id;reviewCentralId=row.centralProjectId||"";spareReviewProject.textContent=`${row.projectCode||"—"} · ${row.sourceName||row.projectName} · ${projectMatchLabel(row)}`;spareCandidateSearch.value="";spareNewProvince.value="";spareReviewNote.value="";renderReviewCandidates();renderReviewComparison();openModal("spareReviewModal")}
 async function saveSpareReview(action){
  if(!requireSpareAdmin())return;const row=cloudProjects.find(p=>p.id===reviewProjectId),central=centralProjects.find(p=>p.id===reviewCentralId);if(!row)return;
- if(action==="linked"&&!central){alert("เลือกโครงการ Central ที่จะจับคู่ก่อน");return}
+ if(action==="linked"&&!central){alert(t("chooseCentralFirst"));return}
  const buttons=[spareKeepIndependent,spareConfirmLink];buttons.forEach(b=>b.disabled=true);
  try{
   let province=sharedProvinces.find(p=>p.id===spareReviewProvince.value);const newName=spareNewProvince.value.trim();
-  if(newName){if(!/^[ก-๙\s]{2,80}$/.test(newName))throw Error("ชื่อจังหวัดใหม่ต้องเป็นภาษาไทย");province=sharedProvinces.find(p=>normText(p.name_th)===normText(newName));if(!province){const created=await SolarCloud.getClient().from("province_catalog").insert({workspace_id:spareWorkspaceId,name_th:newName}).select("id,name_th").single();if(created.error)throw created.error;province=created.data}}
+  if(newName){if(!/^[ก-๙\s]{2,80}$/.test(newName))throw Error(t("thaiProvinceRequired"));province=sharedProvinces.find(p=>normText(p.name_th)===normText(newName));if(!province){const created=await SolarCloud.getClient().from("province_catalog").insert({workspace_id:spareWorkspaceId,name_th:newName}).select("id,name_th").single();if(created.error)throw created.error;province=created.data}}
   const excelCapacity=Number(row.catalogCapacity??row.capacity),useCentral=action==="linked"&&document.getElementById("spareCapacityChoice").value==="central"&&Number(central.capacity_kwp)>0;
   const capacity=useCentral?Number(central.capacity_kwp):Number.isFinite(excelCapacity)?excelCapacity:null;
   const details={...row.details,reviewNote:spareReviewNote.value.trim(),reviewSourceName:row.sourceName||row.projectName};
   const update={central_project_id:action==="linked"?central.id:null,match_status:action,province_id:province?.id||null,province:province?.name_th||null,province_source:newName?"manual":province?"catalog":null,capacity_kwp:capacity,capacity_source:useCentral?"central":"excel",reviewed_at:new Date().toISOString(),reviewed_by:(await SolarCloud.session())?.user?.id||null,details,updated_at:new Date().toISOString()};
   let request=SolarCloud.getClient().from("spare_project_catalog").update(update).eq("id",row.id).eq("workspace_id",spareWorkspaceId);if(row.updatedAt)request=request.eq("updated_at",row.updatedAt);
-  const result=await request.select("id");if(result.error)throw result.error;if(!result.data?.length)throw Error("ข้อมูลถูกแก้ไขระหว่างตรวจ กรุณาโหลดใหม่");closeModal("spareReviewModal");await loadCloudCatalogue();toast("บันทึกผลตรวจจับคู่แล้ว")
- }catch(error){alert("ตรวจจับคู่ไม่สำเร็จ: "+error.message)}finally{buttons.forEach(b=>b.disabled=false)}
+  const result=await request.select("id");if(result.error)throw result.error;if(!result.data?.length)throw Error(t("reviewConflict"));closeModal("spareReviewModal");await loadCloudCatalogue();toast(t("reviewSaved"))
+ }catch(error){alert(t("reviewFailed")+": "+error.message)}finally{buttons.forEach(b=>b.disabled=false)}
 }
 spareCandidateSearch.addEventListener("input",renderReviewCandidates);
 spareKeepIndependent.onclick=()=>saveSpareReview("independent");spareConfirmLink.onclick=()=>saveSpareReview("linked");
@@ -1848,7 +1874,7 @@ function renderProjects(){
  if(provinceSel){provinceSel.innerHTML=`<option value="">${t("all")}</option>`+provinces.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("");provinceSel.value=projectFilters.province}
  const rows=allProjects.filter(d=>{const equipment=[d.pvModuleModel,d.inverterBrand,d.inverter1,d.inverter2,d.inverter3,d.optimizerRsd].join(" ");const hay=[d.projectCode,d.projectName,projectDisplayName(d),d.epc,d.province,d.location,d.status,equipment].join(" ").toLowerCase();return(!q||hay.includes(q))&&(!projectFilters.status||d.status===projectFilters.status)&&(!projectFilters.province||d.province===projectFilters.province)&&(!projectFilters.match||d.matchStatus===projectFilters.match)}).slice().sort((x,y)=>String(x.projectCode||x.projectName).localeCompare(String(y.projectCode||y.projectName)));
  projectResultCount.textContent=fmtTemplate("projectResults",{shown:rows.length,total:allProjects.length});
- projectTableBody.innerHTML=rows.map(d=>{const code=String(d.projectCode||"").trim(),name=String(projectDisplayName(d)||"").trim(),pvCount=replacementHistory.filter(x=>sameProject(x,d,name)).length,invCount=inverterHistory.filter(x=>sameProject(x,d,name)).length,movCount=movements.filter(x=>sameProject(x,d,name)).length;const invs=[[d.inverter1,d.inverterQty1],[d.inverter2,d.inverterQty2],[d.inverter3,d.inverterQty3]].filter(x=>x[0]&&x[0]!=="None");const eq=[d.pvModuleModel?`PV: ${d.pvModuleModel}`:"",invs.length?`INV: ${invs.map(x=>x[0]).join(", ")}`:"",d.optimizerRsd?`OPT: ${d.optimizerRsd}`:""].filter(Boolean);return `<tr><td><div class="project-code">${esc(code||"—")}</div></td><td><div class="project-name-cell">${esc(name||"—")}</div><div class="part-sub">${d.cloudOnly?`☁ ${projectMatchLabel(d)+" · "}`:""}${esc(d.location||d.plantType||"")}</div></td><td>${d.capacity!==undefined&&d.capacity!==""?`${esc(d.capacity)} kWp`:"—"}</td><td>${esc(d.status||"—")}</td><td>${esc(d.province||"—")}</td><td>${esc(d.epc||"—")}</td><td><div class="project-eq-summary">${eq.map(esc).join("<br>")||"—"}</div></td><td><div class="project-history-mini"><span class="mini-count">PV ${pvCount}</span><span class="mini-count">INV ${invCount}</span><span class="mini-count">MOV ${movCount}</span></div></td><td>${d.cloudOnly?`<div class="row-actions"><button class="btn small" data-cloud-project-view="${esc(d.id)}">ⓘ ${t("viewBtn")}</button>${spareRole==="admin"?`<button class="btn small" data-cloud-project-review="${esc(d.id)}" data-spare-write>ตรวจจับคู่</button><button class="btn small" data-cloud-project-edit="${esc(d.id)}" data-spare-write>✎ ${t("editBtn")}</button><button class="btn small danger" data-cloud-project-delete="${esc(d.id)}" data-spare-write>× ${t("deleteBtn")}</button>`:""}</div>`:`<div class="row-actions"><button class="btn small" data-project-view="${esc(code||name)}">ⓘ ${t("viewBtn")}</button><button class="btn small" data-project-edit="${esc(code||name)}" data-spare-write>✎ ${t("editBtn")}</button><button class="btn small danger" data-local-project-delete="${esc(d.id)}" data-spare-write>× ${t("deleteBtn")}</button></div>`}</td></tr>`}).join("")||`<tr><td colspan="9" style="padding:35px;text-align:center;color:var(--muted)">${t("noData")}</td></tr>`;
+ projectTableBody.innerHTML=rows.map(d=>{const code=String(d.projectCode||"").trim(),name=String(projectDisplayName(d)||"").trim(),pvCount=replacementHistory.filter(x=>sameProject(x,d,name)).length,invCount=inverterHistory.filter(x=>sameProject(x,d,name)).length,movCount=movements.filter(x=>sameProject(x,d,name)).length;const invs=[[d.inverter1,d.inverterQty1],[d.inverter2,d.inverterQty2],[d.inverter3,d.inverterQty3]].filter(x=>x[0]&&x[0]!=="None");const eq=[d.pvModuleModel?`PV: ${d.pvModuleModel}`:"",invs.length?`INV: ${invs.map(x=>x[0]).join(", ")}`:"",d.optimizerRsd?`OPT: ${d.optimizerRsd}`:""].filter(Boolean);return `<tr><td><div class="project-code">${esc(code||"—")}</div></td><td><div class="project-name-cell">${esc(name||"—")}</div><div class="part-sub" title="${d.matchStatus==="needs_review"?esc(t("matchMissingImpact")):""}">${d.cloudOnly?`☁ ${projectMatchLabel(d)+" · "}`:""}${esc(d.location||d.plantType||"")}</div></td><td>${d.capacity!==undefined&&d.capacity!==""?`${esc(d.capacity)} kWp`:"—"}</td><td>${esc(d.status||"—")}</td><td>${esc(d.province||"—")}</td><td>${esc(d.epc||"—")}</td><td><div class="project-eq-summary">${eq.map(esc).join("<br>")||"—"}</div></td><td><div class="project-history-mini"><span class="mini-count">PV ${pvCount}</span><span class="mini-count">INV ${invCount}</span><span class="mini-count">MOV ${movCount}</span></div></td><td>${d.cloudOnly?`<div class="row-actions"><button class="btn small" data-cloud-project-view="${esc(d.id)}">ⓘ ${t("viewBtn")}</button>${spareRole==="admin"?`<button class="btn small" data-cloud-project-review="${esc(d.id)}" data-spare-write>${t("reviewAction")}</button><button class="btn small" data-cloud-project-edit="${esc(d.id)}" data-spare-write>✎ ${t("editBtn")}</button><button class="btn small danger" data-cloud-project-delete="${esc(d.id)}" data-spare-write>× ${t("deleteBtn")}</button>`:""}</div>`:`<div class="row-actions"><button class="btn small" data-project-view="${esc(code||name)}">ⓘ ${t("viewBtn")}</button><button class="btn small" data-project-edit="${esc(code||name)}" data-spare-write>✎ ${t("editBtn")}</button><button class="btn small danger" data-local-project-delete="${esc(d.id)}" data-spare-write>× ${t("deleteBtn")}</button></div>`}</td></tr>`}).join("")||`<tr><td colspan="9" style="padding:35px;text-align:center;color:var(--muted)">${t("noData")}</td></tr>`;
  document.querySelectorAll("[data-project-view]").forEach(btn=>btn.onclick=()=>{const ref=btn.dataset.projectView,d=findProjectDetail("",ref)||findProjectDetail(ref,"");if(d)openProjectDetail(d.projectName,d.projectCode)});
  document.querySelectorAll("[data-project-edit]").forEach(btn=>btn.onclick=()=>{const ref=btn.dataset.projectEdit,d=findProjectDetail("",ref)||findProjectDetail(ref,"");if(d)openProjectEditor(d)});
  document.querySelectorAll("[data-cloud-project-view]").forEach(btn=>btn.onclick=()=>{const d=cloudProjects.find(p=>p.id===btn.dataset.cloudProjectView);if(d)openProjectDetail(d.projectName,d.projectCode,d)});
@@ -1859,19 +1885,36 @@ function renderProjects(){
 }
 function renderMaster(){
  const masterRows=type=>{const local=master[type],keys=new Set(local.map(x=>normText(x.name)));const cloud=type==="projects"?cloudProjects.map(p=>({id:p.projectCode||p.id,cloudId:p.id,name:projectDisplayName(p),note:p.note||"",matchStatus:p.matchStatus,cloudOnly:true})):cloudMaster[type]||[];return [...local,...cloud.filter(x=>!keys.has(normText(x.name)))]};
- masterStats.innerHTML=["categories","brands","models","locations"].map(k=>`<div class="master-stat"><div class="muted">${t(k)||k}</div><div class="n">${masterRows(k).length}</div></div>`).join("");
+ const stats=[[t("categories"),masterRows("categories").length],[t("brands"),masterRows("brands").length],[t("models"),masterRows("models").length],[t("pendingClassification"),cloudMaster.models.filter(m=>!m.categoryBrandId).length]];
+ masterStats.innerHTML=stats.map(([label,count])=>`<div class="master-stat"><div class="muted">${esc(label)}</div><div class="n">${count}</div></div>`).join("");
  document.getElementById("masterCloudStatus").textContent=cloudCatalogueStatus;
- const q=masterSearch.value.trim().toLowerCase(),rows=masterRows(currentMaster).filter(x=>[x.id,x.name,x.brand,x.note].join(" ").toLowerCase().includes(q));
- masterTableTitle.textContent=t(currentMaster)||currentMaster;masterTableSub.textContent=`${rows.length} ${t("recordsLabel")}`+(currentMaster==="projects"?" · รอตรวจจับคู่ = ยังไม่ยืนยันว่าเป็นโครงการเดียวกับ Central":"");
+ const q=masterSearch.value.trim().toLowerCase();
+ const linkedPairs=category=>categoryBrandLinks.filter(pair=>pair.category_id===category.cloudId);
+ const brandPairs=brand=>categoryBrandLinks.filter(pair=>pair.brand_id===brand.cloudId);
+ const brandName=id=>cloudMaster.brands.find(b=>b.cloudId===id)?.name||"";
+ const categoryName=id=>cloudMaster.categories.find(c=>c.cloudId===id)?.name||"";
+ const chips=(names,target)=>names.length?`<div class="master-relation-list">${names.map(name=>`<button class="relation-chip" type="button" data-master-jump="${target}" data-master-name="${esc(name)}">${esc(name)}</button>`).join("")}</div>`:`<span class="muted">${t("noRelation")}</span>`;
+ const actions=x=>x.cloudOnly?`<div class="row-actions"><button class="btn small" data-cloud-master-edit="${esc(x.cloudId||x.id)}" data-spare-write>✎ ${t("editBtn")}</button><button class="btn small danger" data-cloud-master-delete="${esc(x.cloudId||x.id)}" data-spare-write>× ${t("deleteBtn")}</button></div>`:`<div class="row-actions"><button class="btn small" data-local-master-edit="${esc(x.id)}" data-spare-write>✎ ${t("editBtn")}</button><button class="btn small danger" data-local-master-delete="${esc(x.id)}" data-spare-write>× ${t("deleteBtn")}</button></div>`;
+ const rows=masterRows(currentMaster).filter(x=>{const associated=currentMaster==="categories"?linkedPairs(x).map(p=>brandName(p.brand_id)):currentMaster==="brands"?brandPairs(x).map(p=>categoryName(p.category_id)):[];return [x.id,x.name,x.brand,x.note,...associated].join(" ").toLowerCase().includes(q)});
+ masterTableTitle.textContent=t(currentMaster)||currentMaster;masterTableSub.textContent=`${rows.length} ${t("recordsLabel")}`+(currentMaster==="projects"?` · ${t("matchExplanation")}`:"");
  if(currentMaster==="models"){
-  masterHead.innerHTML=`<tr><th>${t("idLabel")}</th><th>${t("name")}</th><th>Category</th><th>${t("brandHeader")}</th><th>${t("noteHeader")}</th><th>${t("action")}</th></tr>`;
-  masterBody.innerHTML=rows.map(x=>`<tr><td><b>${esc(x.id)}</b></td><td>${esc(x.name)}</td><td>${esc(cloudMaster.categories.find(c=>c.cloudId===categoryBrandLinks.find(pair=>pair.id===x.categoryBrandId)?.category_id)?.name||"รอจัดประเภท")}</td><td>${esc(x.brand||"-")}</td><td>${esc(x.note||"-")}</td><td>${x.cloudOnly?`<div class="row-actions"><button class="btn small" data-cloud-master-edit="${esc(x.cloudId||x.id)}" data-spare-write>✎ ${t("editBtn")}</button><button class="btn small danger" data-cloud-master-delete="${esc(x.cloudId||x.id)}" data-spare-write>× ${t("deleteBtn")}</button></div>`:`<div class="row-actions"><button class="btn small" onclick="editMaster('${currentMaster}','${esc(x.id)}')">${t("editBtn")}</button><button class="btn small danger" onclick="deleteMaster('${currentMaster}','${esc(x.id)}')">${t("deleteBtn")}</button></div>`}</td></tr>`).join("");
+  masterHead.innerHTML=`<tr><th>${t("idLabel")}</th><th>${t("name")}</th><th>${t("categoryLabel")}</th><th>${t("brandHeader")}</th><th>${t("noteHeader")}</th><th>${t("action")}</th></tr>`;
+  masterBody.innerHTML=rows.map(x=>{const pair=categoryBrandLinks.find(p=>p.id===x.categoryBrandId);return `<tr><td><b>${esc(x.id)}</b></td><td>${esc(x.name)}</td><td>${esc(categoryName(pair?.category_id)||t("pendingClassification"))}</td><td>${esc(x.brand||"—")}</td><td>${esc(x.note||"—")}</td><td>${actions(x)}</td></tr>`}).join("");
+ }else if(currentMaster==="categories"){
+  masterHead.innerHTML=`<tr><th>${t("idLabel")}</th><th>${t("name")}</th><th>${t("relatedBrands")}</th><th>${t("modelCount")}</th><th>${t("stockCount")}</th><th>${t("action")}</th></tr>`;
+  masterBody.innerHTML=rows.map(x=>{const pairs=linkedPairs(x),models=cloudMaster.models.filter(m=>pairs.some(p=>p.id===m.categoryBrandId)).length,stock=inventory.filter(i=>normText(i.category)===normText(x.name)).length;return `<tr><td><b>${esc(x.id)}</b></td><td><b>${esc(x.name)}</b>${x.note?`<div class="part-sub">${esc(x.note)}</div>`:""}</td><td>${chips(pairs.map(p=>brandName(p.brand_id)).filter(Boolean),"brands")}</td><td>${models}</td><td>${stock}</td><td>${actions(x)}</td></tr>`}).join("");
+ }else if(currentMaster==="brands"){
+  masterHead.innerHTML=`<tr><th>${t("idLabel")}</th><th>${t("name")}</th><th>${t("relatedCategories")}</th><th>${t("modelCount")}</th><th>${t("noteHeader")}</th><th>${t("action")}</th></tr>`;
+  masterBody.innerHTML=rows.map(x=>{const pairs=brandPairs(x),models=cloudMaster.models.filter(m=>pairs.some(p=>p.id===m.categoryBrandId)).length;return `<tr><td><b>${esc(x.id)}</b></td><td><b>${esc(x.name)}</b></td><td>${chips(pairs.map(p=>categoryName(p.category_id)).filter(Boolean),"categories")}</td><td>${models}</td><td>${esc(x.note||"—")}</td><td>${actions(x)}</td></tr>`}).join("");
  }else{
   masterHead.innerHTML=`<tr><th>${t("idLabel")}</th><th>${t("name")}</th><th>${t("noteHeader")}</th><th>${t("usedByLabel")}</th><th>${t("action")}</th></tr>`;
-  masterBody.innerHTML=rows.map(x=>`<tr><td><b>${esc(x.id)}</b></td><td>${esc(x.name)}${currentMaster==="projects"&&x.cloudOnly?`<div class="part-sub" title="ยังไม่ยืนยันว่าตรงกับโครงการใน Central Data Hub">☁ ${projectMatchLabel(x)}</div>`:""}</td><td>${esc(x.note||"-")}</td><td>${masterReferenceCount(currentMaster,x.name)}</td><td>${x.cloudOnly?`<div class="row-actions"><button class="btn small" data-cloud-master-edit="${esc(x.cloudId||x.id)}" data-spare-write>✎ ${t("editBtn")}</button><button class="btn small danger" data-cloud-master-delete="${esc(x.cloudId||x.id)}" data-spare-write>× ${t("deleteBtn")}</button></div>`:`<div class="row-actions"><button class="btn small" onclick="editMaster('${currentMaster}','${esc(x.id)}')">${t("editBtn")}</button><button class="btn small danger" onclick="deleteMaster('${currentMaster}','${esc(x.id)}')">${t("deleteBtn")}</button></div>`}</td></tr>`).join("");
+  masterBody.innerHTML=rows.map(x=>`<tr><td><b>${esc(x.id)}</b></td><td>${esc(x.name)}${currentMaster==="projects"&&x.cloudOnly?`<div class="part-sub">☁ ${projectMatchLabel(x)}</div>`:""}</td><td>${esc(x.note||"—")}</td><td>${masterReferenceCount(currentMaster,x.name)}</td><td>${actions(x)}</td></tr>`).join("");
  }
  document.querySelectorAll("[data-cloud-master-edit]").forEach(btn=>btn.onclick=()=>{if(currentMaster==="projects"){const d=cloudProjects.find(p=>p.id===btn.dataset.cloudMasterEdit);if(d)openSpareReview(d.id)}else{const d=cloudMaster[currentMaster]?.find(m=>m.cloudId===btn.dataset.cloudMasterEdit);if(d)openCloudMasterEditor(currentMaster,d)}});
  document.querySelectorAll("[data-cloud-master-delete]").forEach(btn=>btn.onclick=()=>{if(currentMaster==="projects")deleteCloudProject(btn.dataset.cloudMasterDelete);else deleteCloudMaster(currentMaster,btn.dataset.cloudMasterDelete)});
+ document.querySelectorAll("[data-local-master-edit]").forEach(btn=>btn.onclick=()=>editMaster(currentMaster,btn.dataset.localMasterEdit));
+ document.querySelectorAll("[data-local-master-delete]").forEach(btn=>btn.onclick=()=>deleteMaster(currentMaster,btn.dataset.localMasterDelete));
+ document.querySelectorAll("[data-master-jump]").forEach(btn=>btn.onclick=()=>{currentMaster=btn.dataset.masterJump;masterSearch.value=btn.dataset.masterName;document.querySelectorAll("#masterNav button").forEach(b=>b.classList.toggle("active",b.dataset.master===currentMaster));renderMaster()});
 }
 function masterUsage(type,name){
  const map={categories:"category",brands:"brand",locations:"location",projects:"project",units:"unit"};const key=map[type];if(!key)return 0;return inventory.filter(x=>x[key]===name).length;
@@ -1903,30 +1946,30 @@ function projectSpareReferences(project){
  return entries.map(([label,rows])=>[label,rows.filter(row=>sameProject(row,project,name)).length]).filter(([,n])=>n).map(([label,n])=>`${label}: ${n}`);
 }
 async function showSpareDeletionBlocked(name,refs){
- const message=`${name}\nยังมีข้อมูลอ้างอิงใน Spare Parts\n${refs.join(" · ")}\nกรุณาย้ายหรือแก้ไขรายการที่อ้างอิงก่อนเปลี่ยนชื่อหรือลบ`;
- if(window.SolarCloud?.notice)await SolarCloud.notice("มีข้อมูลใช้งานอยู่",message,"danger");else alert(message);
+ const message=`${name}\n${t("usedRecordText")}\n${refs.join(" · ")}\n${t("usedRecordFix")}`;
+ if(window.SolarCloud?.notice)await SolarCloud.notice(t("usedRecordTitle"),message,"danger");else alert(message);
 }
 async function confirmSpareDeletion(name,detail){
- const message=`${name}\n${detail}\nข้อมูล Working Day, ค่าแสง, PR และ Central Data Hub จะไม่ถูกลบ`;
- if(window.SolarCloud?.confirmDialog)return SolarCloud.confirmDialog("ยืนยันลบจาก Spare Parts",message,{tone:"danger",confirmText:"ลบเฉพาะ Spare Parts",fields:[{key:"ack",type:"checkbox",required:true,label:"ยืนยันว่าตรวจสอบขอบเขตการลบแล้ว"}]});
+ const message=`${name}\n${detail}\n${t("deleteScopeNote")}`;
+ if(window.SolarCloud?.confirmDialog)return SolarCloud.confirmDialog(t("confirmSpareTitle"),message,{tone:"danger",confirmText:t("deleteSpareOnly"),fields:[{key:"ack",type:"checkbox",required:true,label:t("confirmScope")}]});
  return confirm(message);
 }
 async function deleteCloudMaster(type,id){
  if(!requireSpareAdmin()||type==="projects")return;
  const row=cloudMaster[type]?.find(item=>item.cloudId===id);if(!row)return;
  const refs=masterReferences(type,row.name);if(refs.length){await showSpareDeletionBlocked(row.name,refs);return}
- if(!await confirmSpareDeletion(row.name,`ลบ ${t(type)||type} จาก Master Data บนฐานข้อมูล`))return;
+ if(!await confirmSpareDeletion(row.name,fmtTemplate("deleteCloudMasterDetail",{type:t(type)||type})))return;
  if(masterReferences(type,row.name).length){await showSpareDeletionBlocked(row.name,masterReferences(type,row.name));return}
- try{const {data,error}=await SolarCloud.getClient().from("spare_master_data").delete().eq("id",id).eq("workspace_id",spareWorkspaceId).eq("master_type",type).select("id");if(error)throw error;if(!data?.length)throw new Error("ไม่พบรายการหรือไม่มีสิทธิ์");await loadCloudCatalogue();toast(t("masterDeleted"))}catch(err){alert("ลบ Master Data ไม่สำเร็จ: "+err.message)}
+ try{const {data,error}=await SolarCloud.getClient().from("spare_master_data").delete().eq("id",id).eq("workspace_id",spareWorkspaceId).eq("master_type",type).select("id");if(error)throw error;if(!data?.length)throw new Error(t("recordNotFound"));await loadCloudCatalogue();toast(t("masterDeleted"))}catch(err){alert(t("deleteMasterFailed")+": "+err.message)}
 }
 async function deleteCloudProject(id){
  if(!requireSpareAdmin())return;
  const row=cloudProjects.find(item=>item.id===id);if(!row)return;
  const refs=projectSpareReferences(row);if(refs.length){await showSpareDeletionBlocked(row.projectName,refs);return}
- const detail=row.matchStatus==="linked"?"โครงการนี้เชื่อม Central อยู่ การลบจะเอาออกเฉพาะรายการ Spare Parts":"โครงการนี้ยังรอตรวจจับคู่ การลบจะเอาออกเฉพาะรายการ Spare Parts";
+ const detail=t(row.matchStatus==="linked"?"deleteCloudProjectLinked":"deleteCloudProjectOther");
  if(!await confirmSpareDeletion(row.projectName,detail))return;
  if(projectSpareReferences(row).length){await showSpareDeletionBlocked(row.projectName,projectSpareReferences(row));return}
- try{const {data,error}=await SolarCloud.getClient().from("spare_project_catalog").delete().eq("id",id).eq("workspace_id",spareWorkspaceId).select("id");if(error)throw error;if(!data?.length)throw new Error("ไม่พบโครงการหรือไม่มีสิทธิ์");await loadCloudCatalogue();toast(t("deletedMsg"))}catch(err){alert("ลบโครงการไม่สำเร็จ: "+err.message)}
+ try{const {data,error}=await SolarCloud.getClient().from("spare_project_catalog").delete().eq("id",id).eq("workspace_id",spareWorkspaceId).select("id");if(error)throw error;if(!data?.length)throw new Error(t("recordNotFound"));await loadCloudCatalogue();toast(t("deletedMsg"))}catch(err){alert(t("deleteCloudProjectFailed")+": "+err.message)}
 }
 async function deleteLocalProject(id){
  if(!requireSpareAdmin())return;
@@ -2152,7 +2195,7 @@ function openProjectEditor(detail=null){if(!requireSpareAdmin())return;
  peCode.value=d.projectCode||"";peName.value=d.projectName||"";peCapacity.value=d.capacity??"";peStatus.value=d.status||"";peCod.value=d.codDate||"";peEpc.value=d.epc||"";peProvince.value=d.province||"";peLocation.value=d.location||"";pePlantType.value=d.plantType||"";pePvModel.value=d.pvModuleModel||"";pePvQty.value=d.pvModuleQty??"";peInvBrand.value=d.inverterBrand||"";peInv1.value=d.inverter1||"";peInvQty1.value=d.inverterQty1??"";peInv2.value=d.inverter2||"";peInvQty2.value=d.inverterQty2??"";peInv3.value=d.inverter3||"";peInvQty3.value=d.inverterQty3??"";peOptimizer.value=d.optimizerRsd||"";
  peProvince.disabled=!!editingCloudProjectId;peCode.disabled=!!editingCloudProjectId;peName.disabled=!!editingCloudProjectId&&d.matchStatus==="linked";peCapacity.disabled=!!editingCloudProjectId;
  peNoteWrap.classList.toggle("hidden",!editingCloudProjectId);peNote.value=d.note||"";
- projectRelationNote.textContent=editingCloudProjectId?"☁ บันทึกการแก้ไขลงฐานข้อมูล · โครงการที่เชื่อม Central แล้วล็อกชื่อและ Capacity":t("projectRelationImpact");openModal("projectEditModal")
+ projectRelationNote.textContent=editingCloudProjectId?t("cloudProjectEditHint"):t("projectRelationImpact");openModal("projectEditModal")
 }
 function projectEditorValue(){return ensureProjectIdentity({projectCode:peCode.value.trim(),projectName:peName.value.trim(),capacity:peCapacity.value===""?"":Number(peCapacity.value),status:peStatus.value.trim(),codDate:peCod.value.trim(),epc:peEpc.value.trim(),province:peProvince.value.trim(),location:peLocation.value.trim(),plantType:pePlantType.value.trim(),pvModuleModel:pePvModel.value.trim(),pvModuleQty:pePvQty.value===""?"":Number(pePvQty.value),inverterBrand:peInvBrand.value.trim(),inverter1:peInv1.value.trim(),inverterQty1:peInvQty1.value===""?"":Number(peInvQty1.value),inverter2:peInv2.value.trim(),inverterQty2:peInvQty2.value===""?"":Number(peInvQty2.value),inverter3:peInv3.value.trim(),inverterQty3:peInvQty3.value===""?"":Number(peInvQty3.value),optimizerRsd:peOptimizer.value.trim(),source:"manual"},"manual")}
 function applyProjectEditorSave(d,mode="update",target=null){if(!requireSpareAdmin())return;let current=target||((editingProjectCode||editingProjectName)?findProjectDetail(editingProjectName,editingProjectCode):null);if(current){const oldName=current.projectName,oldCode=current.projectCode;mergeProjectRecord(current,d,mode);propagateProjectChange(oldName,oldCode,current)}else{projectDetails.push(d);syncProjectMasterEntry(d)}normalizeProjectReferences();saveAll();closeModal("projectEditModal");closeModal("manualProjectDuplicateModal");render();toast(t("savedMsg"))}
@@ -2308,6 +2351,7 @@ async function deleteMaster(type,id){if(!requireSpareAdmin())return;
  master[type]=master[type].filter(v=>v.id!==id);saveAll();render();toast(t("masterDeleted"))
 }
 function openMasterAdd(){if(!requireSpareAdmin())return;
+ if(currentMaster==="projects"){openProjectEditor(null);return}
  editingCloudMasterId="";
  editingMasterId=null;masterForm.reset();mdType.disabled=false;mdType.value=currentMaster;updateMasterRelations();masterModalTitle.textContent=t("addMasterTitle");openModal("masterModal")
 }
@@ -2316,11 +2360,19 @@ function updateMasterRelations(category="",brand=""){
  mdCategory.innerHTML=opts([...cloudMaster.categories,...master.categories],category);
  const categoryRow=cloudMaster.categories.find(x=>x.name===mdCategory.value),ids=new Set(categoryBrandLinks.filter(x=>x.category_id===categoryRow?.cloudId).map(x=>x.brand_id));
  mdBrand.innerHTML=opts([...cloudMaster.brands.filter(x=>ids.has(x.cloudId)),...cloudMaster.brands.filter(x=>!ids.has(x.cloudId)),...master.brands],brand);
+ updateMasterRelationHint();
+}
+function updateMasterRelationHint(){
+ const type=mdType.value;
+ if(type==="brands"){
+  const current=cloudMaster.brands.find(b=>b.cloudId===editingCloudMasterId),names=categoryBrandLinks.filter(x=>x.brand_id===current?.cloudId).map(x=>cloudMaster.categories.find(c=>c.cloudId===x.category_id)?.name).filter(Boolean);
+  masterRelationHint.textContent=(names.length?`${t("brandCurrentCategories")}: ${names.join(", ")} · `:"")+t("brandCategoryHint");
+ }else masterRelationHint.textContent=type==="models"?t("modelRelationHint"):"";
 }
 function openCloudMasterEditor(type,row){
  if(!requireSpareAdmin()||!row?.cloudId)return;
  editingCloudMasterId=row.cloudId;editingMasterId=null;mdType.value=type;mdType.disabled=true;mdName.value=row.name;mdNote.value=row.note||"";
- const pair=categoryBrandLinks.find(x=>x.id===row.categoryBrandId),category=cloudMaster.categories.find(x=>x.cloudId===pair?.category_id)?.name||"";
+ const pair=categoryBrandLinks.find(x=>x.id===row.categoryBrandId),category=type==="models"?cloudMaster.categories.find(x=>x.cloudId===pair?.category_id)?.name||"":"";
  updateMasterRelations(category,row.brand||"");masterModalTitle.textContent=t("editMasterTitle")+" · ☁";openModal("masterModal")
 }
 function prefixFor(type){return({categories:"CAT",brands:"BR",models:"MD",locations:"LOC",projects:"PRJ",units:"UNIT"})[type]}
@@ -2497,7 +2549,7 @@ document.addEventListener("click",e=>{if(spareRole==="admin")return;const contro
 document.addEventListener("submit",e=>{if(spareRole==="admin"||!["spareForm","movementForm","projectEditForm","masterForm"].includes(e.target.id))return;e.preventDefault();e.stopImmediatePropagation();requireSpareAdmin()},true);
 sidebarToggle.onclick=()=>{sidebarCollapsed=!sidebarCollapsed;SafeStorage.setItem(SIDEBAR_STATE_KEY,sidebarCollapsed?"1":"0");applySidebarState()};
 guideTopBtn.onclick=()=>showPage("guide");
-document.querySelectorAll("#masterNav button").forEach(b=>b.onclick=()=>{currentMaster=b.dataset.master;document.querySelectorAll("#masterNav button").forEach(x=>x.classList.toggle("active",x===b));renderMaster()});
+document.querySelectorAll("#masterNav button").forEach(b=>b.onclick=()=>{currentMaster=b.dataset.master;masterSearch.value="";document.querySelectorAll("#masterNav button").forEach(x=>x.classList.toggle("active",x===b));renderMaster()});
 goInventoryBtn.onclick=()=>showPage("inventory");viewAllMovement.onclick=()=>showPage("movement");
 dashSearchBtn.onclick=()=>{showPage("inventory");searchInput.value=dashSearch.value;currentPage=1;renderInventory()};dashSearch.addEventListener("keydown",e=>{if(e.key==="Enter")dashSearchBtn.click()});
 backBtn.onclick=()=>{if(history.length>1)history.back();else showPage("dashboard")};
@@ -2561,7 +2613,7 @@ movementForm.addEventListener("submit",async e=>{
 addMasterBtn.onclick=openMasterAdd;mdType.addEventListener("change",()=>updateMasterRelations());mdCategory.addEventListener("change",()=>updateMasterRelations(mdCategory.value));
 async function masterCategoryBrandPair(){
  const category=cloudMaster.categories.find(x=>x.name===mdCategory.value),brand=cloudMaster.brands.find(x=>x.name===mdBrand.value);
- if(!category||!brand)throw Error("เลือก Category และ Brand ที่อยู่ในฐานข้อมูลกลางก่อน");
+ if(!category||!brand)throw Error(t("categoryBrandRequired"));
  let pair=categoryBrandLinks.find(x=>x.category_id===category.cloudId&&x.brand_id===brand.cloudId);
  if(!pair){const result=await SolarCloud.getClient().from("spare_category_brands").insert({workspace_id:spareWorkspaceId,category_id:category.cloudId,brand_id:brand.cloudId}).select("id,category_id,brand_id").single();if(result.error)throw result.error;pair=result.data;categoryBrandLinks.push(pair)}return pair;
 }
@@ -2573,26 +2625,25 @@ masterForm.addEventListener("submit",async e=>{
   try{
    const client=SolarCloud.getClient(),same=cloudMaster[type]?.find(x=>normText(x.name)===normText(name));
    if(same&&same.cloudId!==editingCloudMasterId&&type!=="brands")throw Error(t("duplicateMasterError"));
-   if(type==="brands"&&!mdCategory.value)throw Error("เลือก Category ของ Brand");
+   if(type==="brands"&&!editingCloudMasterId&&!mdCategory.value)throw Error(t("brandCategoryRequired"));
    let pair=null;
    if(type==="models")pair=await masterCategoryBrandPair();
+   let createdMasterId="";
    if(editingCloudMasterId){
-    const existing=cloudMaster[type]?.find(x=>x.cloudId===editingCloudMasterId);if(!existing)throw Error("ไม่พบรายการ");
-    if(normText(existing.name)!==normText(name)&&masterReferences(type,existing.name).length)throw Error("มีข้อมูลอ้างอิงอยู่ กรุณาตรวจสอบก่อนเปลี่ยนชื่อ");
+    const existing=cloudMaster[type]?.find(x=>x.cloudId===editingCloudMasterId);if(!existing)throw Error(t("masterRecordMissing"));
+    if(normText(existing.name)!==normText(name)&&masterReferences(type,existing.name).length)throw Error(t("masterRenameBlocked"));
     const values={name,note:mdNote.value.trim(),...(type==="models"?{brand:mdBrand.value,category_brand_id:pair.id}:{})};
     const result=await client.from("spare_master_data").update(values).eq("id",editingCloudMasterId).eq("workspace_id",spareWorkspaceId).select("id");if(result.error)throw result.error;if(!result.data?.length)throw Error("ไม่พบข้อมูลหรือไม่มีสิทธิ์");
    }else if(!same){
-    const result=await client.from("spare_master_data").insert({workspace_id:spareWorkspaceId,master_type:type,source_id:"MAN-"+makeUUID(),source_file:"manual",name,brand:type==="models"?mdBrand.value:null,note:mdNote.value.trim(),category_brand_id:pair?.id||null}).select("id");if(result.error)throw result.error;
+    const result=await client.from("spare_master_data").insert({workspace_id:spareWorkspaceId,master_type:type,source_id:"MAN-"+makeUUID(),source_file:"manual",name,brand:type==="models"?mdBrand.value:null,note:mdNote.value.trim(),category_brand_id:pair?.id||null}).select("id").single();if(result.error)throw result.error;createdMasterId=result.data.id;
    }
-   if(type==="brands"){
-    const brandId=editingCloudMasterId||same?.cloudId;
-    // New brand id is returned by reloading the master rows before creating its category link.
-    let id=brandId;if(!id){const found=await client.from("spare_master_data").select("id").eq("workspace_id",spareWorkspaceId).eq("master_type","brands").eq("name",name).single();if(found.error)throw found.error;id=found.data.id}
-    const category=cloudMaster.categories.find(x=>x.name===mdCategory.value);if(!category)throw Error("Category ต้องอยู่ในฐานข้อมูลกลาง");
+   if(type==="brands"&&mdCategory.value){
+    const id=editingCloudMasterId||same?.cloudId||createdMasterId;
+    const category=cloudMaster.categories.find(x=>x.name===mdCategory.value);if(!category)throw Error(t("categoryCloudRequired"));
     if(!categoryBrandLinks.some(x=>x.category_id===category.cloudId&&x.brand_id===id)){const result=await client.from("spare_category_brands").insert({workspace_id:spareWorkspaceId,category_id:category.cloudId,brand_id:id});if(result.error)throw result.error}
    }
    editingCloudMasterId="";mdType.disabled=false;closeModal("masterModal");await loadCloudCatalogue();toast(t("masterSaved"));return;
-  }catch(error){alert("บันทึก Master Data ไม่สำเร็จ: "+error.message);return}finally{submit.disabled=false}
+  }catch(error){alert(t("masterCloudFailed")+": "+error.message);return}finally{submit.disabled=false}
  }
  if(editingCloudMasterId){
   const existing=cloudMaster[type]?.find(item=>item.cloudId===editingCloudMasterId);
