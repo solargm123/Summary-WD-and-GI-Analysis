@@ -14,12 +14,28 @@ const WDReview = (() => {
     return JSON.stringify([context, metrics, plant.note || '', plant.mktEstimate || '', plant.calculationMethod,
       [...plant.lossDaysArray].sort((a,b)=>a-b)]);
   }
+  // Keep the input snapshot in memory only; a fixed-size digest is enough for new review records.
+  function digest(snapshot) {
+    let a=2166136261,b=2246822519;
+    for (let i=0;i<snapshot.length;i++) {
+      const code=snapshot.charCodeAt(i);
+      a=Math.imul(a^code,16777619);
+      b=Math.imul(b^code,3266489917);
+    }
+    return 'h1:'+[(a>>>0).toString(16).padStart(8,'0'),(b>>>0).toString(16).padStart(8,'0')].join('');
+  }
+  function sourceSnapshot(plant) {
+    return JSON.stringify(Object.keys(plant.dailyMap||{}).sort((a,b)=>Number(a)-Number(b)).map(day=>[day,plant.dailyMap[day]]));
+  }
+  function currentFingerprint(plant) { return digest(fingerprint(plant)+'|'+sourceSnapshot(plant)); }
   function review(plant) {
     try { return JSON.parse(reviews[reviewKey(plant)] || 'null'); } catch { return null; }
   }
   function reviewed(plant) {
     const value = review(plant);
-    return value?.done === true && value.fingerprint === fingerprint(plant);
+    if (value?.done !== true) return false;
+    // Existing full-snapshot reviews remain valid until the next review action.
+    return value.fingerprint === (value.fingerprint?.startsWith('h1:') ? currentFingerprint(plant) : fingerprint(plant));
   }
   function editors(plant) {
     const seen = new Set();
@@ -34,8 +50,8 @@ const WDReview = (() => {
   function statusHtml(plant) {
     const value = review(plant), done = reviewed(plant), active = editors(plant);
     const saved = SolarCloud.isSharedValueSaved(['overrides', reviewKey(plant)], reviews[reviewKey(plant)]);
-    const label = done ? text('ตรวจแล้ว', 'Reviewed') : value?.done ? text('ข้อมูลเปลี่ยน — ตรวจอีกครั้ง', 'Changed — review again') : text('ยังไม่ระบุว่าตรวจแล้ว', 'Not marked reviewed');
-    let html = `<span class="wd-status ${done?'wd-status-done':''}">${label}</span>`;
+    const label = done && !saved ? text('ตรวจแล้ว — รอบันทึก','Reviewed — pending save') : done ? text('ตรวจแล้ว', 'Reviewed') : value?.done ? text('ข้อมูลเปลี่ยน — ตรวจอีกครั้ง', 'Changed — review again') : text('ยังไม่ระบุว่าตรวจแล้ว', 'Not marked reviewed');
+    let html = `<span class="wd-status ${done&&saved?'wd-status-done':''}">${label}</span>`;
     if (value?.done) {
       const at = new Date(value.at), date = Number.isFinite(at.getTime()) ? at.toLocaleString(currentLanguage==='th'?'th-TH':'en-GB') : '';
       html += `<span>${escapeHtml(value.by || '')} · ${escapeHtml(date)}${saved?'': ' · '+text('รอบันทึก','Pending save')}</span>`;
@@ -53,7 +69,7 @@ const WDReview = (() => {
     if (!plant || !month() || !actor || !SolarCloud.roleCanEdit()) return;
     const metrics = calculatePlantMetrics(plant);
     if (!metrics.valid) { SolarCloud.notice(text('ยังตรวจเสร็จไม่ได้','Cannot mark reviewed'),text('กรุณาตรวจค่าคำนวณที่ไม่ถูกต้องก่อน','Please correct invalid calculation inputs first'));return; }
-    reviews[reviewKey(plant)] = JSON.stringify({done:!reviewed(plant),by:actor.name,userId:actor.userId,at:new Date().toISOString(),fingerprint:fingerprint(plant)});
+    reviews[reviewKey(plant)] = JSON.stringify({done:!reviewed(plant),by:actor.name,userId:actor.userId,at:new Date().toISOString(),fingerprint:currentFingerprint(plant)});
     SolarCloud.scheduleSave('working_day_review');
     calculateAndRender();
   }
@@ -105,6 +121,10 @@ const WDReview = (() => {
     const query=$('searchInput').value.trim(),status=$('wdSearchStatus');
     status.hidden=!query;
     status.innerHTML=`${text('ค้นหา','Search')}: <b>${escapeHtml(query)}</b> · ${filtered.length} ${text('โครงการ','projects')} <button onclick="WDReview.clearSearch()">${text('ล้างคำค้น','Clear search')}</button>`;
+    const changed=plantData.filter(plant=>review(plant)?.done&&!reviewed(plant));
+    const warning=$('wdReviewWarning');
+    warning.hidden=!changed.length;
+    if(changed.length) warning.innerHTML=`<i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i><span>${text('ข้อมูลเปลี่ยนหลังตรวจแล้ว','Data changed after review')} · ${changed.length} ${text('โครงการ','projects')}${changed.length===1?' · '+escapeHtml(changed[0].name):''} — ${text('ตรวจผลอีกครั้งก่อนกดตรวจเสร็จ','Check the results before marking reviewed again')}</span>`;
     if (!summary) return;
     const sourceLabel = method => (context.targetMethod==='m1'&&method===2)||(context.targetMethod==='m2'&&method===1)
       ? text('ค่ากำหนดเอง','Custom value')
