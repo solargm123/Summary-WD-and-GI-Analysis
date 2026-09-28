@@ -1,14 +1,15 @@
 /* Scoped to Working Day; shared themes supply colors in both modes. */
 body.solar-wd [hidden]{display:none!important}
 body.solar-wd .wd-summary-tabs,body.solar-wd .wd-summary-heading{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:14px}
-body.solar-wd .wd-summary-tabs{border-bottom:1px solid var(--solar-line)}
+body.solar-wd .wd-summary-tabs{gap:5px;padding:4px 8px;border-bottom:1px solid var(--solar-line)}
 body.solar-wd .wd-summary-tabs button,body.solar-wd .wd-summary-heading button,body.solar-wd .wd-review-button,body.solar-wd .wd-search-status button{border:1px solid var(--solar-line);background:var(--solar-solid);color:var(--solar-text);border-radius:9px;padding:8px 12px}
+body.solar-wd .wd-summary-tabs button{min-height:28px;padding:4px 10px;font-size:11px;line-height:1.2;white-space:nowrap}
 body.solar-wd .wd-summary-tabs button[aria-selected=true]{background:#2458f5;color:white;border-color:#2458f5}
 body.solar-wd .wd-summary-heading h2{font-size:17px;font-weight:700;margin-right:auto}
 body.solar-wd #wdSummaryPanel{padding:0 12px 16px}
 body.solar-wd #wdSummaryPanel p{margin:8px 14px}
 body.solar-wd .wd-summary-note{color:var(--solar-muted);font-size:12px}
-body.solar-wd .wd-summary-scroll{overflow:auto;max-height:65vh;overscroll-behavior:contain;scrollbar-color:#94a3b8 #e5e7eb;border:1px solid var(--solar-line);border-radius:10px;margin-top:14px}
+body.solar-wd .wd-summary-scroll{overflow:auto;max-height:65vh;overscroll-behavior:contain;scrollbar-color:#94a3b8 #e5e7eb;border:1px solid var(--solar-line);border-radius:10px;margin-top:8px}
 body.solar-wd .wd-summary-scroll table{width:100%;min-width:950px;border-collapse:separate;border-spacing:0}
 body.solar-wd .wd-summary-scroll th,body.solar-wd .wd-summary-scroll td{padding:12px;min-width:0;width:auto;border-bottom:1px solid var(--solar-line);text-align:right;font-size:12px}
 body.solar-wd .wd-summary-scroll th:first-child,body.solar-wd .wd-summary-scroll td:last-child{text-align:left}
@@ -23,7 +24,7 @@ body.solar-wd .wd-status-active{color:var(--solar-accent);font-weight:700}
 body.solar-wd .wd-review-button{font-size:11px;padding:4px 8px;margin-top:6px}
 body.solar-wd .wd-review-button:disabled{opacity:.5;cursor:not-allowed}
 body.solar-wd .wd-search-status{padding:10px 14px}
-@media(max-width:760px){body.solar-wd .wd-summary-tabs button{flex:1}body.solar-wd .wd-summary-heading{padding:10px 0}body.solar-wd .wd-summary-heading h2{width:100%}}
+@media(max-width:760px){body.solar-wd .wd-summary-tabs{flex-wrap:nowrap}body.solar-wd .wd-summary-tabs button{flex:1;min-width:0;white-space:normal}body.solar-wd .wd-summary-heading{padding:10px 0}body.solar-wd .wd-summary-heading h2{width:100%}}
 
 html.dark body.solar-wd .wd-summary-scroll{scrollbar-color:#8795a8 #253449}
 
