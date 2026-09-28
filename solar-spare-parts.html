@@ -1518,7 +1518,7 @@ function updateSpareRoleUI(){
  for(const id of ["clearWorkspaceBtn","chooseImportFileBtn","chooseImportFileBtn2","freshImportBtn","inventoryOpenImportCenter","masterOpenImportCenter","inventoryImportBtn","masterImportBtn","excelImportBtn"]){const el=document.getElementById(id);if(el){el.disabled=cloudStockActive;el.title=cloudStockActive?"Import / Restore แบบ Local ถูกพักไว้เมื่อใช้ Inventory กลาง":""}}
  const addProject=document.getElementById("addProjectBtn"),addMaster=document.getElementById("addMasterBtn");
  if(addProject)addProject.title=lang==="th"?"เพิ่มโครงการในข้อมูลของเครื่องนี้":"Add a project to this device only";
- if(addMaster)addMaster.title=lang==="th"?"เพิ่ม Master Data ในเครื่องนี้":"Add master data to this device only";
+ if(addMaster)addMaster.title=cloudStockActive?(lang==="th"?"เพิ่ม Master Data ลงฐานข้อมูลกลาง":"Add master data to the shared database"):(lang==="th"?"เพิ่ม Master Data ในเครื่องนี้":"Add master data to this device only");
  const ids=["addBtn","newMovementBtn","addProjectBtn","addMasterBtn","clearWorkspaceBtn","chooseImportFileBtn","chooseImportFileBtn2","freshImportBtn","inventoryOpenImportCenter","masterOpenImportCenter","confirmClearWorkspaceBtn","projectDetailEditBtn","excelImportConfirm","manualDuplicateMerge","manualDuplicateUpdate","inventoryImportBtn","masterImportBtn","excelImportBtn"];
  ids.forEach(id=>{const el=document.getElementById(id);if(el)el.dataset.spareWrite=""});
  document.querySelectorAll('button[onclick^="editSpare("],button[onclick^="deleteSpare("],button[onclick^="openMovementFor("],button[onclick^="editMaster("],button[onclick^="deleteMaster("],button[data-project-edit]').forEach(el=>el.dataset.spareWrite="");
