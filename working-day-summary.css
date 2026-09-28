@@ -1,31 +1,38 @@
 /* Scoped to Working Day; shared themes supply colors in both modes. */
 body.solar-wd [hidden]{display:none!important}
-body.solar-wd .wd-summary-tabs{display:flex;align-items:center;flex:0 0 auto;gap:5px;padding:0;border:0}
+body.solar-wd .wd-summary-tabs{display:flex;align-items:center;flex:0 0 auto;gap:4px;padding:0;border:0}
 body.solar-wd .wd-summary-tabs button,body.solar-wd .wd-review-button,body.solar-wd .wd-search-status button{border:1px solid var(--solar-line);background:var(--solar-solid);color:var(--solar-text);border-radius:9px;padding:8px 12px}
-body.solar-wd .wd-summary-tabs button{width:140px;min-height:29px;height:29px;padding:4px 8px;font-size:10.5px;line-height:1.2;white-space:nowrap}
-body.solar-wd .wd-summary-tabs button[aria-selected=true]{background:#2458f5;color:white;border-color:#2458f5}
+body.solar-wd .wd-summary-tabs button{width:144px;min-height:29px;height:29px;padding:0 9px!important;display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--wd-panel-soft)!important;color:var(--wd-ink)!important;border-color:var(--wd-line)!important;font-size:10.5px;font-weight:700;line-height:1.2;white-space:nowrap}
+body.solar-wd .wd-summary-tabs button[aria-selected=true]{background:color-mix(in srgb,var(--solar-accent) 13%,var(--wd-panel))!important;color:var(--solar-accent)!important;border-color:var(--solar-accent)!important}
+body.solar-wd .wd-summary-tabs button > i{color:inherit}
 body.solar-wd #wdSummaryPanel{padding:8px;min-height:0}
 body.solar-wd .wd-summary-scroll{overflow:auto;max-height:65vh;overscroll-behavior:contain;scrollbar-color:#94a3b8 #e5e7eb;border:1px solid var(--solar-line);border-radius:10px;min-height:0}
 body.solar-wd .wd-summary-scroll table{width:100%!important;min-width:980px!important;table-layout:fixed;border-collapse:separate;border-spacing:0}
 body.solar-wd .wd-summary-scroll .wd-col-project{width:26%}
 body.solar-wd .wd-summary-scroll .wd-col-metric{width:12%}
 body.solar-wd .wd-summary-scroll .wd-col-status{width:26%}
-body.solar-wd .wd-summary-scroll th,body.solar-wd .wd-summary-scroll td{padding:8px 10px!important;min-width:0;width:auto;border-bottom:1px solid var(--solar-line);text-align:right;font-size:12px!important;line-height:1.4;overflow-wrap:anywhere}
+body.solar-wd .wd-summary-scroll th,body.solar-wd .wd-summary-scroll td{padding:5px 8px!important;min-width:0;width:auto;border-bottom:1px solid var(--solar-line);text-align:right;font-size:11px!important;line-height:1.3;overflow-wrap:anywhere}
+body.solar-wd .wd-summary-scroll thead th{padding:7px 8px!important}
 body.solar-wd .wd-summary-scroll tbody th,body.solar-wd .wd-summary-scroll td:last-child{text-align:left}
 body.solar-wd .wd-summary-scroll thead{position:sticky;top:0;z-index:2;background:var(--solar-solid)}
 body.solar-wd .wd-summary-scroll thead th{text-align:center}
 body.solar-wd .wd-summary-scroll thead small{display:block;font-size:10px;font-weight:400;margin-top:2px}
-body.solar-wd .wd-summary-scroll .wd-result{font-weight:700;font-size:15px!important;color:var(--solar-accent)}
-body.solar-wd .wd-project-status{display:flex;flex-direction:column;gap:3px;margin-top:5px;font-size:10px;font-weight:400;line-height:1.5;color:var(--solar-muted)}
+body.solar-wd .wd-summary-scroll .wd-result{font-weight:700;font-size:14px!important;color:var(--solar-accent)}
+body.solar-wd .wd-project-status{display:flex;flex-direction:column;gap:1px;margin-top:2px;font-size:9.5px;font-weight:400;line-height:1.25;color:var(--solar-muted)}
 body.solar-wd .wd-status-done{color:#047857;font-weight:700}
 html.dark body.solar-wd .wd-status-done{color:#6ee7b7}
 body.solar-wd .wd-status-active{color:var(--solar-accent);font-weight:700}
-body.solar-wd .wd-review-button{font-size:11px;padding:4px 8px;margin-top:6px}
+body.solar-wd .wd-review-button{display:inline-flex;align-items:center;gap:5px;min-height:24px;font-size:10px;padding:3px 8px;margin-top:4px;background:#eff6ff!important;color:#1d4ed8!important;border-color:#bfdbfe!important}
+body.solar-wd .wd-review-button[data-review-state="done"]{background:#ecfdf5!important;color:#047857!important;border-color:#a7f3d0!important}
+body.solar-wd .wd-review-button[data-review-state="changed"]{background:#fffbeb!important;color:#92400e!important;border-color:#fcd34d!important}
+html.dark body.solar-wd .wd-review-button{background:#172554!important;color:#bfdbfe!important;border-color:#1e40af!important}
+html.dark body.solar-wd .wd-review-button[data-review-state="done"]{background:#064e3b!important;color:#d1fae5!important;border-color:#047857!important}
+html.dark body.solar-wd .wd-review-button[data-review-state="changed"]{background:#451a03!important;color:#fde68a!important;border-color:#92400e!important}
+body.solar-wd .wd-review-button > i{display:inline-block;width:auto;height:auto;flex:0 0 auto;background:none;box-shadow:none}
 body.solar-wd .wd-review-button:disabled{opacity:.5;cursor:not-allowed}
 body.solar-wd .wd-search-status{padding:10px 14px}
 @media(max-width:1365px){body.solar-wd #wdWorkspaceStatus{display:none}}
-@media(max-width:900px){body.solar-wd #wdWorkspaceIntro{flex-wrap:wrap}body.solar-wd #wdWorkspaceIntro .wd-summary-tabs{order:3;width:100%}body.solar-wd #wdWorkspaceIntro .wd-summary-tabs button{flex:1;width:auto}}
-@media(max-width:620px){body.solar-wd #wdWorkspaceIntro .wd-summary-tabs{order:1}body.solar-wd #wdWorkspaceIntro .wd-work-actions{order:2}}
+@media(max-width:900px){body.solar-wd #wdWorkspaceIntro{flex-wrap:wrap}body.solar-wd #wdWorkspaceIntro .wd-work-actions{width:100%;flex-wrap:wrap;justify-content:flex-end}body.solar-wd #wdWorkspaceIntro .wd-summary-tabs{width:100%}body.solar-wd #wdWorkspaceIntro .wd-summary-tabs button{flex:1;width:auto}}
 
 html.dark body.solar-wd .wd-summary-scroll{scrollbar-color:#8795a8 #253449}
 
