@@ -6,6 +6,8 @@ body.solar-wd .wd-summary-tabs button{width:144px;min-height:29px;height:29px;pa
 body.solar-wd .wd-summary-tabs button[aria-selected=true]{background:color-mix(in srgb,var(--solar-accent) 13%,var(--wd-panel))!important;color:var(--solar-accent)!important;border-color:var(--solar-accent)!important}
 body.solar-wd .wd-summary-tabs button > i{color:inherit}
 body.solar-wd #wdSummaryPanel{padding:8px;min-height:0}
+body.solar-wd .wd-summary-filter{display:flex;align-items:center;justify-content:flex-end;gap:7px;padding:0 0 6px;color:var(--solar-muted);font-size:10px;font-weight:700}
+body.solar-wd .wd-summary-filter select{height:27px;max-width:195px;padding:2px 23px 2px 8px;border:1px solid var(--solar-line);border-radius:8px;background:var(--solar-solid);color:var(--solar-text);font:inherit}
 body.solar-wd .wd-summary-scroll{overflow:auto;max-height:65vh;overscroll-behavior:contain;scrollbar-color:#94a3b8 #e5e7eb;border:1px solid var(--solar-line);border-radius:10px;min-height:0}
 body.solar-wd .wd-summary-scroll table{width:100%!important;min-width:980px!important;table-layout:fixed;border-collapse:separate;border-spacing:0}
 body.solar-wd .wd-summary-scroll .wd-col-project{width:26%}
@@ -34,7 +36,7 @@ body.solar-wd .wd-search-status{padding:10px 14px}
 body.solar-wd .wd-review-warning{display:flex;align-items:center;gap:7px;padding:5px 10px;border-bottom:1px solid #fcd34d;background:#fffbeb;color:#92400e;font-size:10px;line-height:1.3}
 html.dark body.solar-wd .wd-review-warning{border-color:#92400e;background:#451a03;color:#fde68a}
 body.solar-wd .wd-review-warning i{flex:0 0 auto}
-body.solar-wd .wd-detail-review{display:inline-flex;align-items:center;gap:3px;margin-left:5px;padding:1px 4px;border-radius:5px;background:#ecfdf5;color:#047857;font-size:9px;font-weight:700;white-space:nowrap;vertical-align:middle}
+body.solar-wd .wd-detail-review{display:inline-flex;align-items:center;gap:3px;margin-right:5px;padding:1px 4px;border-radius:5px;background:#ecfdf5;color:#047857;font-size:9px;font-weight:700;white-space:nowrap;vertical-align:middle}
 body.solar-wd .wd-detail-review-changed{background:#fffbeb;color:#92400e}
 body.solar-wd .wd-detail-review-pending{background:#eff6ff;color:#1d4ed8}
 body.solar-wd .wd-detail-review i{width:auto;height:auto;flex:0 0 auto;background:none;box-shadow:none}
