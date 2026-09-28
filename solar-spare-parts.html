@@ -135,6 +135,15 @@ tbody tr:hover{background:color-mix(in srgb,var(--primary-soft) 37%,transparent)
 .master-relation-list{display:flex;flex-wrap:wrap;gap:5px;max-width:440px}
 .master-relation-list .relation-chip{font-size:10px;padding:3px 7px;cursor:pointer;color:var(--primary)}
 .master-relation-hint{font-size:11px;color:var(--muted);line-height:1.5;margin-top:4px}
+.master-context{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.master-context button{border:1px solid var(--line);background:var(--surface2);color:var(--text);border-radius:13px;padding:12px;text-align:left;cursor:pointer;font:inherit}
+.master-context button.active{border-color:var(--primary);background:var(--primary-soft);color:var(--primary)}
+.master-context button b,.master-context button small{display:block}.master-context button small{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4}
+.master-context-hint{font-size:12px;color:var(--muted);margin:0 0 12px;line-height:1.55}
+.master-project-results{max-height:190px;overflow:auto;margin:10px 0;display:grid;gap:6px}
+.master-project-result{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);padding:9px 11px;font-size:12px}
+.master-project-result small{color:var(--muted)}
+@media(max-width:560px){.master-context{grid-template-columns:1fr}.master-project-result{align-items:flex-start;flex-direction:column}}
 .simple-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
 .simple-card{padding:18px}.simple-card h3{margin:0 0 8px}.simple-card p{margin:4px 0;color:var(--muted)}
 .modal{position:fixed;inset:0;background:rgba(4,15,25,.5);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}
@@ -1392,13 +1401,18 @@ main .section .table-wrap.smart-page-scroll thead th{position:sticky;top:0;z-ind
 
 <div class="modal" id="masterModal"><div class="modal-card">
   <div class="modal-head"><div><div class="card-title" id="masterModalTitle" data-i18n="addMasterTitle">เพิ่มข้อมูลหลัก</div><div class="card-sub" data-i18n="masterModalSub">เพิ่มข้อมูลกลางสำหรับใช้ในระบบ</div></div><button class="btn" onclick="closeModal('masterModal')">✕</button></div>
-  <form id="masterForm"><div class="modal-body"><div class="form-grid">
-    <div class="field"><label data-i18n="masterType">Master Type</label><select class="control" id="mdType"><option value="categories" data-i18n="categoryLabel">ประเภท</option><option value="brands" data-i18n="brandLabel">ยี่ห้อ</option><option value="models" data-i18n="modelLabel">รุ่น</option><option value="locations" data-i18n="location">สถานที่</option><option value="projects" data-i18n="projectLabel">โครงการ</option><option value="units" data-i18n="unitLabel">หน่วย</option></select></div>
+  <div class="modal-body"><div class="master-context" id="masterContext" role="group" aria-label="Master context">
+    <button type="button" data-master-context="projects" aria-pressed="false"><b data-i18n="masterContextProject">โครงการ</b><small data-i18n="masterContextProjectHint">ค้นหาโครงการก่อนเพิ่มรายการใหม่</small></button>
+    <button type="button" data-master-context="equipment" aria-pressed="true"><b data-i18n="masterContextEquipment">อุปกรณ์</b><small data-i18n="masterContextEquipmentHint">ประเภท → ยี่ห้อ → รุ่น และข้อมูลคลัง</small></button>
+  </div>
+  <div id="masterProjectPanel" class="hidden"><p class="master-context-hint" data-i18n="masterProjectSearchHint">ค้นหาในโครงการเดิมและ Central Data Hub ก่อนเพิ่มโครงการ</p><input type="search" class="control" id="masterProjectSearch" data-i18n-placeholder="masterProjectSearchPlaceholder" placeholder="ค้นหาชื่อโครงการหรือ PPA"><div class="master-project-results" id="masterProjectResults" role="status"></div><div class="master-actions"><button type="button" class="btn" id="masterViewProjects" data-i18n="viewProjects">ดูรายการโครงการ</button><button type="button" class="btn primary" id="masterCreateProject" data-i18n="addProject">เพิ่มโครงการ</button></div></div>
+  <form id="masterForm"><p class="master-context-hint" data-i18n="masterEquipmentHint">ข้อมูลประเภท ยี่ห้อ และรุ่นใช้ร่วมกันได้หลายโครงการ; ระบุโครงการในรายการคลังหรือการเบิก</p><div class="form-grid">
+    <div class="field"><label data-i18n="masterType">ประเภทข้อมูลหลัก</label><select class="control" id="mdType"><optgroup label="อุปกรณ์" data-i18n-label="masterContextEquipment"><option value="categories" data-i18n="categoryLabel">ประเภท</option><option value="brands" data-i18n="brandLabel">ยี่ห้อ</option><option value="models" data-i18n="modelLabel">รุ่น</option></optgroup><optgroup label="ข้อมูลคลัง" data-i18n-label="masterWarehouseData"><option value="locations" data-i18n="location">สถานที่</option><option value="units" data-i18n="unitLabel">หน่วย</option></optgroup></select></div>
     <div class="field"><label data-i18n="name">Name</label><input class="control" id="mdName" required></div>
     <div class="field" id="categoryRelationField"><label data-i18n="parentCategory">Category หลัก</label><select class="control" id="mdCategory"></select><div id="masterRelationHint" class="master-relation-hint"></div></div>
     <div class="field" id="brandRelationField"><label data-i18n="brandLabel">ยี่ห้อ</label><select class="control" id="mdBrand"></select></div>
     <div class="field full"><label data-i18n="note">Note</label><textarea class="control" id="mdNote" rows="3"></textarea></div>
-  </div></div><div class="modal-foot"><button type="button" class="btn" onclick="closeModal('masterModal')" data-i18n="cancel">Cancel</button><button type="submit" class="btn primary" data-i18n="save">Save</button></div></form>
+  </div><div class="modal-foot"><button type="button" class="btn" onclick="closeModal('masterModal')" data-i18n="cancel">Cancel</button><button type="submit" class="btn primary" data-i18n="save">Save</button></div></form></div>
 </div></div>
 
 
@@ -1456,7 +1470,7 @@ main .section .table-wrap.smart-page-scroll thead th{position:sticky;top:0;z-ind
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="cloud-core.js?v=20260928-spare-catalog"></script>
 <script>
-const APP_VERSION="2.3.0";
+const APP_VERSION="2.3.1";
 const DATA_SCHEMA_VERSION="2.2.0";
 const DATA_BACKEND={mode:"local",future:"supabase"};
 const DATA_KEYS={
@@ -1582,7 +1596,7 @@ exportMaster:"ส่งออก Master CSV",importMaster:"นำเข้า Ma
 masterSearchPlaceholder:"ค้นหาข้อมูลหลัก",spareModalSub:"เลือกค่าจากข้อมูลหลัก เพื่อให้การสะกดและการกรองเป็นมาตรฐานเดียวกัน",note:"หมายเหตุ",cancel:"ยกเลิก",save:"บันทึก",saveMovement:"บันทึก Movement",
 reportsDesc:"ส่งออกข้อมูลคลังและประวัติการเคลื่อนไหวสำหรับสำรองข้อมูลหรือวิเคราะห์ต่อ",reportInventory:"ส่งออกข้อมูลอะไหล่ทั้งหมดเป็นไฟล์ที่ Excel เปิดได้",reportMovement:"ส่งออกประวัติการเคลื่อนไหวสต็อกเป็น CSV",reportMaster:"ส่งออกฐานข้อมูลหลักเป็น CSV",
 settingsDesc:"ตั้งค่าระบบ Standalone Desktop และการจัดเก็บข้อมูล",language:"ภาษา",theme:"ธีม",storageTitle:"การจัดเก็บข้อมูล",storageDesc:"ข้อมูลถูกบันทึกใน Browser Local Storage ของเครื่องนี้",backendTitle:"ระบบจัดเก็บข้อมูล",backendFuture:"เตรียม Adapter สำหรับ Supabase ในอนาคต แต่เวอร์ชันนี้ยังไม่เชื่อมต่อจริง",
-masterModalSub:"เพิ่มข้อมูลกลางสำหรับใช้ร่วมกันทั้งระบบ",masterType:"ประเภทข้อมูลหลัก",name:"ชื่อ",
+masterModalSub:"เพิ่มข้อมูลกลางสำหรับใช้ร่วมกันทั้งระบบ",masterType:"ประเภทข้อมูลหลัก",name:"ชื่อ",masterContextProject:"โครงการ",masterContextProjectHint:"ค้นหาโครงการก่อนเพิ่มรายการใหม่",masterContextEquipment:"อุปกรณ์",masterContextEquipmentHint:"ประเภท → ยี่ห้อ → รุ่น และข้อมูลคลัง",masterWarehouseData:"ข้อมูลคลัง",masterProjectSearchHint:"ค้นหาในโครงการเดิมและ Central Data Hub ก่อนเพิ่มโครงการ",masterProjectSearchPlaceholder:"ค้นหาชื่อโครงการหรือ PPA",masterEquipmentHint:"ประเภท ยี่ห้อ และรุ่นใช้ร่วมกันได้หลายโครงการ; ระบุโครงการเมื่อบันทึกคลังหรือการเบิก",viewProjects:"ดูรายการโครงการ",masterProjectCentralOnly:"มีใน Central แล้ว · ตรวจการจับคู่ที่หน้าโครงการ",masterProjectEmpty:"ไม่พบโครงการที่ตรงกัน",masterProjectSearchPrompt:"พิมพ์ชื่อโครงการหรือ PPA เพื่อตรวจรายการเดิม",masterProjectLocal:"โครงการในเครื่อง",masterProjectCloud:"โครงการใน Spare Parts",masterProjectCentral:"Central Data Hub",
 guideTitle:"คู่มือการใช้งาน",guideDesc:"แนวทางเริ่มใช้งานที่แนะนำ พร้อมตรวจสุขภาพข้อมูลและข้อควรระวังของระบบ Standalone",openMaster:"เปิดข้อมูลหลัก",openInventory:"เปิดคลังอะไหล่",recommendedFlow:"ลำดับการใช้งานที่แนะนำ",
 guideStep1Title:"ตั้งค่าข้อมูลหลัก",guideStep1Text:"เพิ่มประเภท ยี่ห้อ รุ่น สถานที่ โครงการ และหน่วยให้พร้อมก่อนเริ่มลงคลัง",guideStep2Title:"เพิ่มคลังอะไหล่",guideStep2Text:"เพิ่มอะไหล่ทีละรายการหรือ Import CSV แล้วตรวจข้อมูลให้ตรงกับ Master",guideStep3Title:"บันทึกการเคลื่อนไหวเป็นหลัก",guideStep3Text:"หลังตั้งยอดเริ่มต้นแล้ว ใช้ รับเข้า / เบิก / จอง / คืน / ส่งซ่อม เพื่อให้ประวัติต่อเนื่อง",guideStep4Title:"ตรวจแดชบอร์ด",guideStep4Text:"เช็กสต็อกต่ำ หมดสต็อก และรายการซ่อมก่อนทำงานประจำวัน",guideStep5Title:"สำรอง Workspace",guideStep5Text:"สำรอง Workspace เป็น JSON ก่อนย้ายเครื่อง ล้าง Browser หรือแก้ข้อมูลครั้งใหญ่",
 backupTitle:"สำรอง Workspace",backupGuideText:"Backup จะเก็บคลังอะไหล่ ข้อมูลหลัก และประวัติ Movement ทั้งหมดไว้ในไฟล์เดียว เหมาะสำหรับย้ายเครื่องหรือกู้ข้อมูล",backupNow:"สำรอง Workspace",restoreBackup:"กู้คืน Backup",important:"สำคัญ:",restoreWarning:"การ Restore จะเขียนทับข้อมูลปัจจุบัน หลังยืนยันแล้วควรตรวจ Dashboard และ Data Health อีกครั้ง",
@@ -1620,7 +1634,7 @@ exportMaster:"Export Master CSV",importMaster:"Import Master CSV",addMaster:"Add
 masterSearchPlaceholder:"Search master data",spareModalSub:"Select values from Master Data so naming and filters stay standardized.",note:"Note",cancel:"Cancel",save:"Save",saveMovement:"Save Movement",
 reportsDesc:"Export Inventory and Movement data for backup or further analysis",reportInventory:"Export all spare parts as an Excel-compatible file",reportMovement:"Export stock movement history as CSV",reportMaster:"Export Master Data as CSV",
 settingsDesc:"Standalone Desktop storage and display settings",language:"Language",theme:"Theme",storageTitle:"Storage",storageDesc:"Data is stored in this browser's Local Storage on this computer.",backendTitle:"ระบบจัดเก็บข้อมูล",backendFuture:"Supabase adapter is future-ready but not connected in this version.",
-masterModalSub:"Add a central value for use across the system",masterType:"Master Type",name:"Name",
+masterModalSub:"Add a central value for use across the system",masterType:"Master Type",name:"Name",masterContextProject:"Project",masterContextProjectHint:"Search existing projects before creating one",masterContextEquipment:"Equipment",masterContextEquipmentHint:"Category → Brand → Model and stock data",masterWarehouseData:"Stock data",masterProjectSearchHint:"Search existing projects and Central Data Hub before adding a project",masterProjectSearchPlaceholder:"Search project name or PPA",masterEquipmentHint:"Categories, brands and models can be shared across projects; assign projects to inventory or stock issues.",viewProjects:"View projects",masterProjectCentralOnly:"Exists in Central · review matching on the Projects page",masterProjectEmpty:"No matching project",masterProjectSearchPrompt:"Enter a project name or PPA to check existing records",masterProjectLocal:"Local project",masterProjectCloud:"Spare Parts project",masterProjectCentral:"Central Data Hub",
 guideTitle:"User Guide",guideDesc:"Recommended onboarding flow, data health checks, and safety notes for the standalone system",openMaster:"Open Master Data",openInventory:"Open Inventory",recommendedFlow:"Recommended Workflow",
 guideStep1Title:"Set up Master Data",guideStep1Text:"Create Category, Brand, Model, Location, Project and Unit values before loading inventory",guideStep2Title:"Add Inventory",guideStep2Text:"Add items manually or import CSV, then verify values against Master Data",guideStep3Title:"Use Movements",guideStep3Text:"After opening balances are set, use Receive / Issue / Reserve / Return / Repair to preserve history",guideStep4Title:"Check Dashboard",guideStep4Text:"Review Low Stock, Out of Stock and Repair items before daily work",guideStep5Title:"Backup Workspace",guideStep5Text:"Export a JSON backup before moving computers, clearing the browser or making large changes",
 backupTitle:"Workspace Backup",backupGuideText:"The backup contains Inventory, Master Data and Movement history in one file for transfer or recovery",backupNow:"Backup Workspace",restoreBackup:"Restore Backup",important:"Important:",restoreWarning:"Restore overwrites the current workspace. Recheck Dashboard and Data Health after restoring",
@@ -1731,6 +1745,7 @@ function render(){
  else if(cloudStockActive)cloudCatalogueStatus=fmtTemplate("cloudStatus",{projects:cloudProjects.length,masters:Object.values(cloudMaster).reduce((sum,rows)=>sum+rows.length,0),items:inventory.length,movements:movements.length,access:spareRole==="admin"?t("adminEditable"):t("readOnly")});
  const sv=document.getElementById("sidebarVersion");if(sv)sv.textContent=APP_VERSION;
  document.querySelectorAll("[data-i18n]").forEach(e=>e.textContent=t(e.dataset.i18n));
+ document.querySelectorAll("[data-i18n-label]").forEach(e=>e.label=t(e.dataset.i18nLabel));
  const storageLabel=document.querySelector('[data-i18n="localMode"]');if(storageLabel)storageLabel.textContent=cloudStockActive?(lang==="th"?"Inventory กลาง":"Shared inventory"):t("localMode");
  document.querySelectorAll("[data-i18n-placeholder]").forEach(e=>e.placeholder=t(e.dataset.i18nPlaceholder));
  projectSearch.placeholder=lang==="th"?"ค้นหา PPA / โครงการ...":"Search PPA / project...";
@@ -1744,7 +1759,7 @@ function render(){
  if(fresh)fresh.classList.toggle("hidden",inventory.length>0||movements.length>0||master.categories.length>0||master.brands.length>0||master.models.length>0||projectDetails.length>0);
  updateSpareRoleUI();
  if(document.getElementById("spareReviewModal")?.classList.contains("show")){renderReviewCandidates();renderReviewComparison(true)}
- if(document.getElementById("masterModal")?.classList.contains("show")){masterModalTitle.textContent=t(editingCloudMasterId||editingMasterId?"editMasterTitle":"addMasterTitle");updateMasterRelationHint()}
+ if(document.getElementById("masterModal")?.classList.contains("show")){masterModalTitle.textContent=t(editingCloudMasterId||editingMasterId?"editMasterTitle":"addMasterTitle");updateMasterRelationHint();renderMasterProjectResults()}
  if(document.getElementById("projectEditModal")?.classList.contains("show")){projectEditTitle.textContent=t(editingCloudProjectId||editingProjectCode||editingProjectName?"editProject":"addProject");projectRelationNote.textContent=editingCloudProjectId?t("cloudProjectEditHint"):t("projectRelationImpact")}
  if(document.getElementById("projectDetailModal")?.classList.contains("show")){const d=projectDetailEditBtn.dataset.cloudId?cloudProjects.find(p=>p.id===projectDetailEditBtn.dataset.cloudId):findProjectDetail(projectDetailEditBtn.dataset.projectName||"",projectDetailEditBtn.dataset.projectCode||"");if(d)openProjectDetail(d.projectName,d.projectCode,d)}
 }
@@ -2340,8 +2355,9 @@ function applyMovement(x,type,qty){
  return"";
 }
 function editMaster(type,id){if(!requireSpareAdmin())return;
+ if(type==="projects"){const row=master.projects.find(x=>x.id===id);if(row)openProjectEditor(findProjectDetail(row.name,row.projectCode)||{...blankProjectDetail(),projectName:row.name,projectCode:row.projectCode||""});return}
  editingCloudMasterId="";
- const x=master[type].find(v=>v.id===id);if(!x)return;editingMasterId=id;mdType.value=type;mdType.disabled=true;mdName.value=x.name;mdNote.value=x.note||"";mdBrand.innerHTML=opts(master.brands,x.brand||"");brandRelationField.classList.toggle("hidden",type!=="models");masterModalTitle.textContent=t("editMasterTitle");openModal("masterModal")
+ const x=master[type].find(v=>v.id===id);if(!x)return;editingMasterId=id;mdType.value=type;mdType.disabled=true;mdName.value=x.name;mdNote.value=x.note||"";mdBrand.innerHTML=opts(master.brands,x.brand||"");brandRelationField.classList.toggle("hidden",type!=="models");setMasterContext("equipment");masterModalTitle.textContent=t("editMasterTitle");openModal("masterModal")
 }
 async function deleteMaster(type,id){if(!requireSpareAdmin())return;
  const x=master[type].find(v=>v.id===id);if(!x)return;
@@ -2350,10 +2366,26 @@ async function deleteMaster(type,id){if(!requireSpareAdmin())return;
  if(masterReferences(type,x.name).length){await showSpareDeletionBlocked(x.name,masterReferences(type,x.name));return}
  master[type]=master[type].filter(v=>v.id!==id);saveAll();render();toast(t("masterDeleted"))
 }
+function setMasterContext(context){
+ const editing=!!(editingCloudMasterId||editingMasterId),project=context==="projects"&&!editing;
+ masterContext.classList.toggle("hidden",editing);
+ masterProjectPanel.classList.toggle("hidden",!project);masterForm.classList.toggle("hidden",project);
+ masterForm.querySelectorAll("input,select,textarea,button").forEach(el=>{if(!editing||el!==mdType)el.disabled=project});
+ if(editing)mdType.disabled=true;
+ masterContext.querySelectorAll("button").forEach(button=>{const active=button.dataset.masterContext===(project?"projects":"equipment");button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active))});
+ if(project)renderMasterProjectResults();
+}
+function renderMasterProjectResults(){
+ const q=normText(masterProjectSearch.value);if(!q){masterProjectResults.textContent=t("masterProjectSearchPrompt");return}
+ const rows=[];
+ cloudProjects.forEach((p,i)=>{if([p.projectName,p.projectCode,projectDisplayName(p)].some(value=>normText(value).includes(q)))rows.push({name:projectDisplayName(p),code:p.projectCode,kind:"cloud",index:i,label:t("masterProjectCloud")})});
+ projectDetails.forEach((p,i)=>{if([p.projectName,p.projectCode].some(value=>normText(value).includes(q))&&!rows.some(r=>normText(r.name)===normText(p.projectName)))rows.push({name:p.projectName,code:p.projectCode,kind:"local",index:i,label:t("masterProjectLocal")})});
+ centralProjects.forEach(p=>{const names=[p.standard_name,...centralAliases.filter(a=>a.project_id===p.id).map(a=>a.alias_name)];if(names.some(name=>normText(name).includes(q))&&!cloudProjects.some(c=>c.centralProjectId===p.id)&&!rows.some(r=>normText(r.name)===normText(p.standard_name)))rows.push({name:p.standard_name,code:"",kind:"central",label:t("masterProjectCentral")})});
+ masterProjectResults.innerHTML=rows.length?rows.slice(0,8).map(r=>`<div class="master-project-result"><span><b>${esc(r.name)}</b><br><small>${esc(r.code||r.label)} · ${esc(r.label)}</small></span>${r.kind==="central"?`<small>${esc(t("masterProjectCentralOnly"))}</small>`:`<button class="btn small" type="button" data-existing-kind="${r.kind}" data-existing-index="${r.index}">${esc(t("viewProjects"))}</button>`}</div>`).join(""):`<div class="master-context-hint">${esc(t("masterProjectEmpty"))}</div>`;
+}
 function openMasterAdd(){if(!requireSpareAdmin())return;
- if(currentMaster==="projects"){openProjectEditor(null);return}
  editingCloudMasterId="";
- editingMasterId=null;masterForm.reset();mdType.disabled=false;mdType.value=currentMaster;updateMasterRelations();masterModalTitle.textContent=t("addMasterTitle");openModal("masterModal")
+ editingMasterId=null;masterForm.reset();mdType.disabled=false;mdType.value=currentMaster==="projects"?"categories":currentMaster;masterProjectSearch.value="";updateMasterRelations();setMasterContext(currentMaster==="projects"?"projects":"equipment");masterModalTitle.textContent=t("addMasterTitle");openModal("masterModal")
 }
 function updateMasterRelations(category="",brand=""){
  const type=mdType.value;categoryRelationField.classList.toggle("hidden",type!=="models"&&type!=="brands");brandRelationField.classList.toggle("hidden",type!=="models");
@@ -2373,7 +2405,7 @@ function openCloudMasterEditor(type,row){
  if(!requireSpareAdmin()||!row?.cloudId)return;
  editingCloudMasterId=row.cloudId;editingMasterId=null;mdType.value=type;mdType.disabled=true;mdName.value=row.name;mdNote.value=row.note||"";
  const pair=categoryBrandLinks.find(x=>x.id===row.categoryBrandId),category=type==="models"?cloudMaster.categories.find(x=>x.cloudId===pair?.category_id)?.name||"":"";
- updateMasterRelations(category,row.brand||"");masterModalTitle.textContent=t("editMasterTitle")+" · ☁";openModal("masterModal")
+ updateMasterRelations(category,row.brand||"");setMasterContext("equipment");masterModalTitle.textContent=t("editMasterTitle")+" · ☁";openModal("masterModal")
 }
 function prefixFor(type){return({categories:"CAT",brands:"BR",models:"MD",locations:"LOC",projects:"PRJ",units:"UNIT"})[type]}
 function csvEscape(v){v=String(v??"");return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v}
@@ -2611,6 +2643,11 @@ movementForm.addEventListener("submit",async e=>{
 });
 
 addMasterBtn.onclick=openMasterAdd;mdType.addEventListener("change",()=>updateMasterRelations());mdCategory.addEventListener("change",()=>updateMasterRelations(mdCategory.value));
+masterContext.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>setMasterContext(button.dataset.masterContext)));
+masterProjectSearch.addEventListener("input",renderMasterProjectResults);
+masterProjectResults.addEventListener("click",e=>{const button=e.target.closest("[data-existing-kind]");if(!button)return;const p=button.dataset.existingKind==="cloud"?cloudProjects[Number(button.dataset.existingIndex)]:projectDetails[Number(button.dataset.existingIndex)];if(!p)return;closeModal("masterModal");openProjectDetail(p.projectName,p.projectCode,p)});
+masterViewProjects.onclick=()=>{closeModal("masterModal");showPage("projects")};
+masterCreateProject.onclick=()=>{if(!requireSpareAdmin())return;closeModal("masterModal");openProjectEditor(null)};
 async function masterCategoryBrandPair(){
  const category=cloudMaster.categories.find(x=>x.name===mdCategory.value),brand=cloudMaster.brands.find(x=>x.name===mdBrand.value);
  if(!category||!brand)throw Error(t("categoryBrandRequired"));
