@@ -44,7 +44,10 @@ const WDReview = (() => {
     if (!connected) html += `<span>${text('สถานะออนไลน์ยังไม่เชื่อมต่อ','Live status unavailable')}</span>`;
     return html;
   }
-  function reviewLabel(plant) { return reviewed(plant) ? text('ยกเลิกตรวจเสร็จ','Reopen review') : text('ตรวจเสร็จ','Mark reviewed'); }
+  function reviewLabel(plant) { return reviewed(plant) ? text('เปิดตรวจอีกครั้ง','Reopen review') : review(plant)?.done ? text('ตรวจอีกครั้ง','Review again') : text('ตรวจเสร็จ','Mark reviewed'); }
+  function reviewState(plant) { return reviewed(plant) ? 'done' : review(plant)?.done ? 'changed' : 'new'; }
+  function reviewIcon(plant) { return reviewState(plant)==='done' ? 'fa-rotate-left' : reviewState(plant)==='changed' ? 'fa-rotate' : 'fa-circle-check'; }
+  function reviewButtonHtml(plant) { const done=reviewed(plant);return `<button type="button" class="wd-review-button" data-wd-review="${plant.id}" data-review-state="${reviewState(plant)}" aria-pressed="${done}" onclick="WDReview.toggleReview(${plant.id})" ${SolarCloud.roleCanEdit()?'':'disabled'}><i class="fa-solid ${reviewIcon(plant)}" aria-hidden="true"></i><span>${reviewLabel(plant)}</span></button>`; }
   function toggleReview(id) {
     const plant = findPlant(id), actor = SolarCloud.collaborationActor();
     if (!plant || !month() || !actor || !SolarCloud.roleCanEdit()) return;
@@ -62,7 +65,7 @@ const WDReview = (() => {
     });
     document.querySelectorAll('[data-wd-review]').forEach(node => {
       const plant = plants.get(node.dataset.wdReview);
-      if (plant) { node.textContent = reviewLabel(plant);node.disabled = !SolarCloud.roleCanEdit(); }
+      if (plant) { node.dataset.reviewState=reviewState(plant);node.setAttribute('aria-pressed',String(reviewed(plant)));node.querySelector('i').className='fa-solid '+reviewIcon(plant);node.querySelector('span').textContent=reviewLabel(plant);node.disabled=!SolarCloud.roleCanEdit(); }
     });
   }
   function onSaved(state, sent) {
@@ -92,8 +95,8 @@ const WDReview = (() => {
   function clearSearch() { $('searchInput').value='';$('projectPopupSearch').value='';calculateAndRender(); }
   function render(filtered, context) {
     const summary = activeTab === 'summary';
-    $('wdDetailsTab').textContent=text('รายละเอียดและคำนวณ','Details and calculations');
-    $('wdSummaryTab').textContent=text('สรุปวันทำงาน','Working day summary');
+    $('wdDetailsTab').querySelector('span').textContent=text('รายละเอียดและคำนวณ','Details and calculations');
+    $('wdSummaryTab').querySelector('span').textContent=text('สรุปวันทำงาน','Working day summary');
     $('wdDetailsTab').setAttribute('aria-selected',String(!summary));
     $('wdSummaryTab').setAttribute('aria-selected',String(summary));
     $('wdSummaryPanel').hidden=!summary;
@@ -108,7 +111,7 @@ const WDReview = (() => {
       : ({custom:text('ค่ากำหนดเอง','Custom value'),monthlyAvg:text('Specific เฉลี่ยทั้งเดือน','Monthly average Specific'),nonLossAvg:text('Specific เฉพาะวันไม่มี Loss','Non-loss-day Specific')}[context.mode]||context.mode);
     const rows=filtered.map(plant=>{
       const m=calculatePlantMetrics(plant,context);
-      return `<tr data-wd-plant="${plant.id}"><th scope="row">${escapeHtml(plant.name)}</th><td>${m.valid?number(m.shM1):'—'}</td><td class="wd-result">${m.valid?number(m.method1Days):'—'}</td><td>${m.valid?number(m.shM2):'—'}</td><td class="wd-result">${m.valid?number(m.method2Days):'—'}</td><td><small class="wd-project-status" data-wd-status="${plant.id}">${statusHtml(plant)}</small><button class="wd-review-button" data-wd-review="${plant.id}" onclick="WDReview.toggleReview(${plant.id})" ${SolarCloud.roleCanEdit()?'':'disabled'}>${reviewLabel(plant)}</button></td></tr>`;
+      return `<tr data-wd-plant="${plant.id}"><th scope="row">${escapeHtml(plant.name)}</th><td>${m.valid?number(m.shM1):'—'}</td><td class="wd-result">${m.valid?number(m.method1Days):'—'}</td><td>${m.valid?number(m.shM2):'—'}</td><td class="wd-result">${m.valid?number(m.method2Days):'—'}</td><td><small class="wd-project-status" data-wd-status="${plant.id}">${statusHtml(plant)}</small>${reviewButtonHtml(plant)}</td></tr>`;
     }).join('');
     $('wdSummaryPanel').innerHTML=`<div class="wd-summary-scroll"><table><caption class="sr-only">${text('ข้อมูลเดือนที่เลือกคำนวณด้วยพารามิเตอร์ปัจจุบัน','Selected month calculated with current parameters')}</caption><colgroup><col class="wd-col-project"><col class="wd-col-metric"><col class="wd-col-metric"><col class="wd-col-metric"><col class="wd-col-metric"><col class="wd-col-status"></colgroup><thead><tr><th rowspan="2" scope="col">${text('โครงการ','Project')}</th><th colspan="2" scope="colgroup">${text('วิธี 1','Method 1')}<small>${escapeHtml(sourceLabel(1))}</small></th><th colspan="2" scope="colgroup">${text('วิธี 2','Method 2')}<small>${escapeHtml(sourceLabel(2))}</small></th><th rowspan="2" scope="col">${text('สถานะงานเดือนนี้','Review status for this month')}</th></tr><tr><th>Sun Hours</th><th>${text('วันทำงาน','Working days')}</th><th>Sun Hours</th><th>${text('วันทำงาน','Working days')}</th></tr></thead><tbody>${rows||`<tr><td colspan="6">${text('ไม่มีข้อมูลตรงกับเดือนและตัวกรองที่เลือก','No data for the selected month and filters')}</td></tr>`}</tbody></table></div>`;
   }
