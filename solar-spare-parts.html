@@ -713,6 +713,32 @@ th{font-size:10px;letter-spacing:.01em}
 .bar-value-unit{display:block;font-size:8px;color:var(--muted);font-weight:650}
 @media(max-width:1450px){.project-filter-grid{grid-template-columns:1fr 1fr 1fr}.project-search-field{grid-column:1/-1}.project-edit-grid{grid-template-columns:1fr 1fr}}
 
+/* Project workspace: compact Working Day style control dock. */
+.commandbar{grid-template-columns:minmax(180px,1fr) minmax(170px,260px) auto;gap:12px}
+.spare-project-workspace{display:grid;grid-template-columns:248px minmax(0,1fr);gap:12px;align-items:start}
+.spare-project-dock{position:sticky;top:calc(var(--command-h) + 12px);min-width:0}
+.spare-dock-header,.spare-project-intro{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:10px 12px;margin-bottom:10px}
+.spare-dock-title{display:flex;align-items:center;gap:9px;font-weight:850;font-size:12px}
+.spare-dock-icon{display:grid;place-items:center;width:29px;height:29px;border-radius:9px;background:var(--primary-soft);color:var(--primary)}
+.spare-project-dock .project-filter-card{margin:0;padding:12px}
+.spare-project-dock .project-filter-grid{display:flex;flex-direction:column;gap:10px;align-items:stretch}
+.spare-project-dock .project-search-field{width:100%;max-width:100%}
+.spare-project-dock .project-search-field .control{height:34px;padding:6px 9px;font-size:11px}
+.spare-project-dock .project-filter-grid .field{width:100%;min-width:0}
+.spare-project-dock .project-clear-field .btn{width:100%;justify-content:center}
+.spare-project-dock .project-filter-summary{display:flex;flex-direction:column;gap:4px;overflow-wrap:anywhere}
+.spare-project-main{min-width:0}.spare-project-intro{margin-bottom:10px;min-height:54px}
+.spare-project-intro strong{display:block;font-size:13px}.spare-project-intro small{display:block;color:var(--muted);font-size:10px}
+.spare-project-actions{display:flex;align-items:center;gap:7px}.spare-role-chip{font-size:10px;color:var(--muted);white-space:nowrap}
+#projects.spare-dock-closed .spare-project-workspace{grid-template-columns:minmax(0,1fr)}
+#projects.spare-dock-closed .spare-project-dock{display:none}
+#projects.spare-dock-closed #spareDockToggle{display:none}
+#projects:not(.spare-dock-closed) #spareDockReveal{display:none}
+body.spare-read-only [data-spare-write]{display:none!important}
+@media(max-width:1000px){.spare-project-workspace{grid-template-columns:minmax(0,1fr)}.spare-project-dock{position:static}.spare-project-dock .project-filter-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.spare-project-dock .project-search-field{grid-column:1/-1}.spare-project-dock .project-filter-summary{flex-direction:row}#projects.spare-dock-closed .spare-project-dock{display:block}#projects.spare-dock-closed #spareDockToggle{display:inline-flex}#projects.spare-dock-closed #spareDockReveal{display:none}}
+@media(max-width:560px){.spare-project-dock .project-filter-grid{grid-template-columns:1fr}.spare-project-dock .project-search-field{grid-column:auto}.spare-project-intro{flex-wrap:wrap}}
+@media(max-width:1100px){.commandbar{grid-template-columns:minmax(0,1fr) minmax(130px,210px);height:auto;min-height:var(--command-h);padding:8px 14px}.head-actions{grid-column:1/-1;justify-content:flex-start;flex-wrap:wrap}.command-search-wrap kbd{display:none}}
+
 
 /* =========================================================
    V1.9 Usability / Summary / Equipment Type Drill-down
@@ -1058,21 +1084,29 @@ main .section .table-wrap.smart-page-scroll thead th{position:sticky;top:0;z-ind
 <section class="section" id="projects">
   <div class="page-head">
     <div><div class="eyebrow" data-i18n="projectsEyebrow">โครงการ</div><h2 class="page-title" data-i18n="projects">Projects</h2><p class="subtitle" data-i18n="projectsDesc">จัดการ Project Master, อุปกรณ์ติดตั้ง และประวัติ โดยใช้ PPA Contract No. เป็นตัวเชื่อมหลัก</p></div>
-    <button class="btn primary" id="addProjectBtn">＋ <span data-i18n="addProject">เพิ่มโครงการ</span></button>
+    <button class="btn primary" id="addProjectBtn" data-spare-write>＋ <span data-i18n="addProject">เพิ่มโครงการ</span></button>
   </div>
+  <div class="spare-project-workspace">
+   <aside class="spare-project-dock" aria-label="Project controls">
+    <div class="spare-dock-header"><span class="spare-dock-title"><span class="spare-dock-icon">☷</span><span>Control Center</span></span><button class="btn small" id="spareDockToggle" type="button" aria-label="Hide project controls">‹</button></div>
   <div class="card project-filter-card">
     <div class="project-filter-grid">
-      <div class="field project-search-field"><label data-i18n="search">ค้นหา</label><input class="control" id="projectSearch" data-i18n-placeholder="projectSearchPlaceholder" placeholder="ค้นหา PPA / Project / EPC / Province / Equipment"></div>
+      <div class="field project-search-field"><label data-i18n="search">ค้นหา</label><input class="control" id="projectSearch" placeholder="ค้นหา PPA / โครงการ..."></div>
       <div class="field"><label data-i18n="statusLabel">สถานะ</label><select class="control" id="projectStatusFilter"></select></div>
       <div class="field"><label data-i18n="provinceLabel">จังหวัด</label><select class="control" id="projectProvinceFilter"></select></div>
       <div class="field project-clear-field"><label>&nbsp;</label><button class="btn" id="projectClearFilters" data-i18n="clear">ล้างตัวกรอง</button></div>
     </div>
     <div class="project-filter-summary"><span id="projectResultCount"></span><span id="cloudCatalogueStatus" role="status"></span></div>
   </div>
+   </aside>
+   <div class="spare-project-main">
+    <div class="spare-project-intro"><div><strong>Projects Workspace</strong><small>Search · filter · review</small></div><div class="spare-project-actions"><span class="spare-role-chip" id="spareRoleStatus" role="status"></span><button class="btn small" id="spareDockReveal" type="button">☷ Controls</button><button class="btn small" id="spareFocusTable" type="button">⛶ Focus table</button></div></div>
   <div class="card">
     <div class="table-wrap project-table-wrap"><table class="project-table"><thead><tr>
       <th data-i18n="projectCodeLabel">PPA Contract No.</th><th data-i18n="projectLabel">โครงการ</th><th data-i18n="capacityLabel">กำลังติดตั้ง</th><th data-i18n="projectStatusLabel">สถานะ</th><th data-i18n="provinceLabel">จังหวัด</th><th data-i18n="epcLabel">EPC</th><th data-i18n="projectEquipment">อุปกรณ์ติดตั้ง</th><th data-i18n="replacementHistoryLabel">ประวัติเปลี่ยน</th><th data-i18n="action">จัดการ</th>
     </tr></thead><tbody id="projectTableBody"></tbody></table></div>
+  </div>
+   </div>
   </div>
 </section>
 
@@ -1450,12 +1484,27 @@ let projectDetails=DataRepository.getJSON(DATA_KEYS.projectDetails,[])||[];
 // Cloud catalogue is displayed separately from local edits and never saved into LocalStorage.
 let cloudProjects=[],cloudMaster={categories:[],brands:[],models:[],locations:[],units:[]};
 let cloudCatalogueStatus="กำลังตรวจสอบข้อมูลโครงการในฐานข้อมูล…";
+let spareRole="loading",spareWorkspaceId="",editingCloudProjectId="",editingCloudMasterId="";
+function requireSpareAdmin(){if(spareRole==="admin")return true;toast(lang==="en"?"Only workspace admins can edit Spare Parts":"เฉพาะแอดมินของ Workspace เท่านั้นที่แก้ไขข้อมูลได้");return false}
+function updateSpareRoleUI(){
+ document.body.classList.toggle("spare-read-only",spareRole!=="admin");
+ const role=document.getElementById("spareRoleStatus");
+ if(role)role.textContent=spareRole==="admin"?"Admin · แก้ไขได้":spareRole==="loading"?"กำลังตรวจสิทธิ์…":"ดูอย่างเดียว · "+spareRole;
+ const addProject=document.getElementById("addProjectBtn"),addMaster=document.getElementById("addMasterBtn");
+ if(addProject)addProject.title=lang==="th"?"เพิ่มโครงการในข้อมูลของเครื่องนี้":"Add a project to this device only";
+ if(addMaster)addMaster.title=lang==="th"?"เพิ่ม Master Data ในเครื่องนี้":"Add master data to this device only";
+ const ids=["addBtn","newMovementBtn","addProjectBtn","addMasterBtn","clearWorkspaceBtn","chooseImportFileBtn","chooseImportFileBtn2","freshImportBtn","inventoryOpenImportCenter","masterOpenImportCenter","confirmClearWorkspaceBtn","projectDetailEditBtn","excelImportConfirm","manualDuplicateMerge","manualDuplicateUpdate","inventoryImportBtn","masterImportBtn","excelImportBtn"];
+ ids.forEach(id=>{const el=document.getElementById(id);if(el)el.dataset.spareWrite=""});
+ document.querySelectorAll('button[onclick^="editSpare("],button[onclick^="deleteSpare("],button[onclick^="openMovementFor("],button[onclick^="editMaster("],button[onclick^="deleteMaster("],button[data-project-edit]').forEach(el=>el.dataset.spareWrite="");
+}
 async function loadCloudCatalogue(){
  try{
   if(!window.SolarCloud)throw new Error("ไม่สามารถโหลดตัวเชื่อมต่อฐานข้อมูล");
   const session=await SolarCloud.session();
-  if(!session){cloudCatalogueStatus="กรุณาเข้าสู่ระบบที่หน้าแรกเพื่อดูข้อมูลในฐานข้อมูล";render();return}
+  if(!session){spareRole="guest";cloudCatalogueStatus="กรุณาเข้าสู่ระบบที่หน้าแรกเพื่อดูข้อมูลในฐานข้อมูล";render();return}
   const member=await SolarCloud.membership(),client=SolarCloud.getClient();
+  spareRole=member.role||"viewer";
+  spareWorkspaceId=member.workspace_id;
   const [projects,masters]=await Promise.all([
    client.from("spare_project_catalog").select("id,project_code,project_name,capacity_kwp,province,match_status,details").eq("workspace_id",member.workspace_id).order("project_name"),
    client.from("spare_master_data").select("id,master_type,source_id,name,brand,note").eq("workspace_id",member.workspace_id).order("name")
@@ -1463,9 +1512,9 @@ async function loadCloudCatalogue(){
   if(projects.error)throw projects.error;if(masters.error)throw masters.error;
   cloudProjects=(projects.data||[]).map(p=>({...p.details,id:p.id,projectCode:p.project_code||"",projectName:p.project_name,capacity:p.capacity_kwp??"",province:p.province||"",matchStatus:p.match_status,cloudOnly:true}));
   cloudMaster={categories:[],brands:[],models:[],locations:[],units:[]};
-  (masters.data||[]).forEach(m=>{if(cloudMaster[m.master_type])cloudMaster[m.master_type].push({id:m.source_id,name:m.name,brand:m.brand||"",note:m.note||"",cloudOnly:true})});
-  cloudCatalogueStatus=`ฐานข้อมูล: ${cloudProjects.length} โครงการ · ${(masters.data||[]).length} Master Data (อ่านอย่างเดียว)`;
- }catch(err){cloudCatalogueStatus=`อ่านฐานข้อมูลไม่ได้: ${err.message||err}`}
+  (masters.data||[]).forEach(m=>{if(cloudMaster[m.master_type])cloudMaster[m.master_type].push({id:m.source_id,cloudId:m.id,name:m.name,brand:m.brand||"",note:m.note||"",cloudOnly:true})});
+  cloudCatalogueStatus=`ฐานข้อมูล: ${cloudProjects.length} โครงการ · ${(masters.data||[]).length} Master Data (${spareRole==="admin"?"แอดมินแก้ไขได้":"อ่านอย่างเดียว"})`;
+ }catch(err){spareRole="unavailable";cloudCatalogueStatus=`อ่านฐานข้อมูลไม่ได้: ${err.message||err}`}
  render();
 }
 let compatibility=DataRepository.getJSON(DATA_KEYS.compatibility,[])||[];
@@ -1561,6 +1610,7 @@ function movementText(type){return ({Receive:t("receive"),Issue:t("issue"),Reser
 function fmtTemplate(key,vars){let out=t(key);Object.entries(vars||{}).forEach(([k,v])=>out=out.replaceAll(`{${k}}`,v));return out}
 function monthText(n){return t("month"+Number(n))}
 function saveAll(){
+ if(!requireSpareAdmin())throw new Error("Admin access required to save Spare Parts data");
  DataRepository.setJSON(DATA_KEYS.master,master);
  DataRepository.setJSON(DATA_KEYS.inventory,inventory);
  DataRepository.setJSON(DATA_KEYS.movements,movements);
@@ -1626,6 +1676,7 @@ function render(){
  const sv=document.getElementById("sidebarVersion");if(sv)sv.textContent=APP_VERSION;
  document.querySelectorAll("[data-i18n]").forEach(e=>e.textContent=t(e.dataset.i18n));
  document.querySelectorAll("[data-i18n-placeholder]").forEach(e=>e.placeholder=t(e.dataset.i18nPlaceholder));
+ projectSearch.placeholder=lang==="th"?"ค้นหา PPA / โครงการ...":"Search PPA / project...";
  applySidebarState();
  langTH.classList.toggle("active",lang==="th");langEN.classList.toggle("active",lang==="en");lightBtn.classList.toggle("active",theme==="light");darkBtn.classList.toggle("active",theme==="dark");
  renderKpis();renderActions();renderRecent();fillFilters();renderInventory();renderMovements();renderProjects();renderMaster();fillSpareFormMasters();fillMovementMasters();renderDataHealth();renderAnalytics();renderProjectHandoff();
@@ -1634,6 +1685,7 @@ function render(){
  requestAnimationFrame(applySmartPageScroll);
  const fresh=document.getElementById("freshWorkspaceNote");
  if(fresh)fresh.classList.toggle("hidden",inventory.length>0||movements.length>0||master.categories.length>0||master.brands.length>0||master.models.length>0||projectDetails.length>0);
+ updateSpareRoleUI();
 }
 function renderKpis(){
  const totalQty=inventory.reduce((a,x)=>a+(+x.available||0)+(+x.reserved||0)+(+x.repair||0),0);
@@ -1724,9 +1776,11 @@ function renderProjects(){
  if(provinceSel){provinceSel.innerHTML=`<option value="">${t("all")}</option>`+provinces.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("");provinceSel.value=projectFilters.province}
  const rows=allProjects.filter(d=>{const equipment=[d.pvModuleModel,d.inverterBrand,d.inverter1,d.inverter2,d.inverter3,d.optimizerRsd].join(" ");const hay=[d.projectCode,d.projectName,d.epc,d.province,d.location,d.status,equipment].join(" ").toLowerCase();return(!q||hay.includes(q))&&(!projectFilters.status||d.status===projectFilters.status)&&(!projectFilters.province||d.province===projectFilters.province)}).slice().sort((x,y)=>String(x.projectCode||x.projectName).localeCompare(String(y.projectCode||y.projectName)));
  projectResultCount.textContent=fmtTemplate("projectResults",{shown:rows.length,total:allProjects.length});
- projectTableBody.innerHTML=rows.map(d=>{const code=String(d.projectCode||"").trim(),name=String(d.projectName||"").trim(),pvCount=replacementHistory.filter(x=>sameProject(x,d,name)).length,invCount=inverterHistory.filter(x=>sameProject(x,d,name)).length,movCount=movements.filter(x=>sameProject(x,d,name)).length;const invs=[[d.inverter1,d.inverterQty1],[d.inverter2,d.inverterQty2],[d.inverter3,d.inverterQty3]].filter(x=>x[0]&&x[0]!=="None");const eq=[d.pvModuleModel?`PV: ${d.pvModuleModel}`:"",invs.length?`INV: ${invs.map(x=>x[0]).join(", ")}`:"",d.optimizerRsd?`OPT: ${d.optimizerRsd}`:""].filter(Boolean);return `<tr><td><div class="project-code">${esc(code||"—")}</div></td><td><div class="project-name-cell">${esc(name||"—")}</div><div class="part-sub">${d.cloudOnly?`☁ ${d.matchStatus==="needs_review"?"รอตรวจจับคู่ · ":"เชื่อม Central · "}`:""}${esc(d.location||d.plantType||"")}</div></td><td>${d.capacity!==undefined&&d.capacity!==""?`${esc(d.capacity)} kWp`:"—"}</td><td>${esc(d.status||"—")}</td><td>${esc(d.province||"—")}</td><td>${esc(d.epc||"—")}</td><td><div class="project-eq-summary">${eq.map(esc).join("<br>")||"—"}</div></td><td><div class="project-history-mini"><span class="mini-count">PV ${pvCount}</span><span class="mini-count">INV ${invCount}</span><span class="mini-count">MOV ${movCount}</span></div></td><td>${d.cloudOnly?'<span class="muted">ฐานข้อมูล · ดูอย่างเดียว</span>':`<div class="row-actions"><button class="btn small" data-project-view="${esc(code||name)}">ⓘ ${t("viewBtn")}</button><button class="btn small" data-project-edit="${esc(code||name)}">✎ ${t("editBtn")}</button></div>`}</td></tr>`}).join("")||`<tr><td colspan="9" style="padding:35px;text-align:center;color:var(--muted)">${t("noData")}</td></tr>`;
+ projectTableBody.innerHTML=rows.map(d=>{const code=String(d.projectCode||"").trim(),name=String(d.projectName||"").trim(),pvCount=replacementHistory.filter(x=>sameProject(x,d,name)).length,invCount=inverterHistory.filter(x=>sameProject(x,d,name)).length,movCount=movements.filter(x=>sameProject(x,d,name)).length;const invs=[[d.inverter1,d.inverterQty1],[d.inverter2,d.inverterQty2],[d.inverter3,d.inverterQty3]].filter(x=>x[0]&&x[0]!=="None");const eq=[d.pvModuleModel?`PV: ${d.pvModuleModel}`:"",invs.length?`INV: ${invs.map(x=>x[0]).join(", ")}`:"",d.optimizerRsd?`OPT: ${d.optimizerRsd}`:""].filter(Boolean);return `<tr><td><div class="project-code">${esc(code||"—")}</div></td><td><div class="project-name-cell">${esc(name||"—")}</div><div class="part-sub">${d.cloudOnly?`☁ ${d.matchStatus==="needs_review"?"รอตรวจจับคู่ · ":"เชื่อม Central · "}`:""}${esc(d.location||d.plantType||"")}</div></td><td>${d.capacity!==undefined&&d.capacity!==""?`${esc(d.capacity)} kWp`:"—"}</td><td>${esc(d.status||"—")}</td><td>${esc(d.province||"—")}</td><td>${esc(d.epc||"—")}</td><td><div class="project-eq-summary">${eq.map(esc).join("<br>")||"—"}</div></td><td><div class="project-history-mini"><span class="mini-count">PV ${pvCount}</span><span class="mini-count">INV ${invCount}</span><span class="mini-count">MOV ${movCount}</span></div></td><td>${d.cloudOnly?`<div class="row-actions"><button class="btn small" data-cloud-project-view="${esc(d.id)}">ⓘ ${t("viewBtn")}</button>${spareRole==="admin"?`<button class="btn small" data-cloud-project-edit="${esc(d.id)}" data-spare-write>✎ ${t("editBtn")}</button>`:""}</div>`:`<div class="row-actions"><button class="btn small" data-project-view="${esc(code||name)}">ⓘ ${t("viewBtn")}</button><button class="btn small" data-project-edit="${esc(code||name)}">✎ ${t("editBtn")}</button></div>`}</td></tr>`}).join("")||`<tr><td colspan="9" style="padding:35px;text-align:center;color:var(--muted)">${t("noData")}</td></tr>`;
  document.querySelectorAll("[data-project-view]").forEach(btn=>btn.onclick=()=>{const ref=btn.dataset.projectView,d=findProjectDetail("",ref)||findProjectDetail(ref,"");if(d)openProjectDetail(d.projectName,d.projectCode)});
  document.querySelectorAll("[data-project-edit]").forEach(btn=>btn.onclick=()=>{const ref=btn.dataset.projectEdit,d=findProjectDetail("",ref)||findProjectDetail(ref,"");if(d)openProjectEditor(d)});
+ document.querySelectorAll("[data-cloud-project-view]").forEach(btn=>btn.onclick=()=>{const d=cloudProjects.find(p=>p.id===btn.dataset.cloudProjectView);if(d)openProjectDetail(d.projectName,d.projectCode,d)});
+ document.querySelectorAll("[data-cloud-project-edit]").forEach(btn=>btn.onclick=()=>{const d=cloudProjects.find(p=>p.id===btn.dataset.cloudProjectEdit);if(d)openProjectEditor(d)});
 }
 function renderMaster(){
  const masterRows=type=>{const local=master[type],keys=new Set(local.map(x=>normText(x.name)));const cloud=type==="projects"?cloudProjects.map(p=>({id:p.projectCode||p.id,name:p.projectName,note:p.matchStatus==="needs_review"?"รอตรวจจับคู่":"เชื่อม Central",cloudOnly:true})):cloudMaster[type]||[];return [...local,...cloud.filter(x=>!keys.has(normText(x.name)))]};
@@ -1736,11 +1790,12 @@ function renderMaster(){
  masterTableTitle.textContent=t(currentMaster)||currentMaster;masterTableSub.textContent=`${rows.length} ${t("recordsLabel")}`;
  if(currentMaster==="models"){
   masterHead.innerHTML=`<tr><th>${t("idLabel")}</th><th>${t("name")}</th><th>${t("brandHeader")}</th><th>${t("noteHeader")}</th><th>${t("action")}</th></tr>`;
-  masterBody.innerHTML=rows.map(x=>`<tr><td><b>${esc(x.id)}</b></td><td>${esc(x.name)}</td><td>${esc(x.brand||"-")}</td><td>${esc(x.note||"-")}</td><td>${x.cloudOnly?'☁ ฐานข้อมูล · ดูอย่างเดียว':`<div class="row-actions"><button class="btn small" onclick="editMaster('${currentMaster}','${esc(x.id)}')">${t("editBtn")}</button><button class="btn small danger" onclick="deleteMaster('${currentMaster}','${esc(x.id)}')">${t("deleteBtn")}</button></div>`}</td></tr>`).join("");
+  masterBody.innerHTML=rows.map(x=>`<tr><td><b>${esc(x.id)}</b></td><td>${esc(x.name)}</td><td>${esc(x.brand||"-")}</td><td>${esc(x.note||"-")}</td><td>${x.cloudOnly?`<button class="btn small" data-cloud-master-edit="${esc(x.cloudId||x.id)}" data-spare-write>✎ ${t("editBtn")}</button>`:`<div class="row-actions"><button class="btn small" onclick="editMaster('${currentMaster}','${esc(x.id)}')">${t("editBtn")}</button><button class="btn small danger" onclick="deleteMaster('${currentMaster}','${esc(x.id)}')">${t("deleteBtn")}</button></div>`}</td></tr>`).join("");
  }else{
   masterHead.innerHTML=`<tr><th>${t("idLabel")}</th><th>${t("name")}</th><th>${t("noteHeader")}</th><th>${t("usedByLabel")}</th><th>${t("action")}</th></tr>`;
-  masterBody.innerHTML=rows.map(x=>`<tr><td><b>${esc(x.id)}</b></td><td>${esc(x.name)}</td><td>${esc(x.note||"-")}</td><td>${masterUsage(currentMaster,x.name)}</td><td>${x.cloudOnly?'☁ ฐานข้อมูล · ดูอย่างเดียว':`<div class="row-actions"><button class="btn small" onclick="editMaster('${currentMaster}','${esc(x.id)}')">${t("editBtn")}</button><button class="btn small danger" onclick="deleteMaster('${currentMaster}','${esc(x.id)}')">${t("deleteBtn")}</button></div>`}</td></tr>`).join("");
+  masterBody.innerHTML=rows.map(x=>`<tr><td><b>${esc(x.id)}</b></td><td>${esc(x.name)}</td><td>${esc(x.note||"-")}</td><td>${masterUsage(currentMaster,x.name)}</td><td>${x.cloudOnly?`<button class="btn small" data-cloud-master-edit="${esc(x.cloudId||x.id)}" data-spare-write>✎ ${t("editBtn")}</button>`:`<div class="row-actions"><button class="btn small" onclick="editMaster('${currentMaster}','${esc(x.id)}')">${t("editBtn")}</button><button class="btn small danger" onclick="deleteMaster('${currentMaster}','${esc(x.id)}')">${t("deleteBtn")}</button></div>`}</td></tr>`).join("");
  }
+ document.querySelectorAll("[data-cloud-master-edit]").forEach(btn=>btn.onclick=()=>{if(currentMaster==="projects"){const d=cloudProjects.find(p=>p.id===btn.dataset.cloudMasterEdit);if(d)openProjectEditor(d)}else{const d=cloudMaster[currentMaster]?.find(m=>m.cloudId===btn.dataset.cloudMasterEdit);if(d)openCloudMasterEditor(currentMaster,d)}});
 }
 function masterUsage(type,name){
  const map={categories:"category",brands:"brand",locations:"location",projects:"project",units:"unit"};const key=map[type];if(!key)return 0;return inventory.filter(x=>x[key]===name).length;
@@ -1770,11 +1825,11 @@ function renderDataHealth(){
  detail.innerHTML=lines.length?`<div class="notice"><b>${t("healthReviewTitle")}:</b><br>${lines.map(esc).join("<br>")}${(h.unknown.length+h.dups.length+h.orphanMov.length+h.mismatch.length)>lines.length?"<br>…":""}</div>`:`<div class="notice" style="background:var(--green-soft);color:var(--green)"><b>${t("healthOk")}</b> · ${t("dataHealthOk")}</div>`;
 }
 
-function openClearWorkspace(){
+function openClearWorkspace(){if(!requireSpareAdmin())return;
  clearWorkspaceConfirmInput.value="";confirmClearWorkspaceBtn.disabled=true;
  clearModalCounts.innerHTML=workspaceCountsHTML();openModal("clearWorkspaceModal");
 }
-function clearWorkspaceData(){
+function clearWorkspaceData(){if(!requireSpareAdmin())return;
  master=structuredClone(DEFAULT_MASTER);inventory=[];movements=[];projectDetails=[];compatibility=[];replacementHistory=[];inverterHistory=[];
  for(const key of [DATA_KEYS.master,DATA_KEYS.inventory,DATA_KEYS.movements,DATA_KEYS.projectDetails,DATA_KEYS.compatibility,DATA_KEYS.replacementHistory,DATA_KEYS.inverterHistory])SafeStorage.removeItem(key);
  currentPage=1;movementFilters={search:"",type:"",project:"",year:"",month:""};projectFilters={search:"",status:"",province:""};
@@ -1784,7 +1839,7 @@ function exportWorkspaceBackup(){
  const payload={app:"Solar Spare Parts Platform",version:APP_VERSION,schemaVersion:DATA_SCHEMA_VERSION,backend:DATA_BACKEND.mode,exportedAt:new Date().toISOString(),master,inventory,movements,projectDetails,compatibility,replacementHistory,inverterHistory,settings:{lang,theme}};
  downloadText(`Solar_Spare_Workspace_Backup_${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(payload,null,2),"application/json;charset=utf-8");toast(t("workspaceBackupExported"));
 }
-function restoreWorkspaceObject(obj){
+function restoreWorkspaceObject(obj){if(!requireSpareAdmin())return;
  if(!obj||!obj.master||!Array.isArray(obj.inventory)||!Array.isArray(obj.movements))throw new Error("Invalid workspace backup");
  const required=["categories","brands","models","locations","projects","units"];if(!required.every(k=>Array.isArray(obj.master[k])))throw new Error("Master Data structure is incomplete");
  master=structuredClone(obj.master);inventory=structuredClone(obj.inventory);movements=structuredClone(obj.movements);projectDetails=structuredClone(obj.projectDetails||[]);compatibility=structuredClone(obj.compatibility||[]);replacementHistory=structuredClone(obj.replacementHistory||[]);inverterHistory=structuredClone(obj.inverterHistory||[]);if(obj.settings?.lang)lang=obj.settings.lang;if(obj.settings?.theme)theme=obj.settings.theme;saveAll();DataRepository.setSetting(DATA_KEYS.lang,lang);DataRepository.setSetting(DATA_KEYS.theme,theme);render();
@@ -1952,17 +2007,29 @@ function historyTable(headers,rows){
 }
 
 function blankProjectDetail(){return {projectCode:"",projectName:"",capacity:"",status:"",codDate:"",epc:"",province:"",location:"",plantType:"",pvModuleModel:"",pvModuleQty:"",inverterBrand:"",inverter1:"",inverterQty1:"",inverter2:"",inverterQty2:"",inverter3:"",inverterQty3:"",optimizerRsd:""}}
-function openProjectEditor(detail=null){
- const d=detail||blankProjectDetail();editingProjectCode=detail?String(d.projectCode||""):"";editingProjectName=detail?String(d.projectName||""):"";projectEditTitle.textContent=detail?t("editProject"):t("addProject");
- peCode.value=d.projectCode||"";peName.value=d.projectName||"";peCapacity.value=d.capacity??"";peStatus.value=d.status||"";peCod.value=d.codDate||"";peEpc.value=d.epc||"";peProvince.value=d.province||"";peLocation.value=d.location||"";pePlantType.value=d.plantType||"";pePvModel.value=d.pvModuleModel||"";pePvQty.value=d.pvModuleQty??"";peInvBrand.value=d.inverterBrand||"";peInv1.value=d.inverter1||"";peInvQty1.value=d.inverterQty1??"";peInv2.value=d.inverter2||"";peInvQty2.value=d.inverterQty2??"";peInv3.value=d.inverter3||"";peInvQty3.value=d.inverterQty3??"";peOptimizer.value=d.optimizerRsd||"";projectRelationNote.textContent=t("projectRelationImpact");openModal("projectEditModal")
+function openProjectEditor(detail=null){if(!requireSpareAdmin())return;
+ const d=detail||blankProjectDetail();editingCloudProjectId=d.cloudOnly?d.id:"";editingProjectCode=detail?String(d.projectCode||""):"";editingProjectName=detail?String(d.projectName||""):"";projectEditTitle.textContent=detail?t("editProject"):t("addProject");
+ peCode.value=d.projectCode||"";peName.value=d.projectName||"";peCapacity.value=d.capacity??"";peStatus.value=d.status||"";peCod.value=d.codDate||"";peEpc.value=d.epc||"";peProvince.value=d.province||"";peLocation.value=d.location||"";pePlantType.value=d.plantType||"";pePvModel.value=d.pvModuleModel||"";pePvQty.value=d.pvModuleQty??"";peInvBrand.value=d.inverterBrand||"";peInv1.value=d.inverter1||"";peInvQty1.value=d.inverterQty1??"";peInv2.value=d.inverter2||"";peInvQty2.value=d.inverterQty2??"";peInv3.value=d.inverter3||"";peInvQty3.value=d.inverterQty3??"";peOptimizer.value=d.optimizerRsd||"";
+ peCode.disabled=!!editingCloudProjectId;peName.disabled=!!editingCloudProjectId&&d.matchStatus==="linked";peCapacity.disabled=!!editingCloudProjectId&&d.matchStatus==="linked";
+ projectRelationNote.textContent=editingCloudProjectId?"☁ บันทึกการแก้ไขลงฐานข้อมูล · โครงการที่เชื่อม Central แล้วล็อกชื่อและ Capacity":t("projectRelationImpact");openModal("projectEditModal")
 }
 function projectEditorValue(){return ensureProjectIdentity({projectCode:peCode.value.trim(),projectName:peName.value.trim(),capacity:peCapacity.value===""?"":Number(peCapacity.value),status:peStatus.value.trim(),codDate:peCod.value.trim(),epc:peEpc.value.trim(),province:peProvince.value.trim(),location:peLocation.value.trim(),plantType:pePlantType.value.trim(),pvModuleModel:pePvModel.value.trim(),pvModuleQty:pePvQty.value===""?"":Number(pePvQty.value),inverterBrand:peInvBrand.value.trim(),inverter1:peInv1.value.trim(),inverterQty1:peInvQty1.value===""?"":Number(peInvQty1.value),inverter2:peInv2.value.trim(),inverterQty2:peInvQty2.value===""?"":Number(peInvQty2.value),inverter3:peInv3.value.trim(),inverterQty3:peInvQty3.value===""?"":Number(peInvQty3.value),optimizerRsd:peOptimizer.value.trim(),source:"manual"},"manual")}
-function applyProjectEditorSave(d,mode="update",target=null){let current=target||((editingProjectCode||editingProjectName)?findProjectDetail(editingProjectName,editingProjectCode):null);if(current){const oldName=current.projectName,oldCode=current.projectCode;mergeProjectRecord(current,d,mode);propagateProjectChange(oldName,oldCode,current)}else{projectDetails.push(d);syncProjectMasterEntry(d)}normalizeProjectReferences();saveAll();closeModal("projectEditModal");closeModal("manualProjectDuplicateModal");render();toast(t("savedMsg"))}
+function applyProjectEditorSave(d,mode="update",target=null){if(!requireSpareAdmin())return;let current=target||((editingProjectCode||editingProjectName)?findProjectDetail(editingProjectName,editingProjectCode):null);if(current){const oldName=current.projectName,oldCode=current.projectCode;mergeProjectRecord(current,d,mode);propagateProjectChange(oldName,oldCode,current)}else{projectDetails.push(d);syncProjectMasterEntry(d)}normalizeProjectReferences();saveAll();closeModal("projectEditModal");closeModal("manualProjectDuplicateModal");render();toast(t("savedMsg"))}
 function openManualProjectDuplicate(existing,incoming){pendingManualProjectConflict={existing,incoming};manualDuplicateBody.innerHTML=`<div class="duplicate-alert"><div class="duplicate-alert-icon">!</div><div><b>${esc(t("duplicateProjectEntryTitle"))}</b><p>${esc(existing.projectName||"")} · ${esc(existing.projectCode||"—")}</p></div></div><div class="manual-duplicate-compare"><div class="manual-duplicate-card"><b>Existing</b><p>${esc(existing.projectName||"—")}<br>${esc(existing.capacity||"—")} kWp · ${esc(existing.province||"—")}</p></div><div class="manual-duplicate-card"><b>New / Edited</b><p>${esc(incoming.projectName||"—")}<br>${esc(incoming.capacity||"—")} kWp · ${esc(incoming.province||"—")}</p></div></div>`;openModal("manualProjectDuplicateModal")}
-function saveProjectEditor(){const d=projectEditorValue();if(!d.projectName)return;const current=(editingProjectCode||editingProjectName)?findProjectDetail(editingProjectName,editingProjectCode):null;const duplicate=projectConflictFor(d,current);if(duplicate){openManualProjectDuplicate(duplicate,d);return}applyProjectEditorSave(d,"update",current)}
+async function saveProjectEditor(){if(!requireSpareAdmin())return;const d=projectEditorValue();if(!d.projectName)return;if(editingCloudProjectId){
+  const current=cloudProjects.find(p=>p.id===editingCloudProjectId);if(!current)return;
+  if(cloudProjects.some(p=>p.id!==current.id&&normText(p.projectName)===normText(d.projectName))||projectDetails.some(p=>normText(p.projectName)===normText(d.projectName))){alert(lang==="th"?"ชื่อโครงการซ้ำ":"Duplicate project name");return}
+  const fields=["status","codDate","epc","location","plantType","pvModuleModel","pvModuleQty","inverterBrand","inverter1","inverterQty1","inverter2","inverterQty2","inverter3","inverterQty3","optimizerRsd"];
+  const details={...current.details};fields.forEach(key=>details[key]=d[key]);details.province=d.province||null;
+  const update={details,province:d.province||null,updated_at:new Date().toISOString()};
+  if(current.matchStatus!=="linked"){update.project_name=d.projectName;update.capacity_kwp=d.capacity===""?null:d.capacity;details.projectName=d.projectName;details.capacityKwp=update.capacity_kwp}
+  const submit=projectEditForm.querySelector('[type="submit"]');submit.disabled=true;
+  try{const {data,error}=await SolarCloud.getClient().from("spare_project_catalog").update(update).eq("id",editingCloudProjectId).eq("workspace_id",spareWorkspaceId).select("id");if(error)throw error;if(!data?.length)throw new Error("บันทึกไม่สำเร็จ: ไม่พบโครงการหรือไม่มีสิทธิ์");editingCloudProjectId="";closeModal("projectEditModal");await loadCloudCatalogue();toast(t("savedMsg"))}catch(err){alert("บันทึกโครงการไม่สำเร็จ: "+err.message)}finally{submit.disabled=false}
+  return;
+ }const current=(editingProjectCode||editingProjectName)?findProjectDetail(editingProjectName,editingProjectCode):null;const duplicate=projectConflictFor(d,current);if(duplicate){openManualProjectDuplicate(duplicate,d);return}applyProjectEditorSave(d,"update",current)}
 
-function openProjectDetail(name,projectCode=""){
- const d=findProjectDetail(name,projectCode)||{};
+function openProjectDetail(name,projectCode="",supplied=null){
+ const d=supplied||findProjectDetail(name,projectCode)||{};
  const code=String(d.projectCode||"").trim();
  const pvHist=replacementHistory.filter(x=>sameProject(x,d,name)).slice().sort((a,b)=>String(b.replaceDate||b.foundDate||"").localeCompare(String(a.replaceDate||a.foundDate||"")));
  const invHist=inverterHistory.filter(x=>sameProject(x,d,name)).slice().sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
@@ -2013,7 +2080,7 @@ function openProjectDetail(name,projectCode=""){
      ${historyTable([[t("dateLabel"),"date"],[t("typeLabel"),"type"],[t("partName"),"part"],[t("qtyLabel"),"qty"],[t("referenceLabel"),"ref"],[t("remarkLabel"),"remark"]],movHist.map(x=>({...x,type:movementText(x.type)})))}
    </div>
  </div>`;
- projectDetailEditBtn.dataset.projectCode=code||"";projectDetailEditBtn.dataset.projectName=d.projectName||name||"";openModal("projectDetailModal");
+ projectDetailEditBtn.dataset.projectCode=code||"";projectDetailEditBtn.dataset.projectName=d.projectName||name||"";projectDetailEditBtn.dataset.cloudId=d.cloudOnly?d.id:"";openModal("projectDetailModal");
 }
 function renderAnalytics(){
  const projectEl=document.getElementById("projectChart"),equipmentEl=document.getElementById("equipmentChart");if(!projectEl||!equipmentEl)return;ensureAnalyticsSelectors();
@@ -2047,16 +2114,16 @@ function showPage(id){
 }
 function openStatus(type){showPage("inventory");clearAllFilters();if(type==="Out of Stock"||type==="Low Stock")statusFilter.value=type;currentPage=1;renderInventory()}
 function clearAllFilters(){searchInput.value="";categoryFilter.value="";brandFilter.value="";modelFilter.value="";locationFilter.value="";statusFilter.value=""}
-function newSpare(){
+function newSpare(){if(!requireSpareAdmin())return;
  editingSpareId=null;spareModalTitle.textContent=t("addSpare");
  spareForm.reset();sId.value=nextId("SP",inventory);fillSpareFormMasters();openModal("spareModal")
 }
-function editSpare(id){
+function editSpare(id){if(!requireSpareAdmin())return;
  const x=inventory.find(v=>v.id===id);if(!x)return;editingSpareId=id;spareModalTitle.textContent=lang==="th"?"แก้ไขอะไหล่":"Edit Spare Part";
  fillSpareFormMasters();sId.value=x.id;sPart.value=x.part;sCategory.value=x.category||"";sBrand.value=x.brand||"";updateModelSelect(x.model||"");sUnit.value=x.unit||"";sLocation.value=x.location||"";sProject.value=x.project||"";
  sAvailable.value=+x.available||0;sReserved.value=+x.reserved||0;sRepair.value=+x.repair||0;sMin.value=+x.min||0;sNote.value=x.note||"";openModal("spareModal")
 }
-function deleteSpare(id){
+function deleteSpare(id){if(!requireSpareAdmin())return;
  const x=inventory.find(v=>v.id===id);if(!x)return;if(!confirm(`${t("deleteConfirm")}: ${x.id} - ${x.part}?`))return;inventory=inventory.filter(v=>v.id!==id);saveAll();render();toast(t("deletedMsg"))
 }
 function viewSpare(id){
@@ -2066,8 +2133,8 @@ function viewSpare(id){
  <div class="simple-grid" style="margin-bottom:14px"><div class="card simple-card"><h3>${t("detailClassification")}</h3><p>${t("categoryLabel")}: ${esc(x.category||"-")}</p><p>${t("unitLabel")}: ${esc(x.unit||"-")}</p></div><div class="card simple-card"><h3>${t("detailProduct")}</h3><p>${t("brandLabel")}: ${esc(x.brand||"-")}</p><p>${t("modelLabel")}: ${esc(x.model||"-")}</p><p>${t("compatibleModelsLabel")}: ${esc(x.compatibleModels||"-")}</p></div><div class="card simple-card"><h3>${t("detailAllocation")}</h3><p>${t("location")}: ${esc(x.location||"-")}</p><p>${t("projectLabel")}: ${esc(x.project||"-")}</p></div></div>
  <div class="card-title" style="margin-bottom:8px">${t("movementHistory")}</div><div class="history">${hist.map(m=>`<div class="history-row"><div>${esc(m.date)}</div><div><b>${esc(movementText(m.type))}</b></div><div>${m.qty}</div><div>${esc(m.project||m.ref||m.fromTo||"-")}</div></div>`).join("")||`<div style="padding:14px;color:var(--muted)">${t("noMovement")}</div>`}</div>`;openModal("detailModal")
 }
-function openMovementFor(id){fillMovementMasters();mSpare.value=id;movementForm.reset();fillMovementMasters();mSpare.value=id;mQty.value=1;updateMovementHint();openModal("movementModal")}
-function newMovement(){fillMovementMasters();movementForm.reset();fillMovementMasters();mQty.value=1;updateMovementHint();openModal("movementModal")}
+function openMovementFor(id){if(!requireSpareAdmin())return;fillMovementMasters();mSpare.value=id;movementForm.reset();fillMovementMasters();mSpare.value=id;mQty.value=1;updateMovementHint();openModal("movementModal")}
+function newMovement(){if(!requireSpareAdmin())return;fillMovementMasters();movementForm.reset();fillMovementMasters();mQty.value=1;updateMovementHint();openModal("movementModal")}
 function updateMovementHint(){
  const x=inventory.find(v=>v.id===mSpare.value);if(!x){movementHint.textContent="";return}movementHint.textContent=`${t("movementHintAvailable")} ${+x.available||0} · ${t("movementHintReserved")} ${+x.reserved||0} · ${t("movementHintRepair")} ${+x.repair||0} · ${t("movementHintMin")} ${+x.min||0}`;
 }
@@ -2081,14 +2148,20 @@ function applyMovement(x,type,qty){
  else if(type==="Repair Return"){if(x.repair<qty)return t("repairQtyNotEnough");x.repair-=qty;x.available+=qty}
  return"";
 }
-function editMaster(type,id){
+function editMaster(type,id){if(!requireSpareAdmin())return;
+ editingCloudMasterId="";
  const x=master[type].find(v=>v.id===id);if(!x)return;editingMasterId=id;mdType.value=type;mdType.disabled=true;mdName.value=x.name;mdNote.value=x.note||"";mdBrand.innerHTML=opts(master.brands,x.brand||"");brandRelationField.classList.toggle("hidden",type!=="models");masterModalTitle.textContent=t("editMasterTitle");openModal("masterModal")
 }
-function deleteMaster(type,id){
+function deleteMaster(type,id){if(!requireSpareAdmin())return;
  const x=master[type].find(v=>v.id===id);if(!x)return;const use=type==="models"?inventory.filter(v=>v.model===x.name).length:masterUsage(type,x.name);if(use>0){alert(`${t("cannotDeleteUsed")}: ${x.name} (${use})`);return}if(!confirm(`${t("deleteConfirm")}: ${x.name}?`))return;master[type]=master[type].filter(v=>v.id!==id);saveAll();render();toast(t("masterDeleted"))
 }
-function openMasterAdd(){
+function openMasterAdd(){if(!requireSpareAdmin())return;
+ editingCloudMasterId="";
  editingMasterId=null;masterForm.reset();mdType.disabled=false;mdType.value=currentMaster;mdBrand.innerHTML=opts(master.brands);brandRelationField.classList.toggle("hidden",currentMaster!=="models");masterModalTitle.textContent=t("addMasterTitle");openModal("masterModal")
+}
+function openCloudMasterEditor(type,row){
+ if(!requireSpareAdmin()||!row?.cloudId)return;
+ editingCloudMasterId=row.cloudId;editingMasterId=null;mdType.value=type;mdType.disabled=true;mdName.value=row.name;mdNote.value=row.note||"";mdBrand.innerHTML=opts([...master.brands,...cloudMaster.brands],row.brand||"");brandRelationField.classList.toggle("hidden",type!=="models");masterModalTitle.textContent=t("editMasterTitle")+" · ☁";openModal("masterModal")
 }
 function prefixFor(type){return({categories:"CAT",brands:"BR",models:"MD",locations:"LOC",projects:"PRJ",units:"UNIT"})[type]}
 function csvEscape(v){v=String(v??"");return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v}
@@ -2208,8 +2281,8 @@ function openImportDuplicateConflict(p,fileName){pendingExcelImport=p;pendingImp
 function resolveImportConflict(action){if(!pendingExcelImport)return;pendingExcelImport.conflictAction=action;closeModal("importDuplicateModal");renderExcelImportPreview(pendingExcelImport,pendingImportFileName)}
 function importStatus(text){const el=document.getElementById("importCenterStatus");if(el)el.innerHTML=`<span class="import-center-status-dot"></span><span>${esc(text)}</span>`}
 function prepareCSVImport(text){const rows=parseCSV(text);if(rows.length<2)throw new Error("CSV has no data");const headers=rows[0].map(x=>String(x||"").trim()),lower=headers.map(headerNorm);let name="";if(lower.some(h=>["project name","project","customer name"].includes(h)))name="Projects";else if(lower.includes("spare id")||lower.includes("part name"))name="Inventory";else if(lower.includes("type")&&lower.includes("name"))name="Master_Data";else if(lower.includes("movement id")&&lower.includes("date"))name="Historical_Movements";else throw new Error(t("unrecognizedImport"));return prepareExcelImport({sheetNames:[name],sheets:{[name]:rows}})}
-async function handleUnifiedImportFile(file){if(!file)return;pendingImportFileName=file.name;importStatus(`${file.name} · reading...`);try{const ext=(file.name.split(".").pop()||"").toLowerCase();if(ext==="json"){const obj=JSON.parse(await file.text());if(confirm(t("restoreConfirm"))){restoreWorkspaceObject(obj);toast(t("workspaceRestored"));importStatus(`${file.name} · restored`)}return}let p;if(ext==="csv")p=prepareCSVImport(await file.text());else p=prepareExcelImport(await MiniXLSX.read(file));pendingExcelImport=p;importStatus(`${file.name} · ready`);if(p.duplicates?.length)openImportDuplicateConflict(p,file.name);else renderExcelImportPreview(p,file.name)}catch(err){pendingExcelImport=null;alert(t("importFailed")+": "+err.message);importStatus(`${file.name} · error`)}}
-function chooseUnifiedImport(){unifiedImportInput.click()}
+async function handleUnifiedImportFile(file){if(!file||!requireSpareAdmin())return;pendingImportFileName=file.name;importStatus(`${file.name} · reading...`);try{const ext=(file.name.split(".").pop()||"").toLowerCase();if(ext==="json"){const obj=JSON.parse(await file.text());if(confirm(t("restoreConfirm"))){restoreWorkspaceObject(obj);toast(t("workspaceRestored"));importStatus(`${file.name} · restored`)}return}let p;if(ext==="csv")p=prepareCSVImport(await file.text());else p=prepareExcelImport(await MiniXLSX.read(file));pendingExcelImport=p;importStatus(`${file.name} · ready`);if(p.duplicates?.length)openImportDuplicateConflict(p,file.name);else renderExcelImportPreview(p,file.name)}catch(err){pendingExcelImport=null;alert(t("importFailed")+": "+err.message);importStatus(`${file.name} · error`)}}
+function chooseUnifiedImport(){if(requireSpareAdmin())unifiedImportInput.click()}
 function renderExcelImportPreview(p,fileName){
  excelImportFileName.textContent=fileName||"";const strategy=document.getElementById("importPreviewStrategy");if(strategy){strategy.classList.toggle("hidden",!(p.duplicates&&p.duplicates.length));strategy.textContent=(p.duplicates&&p.duplicates.length)?`${t("conflictStrategy")}: ${String(p.conflictAction||"merge").toUpperCase()} · ${p.duplicates.length} duplicate project(s)`:""}
  const cards=[
@@ -2229,7 +2302,7 @@ function renderExcelImportPreview(p,fileName){
  openModal("excelImportModal");
 }
 function closeExcelImportPreview(){pendingExcelImport=null;closeModal("excelImportModal");excelImportInput.value=""}
-function mergeExcelImport(p){
+function mergeExcelImport(p){if(!requireSpareAdmin())return;
  if(!p||p.errors.length)throw new Error("Import has validation errors");
  for(const m of p.master){const arr=master[m.type];let x=arr.find(v=>normText(v.name)===normText(m.name));if(x){if(m.brand)x.brand=m.brand;if(m.note)x.note=m.note}else arr.push({id:m.id&&!arr.some(v=>v.id===m.id)?m.id:nextId(prefixFor(m.type),arr),name:m.name,brand:m.brand,note:m.note})}
  const action=p.conflictAction||"merge";for(const raw of p.projects){const d=ensureProjectIdentity({...raw},"import");let x=projectConflictFor(d);if(x)mergeProjectRecord(x,d,action);else projectDetails.push(d);const effective=x||d;if(effective.projectName&&!master.projects.some(v=>normText(v.name)===normText(effective.projectName)))master.projects.push({id:nextId("PRJ",master.projects),name:effective.projectName,projectCode:effective.projectCode||"",note:effective.projectCode?`PPA Contract No.: ${effective.projectCode}`:""})}
@@ -2244,17 +2317,24 @@ async function importExcelFile(file){
 function parseCSV(text){
  const rows=[];let row=[],cell="",q=false;for(let i=0;i<text.length;i++){const c=text[i],n=text[i+1];if(c==='"'&&q&&n==='"'){cell+='"';i++}else if(c==='"'){q=!q}else if(c===","&&!q){row.push(cell);cell=""}else if((c==="\n"||c==="\r")&&!q){if(c==="\r"&&n==="\n")i++;row.push(cell);if(row.some(x=>x.trim()!==""))rows.push(row);row=[];cell=""}else cell+=c}row.push(cell);if(row.some(x=>x.trim()!==""))rows.push(row);return rows
 }
-function importMasterText(text){
+function importMasterText(text){if(!requireSpareAdmin())return;
  const rows=parseCSV(text);if(rows.length<2)throw new Error("CSV has no data");const h=rows[0].map(x=>x.trim().toLowerCase());let added=0,updated=0;
  rows.slice(1).forEach(r=>{const o={};h.forEach((k,i)=>o[k]=r[i]||"");const type=o.type;if(!master[type])return;const found=master[type].find(x=>x.id===o.id||x.name.toLowerCase()===String(o.name).toLowerCase());if(found){found.name=o.name||found.name;found.brand=o.brand||found.brand||"";found.note=o.note||found.note||"";updated++}else if(o.name){master[type].push({id:o.id||nextId(prefixFor(type),master[type]),name:o.name,brand:o.brand||"",note:o.note||""});added++}});
  saveAll();render();return{added,updated}
 }
-function importInventoryText(text){
+function importInventoryText(text){if(!requireSpareAdmin())return;
  const rows=parseCSV(text);if(rows.length<2)throw new Error("CSV has no data");const h=rows[0].map(x=>x.trim().toLowerCase());let added=0,updated=0;
  rows.slice(1).forEach(r=>{const o={};h.forEach((k,i)=>o[k]=r[i]||"");const id=o["spare id"]||o["id"];const part=o["part name"]||o["part"];if(!id||!part)return;let x=inventory.find(v=>v.id===id);const val={id,part,category:o.category||"",brand:o.brand||"",model:o.model||"",unit:o.unit||"pcs",available:+o.available||0,reserved:+o.reserved||0,repair:+o.repair||0,min:+o["min stock"]||+o.min||0,location:o.location||"",project:o.project||"",note:o.note||""};if(x){Object.assign(x,val);updated++}else{inventory.push(val);added++}});
  saveAll();render();return{added,updated}
 }
 document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>showPage(b.dataset.page));
+const projectDock=document.getElementById("projects");
+function toggleProjectDock(collapsed){projectDock.classList.toggle("spare-dock-closed",collapsed);document.getElementById("spareFocusTable").setAttribute("aria-pressed",collapsed?"true":"false")}
+document.getElementById("spareDockToggle").onclick=()=>toggleProjectDock(true);
+document.getElementById("spareDockReveal").onclick=()=>toggleProjectDock(false);
+document.getElementById("spareFocusTable").onclick=()=>toggleProjectDock(!projectDock.classList.contains("spare-dock-closed"));
+document.addEventListener("click",e=>{if(spareRole==="admin")return;const control=e.target.closest("[data-spare-write]");if(control){e.preventDefault();e.stopImmediatePropagation();requireSpareAdmin()}},true);
+document.addEventListener("submit",e=>{if(spareRole==="admin"||!["spareForm","movementForm","projectEditForm","masterForm"].includes(e.target.id))return;e.preventDefault();e.stopImmediatePropagation();requireSpareAdmin()},true);
 sidebarToggle.onclick=()=>{sidebarCollapsed=!sidebarCollapsed;SafeStorage.setItem(SIDEBAR_STATE_KEY,sidebarCollapsed?"1":"0");applySidebarState()};
 guideTopBtn.onclick=()=>showPage("guide");
 document.querySelectorAll("#masterNav button").forEach(b=>b.onclick=()=>{currentMaster=b.dataset.master;document.querySelectorAll("#masterNav button").forEach(x=>x.classList.toggle("active",x===b));renderMaster()});
@@ -2272,7 +2352,7 @@ projectStatusFilter.addEventListener("change",()=>{projectFilters.status=project
 projectProvinceFilter.addEventListener("change",()=>{projectFilters.province=projectProvinceFilter.value;renderProjects()});
 projectClearFilters.onclick=()=>{projectFilters={search:"",status:"",province:""};projectSearch.value="";renderProjects()};
 projectEditForm.addEventListener("submit",e=>{e.preventDefault();saveProjectEditor()});
-projectDetailEditBtn.onclick=()=>{const d=findProjectDetail(projectDetailEditBtn.dataset.projectName||"",projectDetailEditBtn.dataset.projectCode||"");if(d){closeModal("projectDetailModal");openProjectEditor(d)}};
+projectDetailEditBtn.onclick=()=>{const d=projectDetailEditBtn.dataset.cloudId?cloudProjects.find(p=>p.id===projectDetailEditBtn.dataset.cloudId):findProjectDetail(projectDetailEditBtn.dataset.projectName||"",projectDetailEditBtn.dataset.projectCode||"");if(d){closeModal("projectDetailModal");openProjectEditor(d)}};
 clearWorkspaceBtn.onclick=openClearWorkspace;
 clearWorkspaceConfirmInput.addEventListener("input",()=>{confirmClearWorkspaceBtn.disabled=clearWorkspaceConfirmInput.value.trim().toUpperCase()!=="DELETE"});
 confirmClearWorkspaceBtn.onclick=()=>{if(clearWorkspaceConfirmInput.value.trim().toUpperCase()==="DELETE")clearWorkspaceData()};
@@ -2287,11 +2367,28 @@ movementClearFilters.onclick=()=>{
  movementSearch.value="";
  renderMovements();
 };sBrand.addEventListener("change",()=>updateModelSelect());
-spareForm.addEventListener("submit",e=>{e.preventDefault();const id=sId.value.trim();if(inventory.some(x=>x.id===id&&x.id!==editingSpareId)){alert(t("duplicateSpareError"));return}const val={id,part:sPart.value.trim(),category:sCategory.value,brand:sBrand.value,model:sModel.value,unit:sUnit.value,available:+sAvailable.value||0,reserved:+sReserved.value||0,repair:+sRepair.value||0,min:+sMin.value||0,location:sLocation.value,project:sProject.value,projectCode:projectCodeForName(sProject.value),note:sNote.value.trim()};if(editingSpareId){const x=inventory.find(v=>v.id===editingSpareId);if(x){const oldId=x.id,oldPart=x.part;Object.assign(x,val);movements.forEach(m=>{if(m.spareId===oldId){m.spareId=id;if(m.part===oldPart)m.part=val.part}})}}else inventory.push(val);saveAll();closeModal("spareModal");render();toast(t("savedMsg"))});
+spareForm.addEventListener("submit",e=>{e.preventDefault();if(!requireSpareAdmin())return;const id=sId.value.trim();if(inventory.some(x=>x.id===id&&x.id!==editingSpareId)){alert(t("duplicateSpareError"));return}const val={id,part:sPart.value.trim(),category:sCategory.value,brand:sBrand.value,model:sModel.value,unit:sUnit.value,available:+sAvailable.value||0,reserved:+sReserved.value||0,repair:+sRepair.value||0,min:+sMin.value||0,location:sLocation.value,project:sProject.value,projectCode:projectCodeForName(sProject.value),note:sNote.value.trim()};if(editingSpareId){const x=inventory.find(v=>v.id===editingSpareId);if(x){const oldId=x.id,oldPart=x.part;Object.assign(x,val);movements.forEach(m=>{if(m.spareId===oldId){m.spareId=id;if(m.part===oldPart)m.part=val.part}})}}else inventory.push(val);saveAll();closeModal("spareModal");render();toast(t("savedMsg"))});
 mSpare.addEventListener("change",updateMovementHint);mType.addEventListener("change",updateMovementHint);
-movementForm.addEventListener("submit",e=>{e.preventDefault();const x=inventory.find(v=>v.id===mSpare.value);if(!x)return;const qty=+mQty.value||0,err=applyMovement(x,mType.value,qty);if(err){alert(err);return}const project=mProject.value;movements.push({id:nextId("MOV",movements),date:nowStr(),type:mType.value,spareId:x.id,part:x.part,category:x.category||"",brand:x.brand||"",model:x.model||"",unit:x.unit||"",qty,project,projectCode:projectCodeForName(project),fromTo:mFromTo.value.trim(),ref:mRef.value.trim(),remark:mRemark.value.trim()});saveAll();closeModal("movementModal");render();toast(t("movementSavedMsg"))});
+movementForm.addEventListener("submit",e=>{e.preventDefault();if(!requireSpareAdmin())return;const x=inventory.find(v=>v.id===mSpare.value);if(!x)return;const qty=+mQty.value||0,err=applyMovement(x,mType.value,qty);if(err){alert(err);return}const project=mProject.value;movements.push({id:nextId("MOV",movements),date:nowStr(),type:mType.value,spareId:x.id,part:x.part,category:x.category||"",brand:x.brand||"",model:x.model||"",unit:x.unit||"",qty,project,projectCode:projectCodeForName(project),fromTo:mFromTo.value.trim(),ref:mRef.value.trim(),remark:mRemark.value.trim()});saveAll();closeModal("movementModal");render();toast(t("movementSavedMsg"))});
 addMasterBtn.onclick=openMasterAdd;mdType.addEventListener("change",()=>{brandRelationField.classList.toggle("hidden",mdType.value!=="models");mdBrand.innerHTML=opts(master.brands)});
-masterForm.addEventListener("submit",e=>{e.preventDefault();const type=mdType.value,name=mdName.value.trim();if(!name)return;const dup=master[type].find(x=>x.name.toLowerCase()===name.toLowerCase()&&x.id!==editingMasterId);if(dup){alert(t("duplicateMasterError"));return}if(editingMasterId){const x=master[type].find(v=>v.id===editingMasterId);if(x){const oldName=x.name;propagateMasterRename(type,oldName,name);x.name=name;x.brand=type==="models"?mdBrand.value:"";x.note=mdNote.value.trim()}}else master[type].push({id:nextId(prefixFor(type),master[type]),name,brand:type==="models"?mdBrand.value:"",note:mdNote.value.trim()});mdType.disabled=false;saveAll();currentMaster=type;document.querySelectorAll("#masterNav button").forEach(b=>b.classList.toggle("active",b.dataset.master===type));closeModal("masterModal");render();toast(t("masterSaved"))});
+masterForm.addEventListener("submit",async e=>{
+ e.preventDefault();if(!requireSpareAdmin())return;
+ const type=mdType.value,name=mdName.value.trim();if(!name)return;
+ if(editingCloudMasterId){
+  if([...master[type],...(cloudMaster[type]||[])].some(x=>x.cloudId!==editingCloudMasterId&&normText(x.name)===normText(name))){alert(t("duplicateMasterError"));return}
+  const submit=masterForm.querySelector('[type="submit"]');submit.disabled=true;
+  try{
+   const {data,error}=await SolarCloud.getClient().from("spare_master_data").update({name,brand:type==="models"?mdBrand.value:null,note:mdNote.value.trim()}).eq("id",editingCloudMasterId).eq("workspace_id",spareWorkspaceId).select("id");
+   if(error)throw error;if(!data?.length)throw new Error("ไม่พบข้อมูลหรือไม่มีสิทธิ์แก้ไข");
+   editingCloudMasterId="";mdType.disabled=false;closeModal("masterModal");await loadCloudCatalogue();toast(t("masterSaved"));
+  }catch(err){alert("บันทึก Master Data ไม่สำเร็จ: "+err.message)}finally{submit.disabled=false}
+  return;
+ }
+ const dup=master[type].find(x=>x.name.toLowerCase()===name.toLowerCase()&&x.id!==editingMasterId);if(dup){alert(t("duplicateMasterError"));return}
+ if(editingMasterId){const x=master[type].find(v=>v.id===editingMasterId);if(x){const oldName=x.name;propagateMasterRename(type,oldName,name);x.name=name;x.brand=type==="models"?mdBrand.value:"";x.note=mdNote.value.trim()}}
+ else master[type].push({id:nextId(prefixFor(type),master[type]),name,brand:type==="models"?mdBrand.value:"",note:mdNote.value.trim()});
+ mdType.disabled=false;saveAll();currentMaster=type;document.querySelectorAll("#masterNav button").forEach(b=>b.classList.toggle("active",b.dataset.master===type));closeModal("masterModal");render();toast(t("masterSaved"))
+});
 masterSearch.addEventListener("input",renderMaster);masterExportBtn.onclick=exportMasterCSV;chooseImportFileBtn.onclick=chooseUnifiedImport;chooseImportFileBtn2.onclick=chooseUnifiedImport;inventoryOpenImportCenter.onclick=()=>showPage("importCenter");masterOpenImportCenter.onclick=()=>showPage("importCenter");freshImportBtn.onclick=()=>showPage("importCenter");unifiedImportInput.addEventListener("change",async e=>{const f=e.target.files[0];if(f)await handleUnifiedImportFile(f);e.target.value=""});importDropZone.addEventListener("dragover",e=>{e.preventDefault();importDropZone.classList.add("dragover")});importDropZone.addEventListener("dragleave",()=>importDropZone.classList.remove("dragover"));importDropZone.addEventListener("drop",e=>{e.preventDefault();importDropZone.classList.remove("dragover");handleUnifiedImportFile(e.dataTransfer.files?.[0])});duplicateImportCancel.onclick=()=>{pendingExcelImport=null;closeModal("importDuplicateModal");importStatus(t("importReady"))};duplicateImportCancel2.onclick=duplicateImportCancel.onclick;document.querySelectorAll("[data-conflict-action]").forEach(b=>b.onclick=()=>resolveImportConflict(b.dataset.conflictAction));manualDuplicateCancel.onclick=()=>{pendingManualProjectConflict=null;closeModal("manualProjectDuplicateModal")};manualDuplicateCancel2.onclick=manualDuplicateCancel.onclick;manualDuplicateMerge.onclick=()=>{if(pendingManualProjectConflict)applyProjectEditorSave(pendingManualProjectConflict.incoming,"merge",pendingManualProjectConflict.existing);pendingManualProjectConflict=null};manualDuplicateUpdate.onclick=()=>{if(pendingManualProjectConflict)applyProjectEditorSave(pendingManualProjectConflict.incoming,"update",pendingManualProjectConflict.existing);pendingManualProjectConflict=null};
 masterImportBtn.onclick=()=>masterCSVInput.click();excelImportBtn.onclick=()=>excelImportInput.click();
 /* freshImportBtn handled by Import Center */inventoryImportBtn.onclick=()=>inventoryCSVInput.click();
