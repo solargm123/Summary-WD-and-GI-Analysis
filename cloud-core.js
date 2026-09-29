@@ -372,6 +372,12 @@
     if(error){console.warn('Cannot load GI overrides for PR:',error.message);return{}}
     return cloneJson(data?.user_state?.overrides||{});
   }
+  async function loadCapacityOverridesForPr(){
+    if(!currentMembership?.workspace_id)return{};
+    const {data,error}=await getClient().from('analysis_projects').select('user_state').eq('workspace_id',currentMembership.workspace_id).eq('analysis_type','working_day').is('deleted_at',null).order('updated_at',{ascending:false}).limit(1).maybeSingle();
+    if(error){console.warn('Cannot load Working Days capacity overrides for PR:',error.message);return{}}
+    return cloneJson(data?.user_state?.overrides||{});
+  }
   async function fetchPrProjectStarts(){
     const {data,error}=await getClient().rpc('get_pr_project_starts',{p_workspace:currentMembership.workspace_id});if(error)throw error;return data||{};
   }
@@ -402,7 +408,7 @@
       if(currentProject.dataset_id){
         let shared=null,summary=bootstrapSummary;if(!summary){const summaryResult=await getClient().rpc('get_central_summary',{p_workspace:currentMembership.workspace_id});if(!summaryResult.error)summary=summaryResult.data}
         const localView=loadLocalViewState(),restoredUserState=mergeRemoteWithLocal(currentProject.user_state||{},localView);
-        if(expectedType==='pr_report')restoredUserState.giOverrides=await loadGiOverridesForPr();
+        if(expectedType==='pr_report'){const [gi,capacity]=await Promise.all([loadGiOverridesForPr(),loadCapacityOverridesForPr()]);restoredUserState.giOverrides=gi;restoredUserState.capacityOverrides=capacity}
         const preferredMonth=(expectedType==='working_day'||expectedType==='global_irradiance'||expectedType==='pr_report')?(expectedType==='pr_report'?(localView.month||currentProject.user_state?.month||currentProject.period_key||String(summary?.date_end||'').slice(0,7)):(localView.selectedMonth||localView.selectedPeriod||currentProject.user_state?.selectedMonth||currentProject.user_state?.selectedPeriod||String(summary?.date_end||'').slice(0,7))):null;
         const key=cacheKey(currentMembership.workspace_id,expectedType,summary)+(preferredMonth?':'+preferredMonth:''),cached=await cacheRead(key);
         if(cached?.payload&&!(expectedType==='pr_report'&&!cached.payload.projectStarts)){shared=cached.payload;setStatus('กำลังเปิดข้อมูลจาก Cache...','busy')}
@@ -427,20 +433,33 @@
     const type=currentProject?.analysis_type;
     if(!currentProject||!adapter||!['working_day','global_irradiance','pr_report'].includes(type)||!/^\d{4}-\d{2}$/.test(String(month||'')))return false;
     const rpcName=type==='working_day'?'get_working_day_month':type==='global_irradiance'?'get_global_irradiance_month':null;
-    const captured=adapter.capture(),summaryResult=await getClient().rpc('get_central_summary',{p_workspace:currentMembership.workspace_id}),summary=summaryResult.data||{},key=cacheKey(currentMembership.workspace_id,type,summary)+':'+month,cached=await cacheRead(key);
+    const captured={userState:adapter.captureViewState?.()||adapter.capture().userState},summaryResult=await getClient().rpc('get_central_summary',{p_workspace:currentMembership.workspace_id}),summary=summaryResult.data||{},key=cacheKey(currentMembership.workspace_id,type,summary)+':'+month,cached=await cacheRead(key);
     setStatus('กำลังโหลดเดือน '+month+'...','busy');let payload=cached?.payload&&!(type==='pr_report'&&!cached.payload.projectStarts)?cached.payload:null;
     if(!payload){if(type==='pr_report')payload=await fetchPrReportMonth(month);else{const result=await getClient().rpc(rpcName,{p_workspace:currentMembership.workspace_id,p_month:month});if(result.error)throw result.error;payload=result.data}cacheWrite(key,{savedAt:Date.now(),payload})}
-    const nextUser={...(captured.userState||{}),selectedMonth:month,selectedPeriod:month};if(type==='pr_report'){nextUser.month=month;nextUser.giOverrides=await loadGiOverridesForPr()}
+    const nextUser={...(captured.userState||{}),selectedMonth:month,selectedPeriod:month};if(type==='pr_report'){const [gi,capacity]=await Promise.all([loadGiOverridesForPr(),loadCapacityOverridesForPr()]);nextUser.month=month;nextUser.giOverrides=gi;nextUser.capacityOverrides=capacity}
     await adapter.restore(payload,nextUser);saveLocalViewState();setStatus('เชื่อมต่อแล้ว','ok');return true
   }
   async function loadCentralPrRange(start,end,periodKey,userPatch={}){
     if(!currentProject||!adapter||currentProject.analysis_type!=='pr_report')return false;
-    const captured=adapter.capture(),summaryResult=await getClient().rpc('get_central_summary',{p_workspace:currentMembership.workspace_id}),summary=summaryResult.data||{},key=cacheKey(currentMembership.workspace_id,'pr_report',summary)+':range:'+(periodKey||`${start||'first'}_${end||'last'}`),cached=await cacheRead(key);
+    const captured={userState:adapter.captureViewState?.()||adapter.capture().userState},summaryResult=await getClient().rpc('get_central_summary',{p_workspace:currentMembership.workspace_id}),summary=summaryResult.data||{},key=cacheKey(currentMembership.workspace_id,'pr_report',summary)+':range:'+(periodKey||`${start||'first'}_${end||'last'}`),cached=await cacheRead(key);
     setStatus('กำลังโหลดช่วง '+(periodKey||'ทั้งหมด')+'...','busy');let payload=cached?.payload||null;if(!payload){payload=await fetchPrReportRange(start,end,periodKey);cacheWrite(key,{savedAt:Date.now(),payload})}
-    const nextUser={...(captured.userState||{}),...userPatch,giOverrides:await loadGiOverridesForPr()};await adapter.restore(payload,nextUser);saveLocalViewState();setStatus('เชื่อมต่อแล้ว','ok');return true
+    const [gi,capacity]=await Promise.all([loadGiOverridesForPr(),loadCapacityOverridesForPr()]);const nextUser={...(captured.userState||{}),...userPatch,giOverrides:gi,capacityOverrides:capacity};await adapter.restore(payload,nextUser);saveLocalViewState();setStatus('เชื่อมต่อแล้ว','ok');return true
   }
   async function loadCentralPrSummary(start,end,periodKey,userPatch={}){
-    if(!currentProject||!adapter||currentProject.analysis_type!=='pr_report')return false;const captured=adapter.capture(),settings=captured.userState?.settings||{},dayMode=userPatch.dayMode||captured.userState?.dayMode||'pass',summaryResult=await getClient().rpc('get_central_summary',{p_workspace:currentMembership.workspace_id}),summary=summaryResult.data||{},key=cacheKey(currentMembership.workspace_id,'pr_report',summary)+':summary:'+(periodKey||'lifetime')+':'+dayMode+':'+(settings.minGi??3.5)+':'+(settings.minSpecific??2.5)+':'+(settings.lossFactor??.9),cached=await cacheRead(key);setStatus('กำลังสรุป '+(periodKey||'Lifetime')+'...','busy');let payload=cached?.payload||null;if(!payload){const result=await getClient().rpc('get_pr_period_summary',{p_workspace:currentMembership.workspace_id,p_date_from:start||null,p_date_to:end||null,p_day_mode:dayMode,p_min_gi:settings.minGi??3.5,p_min_specific:settings.minSpecific??2.5,p_loss_factor:settings.lossFactor??.9});if(result.error)throw result.error;payload={pr_report:{records:[]},projectSummaries:result.data?.projects||[],projectStarts:await fetchPrProjectStarts(),selectedPeriod:periodKey};cacheWrite(key,{savedAt:Date.now(),payload})}const nextUser={...(captured.userState||{}),...userPatch,summaryMode:true,giOverrides:await loadGiOverridesForPr()};await adapter.restore(payload,nextUser);saveLocalViewState();setStatus('เชื่อมต่อแล้ว','ok');return true
+    if(!currentProject||!adapter||currentProject.analysis_type!=='pr_report')return false;
+    const captured={userState:adapter.captureViewState?.()||adapter.capture().userState},settings=captured.userState?.settings||{},dayMode=userPatch.dayMode||captured.userState?.dayMode||'pass';
+    setStatus('กำลังสรุป '+(periodKey||'Lifetime')+'...','busy');
+    const [gi,capacity]=await Promise.all([loadGiOverridesForPr(),loadCapacityOverridesForPr()]);
+    const result=await getClient().rpc('get_pr_adjusted_summary',{
+      p_workspace:currentMembership.workspace_id,p_date_from:start||null,p_date_to:end||null,
+      p_day_mode:dayMode,p_min_gi:settings.minGi??3.5,p_min_specific:settings.minSpecific??2.5,
+      p_loss_factor:settings.lossFactor??.9,p_capacity_overrides:capacity,p_gi_overrides:gi,
+      p_record_overrides:captured.userState?.recordOverrides||{}
+    });
+    if(result.error)throw result.error;
+    const payload={pr_report:{records:[]},projectSummaries:result.data?.projects||[],projectStarts:await fetchPrProjectStarts(),selectedPeriod:periodKey};
+    const nextUser={...(captured.userState||{}),...userPatch,summaryMode:true,giOverrides:gi,capacityOverrides:capacity};
+    await adapter.restore(payload,nextUser);saveLocalViewState();setStatus('เชื่อมต่อแล้ว','ok');return true
   }
   async function loadCentralFullData(){
     const type=currentProject?.analysis_type;
