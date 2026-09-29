@@ -6,3 +6,4 @@ date,task_type,primary_skill,files_read,files_changed,tool_calls,commits,rework_
 2026-09-22,working-day-sticky-spacing,ui-consistency+regression-guard,4,4,4,1,1,no,yes,"Adjusted the locked table toolbar offset to preserve the requested gap below the app header"
 2026-09-22,working-day-render-performance,bug-triage+regression-guard,5,4,7,1,0,no,yes,"Batched 129-row table rendering, cached per-render calculation controls, and throttled scrollbar/search/input work to animation frames without changing formulas"
 2026-09-22,working-day-mkt-filter-popup,ui-consistency+regression-guard,4,4,6,1,0,no,yes,"Replaced the native MKT dropdown with a bilingual modal filter showing live counts while preserving existing filter behavior"
+2026-09-29,pr-report-ui-performance,ui-consistency+bug-triage+regression-guard,5,4,60,3,0,yes,yes,"Staged PR UI changes through three reviewable releases; indexed calculation rows and removed hidden-view rerenders while preserving PR formulas"
