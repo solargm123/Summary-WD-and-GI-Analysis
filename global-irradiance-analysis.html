@@ -474,12 +474,12 @@
                         <button class="btn btn-secondary" style="font-size: 0.72rem;" onclick="toggleSelectAll(false)">Deselect All</button>
                     </div>
                 </div>
-                <input type="text" id="searchPlant" class="search-input" placeholder="Search plant name..." oninput="filterPlantList()" style="margin-bottom: 8px;">
-                <div id="plantSearchHint" data-solar-th="กดชื่อโครงการเพื่อแสดงเฉพาะโครงการนั้น หรือ Select All เพื่อแสดงทุกผลค้นหา ตัวกรองสถานะจะคงเดิม" data-solar-en="Choose a plant to show only that plant, or Select All for all search results. The status filter stays active." style="font-size:.72rem;color:var(--text-muted);margin:-2px 0 8px;display:none;">กดชื่อโครงการเพื่อแสดงเฉพาะโครงการนั้น หรือ Select All เพื่อแสดงทุกผลค้นหา ตัวกรองสถานะจะคงเดิม</div>
+                <input type="text" id="searchPlant" class="search-input" placeholder="Search plant name..." onclick="clearPlantSearch(this)" oninput="filterPlantList()" style="margin-bottom: 8px;">
+                <div id="plantSearchHint" style="font-size:.72rem;color:var(--text-muted);margin:-2px 0 8px;display:none;"></div>
                 <div class="plant-list-container" id="plantListContainer"></div>
             </div>
         </div>
-        <div class="modal-footer"><button class="btn" onclick="closeFilterModal()">Apply & Close</button></div>
+        <div class="modal-footer"><button class="btn" onclick="applyFilterModal()">Apply & Close</button></div>
     </div>
 </div>
 
@@ -593,8 +593,20 @@
         if (maxVal < minVal) maxInput.value = minVal;
     }
 
-    function openFilterModal() { document.getElementById('filterModal').style.display = 'flex'; }
-    function closeFilterModal() { document.getElementById('filterModal').style.display = 'none'; }
+    let selectedPlantSearchResult = null;
+    function openFilterModal() { renderPlantList(); document.getElementById('filterModal').style.display = 'flex'; }
+    function closeFilterModal() { selectedPlantSearchResult = null; document.getElementById('filterModal').style.display = 'none'; }
+    function applyFilterModal() {
+        if (document.getElementById('searchPlant').value.trim()) {
+            const matches = searchedPlants();
+            const plants = selectedPlantSearchResult && matches.includes(selectedPlantSearchResult) ? [selectedPlantSearchResult] : matches;
+            selectedPlants.clear();
+            plants.forEach(plant => selectedPlants.add(plant));
+            renderPlantList();
+            renderTableAndMetrics();
+        }
+        closeFilterModal();
+    }
     function openTrendFilters(mode='date'){
         document.querySelectorAll('[data-trend-popup-section]').forEach(section=>section.style.display=section.dataset.trendPopupSection===mode?'block':'none');
         document.getElementById('trendPopupTitle').textContent=mode==='plants'?(giLanguage()==='en'?'Select plants':'เลือกโครงการ'):(giLanguage()==='en'?'Select month / year':'เลือกเดือน / ปี');
@@ -802,7 +814,7 @@
                 button.className = 'plant-item plant-search-result';
                 button.textContent = plant;
                 button.setAttribute('aria-label', `${giLanguage()==='en'?'Show plant':'แสดงโครงการ'} ${plant}`);
-                if (selectedPlants.size === 1 && selectedPlants.has(plant)) button.classList.add('active');
+                if (selectedPlantSearchResult === plant || (!selectedPlantSearchResult && selectedPlants.size === 1 && selectedPlants.has(plant))) button.classList.add('active');
                 button.onclick = () => selectSearchedPlant(plant);
                 container.appendChild(button);
                 return;
@@ -821,7 +833,11 @@
             container.appendChild(empty);
         }
         document.getElementById('selectedCount').innerText = selectedPlants.size;
-        document.getElementById('plantSearchHint').style.display = searching ? 'block' : 'none';
+        const hint = document.getElementById('plantSearchHint');
+        hint.style.display = searching ? 'block' : 'none';
+        if (searching) hint.textContent = giLanguage()==='en'
+            ? `Apply & Close will show ${selectedPlantSearchResult ? 1 : plants.length} matching plant(s). Choose a name for one plant; the status filter stays active.`
+            : `กด Apply & Close เพื่อแสดง ${selectedPlantSearchResult ? 1 : plants.length} โครงการที่พบ หรือกดชื่อเพื่อเลือกโครงการเดียว ตัวกรองสถานะจะคงเดิม`;
     }
 
     function escapeHtml(str) {
@@ -829,13 +845,18 @@
         return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
-    function filterPlantList() { renderPlantList(); }
+    function filterPlantList() { selectedPlantSearchResult = null; renderPlantList(); }
+
+    function clearPlantSearch(input) {
+        if (!input.value) return;
+        input.value = '';
+        selectedPlantSearchResult = null;
+        renderPlantList();
+    }
 
     function selectSearchedPlant(plant) {
-        selectedPlants.clear();
-        selectedPlants.add(plant);
+        selectedPlantSearchResult = plant;
         renderPlantList();
-        renderTableAndMetrics();
     }
 
     function onPlantCheckChange(cb) {
@@ -846,6 +867,7 @@
     }
 
     function toggleSelectAll(select) {
+        selectedPlantSearchResult = null;
         selectedPlants.clear();
         if (select) searchedPlants().forEach(plant => selectedPlants.add(plant));
         renderPlantList();
