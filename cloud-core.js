@@ -175,7 +175,7 @@
   function sharedKeys(type){
     if(type==='working_day')return ['overrides','lossFactor','sunHoursTarget','sunHoursMode','sunHoursCustom'];
     if(type==='global_irradiance')return ['overrides','minIrr','maxIrr'];
-    if(type==='pr_report')return ['settings','guarantees','dailyNotes','monthlyNotes','projectNotes'];
+    if(type==='pr_report')return ['settings','guarantees','guaranteeYears','recordOverrides','codOverrides','dailyNotes','monthlyNotes','projectNotes'];
     return [];
   }
   function localKeys(type){
@@ -192,7 +192,7 @@
   }
   function saveLocalViewState(){
     const key=localViewStorageKey();if(!key||!adapter)return;
-    try{localStorage.setItem(key,JSON.stringify(selectState(adapter.capture().userState||{},localKeys(currentProject?.analysis_type))))}
+    try{localStorage.setItem(key,JSON.stringify(selectState(adapter.captureViewState?.()||adapter.capture().userState||{},localKeys(currentProject?.analysis_type))))}
     catch(error){console.warn('Cannot save last view:',error)}
   }
   function selectState(source,keys){
@@ -206,15 +206,17 @@
   }
   function fieldPatches(previous,current,path=[],out=[]){
     if(current&&typeof current==='object'&&!Array.isArray(current)){
-      Object.keys(current).forEach(key=>fieldPatches(previous&&typeof previous==='object'?previous[key]:undefined,current[key],[...path,key],out));
+      const prior=previous&&typeof previous==='object'&&!Array.isArray(previous)?previous:{};
+      Object.keys(current).forEach(key=>fieldPatches(prior[key],current[key],[...path,key],out));
+      Object.keys(prior).filter(key=>!Object.prototype.hasOwnProperty.call(current,key)).forEach(key=>out.push({path:[...path,key],delete:true}));
       return out;
     }
-    if(JSON.stringify(previous)!==JSON.stringify(current))out.push({path,value:current});
+    if(JSON.stringify(previous)!==JSON.stringify(current))out.push(current===undefined?{path,delete:true}:{path,value:current});
     return out;
   }
   const pathId=path=>(path||[]).join('\u001f');
   function pathsOverlap(a,b){const aa=a||[],bb=b||[],n=Math.min(aa.length,bb.length);for(let i=0;i<n;i++)if(aa[i]!==bb[i])return false;return true}
-  function pendingPatches(){if(!adapter||!currentProject)return[];return fieldPatches(lastSharedState,sharedState(adapter.capture().userState||{}))}
+  function pendingPatches(){if(!adapter||!currentProject)return[];return fieldPatches(lastSharedState,sharedState(adapter.captureViewState?.()||adapter.capture().userState||{}))}
   function friendlyPath(path){
     const labels={overrides:'ข้อมูลแก้ไข',lossFactor:'Loss Factor',sunHoursTarget:'Sun Hours เป้าหมาย',sunHoursMode:'วิธี Sun Hours',sunHoursCustom:'Sun Hours กำหนดเอง',minIrr:'GI ต่ำสุด',maxIrr:'GI สูงสุด',settings:'เงื่อนไข PR',guarantees:'PR Guarantee',dailyNotes:'Note รายวัน',monthlyNotes:'Note รายเดือน',projectNotes:'Note โครงการ',capacity:'Capacity',cap:'Capacity',customDaysInMonth:'Days in Month',lossDaysArray:'วันที่เกิด Loss',province:'จังหวัด',visible:'การแสดงโครงการ',method:'วิธีคำนวณ',mktEstimate:'MKT Estimate',note:'Note',dates:'วันที่'};
     return (path||[]).map(x=>labels[x]||x).join(' › ');
@@ -242,7 +244,7 @@
     lastSharedState=sharedState(currentProject?.user_state||{});
   }
   async function persistFieldPatches(patches,reason='manual',force=false,clientVersion=null){
-    const payload=adapter.capture();
+    const payload=adapter.capturePeriodKey?.()||adapter.capture();
     const changes=historyChanges(patches);
     const {data,error}=await getClient().rpc('save_analysis_field_patches',{
       p_project_id:currentProject.id,
