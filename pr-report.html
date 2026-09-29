@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<script src="cloud-core.js?v=20260929-pr-period3"></script>
+<script src="cloud-core.js?v=20260929-pr-ui1"></script>
 <style>
 :root{--bg:#f3f7fb;--card:#fff;--soft:#f8fafc;--line:#dce5ef;--text:#172033;--muted:#64748b;--blue:#2563eb;--green:#059669;--amber:#d97706;--red:#dc2626;--purple:#7c3aed;--shadow:0 10px 30px #15304b12}
 html[data-fs-theme=dark]{--bg:#08141f;--card:#102131;--soft:#14293b;--line:#294258;--text:#edf6ff;--muted:#91a6b8;--blue:#60a5fa;--green:#34d399;--amber:#fbbf24;--red:#fb7185;--purple:#c4b5fd;--shadow:0 12px 34px #0004}
@@ -60,6 +60,19 @@ html{color-scheme:light}html[data-fs-theme=dark]{color-scheme:dark}
 @media(max-width:800px){.panel-head{align-items:flex-start;flex-wrap:wrap}.filter-layout{grid-template-columns:1fr}.modal-card{max-height:90dvh}#dailySearch{width:100%}}
 </style>
 <link rel="stylesheet" href="unified-ui.css?v=20260927-scroll1">
+<style id="prReadabilityAndHeader">
+body.solar-pr{font-weight:600}
+body.solar-pr :is(input,select,textarea,button,td,.muted,.field label,.plant-option,.description){font-weight:600}
+body.solar-pr :is(h1,h2,h3,th,.badge,.metric b){font-weight:700}
+body.solar-pr .muted,body.solar-pr .field label,body.solar-pr th{color:var(--text)!important;opacity:.78}
+body.solar-pr :is(.btn,.tab,.field input,.field select,.note-input,table){font-size:max(.82rem,13px)}
+body.solar-pr th{font-size:.76rem}
+body.solar-pr .topbar{position:relative;top:auto;z-index:4}
+body.solar-pr #overviewView .table-wrap,body.solar-pr #detailView .table-wrap{max-height:min(68vh,760px);overflow:auto}
+body.solar-pr #overviewView th,body.solar-pr #detailView th{position:sticky;top:0;z-index:2;box-shadow:0 1px 0 var(--line)}
+body.solar-pr .modal-card,body.solar-pr .panel,body.solar-pr .filter-block{color:var(--text)}
+body.solar-pr .panel-head .actions{justify-content:flex-end}
+</style>
 </head>
 <body class="solar-pr">
 <div class="app">
@@ -275,10 +288,10 @@ function openTableNote(project){
 async function goToNoteDate(project,date){closeModal('tableNoteModal');selectedProject=project;compareProjects=new Set();detailRecords=[];comparePeriods=[];periodDraft=[];$('detailPeriod').value='month';populateDetailPeriods();$('detailMonthPart').value=date.slice(5,7);$('detailMonthYear').value=date.slice(0,4);updateDetailRange();await showView('detail');const row=[...$('dailyRows').querySelectorAll('[data-note-date]')].find(r=>r.dataset.noteProject===project&&r.dataset.noteDate===date);row?.scrollIntoView({behavior:'smooth',block:'center'});row?.classList.add('note-target')}
 function showNoData(project){$('tableNoteTitle').textContent=`No data · ${project}`;$('tableNoteContent').innerHTML=`<p>${tr('ไม่มีข้อมูลในช่วงที่เลือก กรุณาตรวจสอบค่าที่ใช้ในสมการ','No records in the selected period. Please verify the formula inputs.')}</p><div class="formula">PR = PV Yield ÷ Theoretical Yield × 100<br>PR with Loss = [PV Yield + (Loss × ${state.settings.lossFactor})] ÷ Theoretical Yield × 100<br>GI ≥ ${state.settings.minGi} · Specific ≥ ${state.settings.minSpecific}</div>`;$('tableNoteModal').classList.add('open')}
 function openCompareModal(){compareDraft=new Set(compareProjects);$('compareSearch').value='';renderComparePicker();$('compareModal').classList.add('open')}
-function renderComparePicker(){const q=norm($('compareSearch').value),projects=allProjectNames().filter(p=>!q||norm(p).includes(q));$('comparePicker').innerHTML=projects.map(p=>`<label class="plant-option"><input type="checkbox" ${compareDraft.has(p)?'checked':''} onchange="toggleCompare('${esc(p).replace(/'/g,'&#39;')}',this.checked)"><span>${esc(p)}</span></label>`).join('')||`<div class="empty">${tr('ไม่พบโครงการ','No projects found')}</div>`}
-function toggleCompare(project,checked){if(checked&&compareDraft.size>=4&&!compareDraft.has(project)){SolarCloud.notice(tr('เลือกเปรียบเทียบได้สูงสุด 4 โครงการ','Select up to 4 comparison projects'),tr('กรุณายกเลิกโครงการเดิมก่อน','Please deselect another project first'),'danger');renderComparePicker();return}checked?compareDraft.add(project):compareDraft.delete(project);if(checked)$('compareSearch').value='';renderComparePicker()}
+function renderComparePicker(){const q=norm($('compareSearch').value),projects=allProjectNames().filter(p=>!q||norm(p).includes(q));$('comparePicker').innerHTML=projects.map(p=>`<label class="plant-option"><input type="checkbox" ${compareDraft.has(p)?'checked':''} onchange="toggleCompare('${esc(p).replace(/'/g,'&#39;')}',this)"><span>${esc(p)}</span></label>`).join('')||`<div class="empty">${tr('ไม่พบโครงการ','No projects found')}</div>`}
+function toggleCompare(project,checkbox){if(checkbox.checked&&compareDraft.size>=4&&!compareDraft.has(project)){checkbox.checked=false;SolarCloud.notice(tr('เลือกเปรียบเทียบได้สูงสุด 4 โครงการ','Select up to 4 comparison projects'),tr('กรุณายกเลิกโครงการเดิมก่อน','Please deselect another project first'),'danger');return}checkbox.checked?compareDraft.add(project):compareDraft.delete(project)}
 async function resetCompare(){compareDraft.clear();compareProjects.clear();$('compareSearch').value='';closeModal('compareModal');await reloadDetailComparison()}
-async function applyCompare(){const q=norm($('compareSearch').value);if(q&&!compareDraft.size){const matches=allProjectNames().filter(p=>norm(p).includes(q));if(!matches.length){SolarCloud.notice(tr('ไม่พบโครงการ','No projects found'),'', 'danger');return}compareDraft=new Set(matches.slice(0,4))}compareProjects=new Set(compareDraft);$('compareSearch').value='';closeModal('compareModal');await reloadDetailComparison()}
+async function applyCompare(){compareProjects=new Set(compareDraft);$('compareSearch').value='';closeModal('compareModal');await reloadDetailComparison()}
 async function reloadDetailComparison(){const request=++detailLoadSeq,[start,end]=currentDetailRange();$('detailCaption').textContent=tr('กำลังโหลดข้อมูลเปรียบเทียบ...','Loading comparison data...');try{const projects=[...new Set([selectedProject,...compareProjects].filter(Boolean))],chunks=isPeriodCompare()?await Promise.all(comparePeriods.map(period=>{const [from,to]=periodBounds(period,periodKind());return SolarCloud.loadPrProjectRecords(projects,from,to)})):[await SolarCloud.loadPrProjectRecords(projects,start,end)],records=chunks.flat();if(request!==detailLoadSeq)return;detailRecords=records.map(r=>({...r,giAdjusted:state.giOverrides[r.project]?.dates?.[r.date]}));renderDetail()}catch(error){if(request===detailLoadSeq)$('detailCaption').textContent=error.message}}
 function openDescription(){const box=document.querySelector('#descriptionModal .description');let help=$('multiMonthFormulaHelp');if(!help){help=document.createElement('div');help.id='multiMonthFormulaHelp';help.className='formula';help.style.marginTop='14px';box.appendChild(help)}help.innerHTML=`<h3 style="margin-top:0">${tr('การรวม PR หลายเดือน','Multi-month PR')}</h3><p><b>${tr('PR รวมหลายเดือน','Combined multi-month PR')} = Σ(PR Monthly × Calculated Days) ÷ Σ Calculated Days</b></p><p>${tr('Calculated Days คือจำนวนวันไม่ซ้ำที่ถูกนำมาคำนวณ PR จริงในแต่ละเดือนตามโหมดวันที่เลือก หากเลือกเฉพาะวันที่ผ่าน จะนับเฉพาะวันที่ GI และ Specific ผ่านเกณฑ์ หากเลือกทุกวันที่มีข้อมูล จะนับทุกวันที่มีข้อมูล สูตรนี้จึงให้น้ำหนักเดือนที่มีวันคำนวณมากกว่า','Calculated Days is the number of unique dates actually included in each month’s PR calculation under the selected day mode. Passed-days mode counts only dates meeting the GI and Specific thresholds; all-days mode counts every date with data. The formula therefore gives more weight to months with more calculated days.')}</p>`;$('descriptionModal').classList.add('open')}
 function fmt(v){return Number.isFinite(v)?v.toFixed(2)+'%':'—'}
