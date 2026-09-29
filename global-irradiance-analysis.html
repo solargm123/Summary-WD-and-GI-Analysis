@@ -472,7 +472,7 @@
                     </div>
                 </div>
                 <input type="text" id="searchPlant" class="search-input" placeholder="Search plant name..." oninput="filterPlantList()" style="margin-bottom: 8px;">
-                <div id="plantSearchHint" data-solar-th="เมื่อค้นหา กดชื่อโครงการเพื่อแสดงเฉพาะโครงการนั้น โดยคงตัวกรองสถานะเดิม" data-solar-en="While searching, select a plant to show only that plant. The status filter stays active." style="font-size:.72rem;color:var(--text-muted);margin:-2px 0 8px;display:none;">เมื่อค้นหา กดชื่อโครงการเพื่อแสดงเฉพาะโครงการนั้น โดยคงตัวกรองสถานะเดิม</div>
+                <div id="plantSearchHint" data-solar-th="เมื่อค้นหา กดชื่อโครงการเพื่อแสดงเฉพาะโครงการนั้น หรือกด Select All เพื่อเลือกเฉพาะผลค้นหา ตัวกรองสถานะจะคงเดิม" data-solar-en="Select a plant to show only that plant, or Select All for search results. The status filter stays active." style="font-size:.72rem;color:var(--text-muted);margin:-2px 0 8px;display:none;">เมื่อค้นหา กดชื่อโครงการเพื่อแสดงเฉพาะโครงการนั้น หรือกด Select All เพื่อเลือกเฉพาะผลค้นหา ตัวกรองสถานะจะคงเดิม</div>
                 <div class="plant-list-container" id="plantListContainer"></div>
             </div>
         </div>
@@ -822,9 +822,13 @@
     }
 
     function toggleSelectAll(select) {
+        const searching = !!document.getElementById('searchPlant').value.trim();
+        const visibleInputs = Array.from(document.querySelectorAll('.plant-item'))
+            .filter(item => item.style.display !== 'none')
+            .map(item => item.querySelector('input'));
         selectedPlants.clear();
-        if (select) allPlantsSet.forEach(p => selectedPlants.add(p));
-        document.querySelectorAll('.plant-item input').forEach(cb => cb.checked = select);
+        if (select) (searching ? visibleInputs.map(input => input.value) : allPlantsSet).forEach(p => selectedPlants.add(p));
+        document.querySelectorAll('.plant-item input').forEach(cb => { cb.checked = selectedPlants.has(cb.value); });
         document.getElementById('selectedCount').innerText = selectedPlants.size;
         renderTableAndMetrics();
     }
