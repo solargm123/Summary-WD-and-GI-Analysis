@@ -9,3 +9,4 @@ date,task_type,primary_skill,files_read,files_changed,tool_calls,commits,rework_
 2026-09-29,pr-report-ui-performance,ui-consistency+bug-triage+regression-guard,5,4,60,3,0,yes,yes,"Staged PR UI changes through three reviewable releases; indexed calculation rows and removed hidden-view rerenders while preserving PR formulas"
 2026-09-29,pr-report-filter-edit-regression,bug-triage+ui-consistency+regression-guard,6,4,25,1,1,no,no,"Fixed period status filter, applied PR filter state, calculation month/project picker, note/save feedback; DOM regression check"
 2026-09-29,pr-report-cache-route,bug-triage+regression-guard,4,5,13,1,0,yes,yes,Created versioned PR page route after user remained on pr-ui3 URL; visible R4 marker and route validation
+2026-09-29,pr-note-click,bug-triage+regression-guard,4,5,12,1,0,yes,yes,Added direct Add Note button handler and tested click/save with table delegated listener removed
