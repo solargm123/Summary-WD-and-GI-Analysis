@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20260928-wd-summary1"></script>
+    <script src="cloud-core.js?v=20260929-wd-save1"></script>
     <style> 
         html, body, body *:not(i), button, input, select, option, textarea, table, th, td, code {
             font-family: 'Bai Jamjuree', Tahoma, Arial, sans-serif !important;
@@ -1474,6 +1474,9 @@ body.wd-theme-switching *::after{
         let mktEstimateByProject = {};
         let methodOverridesByMonth = {};
         let monthPlantOverrides = {};
+        let persistedPeriodOverrides = {};
+        let persistedPlantFields = {};
+        let restoredMonthLossStateVersion = null;
         let activeMonthKey = null;
         const MKT_ESTIMATE_OPTIONS = ['Estimated 12:00 L','Misestimated 12:00 L','Haveno 12:00 L','Misestimated?'];
 
@@ -2744,16 +2747,16 @@ body.wd-theme-switching *::after{
           const selectedMonth=document.getElementById('monthSelect').value||null;
           const sunMode=document.querySelector('input[name="sunHoursMode"]:checked')?.value||'custom';
           rememberCurrentMonthPlantState(activeMonthKey);
-          const overrides={};
-          plantData.forEach(plant=>{overrides[plant.name.toLowerCase()]={cap:plant.cap,note:plant.note||'',visible:plant.visible!==false}});
-          Object.entries(monthPlantOverrides).forEach(([month,projects])=>Object.entries(projects||{}).forEach(([key,value])=>{overrides['@period:'+month+':'+key]={customDaysInMonth:value.customDaysInMonth,lossDaysArray:[...(value.lossDaysArray||[])]}}));
+          const overrides={...persistedPeriodOverrides};
+          plantData.forEach(plant=>{const key=plant.name.toLowerCase();overrides[key]={...(persistedPlantFields[key]||{}),cap:plant.cap,note:plant.note||'',visible:plant.visible!==false}});
+          Object.entries(monthPlantOverrides).forEach(([month,projects])=>Object.entries(projects||{}).forEach(([key,value])=>{overrides['@period:'+month+':'+key]={customDaysInMonth:value.customDaysInMonth,lossDaysArray:[...(value.lossDaysArray||[])],stateVersion:3}}));
           Object.entries(mktEstimateByProject).forEach(([key,value])=>{overrides['@mkt:'+key]={mktEstimate:value}});
           Object.entries(methodOverridesByMonth).forEach(([month,projects])=>Object.entries(projects||{}).forEach(([key,method])=>{overrides['@method:'+month+':'+key]={method}}));
           Object.assign(overrides,WDReview.captureReviews());
           return {
             baseData:{records:rawRecordsByFile,detectedMonths:[...detectedMonths]},
-            // Loss-date state v3: discard incorrect month/project overrides saved by older builds.
-            userState:{selectedMonth,lossFactor:'0.9',sunHoursTarget:document.getElementById('sunHoursTarget').value,sunHoursMode:sunMode,sunHoursCustom:document.getElementById('inputSunHoursCustom').value,monthLossStateVersion:3,overrides},
+            // Keep legacy period entries for synchronization; only versioned entries affect calculations.
+            userState:{selectedMonth,lossFactor:'0.9',sunHoursTarget:document.getElementById('sunHoursTarget').value,sunHoursMode:sunMode,sunHoursCustom:document.getElementById('inputSunHoursCustom').value,monthLossStateVersion:restoredMonthLossStateVersion,overrides},
             periodKey:selectedMonth,
             sourceFiles:[...new Set(rawRecordsByFile.map(record=>record.fileName).filter(Boolean))]
           };
@@ -2766,11 +2769,14 @@ body.wd-theme-switching *::after{
           if(state.sunHoursCustom!=null)document.getElementById('inputSunHoursCustom').value=state.sunHoursCustom;
           const radio=document.querySelector(`input[name="sunHoursMode"][value="${state.sunHoursMode||'custom'}"]`);if(radio)radio.checked=true;
           const overrides=state.overrides||{};
+          restoredMonthLossStateVersion=Number(state.monthLossStateVersion)===3?3:null;
+          persistedPeriodOverrides=Object.fromEntries(Object.entries(overrides).filter(([key])=>key.startsWith('@period:')));
+          persistedPlantFields=Object.fromEntries(Object.entries(overrides).filter(([key,value])=>!key.startsWith('@')&&value&&typeof value==='object'&&!Array.isArray(value)));
           WDReview.restoreReviews(overrides);
-          const acceptMonthLossState=Number(state.monthLossStateVersion)===3;
+          const acceptMonthLossState=restoredMonthLossStateVersion===3;
           mktEstimateByProject={};methodOverridesByMonth={};monthPlantOverrides={};activeMonthKey=null;
           Object.entries(overrides).forEach(([key,value])=>{
-            if(acceptMonthLossState&&key.startsWith('@period:')){
+            if((acceptMonthLossState||Number(value?.stateVersion)===3)&&key.startsWith('@period:')){
               const remainder=key.slice(8),split=remainder.indexOf(':'),month=remainder.slice(0,split),projectKey=remainder.slice(split+1);
               if(split>0){monthPlantOverrides[month]=monthPlantOverrides[month]||{};monthPlantOverrides[month][projectKey]={customDaysInMonth:value?.customDaysInMonth,lossDaysArray:Array.isArray(value?.lossDaysArray)?value.lossDaysArray:[]}}
             }
