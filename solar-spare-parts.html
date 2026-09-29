@@ -2230,7 +2230,23 @@ async function saveProjectEditor(){if(!requireSpareAdmin())return;const d=projec
   const submit=projectEditForm.querySelector('[type="submit"]');submit.disabled=true;
   try{const {data,error}=await SolarCloud.getClient().from("spare_project_catalog").update(update).eq("id",editingCloudProjectId).eq("workspace_id",spareWorkspaceId).select("id");if(error)throw error;if(!data?.length)throw new Error("บันทึกไม่สำเร็จ: ไม่พบโครงการหรือไม่มีสิทธิ์");editingCloudProjectId="";closeModal("projectEditModal");await loadCloudCatalogue();toast(t("savedMsg"))}catch(err){alert("บันทึกโครงการไม่สำเร็จ: "+err.message)}finally{submit.disabled=false}
   return;
- }const current=(editingProjectCode||editingProjectName)?findProjectDetail(editingProjectName,editingProjectCode):null;const duplicate=projectConflictFor(d,current);if(duplicate){openManualProjectDuplicate(duplicate,d);return}applyProjectEditorSave(d,"update",current)}
+ }
+ if(cloudStockActive){
+  if(cloudProjects.some(p=>normText(p.projectName)===normText(d.projectName)||(d.projectCode&&p.projectCode===d.projectCode))||projectConflictFor(d)){
+   alert(lang==="th"?"ชื่อโครงการหรือ PPA นี้มีอยู่แล้ว กรุณาเปิดโครงการเดิมเพื่อตรวจสอบ":"This project name or PPA already exists. Open the existing project to review it.");return;
+  }
+  const submit=projectEditForm.querySelector('[type="submit"]');submit.disabled=true;
+  try{
+   const client=SolarCloud.getClient(),name=String(d.province||"").trim();let province=sharedProvinces.find(p=>[p.name_th,p.name_en,...(p.aliases||[])].some(alias=>normText(alias)===normText(name)));
+   if(name&&!province){const result=await client.from("province_catalog").insert({workspace_id:spareWorkspaceId,name_th:name,name_en:name}).select("id,name_th,name_en,aliases").single();if(result.error)throw result.error;province=result.data}
+   const fields=["status","codDate","epc","location","plantType","pvModuleModel","pvModuleQty","inverterBrand","inverter1","inverterQty1","inverter2","inverterQty2","inverter3","inverterQty3","optimizerRsd"];
+   const details={note:d.note||""};fields.forEach(key=>details[key]=d[key]);
+   const payload={workspace_id:spareWorkspaceId,project_name:d.projectName,project_code:d.projectCode||null,source_name:d.projectName,capacity_kwp:d.capacity===""?null:Number(d.capacity),province:province?.name_th||null,province_original:name||null,province_id:province?.id||null,match_status:"needs_review",details,source_file:"manual:"+makeUUID(),source_row:1};
+   const {error}=await client.from("spare_project_catalog").insert(payload);if(error)throw error;
+   closeModal("projectEditModal");await loadCloudCatalogue();toast(t("savedMsg"));
+  }catch(err){alert("บันทึกโครงการไม่สำเร็จ: "+err.message)}finally{submit.disabled=false}return;
+ }
+ const current=(editingProjectCode||editingProjectName)?findProjectDetail(editingProjectName,editingProjectCode):null;const duplicate=projectConflictFor(d,current);if(duplicate){openManualProjectDuplicate(duplicate,d);return}applyProjectEditorSave(d,"update",current)}
 
 function openProjectDetail(name,projectCode="",supplied=null){
  const d=supplied||findProjectDetail(name,projectCode)||{};
