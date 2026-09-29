@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<script src="cloud-core.js?v=20260929-pr-fix4"></script>
+<script src="cloud-core.js?v=20260929-pr-route5"></script>
 <style>
 :root{--bg:#f3f7fb;--card:#fff;--soft:#f8fafc;--line:#dce5ef;--text:#172033;--muted:#64748b;--blue:#2563eb;--green:#059669;--amber:#d97706;--red:#dc2626;--purple:#7c3aed;--shadow:0 10px 30px #15304b12}
 html[data-fs-theme=dark]{--bg:#08141f;--card:#102131;--soft:#14293b;--line:#294258;--text:#edf6ff;--muted:#91a6b8;--blue:#60a5fa;--green:#34d399;--amber:#fbbf24;--red:#fb7185;--purple:#c4b5fd;--shadow:0 12px 34px #0004}
@@ -105,7 +105,7 @@ body.solar-pr .data-filter-toolbar{margin-bottom:12px}
 <body class="solar-pr">
 <div class="app">
  <header class="topbar">
-  <div><div class="eyebrow">PV PERFORMANCE</div><h1 data-solar-th="รายงาน Performance Ratio" data-solar-en="Performance Ratio Report">รายงาน Performance Ratio</h1><div class="muted" data-solar-th="ภาพรวมทุกโครงการและเจาะลึกผลรายวัน" data-solar-en="Portfolio overview and daily project analysis">ภาพรวมทุกโครงการและเจาะลึกผลรายวัน</div></div>
+  <div><div class="eyebrow">PV PERFORMANCE · R4</div><h1 data-solar-th="รายงาน Performance Ratio" data-solar-en="Performance Ratio Report">รายงาน Performance Ratio</h1><div class="muted" data-solar-th="ภาพรวมทุกโครงการและเจาะลึกผลรายวัน" data-solar-en="Portfolio overview and daily project analysis">ภาพรวมทุกโครงการและเจาะลึกผลรายวัน</div></div>
   <div id="prHeaderActions" class="actions header-controls"><button class="btn" onclick="openDescription()"><i class="fa-solid fa-circle-info"></i><span data-solar-th="คำอธิบาย" data-solar-en="Description">คำอธิบาย</span></button><button class="btn" onclick="exportCsv()"><i class="fa-solid fa-file-export"></i><span data-solar-th="ส่งออก" data-solar-en="Export">ส่งออก</span></button></div>
  </header>
  <nav class="tabs"><button id="overviewTab" class="tab active" onclick="showView('overview')"><i class="fa-solid fa-table-list"></i> <span data-solar-th="ภาพรวมรายเดือน" data-solar-en="Monthly overview">ภาพรวมรายเดือน</span></button><button id="detailTab" class="tab" onclick="showView('detail')"><i class="fa-solid fa-chart-line"></i> <span data-solar-th="รายละเอียดโครงการ" data-solar-en="Project detail">รายละเอียดโครงการ</span></button><button id="dataTab" class="tab" onclick="showView('data')"><i class="fa-solid fa-pen-to-square"></i> <span data-solar-th="ข้อมูลคำนวณ PR" data-solar-en="PR calculation data">ข้อมูลคำนวณ PR</span></button></nav>
