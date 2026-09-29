@@ -179,6 +179,9 @@
         .plant-item { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; cursor: pointer; padding: 6px 10px; border-radius: 6px; user-select: none; }
         .plant-item:hover { background: var(--hover-bg); }
         .plant-item input { accent-color: var(--accent-blue); width: 16px; height: 16px; cursor: pointer; }
+        .plant-search-result { width: 100%; border: 1px solid transparent; background: transparent; color: var(--text-main); font: inherit; text-align: left; }
+        .plant-search-result.active { border-color: var(--accent-blue); background: rgba(56, 189, 248, 0.14); color: var(--accent-blue); }
+        .plant-search-result:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
         .search-input { background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 8px 12px; color: var(--text-main); outline: none; width: 100%; font-size: 0.8rem; }
 
         /* Center-aligned analysis workspace UI */
@@ -472,7 +475,7 @@
                     </div>
                 </div>
                 <input type="text" id="searchPlant" class="search-input" placeholder="Search plant name..." oninput="filterPlantList()" style="margin-bottom: 8px;">
-                <div id="plantSearchHint" data-solar-th="เมื่อค้นหา กดชื่อโครงการเพื่อแสดงเฉพาะโครงการนั้น หรือกด Select All เพื่อเลือกเฉพาะผลค้นหา ตัวกรองสถานะจะคงเดิม" data-solar-en="Select a plant to show only that plant, or Select All for search results. The status filter stays active." style="font-size:.72rem;color:var(--text-muted);margin:-2px 0 8px;display:none;">เมื่อค้นหา กดชื่อโครงการเพื่อแสดงเฉพาะโครงการนั้น หรือกด Select All เพื่อเลือกเฉพาะผลค้นหา ตัวกรองสถานะจะคงเดิม</div>
+                <div id="plantSearchHint" data-solar-th="กดชื่อโครงการเพื่อแสดงเฉพาะโครงการนั้น หรือ Select All เพื่อแสดงทุกผลค้นหา ตัวกรองสถานะจะคงเดิม" data-solar-en="Choose a plant to show only that plant, or Select All for all search results. The status filter stays active." style="font-size:.72rem;color:var(--text-muted);margin:-2px 0 8px;display:none;">กดชื่อโครงการเพื่อแสดงเฉพาะโครงการนั้น หรือ Select All เพื่อแสดงทุกผลค้นหา ตัวกรองสถานะจะคงเดิม</div>
                 <div class="plant-list-container" id="plantListContainer"></div>
             </div>
         </div>
@@ -531,7 +534,7 @@
     function detectProvince(address){const source=normalizeProvinceText(address);if(!source)return 'ไม่ระบุ';const thai=THAI_PROVINCES.slice(1).sort((a,b)=>b.length-a.length).find(name=>source.includes(normalizeProvinceText(name)));if(thai)return thai;const padded=` ${source} `;for(const [province,english] of Object.entries(PROVINCE_EN)){const key=normalizeProvinceText(english);if(province!=='ไม่ระบุ'&&key&&padded.includes(` ${key} `))return province}for(const [province,aliases] of Object.entries(PROVINCE_ALIASES))if(aliases.some(alias=>padded.includes(` ${normalizeProvinceText(alias)} `)))return province;return 'ไม่ระบุ'}
     const giLanguage=()=>window.FusionUI?.getLanguage?.()||document.documentElement.lang||'th';
     const provinceLabel=name=>giLanguage()==='en'?(PROVINCE_EN[name]||name):name;
-    function toggleGiLanguage(){FusionUI.setLanguage(FusionUI.getLanguage()==='th'?'en':'th');renderProvinceFilterOptions();updateTrendToolbarLabels();updateTrendPopupLanguage();if(isFileUploaded)renderTableAndMetrics();if(document.getElementById('provinceModal').style.display==='flex')renderProvinceOptions()}
+    function toggleGiLanguage(){FusionUI.setLanguage(FusionUI.getLanguage()==='th'?'en':'th');renderPlantList();renderProvinceFilterOptions();updateTrendToolbarLabels();updateTrendPopupLanguage();if(isFileUploaded)renderTableAndMetrics();if(document.getElementById('provinceModal').style.display==='flex')renderProvinceOptions()}
     function openProvincePopup(plant){currentProvinceMode='plant';currentProvincePlant=plant;document.getElementById('provinceSearch').value='';document.getElementById('provinceModal').style.display='flex';renderProvinceOptions();setTimeout(()=>document.getElementById('provinceSearch').focus(),0)}
     function openProvinceFilterPopup(mode='table'){currentProvinceMode=mode;currentProvincePlant=null;document.getElementById('provinceSearch').value='';document.getElementById('provinceModal').style.display='flex';renderProvinceOptions();setTimeout(()=>document.getElementById('provinceSearch').focus(),0)}
     function closeProvincePopup(){document.getElementById('provinceModal').style.display='none';currentProvincePlant=null;currentProvinceMode='plant'}
@@ -780,13 +783,30 @@
         }).sort();
     }
 
+    function searchedPlants() {
+        const query = document.getElementById('searchPlant').value.trim().toLocaleLowerCase();
+        return Array.from(allPlantsSet).filter(plant => !query || plant.toLocaleLowerCase().includes(query)).sort();
+    }
+
     function renderPlantList() {
         const container = document.getElementById('plantListContainer');
         container.innerHTML = '';
-        const sorted = Array.from(allPlantsSet).sort();
-        document.getElementById('totalCount').innerText = sorted.length;
+        const searching = !!document.getElementById('searchPlant').value.trim();
+        const plants = searchedPlants();
+        document.getElementById('totalCount').innerText = allPlantsSet.size;
 
-        sorted.forEach((plant, idx) => {
+        plants.forEach((plant, idx) => {
+            if (searching) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'plant-item plant-search-result';
+                button.textContent = plant;
+                button.setAttribute('aria-label', `${giLanguage()==='en'?'Show plant':'แสดงโครงการ'} ${plant}`);
+                if (selectedPlants.size === 1 && selectedPlants.has(plant)) button.classList.add('active');
+                button.onclick = () => selectSearchedPlant(plant);
+                container.appendChild(button);
+                return;
+            }
             const id = `chk_${idx}`;
             const label = document.createElement('label');
             label.className = 'plant-item';
@@ -794,8 +814,14 @@
             label.innerHTML = `<input type="checkbox" id="${id}" value="${escapeHtml(plant)}" ${selectedPlants.has(plant) ? 'checked' : ''} onchange="onPlantCheckChange(this)"><span>${escapeHtml(plant)}</span>`;
             container.appendChild(label);
         });
+        if (searching && !plants.length) {
+            const empty = document.createElement('div');
+            empty.style.cssText = 'padding:16px;text-align:center;color:var(--text-muted);font-size:.78rem';
+            empty.textContent = giLanguage()==='en' ? 'No matching plants' : 'ไม่พบโครงการที่ค้นหา';
+            container.appendChild(empty);
+        }
         document.getElementById('selectedCount').innerText = selectedPlants.size;
-        filterPlantList();
+        document.getElementById('plantSearchHint').style.display = searching ? 'block' : 'none';
     }
 
     function escapeHtml(str) {
@@ -803,33 +829,26 @@
         return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
-    function filterPlantList() {
-        const q = document.getElementById('searchPlant').value.trim().toLocaleLowerCase();
-        document.querySelectorAll('.plant-item').forEach(el => { el.style.display = el.innerText.toLowerCase().includes(q) ? 'flex' : 'none'; });
-        document.getElementById('plantSearchHint').style.display = q ? 'block' : 'none';
+    function filterPlantList() { renderPlantList(); }
+
+    function selectSearchedPlant(plant) {
+        selectedPlants.clear();
+        selectedPlants.add(plant);
+        renderPlantList();
+        renderTableAndMetrics();
     }
 
     function onPlantCheckChange(cb) {
-        if (document.getElementById('searchPlant').value.trim()) {
-            // All plants may already be checked; selecting a search result focuses that plant.
-            selectedPlants.clear();
-            selectedPlants.add(cb.value);
-            document.querySelectorAll('.plant-item input').forEach(input => { input.checked = input === cb; });
-        } else if (cb.checked) selectedPlants.add(cb.value);
+        if (cb.checked) selectedPlants.add(cb.value);
         else selectedPlants.delete(cb.value);
         document.getElementById('selectedCount').innerText = selectedPlants.size;
         renderTableAndMetrics();
     }
 
     function toggleSelectAll(select) {
-        const searching = !!document.getElementById('searchPlant').value.trim();
-        const visibleInputs = Array.from(document.querySelectorAll('.plant-item'))
-            .filter(item => item.style.display !== 'none')
-            .map(item => item.querySelector('input'));
         selectedPlants.clear();
-        if (select) (searching ? visibleInputs.map(input => input.value) : allPlantsSet).forEach(p => selectedPlants.add(p));
-        document.querySelectorAll('.plant-item input').forEach(cb => { cb.checked = selectedPlants.has(cb.value); });
-        document.getElementById('selectedCount').innerText = selectedPlants.size;
+        if (select) searchedPlants().forEach(plant => selectedPlants.add(plant));
+        renderPlantList();
         renderTableAndMetrics();
     }
 
