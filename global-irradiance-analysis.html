@@ -472,6 +472,7 @@
                     </div>
                 </div>
                 <input type="text" id="searchPlant" class="search-input" placeholder="Search plant name..." oninput="filterPlantList()" style="margin-bottom: 8px;">
+                <div id="plantSearchHint" data-solar-th="เมื่อค้นหา กดชื่อโครงการเพื่อแสดงเฉพาะโครงการนั้น โดยคงตัวกรองสถานะเดิม" data-solar-en="While searching, select a plant to show only that plant. The status filter stays active." style="font-size:.72rem;color:var(--text-muted);margin:-2px 0 8px;display:none;">เมื่อค้นหา กดชื่อโครงการเพื่อแสดงเฉพาะโครงการนั้น โดยคงตัวกรองสถานะเดิม</div>
                 <div class="plant-list-container" id="plantListContainer"></div>
             </div>
         </div>
@@ -607,13 +608,15 @@
         renderTableAndMetrics();
     }
 
+    function syncStatusFilterButtons() {
+        document.querySelectorAll('.btn-filter-status').forEach(btn => btn.classList.remove('active'));
+        const ids = {ALL:'btnFilterAll', NORMAL:'btnFilterNormal', ABNORMAL:'btnFilterAbnormal', NOT_FOUND:'btnFilterNotFound'};
+        document.getElementById(ids[activeStatusFilter] || ids.ALL).classList.add('active');
+    }
+
     function setStatusFilter(status) {
         activeStatusFilter = status;
-        document.querySelectorAll('.btn-filter-status').forEach(btn => btn.classList.remove('active'));
-        if (status === 'ALL') document.getElementById('btnFilterAll').classList.add('active');
-        if (status === 'NORMAL') document.getElementById('btnFilterNormal').classList.add('active');
-        if (status === 'ABNORMAL') document.getElementById('btnFilterAbnormal').classList.add('active');
-        if (status === 'NOT_FOUND') document.getElementById('btnFilterNotFound').classList.add('active');
+        syncStatusFilterButtons();
         renderTableAndMetrics();
     }
 
@@ -792,6 +795,7 @@
             container.appendChild(label);
         });
         document.getElementById('selectedCount').innerText = selectedPlants.size;
+        filterPlantList();
     }
 
     function escapeHtml(str) {
@@ -800,12 +804,18 @@
     }
 
     function filterPlantList() {
-        const q = document.getElementById('searchPlant').value.toLowerCase();
+        const q = document.getElementById('searchPlant').value.trim().toLocaleLowerCase();
         document.querySelectorAll('.plant-item').forEach(el => { el.style.display = el.innerText.toLowerCase().includes(q) ? 'flex' : 'none'; });
+        document.getElementById('plantSearchHint').style.display = q ? 'block' : 'none';
     }
 
     function onPlantCheckChange(cb) {
-        if (cb.checked) selectedPlants.add(cb.value);
+        if (document.getElementById('searchPlant').value.trim()) {
+            // All plants may already be checked; selecting a search result focuses that plant.
+            selectedPlants.clear();
+            selectedPlants.add(cb.value);
+            document.querySelectorAll('.plant-item input').forEach(input => { input.checked = input === cb; });
+        } else if (cb.checked) selectedPlants.add(cb.value);
         else selectedPlants.delete(cb.value);
         document.getElementById('selectedCount').innerText = selectedPlants.size;
         renderTableAndMetrics();
@@ -944,6 +954,14 @@
             tbody.appendChild(tr);
         });
 
+        if (!tbody.children.length) {
+            const tr = document.createElement('tr');
+            const message = selectedPlants.size && activeStatusFilter !== 'ALL'
+                ? (giLanguage()==='en'?'The selected plant does not match the current status filter.':'โครงการที่เลือกไม่ตรงกับสถานะที่กรองอยู่')
+                : (giLanguage()==='en'?'No plants match the current filters.':'ไม่พบโครงการตามตัวกรองที่เลือก');
+            tr.innerHTML = `<td colspan="${dateList.length + 7}" style="text-align:center;padding:20px;color:var(--text-muted)">${message}</td>`;
+            tbody.appendChild(tr);
+        }
         bindDynamicEvents();
         document.getElementById('countAll').innerText = provincePlants.length;
         document.getElementById('countNormal').innerText = countNormal;
@@ -1184,6 +1202,7 @@
       selectedTrendPlants=new Set(Array.isArray(state.selectedTrendPlants)?state.selectedTrendPlants:[]);
       if(state.minIrr!=null)document.getElementById('minIrr').value=state.minIrr;if(state.maxIrr!=null)document.getElementById('maxIrr').value=state.maxIrr;
       activeStatusFilter=state.activeStatusFilter||'ALL';activeProvinceFilter=state.activeProvinceFilter||'ALL';activeTrendProvinceFilter=state.activeTrendProvinceFilter||'ALL';restoredTrendYears=Array.isArray(state.trendFilters?.years)?state.trendFilters.years:[];restoredTrendMonths=Array.isArray(state.trendFilters?.months)?state.trendFilters.months:[];trendGranularity=['daily','monthly','yearly'].includes(state.trendFilters?.granularity)?state.trendFilters.granularity:'daily';isFileUploaded=Object.keys(plantMasterData).length>0;
+      syncStatusFilterButtons();
       sourceFileNames=Array.isArray(base.sourceFiles)?base.sourceFiles:[];
       populateDateFilters();
       const filters=state.filters||{};[['yearFilter',filters.years],['monthFilter',filters.months],['dayFilter',filters.days]].forEach(([id,values])=>{if(!Array.isArray(values))return;Array.from(document.getElementById(id).options).forEach(option=>option.selected=values.includes(option.value))});
