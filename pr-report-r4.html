@@ -2908,6 +2908,89 @@ body.pr-dark .pr-v26-dialog,body.dark .pr-v26-dialog{background:#111827}
      3910fd6915340afba2251b47d9e05af3028177105c7c2ac81755ece0a3b840b6
      Production Gate state intentionally uses a fresh session key for V1.0.
 -->
+<style id="prDesktopLayout20260930">
+/* PR desktop layout 2026-09-30. Presentation only; calculation core is unchanged. */
+body.solar-pr{--pr-sidebar-w:208px;--pr-command-h:auto}
+body.solar-pr.pr-sidebar-collapsed{--pr-sidebar-w:72px}
+body.solar-pr .pr-sidebar{overflow-y:auto;overflow-x:hidden;padding:14px 10px}
+body.solar-pr .pr-sidebar .tab,body.solar-pr .pr-side-tool{min-height:43px!important}
+body.solar-pr .pr-sidebar-label{padding-top:12px}
+body.solar-pr .pr-sidebar-foot{padding-top:10px}
+body.solar-pr .topbar.commandbar{
+ display:grid!important;grid-template-columns:minmax(175px,.8fr) minmax(180px,1fr) auto!important;
+ grid-template-areas:'context search actions' 'cloud cloud cloud';
+ height:auto!important;min-height:88px;gap:7px 14px!important;padding:10px 20px!important;
+ background:var(--card)!important;backdrop-filter:none;overflow:visible
+}
+body.solar-pr .command-left{grid-area:context;min-width:0}
+body.solar-pr .command-search-wrap{grid-area:search;height:36px;min-width:0}
+body.solar-pr .commandbar #prHeaderActions{grid-area:actions;min-width:0!important;gap:6px;flex-wrap:nowrap!important}
+body.solar-pr .topbar .solar-cloud-topbar-host{grid-area:cloud;grid-column:auto!important;grid-row:auto!important;width:100%;min-width:0;margin:0!important;padding:0!important;justify-content:flex-end!important;overflow:auto}
+body.solar-pr #prV4ModeControls{display:none!important}
+body.solar-pr .header-controls .fs-ui-toolbar{display:flex!important;gap:6px;min-width:0;flex-wrap:nowrap!important}
+body.solar-pr .header-controls .btn span{display:inline!important}
+body.solar-pr .header-controls .btn,body.solar-pr .header-controls .fs-ui-toolbar button{min-height:34px!important;height:34px;padding:6px 10px!important;white-space:nowrap}
+body.solar-pr .header-controls .pr-r4-badge{display:none!important}
+body.solar-pr .workspace{padding:18px 20px 24px!important}
+body.solar-pr .pr-page-head{margin-bottom:12px!important}
+body.solar-pr .pr-page-title{font-size:24px!important;margin:3px 0!important}
+body.solar-pr .pr-page-subtitle{font-size:12px;line-height:1.5}
+body.solar-pr .panel{border-radius:14px!important;margin-bottom:14px!important}
+body.solar-pr .panel-head{padding:12px 14px!important;gap:10px!important}
+body.solar-pr .panel h2{font-size:15px!important}
+body.solar-pr #overviewView>.panel>.panel-head{display:flex!important;flex-wrap:wrap!important;align-items:center!important}
+body.solar-pr #overviewView>.panel>.panel-head>div:first-child{flex:1 1 200px}
+body.solar-pr #overviewView>.panel>.panel-head>.actions{display:flex!important;flex:0 1 auto!important;flex-wrap:wrap!important;gap:6px!important;padding:0!important;margin:0!important;border:0!important;background:none!important;box-shadow:none!important}
+body.solar-pr .status-filters{display:flex!important;flex-wrap:wrap;gap:4px!important;padding:3px!important}
+body.solar-pr .status-filter{min-height:30px!important;padding:5px 7px!important;font-size:11px!important}
+body.solar-pr .btn{min-height:34px!important;font-size:12px!important;padding:7px 10px!important}
+body.solar-pr #prV9FilterSummary{padding:8px 14px!important;gap:6px!important;min-height:0!important}
+body.solar-pr .pr-v9-filter-chip{min-height:28px!important;padding:4px 8px!important}
+body.solar-pr #overviewView .table-wrap{max-height:calc(100dvh - 300px)!important;min-height:280px;scrollbar-gutter:auto}
+body.solar-pr #overviewView table{min-width:1080px!important;table-layout:fixed;--v10-freeze-date:76px;--v10-freeze-index:32px;--v10-freeze-project:210px}
+body.solar-pr #overviewView :is(th,td){padding:7px 8px!important;height:auto!important;font-size:12px!important}
+body.solar-pr #overviewView th{height:40px!important;white-space:normal!important;line-height:1.3;letter-spacing:0!important;text-transform:none!important;background:var(--soft)!important}
+body.solar-pr #overviewView tbody td{height:46px!important;font-size:12px!important}
+body.solar-pr #overviewView :is(th,td):nth-child(4){width:72px}
+body.solar-pr #overviewView :is(th,td):nth-child(5){width:68px}
+body.solar-pr #overviewView :is(th,td):nth-child(6){width:82px}
+body.solar-pr #overviewView :is(th,td):nth-child(7){width:85px}
+body.solar-pr #overviewView :is(th,td):nth-child(8){width:88px;text-align:center!important}
+body.solar-pr #overviewView :is(th,td):nth-child(9){width:88px}
+body.solar-pr #overviewView :is(th,td):nth-child(10){width:48px}
+body.solar-pr #overviewView :is(th,td):nth-child(11){width:88px}
+body.solar-pr #overviewView :is(th,td):nth-child(12){width:52px;text-align:center!important}
+body.solar-pr #overviewView .project-open{font-size:12px!important;line-height:1.35!important;padding:0!important;min-height:0!important;box-shadow:none!important;background:transparent!important;border:0!important}
+body.solar-pr #detailView .detail-grid>.panel:first-child>.panel-head{display:flex!important;flex-wrap:wrap;align-items:center!important}
+body.solar-pr #detailView .detail-grid>.panel:first-child>.panel-head>div:first-child{flex:1 1 220px}
+body.solar-pr #detailView .detail-grid>.panel:first-child>.panel-head>.actions{display:flex!important;flex-wrap:wrap!important;gap:6px!important;padding:5px!important;margin:0!important;width:auto!important;max-width:100%;border-radius:10px!important;min-height:0!important}
+body.solar-pr #detailView .ds-select-shell{min-width:130px!important;flex:0 1 auto}
+body.solar-pr #detailView .ds-select-trigger{height:34px!important;min-height:34px!important}
+body.solar-pr #detailView .chart-box{height:clamp(420px,54vh,620px)!important;min-height:420px!important;margin:12px!important;padding:12px!important;background:var(--soft)!important}
+body.solar-pr #detailView .comparison-head{align-items:center!important}
+body.solar-pr #detailView .comparison-head>.actions{margin-left:auto}
+body.solar-pr #detailView th{background:var(--soft)!important;opacity:1}
+body.solar-pr #dataView .data-filter-toolbar{margin:10px 14px!important;padding:8px!important;gap:10px!important;min-height:0}
+body.solar-pr #dataView .v13-data-status{margin:0 14px 10px!important;gap:6px!important}
+body.solar-pr #dataView .v13-data-stat{padding:7px 9px!important;box-shadow:none!important;background:var(--soft)!important;border-color:var(--line)!important}
+body.solar-pr #dataView .table-wrap{margin:0 14px!important;max-height:calc(100dvh - 410px)!important;min-height:260px;background:var(--card)!important}
+body.solar-pr #dataView table{min-width:760px!important}
+body.solar-pr #dataView :is(th,td){padding:8px 10px!important;font-size:12px!important;background:var(--card)!important;color:var(--text)!important}
+body.solar-pr #dataView th{background:var(--soft)!important;white-space:normal!important;text-transform:none;letter-spacing:0!important}
+body.solar-pr #dataView .pr-correction-input{height:34px!important;background:var(--card)!important;color:var(--text)!important;border-color:var(--line)!important}
+body.solar-pr #dataView .v13-save-rail{position:relative!important;bottom:auto!important;margin:10px 14px!important;padding:10px!important;background:var(--soft)!important;backdrop-filter:none!important}
+body.solar-pr .modal-card{max-height:88dvh!important;overflow:auto!important}
+body.solar-pr .modal-head{position:sticky;top:0;z-index:4;background:var(--card)!important;padding:12px 16px!important}
+body.solar-pr #mainFilterModal .modal-card,body.solar-pr #calculationFilterModal .modal-card{width:min(780px,94vw)!important}
+body.solar-pr #prFilterModal .modal-card,body.solar-pr #recordsFilterModal .modal-card{width:min(520px,94vw)!important}
+body.solar-pr .modal-card .plant-list,body.solar-pr .project-choice-list{max-height:38dvh!important;overscroll-behavior:contain}
+body.solar-pr .modal-card>.actions:last-child{position:sticky;bottom:0;background:var(--card)!important;padding:10px 0!important;margin-bottom:0!important;z-index:3;border-top:1px solid var(--line)}
+@media(min-width:1700px){body.solar-pr .topbar.commandbar{grid-template-columns:190px minmax(200px,1fr) auto auto!important;grid-template-areas:'context search cloud actions';min-height:62px}}
+@media(max-width:1100px){body.solar-pr .topbar.commandbar{grid-template-columns:minmax(150px,1fr) auto!important;grid-template-areas:'context actions' 'search search' 'cloud cloud';min-height:0}body.solar-pr .pr-page-subtitle{max-width:650px}body.solar-pr #overviewView .table-wrap{max-height:60dvh!important}}
+@media(max-width:760px){body.solar-pr{--pr-sidebar-w:72px}body.solar-pr .pr-sidebar-brand-copy,body.solar-pr .pr-nav-label,body.solar-pr .pr-sidebar-label,body.solar-pr .pr-sidebar-version,body.solar-pr .pr-collapse-text{display:none!important}body.solar-pr .pr-sidebar .tab,body.solar-pr .pr-side-tool{justify-content:center!important;padding:7px!important}body.solar-pr .workspace{padding:12px!important}body.solar-pr .topbar.commandbar{padding:8px 12px!important}body.solar-pr .command-kicker,body.solar-pr #prRuntimeStateV17{display:none!important}body.solar-pr #dataView .v13-data-status{grid-template-columns:1fr 1fr!important}body.solar-pr .pr-page-title{font-size:21px!important}}
+@media(prefers-reduced-motion:reduce){body.solar-pr .pr-section-enter{animation:none!important}}
+
+</style>
 </head>
 <body class="solar-pr pr-spare-shell" data-pr-release="V1.0-MAIN-STABLE" data-pr-release-date="2026-09-30">
 <div class="desktop-shell">
