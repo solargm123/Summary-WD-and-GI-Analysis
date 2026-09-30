@@ -255,7 +255,7 @@
         @media(max-width:720px){#filterModal .modal-content{padding:14px}#filterModal .filter-grid,#trendControlsCard .trend-date-grid{grid-template-columns:1fr}#filterModal .multi-select,#trendControlsCard .multi-select{height:120px}}
     </style>
 <link rel="stylesheet" href="unified-ui.css?v=20260927-scroll1">
-</head>
+<style id="giRenderPerformance20260930">header,.modal-overlay,#trendPopupBackdrop{backdrop-filter:none!important}header{background:var(--card-bg)!important}</style></head>
 <body class="solar-gi">
 
 <div class="container">
@@ -993,7 +993,7 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
 
         let totalValidIrrSum = 0, totalValidCount = 0, totalNormalDaysCount = 0;
         let countNormal = 0, countAbnormal = 0, countNotFound = 0;
-        tbody.innerHTML = '';
+        const rowFragment=document.createDocumentFragment();
 
         const provincePlants=Array.from(selectedPlants).filter(plant=>activeProvinceFilter==='ALL'||(plantMasterData[plant]?.province||'ไม่ระบุ')===activeProvinceFilter).sort();
         provincePlants.forEach(plant => {
@@ -1069,8 +1069,9 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
                 ${dayCellsHtml}
                 <td class="col-note"><input type="text" class="note-input data-note-input" data-plant="${escapeHtml(plant)}" value="${escapeHtml(pData.note || '')}" placeholder="Add note..."></td>
             `;
-            tbody.appendChild(tr);
+            rowFragment.appendChild(tr);
         });
+        tbody.replaceChildren(rowFragment);
 
         if (!tbody.children.length) {
             const tr = document.createElement('tr');
@@ -1237,9 +1238,9 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
         else{document.getElementById('chartMinVal').innerText='0.000';document.getElementById('chartMinInfo').innerText='-';document.getElementById('chartMaxVal').innerText='0.000';document.getElementById('chartMaxInfo').innerText='-';document.getElementById('chartAvgVal').innerText='0.000'}
 
         const isDark=document.documentElement.getAttribute('data-theme')==='dark',textColor=isDark?'#cbd5e1':'#475569',gridColor=isDark?'#47556944':'#cbd5e177';
-        if(trendChart)trendChart.destroy();
+        if(trendChart){trendChart.data.labels=periods;trendChart.data.datasets=datasets;trendChart.options.plugins.legend.labels.color=textColor;trendChart.options.scales.x.ticks.color=textColor;trendChart.options.scales.y.ticks.color=textColor;trendChart.options.scales.x.grid.color=gridColor;trendChart.options.scales.y.grid.color=gridColor;trendChart.options.scales.y.title.color=textColor;trendChart.update('none');return}
         const ctx=document.getElementById('irrTrendChart').getContext('2d');
-        trendChart=new Chart(ctx,{type:'line',data:{labels:periods,datasets},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{color:textColor,font:{family:'Bai Jamjuree',size:11},boxWidth:12}},tooltip:{itemSort:(a,b)=>(Number(b.raw)||0)-(Number(a.raw)||0),callbacks:{label:context=>` ${context.dataset.label}: ${context.raw!==null&&Number.isFinite(Number(context.raw))?Number(context.raw).toFixed(3):'-'} kWh/m²`}}},scales:{x:{ticks:{color:textColor,font:{family:'Bai Jamjuree'}},grid:{color:gridColor}},y:{title:{display:true,text:'Average Global Irradiation (kWh/m²)',color:textColor,font:{family:'Bai Jamjuree'}},ticks:{color:textColor,font:{family:'Bai Jamjuree'}},grid:{color:gridColor},beginAtZero:true}}}});
+        trendChart=new Chart(ctx,{type:'line',data:{labels:periods,datasets},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{color:textColor,font:{family:'Bai Jamjuree',size:11},boxWidth:12}},tooltip:{animation:false,itemSort:(a,b)=>(Number(b.raw)||0)-(Number(a.raw)||0),callbacks:{label:context=>` ${context.dataset.label}: ${context.raw!==null&&Number.isFinite(Number(context.raw))?Number(context.raw).toFixed(3):'-'} kWh/m²`}}},scales:{x:{ticks:{color:textColor,font:{family:'Bai Jamjuree'}},grid:{color:gridColor}},y:{title:{display:true,text:'Average Global Irradiation (kWh/m²)',color:textColor,font:{family:'Bai Jamjuree'}},ticks:{color:textColor,font:{family:'Bai Jamjuree'}},grid:{color:gridColor},beginAtZero:true}}}});
     }
 
     async function resetData() {
@@ -1339,3 +1340,4 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
 <script src="unified-ui.js?v=20260915-unified-ui1"></script>
 </body>
 </html>
+
