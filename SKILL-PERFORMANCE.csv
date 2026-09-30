@@ -12,3 +12,4 @@ date,task_type,primary_skill,files_read,files_changed,tool_calls,commits,rework_
 2026-09-29,pr-note-click,bug-triage+regression-guard,4,5,12,1,0,yes,yes,Added direct Add Note button handler and tested click/save with table delegated listener removed
 2026-09-29,pr_bugfix,bug-triage,7,4,24,1,1,no,no,"Live UI reproduced empty compare and calculation selection; note dialog opens in tested daily row; revised charts and filters"
 2026-09-29,pr_interaction_fix,bug-triage,4,5,14,1,0,no,no,"Restored direct Note button, project select and preserved calculation input focus; live verification pending"
+2026-09-30,gi-review-workflow,calculation-lock+ui-consistency+regression-guard,13,9,35,1,2,yes,no,"Added separate daily GI acceptance and monthly review; partial-month metadata retained; isolated DOM and PR threshold checks passed; Solar DB connector unavailable"

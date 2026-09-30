@@ -69,7 +69,7 @@
     const {data,error}=await getClient().rpc('create_analysis_project',{p_workspace:m.workspace_id,p_analysis_type:type,p_name:(name||fallback).trim()});
     if(error)throw error;return data.id;
   }
-  function analysisUrl(project){const page=project.analysis_type==='working_day'?'working-day-analysis.html':project.analysis_type==='global_irradiance'?'global-irradiance-analysis.html':'pr-report-r4.html';const version=project.analysis_type==='global_irradiance'?'20260929-gi-apply1':project.analysis_type==='pr_report'?'20260930-pr-edit-note8':'20260929-wd-save1';return `${page}?v=${version}&project=${encodeURIComponent(project.id)}`}
+  function analysisUrl(project){const page=project.analysis_type==='working_day'?'working-day-analysis.html':project.analysis_type==='global_irradiance'?'global-irradiance-analysis.html':'pr-report-r4.html';const version=project.analysis_type==='global_irradiance'?'20260930-gi-review1':project.analysis_type==='pr_report'?'20260930-pr-edit-note8':'20260929-wd-save1';return `${page}?v=${version}&project=${encodeURIComponent(project.id)}`}
   async function signIn(email,password){const {data,error}=await getClient().auth.signInWithPassword({email,password});if(error)throw error;return data}
   async function signOut(){await getClient().auth.signOut();location.replace(indexUrl())}
   async function loadProject(id){
@@ -180,7 +180,7 @@
   }
   function localKeys(type){
     if(type==='working_day')return ['selectedMonth'];
-    if(type==='global_irradiance')return ['selectedPlants','allPlantsSelected','selectedTrendPlants','activeStatusFilter','activeProvinceFilter','activeTrendProvinceFilter','provinceOverrides','selectedPeriod','fullDataLoaded','filters','trendFilters'];
+    if(type==='global_irradiance')return ['selectedPlants','allPlantsSelected','selectedTrendPlants','activeStatusFilter','activeReviewFilter','activeProvinceFilter','activeTrendProvinceFilter','provinceOverrides','selectedPeriod','fullDataLoaded','filters','trendFilters'];
     if(type==='pr_report')return ['selectedProject','selectedPlants','displayMode','month','year','dayMode','trendMode','startDate'];
     return [];
   }
