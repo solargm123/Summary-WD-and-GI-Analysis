@@ -13,9 +13,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20260930-gi-review1"></script>
+    <script src="cloud-core.js?v=20260930-gi-review2"></script>
 
-    <script src="gi-review.js?v=20260930-gi-review1"></script>
+    <script src="gi-review.js?v=20260930-gi-review2"></script>
     <style>
         :root[data-theme="dark"] {
             --bg-main: #1e293b; --card-bg: #334155; --card-border: #475569;
@@ -109,11 +109,15 @@
         .col-kwp { position: sticky; left: 789px; width: 85px !important; z-index: 10; background: var(--sticky-bg) !important; box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.3); }
         
         .col-review { position:sticky;left:70px;width:54px!important;z-index:10;background:var(--sticky-bg)!important;text-align:center;padding:4px; }
-        .gi-review-btn,.gi-day-btn { border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-muted);border-radius:7px;cursor:pointer;width:28px;height:28px; }
-        .gi-review-btn.reviewed,.gi-day-btn.accepted { color:var(--accent-green);border-color:var(--accent-green); }
-        .gi-review-btn.recheck { color:var(--accent-yellow);border-color:var(--accent-yellow); }
-        .gi-review-btn:disabled,.gi-day-btn:disabled { opacity:.5;cursor:not-allowed; }
-        .gi-day-btn { width:20px;height:20px;margin-left:4px;font-size:11px; }
+        .gi-review-btn,.gi-day-btn { display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;flex-shrink:0;border:1px solid var(--card-border);background:transparent;color:var(--text-muted);border-radius:5px;cursor:pointer;width:22px;height:22px;min-width:0!important;min-height:0!important;padding:0!important;line-height:1;box-shadow:none;transition:background .15s,border-color .15s,color .15s; }
+        .gi-review-btn i { font-size:12px!important;line-height:1;width:12px;height:12px;display:inline-flex;align-items:center;justify-content:center;margin:0!important; }
+        .gi-review-btn.reviewed,.gi-day-btn.accepted { color:var(--accent-green);border-color:color-mix(in srgb,var(--accent-green) 45%,var(--card-border));background:color-mix(in srgb,var(--accent-green) 10%,transparent); }
+        .gi-review-btn.recheck { color:var(--accent-yellow);border-color:color-mix(in srgb,var(--accent-yellow) 45%,var(--card-border)); }
+        .gi-review-btn:hover:not(:disabled),.gi-day-btn:hover:not(:disabled) { border-color:var(--accent-blue);background:color-mix(in srgb,var(--accent-blue) 12%,transparent); }
+        .gi-review-btn:focus-visible,.gi-day-btn:focus-visible { outline:2px solid var(--accent-blue);outline-offset:2px; }
+        .gi-review-btn:disabled,.gi-day-btn:disabled { opacity:.45;cursor:not-allowed; }
+        .gi-day-btn { width:18px;height:18px;margin-left:3px;border-radius:4px; }
+        .gi-day-btn i { font-size:10px!important;line-height:1;width:10px;height:10px;display:inline-flex;align-items:center;justify-content:center;margin:0!important; }
         .gi-review-filter { background:var(--input-bg);color:var(--text-main);border:1px solid var(--card-border);border-radius:8px;padding:6px;font:inherit;max-width:170px; }
         .accepted-cell { background:var(--normal-bg); }
         .col-date { width: 100px !important; }
@@ -306,7 +310,7 @@
 
         <div class="card table-card">
             <div class="table-header-bar">
-                <h3><i class="fa-solid fa-table" style="color: var(--accent-blue);"></i> เปรียบเทียบ Global Irradiation รายวัน (kWh/m²) <small style="font-size:.65rem;color:var(--text-muted)">GI Review R1</small></h3>
+                <h3><i class="fa-solid fa-table" style="color: var(--accent-blue);"></i> เปรียบเทียบ Global Irradiation รายวัน (kWh/m²) <small style="font-size:.65rem;color:var(--text-muted)">GI Review R1.1</small></h3>
             </div>
 
             <div class="status-filter-bar">
@@ -1009,7 +1013,7 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
                         totalValidIrrSum += irrVal; totalValidCount++; totalNormalDaysCount++;
                     } else { anomalyDaysCount++; }
 
-                    const dayButton=(!isNormal||acceptance)?`<button type="button" class="gi-day-btn ${accepted?'accepted':''}" data-plant="${escapeHtml(plant)}" data-date="${d}" ${SolarCloud.roleCanEdit()?'':'disabled'} title="${escapeHtml(giText(accepted?'รับรองแล้ว':'ยืนยันค่าถูกต้อง',accepted?'Accepted':'Confirm correct value')+(acceptance?' · '+acceptance.name+' · '+acceptance.at:''))}" aria-label="${escapeHtml(giText('ยืนยันค่าแสง','Confirm irradiance')+' '+plant+' '+d)}">${accepted?'✓':'?'}</button>`:'';
+                    const dayButton=(!isNormal||acceptance)?`<button type="button" class="gi-day-btn ${accepted?'accepted':''}" data-plant="${escapeHtml(plant)}" data-date="${d}" ${SolarCloud.roleCanEdit()?'':'disabled'} title="${escapeHtml(giText(accepted?'รับรองแล้ว':'ยืนยันค่าถูกต้อง',accepted?'Accepted':'Confirm correct value')+(acceptance?' · '+acceptance.name+' · '+acceptance.at:''))}" aria-label="${escapeHtml(giText('ยืนยันค่าแสง','Confirm irradiance')+' '+plant+' '+d)}"><i class="fa-solid fa-check" aria-hidden="true"></i></button>`:'';
                     if (isEditMode) {
                         dayCellsHtml += `<td class="${cellClass}"><input type="number" step="0.001" class="cell-input data-irr-input" data-plant="${escapeHtml(plant)}" data-date="${d}" value="${irrVal.toFixed(3)}"></td>`;
                     } else { dayCellsHtml += `<td class="${cellClass}">${irrVal.toFixed(3)}${dayButton}</td>`; }
@@ -1047,7 +1051,7 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td class="col-status">${statusBadgeHtml}</td>
-                <td class="col-review"><button type="button" class="gi-review-btn ${monthStatus}" data-plant="${escapeHtml(plant)}" ${selectedReviewMonth&&Object.entries(pData.dates).some(([date,value])=>date.startsWith(selectedReviewMonth+'-')&&GiReview.valid(value))&&SolarCloud.roleCanEdit()?'':'disabled'} title="${escapeHtml(selectedReviewMonth?giText(monthStatus==='reviewed'?'ตรวจแล้ว':monthStatus==='recheck'?'ต้องตรวจซ้ำ':'ยังไม่ตรวจ',monthStatus==='reviewed'?'Reviewed':monthStatus==='recheck'?'Needs recheck':'Unreviewed')+' · '+selectedReviewMonth+(giReviewByPlant[plant]?.months?.[selectedReviewMonth]?.at?' · '+giReviewByPlant[plant].months[selectedReviewMonth].name+' · '+giReviewByPlant[plant].months[selectedReviewMonth].at:''):giText('เลือกเพียงหนึ่งเดือนเพื่อยืนยันหรือกรอง','Select one month to review or filter'))}" aria-label="${escapeHtml(giText('ตรวจรายเดือน','Monthly review')+' '+plant)}">${monthStatus==='reviewed'?'✓':monthStatus==='recheck'?'↻':'○'}</button></td>
+                <td class="col-review"><button type="button" class="gi-review-btn ${monthStatus}" data-plant="${escapeHtml(plant)}" ${selectedReviewMonth&&Object.entries(pData.dates).some(([date,value])=>date.startsWith(selectedReviewMonth+'-')&&GiReview.valid(value))&&SolarCloud.roleCanEdit()?'':'disabled'} title="${escapeHtml(selectedReviewMonth?giText(monthStatus==='reviewed'?'ตรวจแล้ว':monthStatus==='recheck'?'ต้องตรวจซ้ำ':'ยังไม่ตรวจ',monthStatus==='reviewed'?'Reviewed':monthStatus==='recheck'?'Needs recheck':'Unreviewed')+' · '+selectedReviewMonth+(giReviewByPlant[plant]?.months?.[selectedReviewMonth]?.at?' · '+giReviewByPlant[plant].months[selectedReviewMonth].name+' · '+giReviewByPlant[plant].months[selectedReviewMonth].at:''):giText('เลือกเพียงหนึ่งเดือนเพื่อยืนยันหรือกรอง','Select one month to review or filter'))}" aria-label="${escapeHtml(giText('ตรวจรายเดือน','Monthly review')+' '+plant)}"><i class="${monthStatus==='recheck'?'fa-solid fa-rotate-right':monthStatus==='reviewed'?'fa-regular fa-square-check':'fa-regular fa-square'}" aria-hidden="true"></i></button></td>
                 <td class="col-plant">
                     <div class="plant-cell-content">
                         <span class="plant-name-text" title="${escapeHtml(plant)}"><strong>${escapeHtml(plant)}</strong></span>
