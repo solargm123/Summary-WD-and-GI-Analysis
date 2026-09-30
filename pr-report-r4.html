@@ -115,7 +115,34 @@ body.solar-pr #recordFilterModal input{width:100%;padding:9px;border:1px solid v
 #recordFilterModal .project-choice.active{background:color-mix(in srgb,var(--blue) 14%,var(--card));font-weight:700}
 #calculationFilterModal .project-choice-list{scroll-behavior:auto;contain:layout paint}
 #calculationFilterModal .project-choice{content-visibility:auto;contain-intrinsic-size:auto 38px}
-</style></head>
+</style>
+<style id="prDesktopScroll20260930">
+html{scrollbar-gutter:stable;scroll-behavior:auto}
+body.solar-pr:has(.modal.open){overflow:hidden}
+body.solar-pr .table-wrap{scrollbar-gutter:stable;overscroll-behavior-x:contain;overscroll-behavior-y:auto;scroll-behavior:auto}
+body.solar-pr :is(.table-wrap,.plant-list,.project-choice-list,.guarantee-editor,.modal-card){scrollbar-width:auto;scrollbar-color:var(--muted) var(--soft)}
+body.solar-pr .modal{padding:16px;overflow:hidden}
+body.solar-pr .modal-card{max-height:calc(100dvh - 32px);overscroll-behavior:contain;scrollbar-gutter:stable;scroll-padding-block:70px}
+body.solar-pr .modal-card>.modal-head{position:sticky;top:-18px;z-index:5;background:var(--card);padding:12px 0;margin-top:-12px;border-bottom:1px solid var(--line)}
+body.solar-pr .modal-card>.actions:last-child{position:sticky;bottom:-18px;z-index:5;background:var(--card);padding:12px 0;margin-bottom:-12px;border-top:1px solid var(--line)}
+body.solar-pr :is(.plant-list,.project-choice-list,.guarantee-editor){overscroll-behavior:contain}
+body.solar-pr #mainFilterModal .plant-list,body.solar-pr #comparePicker{max-height:clamp(140px,32dvh,340px)}
+body.solar-pr #guaranteeModal .guarantee-editor{max-height:clamp(150px,42dvh,480px)}
+body.solar-pr :is(#dataView,#overviewView) .table-wrap{scroll-padding-top:46px}
+@media(min-width:1000px){
+ body.solar-pr #overviewView>.panel>.panel-head{position:static;top:auto}
+ body.solar-pr #overviewView .table-wrap{max-height:var(--pr-table-room,calc(100dvh - 260px));overflow:auto}
+ body.solar-pr #dataView .table-wrap{max-height:var(--pr-table-room,calc(100dvh - 250px));overflow:auto}
+ body.solar-pr #detailView .table-wrap{max-height:clamp(220px,52dvh,600px);overflow:auto}
+ body.solar-pr #detailView .chart-box{height:clamp(330px,56dvh,620px);min-height:330px}
+ body.solar-pr .table-wrap:focus-within{scroll-behavior:auto}
+}
+@media(max-height:650px) and (min-width:1000px){
+ body.solar-pr #detailView .chart-box{height:320px;min-height:320px}
+ body.solar-pr #calculationFilterModal .project-choice-list{height:150px}
+}
+</style>
+</head>
 <body class="solar-pr">
 <div class="app">
  <header class="topbar">
@@ -466,6 +493,39 @@ function syncStickyRows(){const header=document.querySelector('.topbar');if(!hea
 document.addEventListener('DOMContentLoaded',()=>{syncStickyRows();if('ResizeObserver'in window)new ResizeObserver(syncStickyRows).observe(document.querySelector('.topbar'));window.addEventListener('resize',syncStickyRows,{passive:true})});
 </script>
 <script src="unified-ui.js?v=20260922-pr-i18n2"></script>
+
+<script id="prViewportScroll20260930">
+/* Measure only layout: no table rebuilds, data loads or calculation changes. */
+(function(){
+ let frame=0;
+ function schedule(){if(!frame)frame=requestAnimationFrame(measure)}
+ function measure(){
+  frame=0;if(innerWidth<1000)return;
+  const height=window.visualViewport?.height||innerHeight;
+  for(const id of ['overviewView','dataView']){
+   const view=document.getElementById(id);if(!view||view.classList.contains('hidden'))continue;
+   const table=view.querySelector('.table-wrap');if(!table)continue;
+   const top=table.getBoundingClientRect().top+window.scrollY;
+   const footer=table.nextElementSibling;
+   const footerRoom=footer?footer.getBoundingClientRect().height+16:0;
+   const room=Math.max(200,Math.floor(height-top-footerRoom-28));
+   table.style.setProperty('--pr-table-room',room+'px');
+  }
+ }
+ document.addEventListener('DOMContentLoaded',()=>{
+  schedule();window.addEventListener('resize',schedule,{passive:true});
+  window.visualViewport?.addEventListener('resize',schedule,{passive:true});
+  const observer=new MutationObserver(schedule);
+  for(const id of ['overviewView','dataView','detailView']){
+   const view=document.getElementById(id);if(view)observer.observe(view,{attributes:true,attributeFilter:['class']});
+  }
+  if('ResizeObserver' in window){
+   const resize=new ResizeObserver(schedule);
+   for(const el of document.querySelectorAll('.topbar,#overviewView .panel-head,#dataView .panel-head,#dataView .data-filter-toolbar,#dataHint,#dataView .panel>.actions:last-child'))resize.observe(el);
+  }
+ });
+})();
+</script>
 </body>
 </html>
 
