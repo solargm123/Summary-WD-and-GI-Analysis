@@ -13,6 +13,11 @@ const {JSDOM}=require('jsdom');
  const base={plants:{A:{capacity:100,province:'กรุงเทพมหานคร',dates:{'2026-09-01':2,'2026-09-02':5}},B:{capacity:50,province:'กรุงเทพมหานคร',dates:{'2026-09-01':null,'2026-09-02':4}}},dates:['2026-09-01','2026-09-02'],loadedMonth:'2026-09'};
  const q=s=>d.querySelector(s),qa=s=>d.querySelectorAll(s),average=()=>q('#tableBody tr .col-avg').textContent;
  await w.testAdapter.restore(base,{minIrr:3.5,maxIrr:7});assert.equal(qa('#tableBody tr').length,2);assert.equal(average(),'5.000');
+ // The shared icon decorator must never append a second icon to review controls.
+ const decorator=fs.readFileSync('unified-ui.js','utf8');const iconCode=decorator.slice(decorator.indexOf('function ensureIcons('),decorator.indexOf('function toolbar('));
+ const iconContext={document:d,iconMap:{},iconFor:()=> 'fa-circle-dot'};vm.runInNewContext(iconCode,iconContext);iconContext.ensureIcons();iconContext.ensureIcons();
+ for(const button of qa('.gi-review-btn,.gi-day-btn'))assert.equal(button.querySelectorAll('i').length,1);
+ assert.equal(w.getComputedStyle(q('.gi-review-btn')).width,'22px');assert.equal(w.getComputedStyle(q('.gi-day-btn')).width,'18px');
  // Exercise the same button handlers that a real click invokes.
  await q('.gi-review-btn[data-plant="A"]').onclick();assert.equal(q('.gi-review-btn[data-plant="A"]').className,'gi-review-btn reviewed');
  assert.equal(qa('#tableBody tr:first-child .anomaly-cell').length,1);assert.equal(average(),'5.000');
