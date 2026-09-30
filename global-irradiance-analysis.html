@@ -13,9 +13,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20260930-gi-review2"></script>
+    <script src="cloud-core.js?v=20260930-gi-province3"></script>
 
-    <script src="gi-review.js?v=20260930-gi-review2"></script>
+    <script src="gi-review.js?v=20260930-gi-province3"></script>
     <style>
         :root[data-theme="dark"] {
             --bg-main: #1e293b; --card-bg: #334155; --card-border: #475569;
@@ -310,7 +310,7 @@
 
         <div class="card table-card">
             <div class="table-header-bar">
-                <h3><i class="fa-solid fa-table" style="color: var(--accent-blue);"></i> เปรียบเทียบ Global Irradiation รายวัน (kWh/m²) <small style="font-size:.65rem;color:var(--text-muted)">GI Review R1.1</small></h3>
+                <h3><i class="fa-solid fa-table" style="color: var(--accent-blue);"></i> เปรียบเทียบ Global Irradiation รายวัน (kWh/m²) <small style="font-size:.65rem;color:var(--text-muted)">GI Review R1.2</small></h3>
             </div>
 
             <div class="status-filter-bar">
@@ -558,9 +558,9 @@
     function renderProvinceOptions(){
         const query=document.getElementById('provinceSearch').value.trim().toLowerCase();
         const selected=currentProvinceMode==='table'?activeProvinceFilter:currentProvinceMode==='trend'?activeTrendProvinceFilter:(plantMasterData[currentProvincePlant]?.province||'ไม่ระบุ');
-        const counts=currentProvinceMode==='trend'?trendProvinceCounts():null;
+        const counts=currentProvinceMode==='plant'?null:trendProvinceCounts();
         const usedTrendProvinces=counts?Object.keys(counts).filter(name=>counts[name]>0).sort((a,b)=>provinceLabel(a).localeCompare(provinceLabel(b))):[];
-        const names=currentProvinceMode==='plant'?THAI_PROVINCES:currentProvinceMode==='trend'?['ALL',...usedTrendProvinces]:['ALL',...THAI_PROVINCES];
+        const names=currentProvinceMode==='plant'?THAI_PROVINCES:['ALL',...usedTrendProvinces];
         const total=counts?Object.values(counts).reduce((sum,value)=>sum+value,0):0;
         document.getElementById('provinceOptionList').innerHTML=names.filter(name=>{const label=name==='ALL'?(giLanguage()==='en'?'All provinces':'ทุกจังหวัด'):provinceLabel(name);return !query||name.toLowerCase().includes(query)||label.toLowerCase().includes(query)||(PROVINCE_EN[name]||'').toLowerCase().includes(query)}).map(name=>{
             const label=name==='ALL'?(giLanguage()==='en'?'All provinces':'ทุกจังหวัด'):provinceLabel(name),secondary=name==='ALL'?'All':(giLanguage()==='en'?name:PROVINCE_EN[name]),count=name==='ALL'?total:(counts?.[name]||0);
@@ -568,7 +568,7 @@
         }).join('')
     }
     function selectProvince(value){if(currentProvinceMode==='table'){setProvinceFilter(value);closeProvincePopup()}else if(currentProvinceMode==='trend'){activeTrendProvinceFilter=value||'ALL';selectedTrendPlants=new Set(trendAvailablePlants());syncTrendProvinceSelect();renderTrendPlantList();updateTrendChart();closeProvincePopup()}else{updateProvinceData(currentProvincePlant,value);closeProvincePopup();renderTableAndMetrics()}}
-    function renderProvinceFilterOptions(){const used=[...new Set([...selectedPlants].map(name=>plantMasterData[name]?.province||'ไม่ระบุ'))].sort((a,b)=>provinceLabel(a).localeCompare(provinceLabel(b)));if(activeProvinceFilter!=='ALL'&&!used.includes(activeProvinceFilter))activeProvinceFilter='ALL';const label=document.getElementById('provinceStatusFilterLabel');if(label)label.textContent=activeProvinceFilter==='ALL'?(giLanguage()==='en'?'All provinces':'ทุกจังหวัด'):provinceLabel(activeProvinceFilter);syncTrendProvinceSelect()}
+    function renderProvinceFilterOptions(){const used=[...new Set([...allPlantsSet].map(name=>plantMasterData[name]?.province||'ไม่ระบุ'))].sort((a,b)=>provinceLabel(a).localeCompare(provinceLabel(b)));if(activeProvinceFilter!=='ALL'&&!used.includes(activeProvinceFilter))activeProvinceFilter='ALL';const label=document.getElementById('provinceStatusFilterLabel');if(label)label.textContent=activeProvinceFilter==='ALL'?(giLanguage()==='en'?'All provinces':'ทุกจังหวัด'):provinceLabel(activeProvinceFilter);syncTrendProvinceSelect()}
 
     let trendChart = null, selectedTrendPlants = new Set(), restoredTrendYears = [], restoredTrendMonths = [], trendGranularity='daily';
     const chartColors = [
@@ -653,6 +653,9 @@
 
     function setProvinceFilter(province) {
         activeProvinceFilter = province || 'ALL';
+        selectedPlantSearchResult=null;document.getElementById('searchPlant').value='';
+        selectedPlants=new Set(tableAvailablePlants());
+        renderPlantList();
         renderProvinceFilterOptions();
         renderTableAndMetrics();
     }
@@ -812,9 +815,10 @@
         }).sort();
     }
 
+    function tableAvailablePlants(){return Array.from(allPlantsSet).filter(plant=>activeProvinceFilter==='ALL'||(plantMasterData[plant]?.province||'ไม่ระบุ')===activeProvinceFilter).sort()}
     function searchedPlants() {
         const query = document.getElementById('searchPlant').value.trim().toLocaleLowerCase();
-        return Array.from(allPlantsSet).filter(plant => !query || plant.toLocaleLowerCase().includes(query)).sort();
+        return tableAvailablePlants().filter(plant => !query || plant.toLocaleLowerCase().includes(query));
     }
 
     function renderPlantList() {
@@ -822,7 +826,7 @@
         container.innerHTML = '';
         const searching = !!document.getElementById('searchPlant').value.trim();
         const plants = searchedPlants();
-        document.getElementById('totalCount').innerText = allPlantsSet.size;
+        document.getElementById('totalCount').innerText = tableAvailablePlants().length;
 
         plants.forEach((plant, idx) => {
             if (searching) {
@@ -849,7 +853,7 @@
             empty.textContent = giLanguage()==='en' ? 'No matching plants' : 'ไม่พบโครงการที่ค้นหา';
             container.appendChild(empty);
         }
-        document.getElementById('selectedCount').innerText = selectedPlants.size;
+        document.getElementById('selectedCount').innerText = tableAvailablePlants().filter(plant=>selectedPlants.has(plant)).length;
         const hint = document.getElementById('plantSearchHint');
         hint.style.display = searching ? 'block' : 'none';
         if (searching) hint.textContent = giLanguage()==='en'
@@ -879,7 +883,7 @@
     function onPlantCheckChange(cb) {
         if (cb.checked) selectedPlants.add(cb.value);
         else selectedPlants.delete(cb.value);
-        document.getElementById('selectedCount').innerText = selectedPlants.size;
+        document.getElementById('selectedCount').innerText = tableAvailablePlants().filter(plant=>selectedPlants.has(plant)).length;
         renderTableAndMetrics();
     }
 
