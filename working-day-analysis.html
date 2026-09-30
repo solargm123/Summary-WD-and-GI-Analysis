@@ -1080,7 +1080,7 @@ body.wd-theme-switching *::after{
 
 <link rel="stylesheet" href="working-day-summary.css?v=20260928-8">
 </head>
-<body class="solar-wd bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen pb-2 transition-colors duration-200">
+<body class="solar-wd wd-dock-collapsed bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen pb-2 transition-colors duration-200">
 
     <!-- Header Navigation -->
     <header class="border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md sticky top-0 z-40 shadow-sm transition-colors duration-200">
@@ -1557,7 +1557,8 @@ body.wd-theme-switching *::after{
                 top.dataset.synced = 'true';
 
                 if (window.ResizeObserver) {
-                    const ro = new ResizeObserver(() => requestAnimationFrame(updateTopScrollbarWidth));
+                    let widthFrame=0;const scheduleWidth=()=>{if(!widthFrame)widthFrame=requestAnimationFrame(()=>{widthFrame=0;updateTopScrollbarWidth()})};
+                    const ro = new ResizeObserver(scheduleWidth);
                     ro.observe(table);
                     const dataTable = table.querySelector('table');
                     if (dataTable) ro.observe(dataTable);
@@ -1567,8 +1568,8 @@ body.wd-theme-switching *::after{
 
                 const body = document.getElementById('tableBody');
                 if (body && window.MutationObserver) {
-                    const mo = new MutationObserver(() => requestAnimationFrame(updateTopScrollbarWidth));
-                    mo.observe(body, { childList: true, subtree: true });
+                    let rowWidthFrame=0;const mo = new MutationObserver(()=>{if(!rowWidthFrame)rowWidthFrame=requestAnimationFrame(()=>{rowWidthFrame=0;updateTopScrollbarWidth()})});
+                    mo.observe(body, { childList: true });
                 }
             }
         }
@@ -2890,6 +2891,7 @@ body.wd-theme-switching *::after{
       }
       setTimeout(()=>{ if(typeof syncTableScrollbars==='function') syncTableScrollbars(); },60);
     }
+    setCollapsed(true);
     collapse?.addEventListener('click',()=>setCollapsed(true));
     reveal?.addEventListener('click',()=>setCollapsed(false));
     focus?.addEventListener('click',()=>setCollapsed(!document.body.classList.contains('wd-dock-collapsed')));
@@ -2919,3 +2921,4 @@ body.wd-theme-switching *::after{
 <script src="unified-ui.js?v=20260915-wd-header-fix1"></script>
 </body>
 </html>
+
