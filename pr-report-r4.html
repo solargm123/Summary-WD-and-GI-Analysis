@@ -432,7 +432,7 @@ async function loadCalculationMonth(){
  $('dataHint').textContent=tr('กำลังโหลดข้อมูลโครงการที่เลือก...','Loading selected project records...');
  try{
   if(!calculationLoadedRows.has(key)){
-   if(!calculationLoadPending.has(key)){const [start,end]=periodBounds(month,'month');calculationLoadPending.set(key,SolarCloud.loadPrProjectRecords([project],start,end).then(rows=>{calculationLoadedRows.set(key,rows);return rows}).finally(()=>calculationLoadPending.delete(key)))}
+   if(!calculationLoadPending.has(key)){const [start,end]=periodBounds(month,'month');calculationLoadPending.set(key,SolarCloud.loadPrProjectRecords([project],start,end).then(rows=>{const adjusted=rows.map(r=>({...r,giAdjusted:state.giOverrides[r.project]?.dates?.[r.date]}));calculationLoadedRows.set(key,adjusted);return adjusted}).finally(()=>calculationLoadPending.delete(key)))}
    await calculationLoadPending.get(key);
   }
   if(request!==calculationLoadSeq||$('dataProject').value!==project||$('dataMonth').value!==month)return false;
