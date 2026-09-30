@@ -13,8 +13,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20260922-gi-trend3"></script>
+    <script src="cloud-core.js?v=20260930-gi-review1"></script>
 
+    <script src="gi-review.js?v=20260930-gi-review1"></script>
     <style>
         :root[data-theme="dark"] {
             --bg-main: #1e293b; --card-bg: #334155; --card-border: #475569;
@@ -101,16 +102,24 @@
         th { background-color: var(--input-bg) !important; color: var(--text-muted); font-weight: 600; position: sticky; top: 0; z-index: 10; }
 
         .col-status { position: sticky; left: 0px; width: 70px !important; z-index: 10; background: var(--sticky-bg) !important; text-align: center; }
-        .col-plant { position: sticky; left: 70px; width: 300px !important; z-index: 10; background: var(--sticky-bg) !important; }
-        .col-province { position: sticky; left: 370px; width: 165px !important; z-index: 10; background: var(--sticky-bg) !important; }
-        .col-avg { position: sticky; left: 535px; width: 95px !important; z-index: 10; background: var(--avg-bg) !important; }
-        .col-normal { position: sticky; left: 630px; width: 105px !important; z-index: 10; background: var(--normal-bg) !important; }
-        .col-kwp { position: sticky; left: 735px; width: 85px !important; z-index: 10; background: var(--sticky-bg) !important; box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.3); }
+        .col-plant { position: sticky; left: 124px; width: 300px !important; z-index: 10; background: var(--sticky-bg) !important; }
+        .col-province { position: sticky; left: 424px; width: 165px !important; z-index: 10; background: var(--sticky-bg) !important; }
+        .col-avg { position: sticky; left: 589px; width: 95px !important; z-index: 10; background: var(--avg-bg) !important; }
+        .col-normal { position: sticky; left: 684px; width: 105px !important; z-index: 10; background: var(--normal-bg) !important; }
+        .col-kwp { position: sticky; left: 789px; width: 85px !important; z-index: 10; background: var(--sticky-bg) !important; box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.3); }
         
+        .col-review { position:sticky;left:70px;width:54px!important;z-index:10;background:var(--sticky-bg)!important;text-align:center;padding:4px; }
+        .gi-review-btn,.gi-day-btn { border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-muted);border-radius:7px;cursor:pointer;width:28px;height:28px; }
+        .gi-review-btn.reviewed,.gi-day-btn.accepted { color:var(--accent-green);border-color:var(--accent-green); }
+        .gi-review-btn.recheck { color:var(--accent-yellow);border-color:var(--accent-yellow); }
+        .gi-review-btn:disabled,.gi-day-btn:disabled { opacity:.5;cursor:not-allowed; }
+        .gi-day-btn { width:20px;height:20px;margin-left:4px;font-size:11px; }
+        .gi-review-filter { background:var(--input-bg);color:var(--text-main);border:1px solid var(--card-border);border-radius:8px;padding:6px;font:inherit;max-width:170px; }
+        .accepted-cell { background:var(--normal-bg); }
         .col-date { width: 100px !important; }
         .col-note { width: 220px !important; }
 
-        th.col-status, th.col-plant, th.col-province, th.col-avg, th.col-normal, th.col-kwp { z-index: 30 !important; background-color: var(--input-bg) !important; }
+        th.col-status, th.col-review, th.col-plant, th.col-province, th.col-avg, th.col-normal, th.col-kwp { z-index: 30 !important; background-color: var(--input-bg) !important; }
 
         .plant-cell-content { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 6px; }
         .plant-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
@@ -297,7 +306,7 @@
 
         <div class="card table-card">
             <div class="table-header-bar">
-                <h3><i class="fa-solid fa-table" style="color: var(--accent-blue);"></i> เปรียบเทียบ Global Irradiation รายวัน (kWh/m²)</h3>
+                <h3><i class="fa-solid fa-table" style="color: var(--accent-blue);"></i> เปรียบเทียบ Global Irradiation รายวัน (kWh/m²) <small style="font-size:.65rem;color:var(--text-muted)">GI Review R1</small></h3>
             </div>
 
             <div class="status-filter-bar">
@@ -306,6 +315,7 @@
                 <button class="btn-filter-status" id="btnFilterNormal" onclick="setStatusFilter('NORMAL')"><i class="fa-solid fa-circle-check" style="color: var(--accent-green)"></i> ปกติ <span class="badge-count badge-normal" id="countNormal">0</span></button>
                 <button class="btn-filter-status" id="btnFilterAbnormal" onclick="setStatusFilter('ABNORMAL')"><i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-yellow)"></i> ผิดปกติ <span class="badge-count badge-abnormal" id="countAbnormal">0</span></button>
                 <button class="btn-filter-status" id="btnFilterNotFound" onclick="setStatusFilter('NOT_FOUND')"><i class="fa-solid fa-circle-question" style="color: var(--accent-red)"></i> ไม่พบข้อมูล <span class="badge-count badge-notfound" id="countNotFound">0</span></button>
+                <select id="giReviewFilter" class="gi-review-filter" aria-label="Monthly review status" onchange="activeReviewFilter=this.value;renderTableAndMetrics()"><option value="ALL">สถานะตรวจ · ทั้งหมด</option><option value="reviewed">ตรวจแล้ว</option><option value="unreviewed">ยังไม่ตรวจ</option><option value="recheck">ต้องตรวจซ้ำ</option></select>
                 <div class="gi-toolbar">
                     <div class="threshold-box">
                         <label for="minIrr">ช่วงค่าปกติ:</label>
@@ -510,6 +520,7 @@
     let allPlantsSet = new Set(), selectedPlants = new Set(), datesSet = new Set(), sourceFileNames = [];
     let availableIrrMonths = [], loadedIrrMonth = null, giFullDataLoaded = false, giPeriodLoading = false;
     let plantMasterData = {}, originalPlantData = {}, copiedIrrData = null, persistentProvinceByPlant = {};
+    let giReviewByPlant = {}, savedGiOverrides = {}, activeReviewFilter = "ALL";
     let isEditMode = false, isFileUploaded = false, activeStatusFilter = 'ALL', activeProvinceFilter = 'ALL', activeTrendProvinceFilter = 'ALL', currentProvincePlant = null, currentProvinceMode='plant';
 
     let THAI_PROVINCES=['ไม่ระบุ','กรุงเทพมหานคร','กระบี่','กาญจนบุรี','กาฬสินธุ์','กำแพงเพชร','ขอนแก่น','จันทบุรี','ฉะเชิงเทรา','ชลบุรี','ชัยนาท','ชัยภูมิ','ชุมพร','เชียงราย','เชียงใหม่','ตรัง','ตราด','ตาก','นครนายก','นครปฐม','นครพนม','นครราชสีมา','นครศรีธรรมราช','นครสวรรค์','นนทบุรี','นราธิวาส','น่าน','บึงกาฬ','บุรีรัมย์','ปทุมธานี','ประจวบคีรีขันธ์','ปราจีนบุรี','ปัตตานี','พระนครศรีอยุธยา','พะเยา','พังงา','พัทลุง','พิจิตร','พิษณุโลก','เพชรบุรี','เพชรบูรณ์','แพร่','ภูเก็ต','มหาสารคาม','มุกดาหาร','แม่ฮ่องสอน','ยโสธร','ยะลา','ร้อยเอ็ด','ระนอง','ระยอง','ราชบุรี','ลพบุรี','ลำปาง','ลำพูน','เลย','ศรีสะเกษ','สกลนคร','สงขลา','สตูล','สมุทรปราการ','สมุทรสงคราม','สมุทรสาคร','สระแก้ว','สระบุรี','สิงห์บุรี','สุโขทัย','สุพรรณบุรี','สุราษฎร์ธานี','สุรินทร์','หนองคาย','หนองบัวลำภู','อ่างทอง','อำนาจเจริญ','อุดรธานี','อุตรดิตถ์','อุทัยธานี','อุบลราชธานี'];
@@ -527,6 +538,7 @@
             THAI_PROVINCES=['ไม่ระบุ',...data.map(row=>row.name_th)];
             data.forEach(row=>{PROVINCE_EN[row.name_th]=row.name_en||row.name_th});
             renderProvinceFilterOptions();
+        syncGiReviewLabels();
             if(document.getElementById('provinceModal')?.style.display==='flex')renderProvinceOptions();
         }catch(err){console.warn('Shared province list unavailable; retaining the local province list',err)}
     }
@@ -722,6 +734,7 @@
 
                             if (cap > 0) { plantMasterData[pName].capacity = cap; originalPlantData[pName].capacity = cap; }
                             if (address) { plantMasterData[pName].address = address; originalPlantData[pName].address = address; }
+                            invalidateGiValue(pName,formattedDate,irr);
                             plantMasterData[pName].dates[formattedDate] = irr;
                             originalPlantData[pName].dates[formattedDate] = irr;
                         }
@@ -874,9 +887,20 @@
         renderTableAndMetrics();
     }
 
+    function invalidateGiValue(plant,date,next){
+        if(GiReview.valueKey(plantMasterData[plant]?.dates?.[date])===GiReview.valueKey(next))return;
+        const review=giReviewByPlant[plant];if(!review)return;
+        if(review.days?.[date])review.days[date]={...review.days[date],confirmed:false};
+        const month=date.slice(0,7);if(review.months?.[month]?.reviewed)review.months[month]={...review.months[month],needsRecheck:true};
+    }
+    function invalidateGiReplacement(plant,next){
+        for(const date of new Set([...Object.keys(plantMasterData[plant]?.dates||{}),...Object.keys(next||{})]))invalidateGiValue(plant,date,next?.[date]);
+    }
     function updateCellData(plantKey, date, val) {
         const num = parseFloat(val);
         if (!plantMasterData[plantKey]) return;
+        if(Number.isFinite(num)&&num<0){SolarCloud.notice(giText('ค่าแสงต้องไม่ติดลบ','Irradiance cannot be negative'),'','danger');renderTableAndMetrics();return}
+        invalidateGiValue(plantKey,date,Number.isFinite(num)?num:undefined);
         if (!isNaN(num)) plantMasterData[plantKey].dates[date] = num;
         else delete plantMasterData[plantKey].dates[date];
         renderTableAndMetrics();
@@ -896,6 +920,7 @@
     function pastePlantIrr(plantKey) {
         if (!copiedIrrData) return SolarCloud.notice("ยังไม่มีข้อมูลที่คัดลอก","กรุณาคัดลอกค่า Irradiation จากโครงการต้นทางก่อน","danger");
         if (plantMasterData[plantKey]) {
+            invalidateGiReplacement(plantKey,copiedIrrData);
             plantMasterData[plantKey].dates = JSON.parse(JSON.stringify(copiedIrrData));
             renderTableAndMetrics();
         }
@@ -903,9 +928,43 @@
 
     function restorePlantData(plantKey) {
         if (originalPlantData[plantKey]) {
+            invalidateGiReplacement(plantKey,originalPlantData[plantKey].dates);
             plantMasterData[plantKey] = JSON.parse(JSON.stringify(originalPlantData[plantKey]));
             renderTableAndMetrics();
         }
+    }
+
+    const giText=(th,en)=>giLanguage()==='en'?en:th;
+    function reviewMonth(dateList){const months=[...new Set(dateList.map(date=>date.slice(0,7)))];return months.length===1?months[0]:null}
+    function plantMonthSnapshot(plant,month){return GiReview.monthSnapshot(plantMasterData[plant]?.dates||{},[...datesSet],month)}
+    function monthlyReviewStatus(plant,month){if(!month)return 'unreviewed';const entry=giReviewByPlant[plant]?.months?.[month],status=GiReview.monthStatus(entry,plantMonthSnapshot(plant,month));if(status==='recheck')entry.needsRecheck=true;return status}
+    function syncGiReviewLabels(){
+        const labels=[giText('สถานะตรวจ · ทั้งหมด','Review · All'),giText('ตรวจแล้ว','Reviewed'),giText('ยังไม่ตรวจ','Unreviewed'),giText('ต้องตรวจซ้ำ','Needs recheck')];
+        const select=document.getElementById('giReviewFilter');const singleMonth=reviewMonth(getFilteredDates());select.disabled=!singleMonth;select.title=singleMonth?'':giText('เลือกหนึ่งเดือนเพื่อกรองสถานะตรวจ','Select one month to filter reviews');if(!singleMonth)activeReviewFilter='ALL';Array.from(select.options).forEach((option,i)=>option.textContent=labels[i]);select.value=activeReviewFilter;
+    }
+    async function confirmGiDay(plant,date){
+        if(!SolarCloud.roleCanEdit())return;
+        const value=plantMasterData[plant]?.dates?.[date];if(!GiReview.valid(value))return;
+        const review=giReviewByPlant[plant]||{days:{},months:{}},entry=review.days?.[date],accepted=GiReview.confirmed(entry,value);
+        const ok=await SolarCloud.confirmDialog(giText(accepted?'ยกเลิกการรับรองค่าแสง':'ยืนยันค่าแสงถูกต้อง',accepted?'Revoke GI acceptance':'Confirm correct irradiance'),`${plant} · ${date} · ${Number(value).toFixed(3)} kWh/m²
+${giText('รับรองเฉพาะวันนี้เพื่อคำนวณ GI; PR ยังต้องผ่านเกณฑ์ GI/Specific','Accept this day for GI calculations; PR still requires GI/Specific thresholds')}`,{confirmText:giText(accepted?'ยกเลิกการรับรอง':'ยืนยัน',accepted?'Revoke':'Confirm')});
+        if(!ok||!SolarCloud.roleCanEdit()||GiReview.valueKey(plantMasterData[plant]?.dates?.[date])!==GiReview.valueKey(value))return;
+        const actor=SolarCloud.collaborationActor();if(!actor?.userId){SolarCloud.notice(giText('ยังยืนยันไม่ได้','Cannot confirm yet'),giText('รอเชื่อมต่อผู้ใช้งานแล้วลองอีกครั้ง','Wait for user connection and retry'),'danger');return}
+        // Re-read after the dialog: a remote restore may have refreshed the shared state.
+        const latest=giReviewByPlant[plant]||{days:{},months:{}};latest.days||={};latest.days[date]={confirmed:!accepted,valueKey:GiReview.valueKey(value),userId:actor.userId,name:actor.name,at:new Date().toISOString()};giReviewByPlant[plant]=latest;
+        renderTableAndMetrics();SolarCloud.scheduleSave('gi_daily_acceptance');
+    }
+    async function confirmGiMonth(plant){
+        if(!SolarCloud.roleCanEdit())return;
+        const month=reviewMonth(getFilteredDates());if(!month)return;
+        const values=plantMasterData[plant]?.dates||{};if(!Object.entries(values).some(([date,value])=>date.startsWith(month+'-')&&GiReview.valid(value)))return;
+        const snapshot=plantMonthSnapshot(plant,month),entry=giReviewByPlant[plant]?.months?.[month],reviewed=monthlyReviewStatus(plant,month)==='reviewed';
+        const ok=await SolarCloud.confirmDialog(giText(reviewed?'ยกเลิกสถานะตรวจแล้ว':'ยืนยันตรวจรายเดือน',reviewed?'Clear monthly review':'Confirm monthly review'),`${plant} · ${month}
+${giText('สถานะนี้ไม่ปลด Alarm และไม่รับรองค่ารายวัน','This status does not clear alarms or accept daily values')}${entry?.at?'\n'+entry.name+' · '+entry.at:''}`,{confirmText:giText(reviewed?'ยกเลิกสถานะ':'ตรวจแล้ว',reviewed?'Clear review':'Reviewed')});
+        if(!ok||!SolarCloud.roleCanEdit()||snapshot!==plantMonthSnapshot(plant,month))return;
+        const actor=SolarCloud.collaborationActor();if(!actor?.userId)return;
+        const review=giReviewByPlant[plant]||{days:{},months:{}};review.months||={};review.months[month]={reviewed:!reviewed,snapshot,userId:actor.userId,name:actor.name,at:new Date().toISOString()};giReviewByPlant[plant]=review;
+        renderTableAndMetrics();SolarCloud.scheduleSave('gi_monthly_review');
     }
 
     function renderTableAndMetrics() {
@@ -918,7 +977,8 @@
         const minIrr = parseFloat(document.getElementById('minIrr').value) || 0;
         const maxIrr = parseFloat(document.getElementById('maxIrr').value) || 99;
 
-        let headerHtml = `<th class="col-status">Status</th><th class="col-plant">Plant Name</th><th class="col-province">${giLanguage()==='en'?'Province':'จังหวัด'}</th><th class="number-col avg-col col-avg">Average</th><th class="number-col normal-col col-normal">Normal Day</th><th class="number-col col-kwp">kWp</th>`;
+        const selectedReviewMonth=reviewMonth(dateList);
+        let headerHtml = `<th class="col-status">Status</th><th class="col-review" title="${giText('ตรวจโครงการรายเดือน ไม่ปลด Alarm','Monthly review does not clear alarms')}">${giText('ตรวจ','Review')}</th><th class="col-plant">Plant Name</th><th class="col-province">${giLanguage()==='en'?'Province':'จังหวัด'}</th><th class="number-col avg-col col-avg">Average</th><th class="number-col normal-col col-normal">Normal Day</th><th class="number-col col-kwp">kWp</th>`;
         dateList.forEach(d => { headerHtml += `<th class="number-col col-date" style="color:var(--accent-blue)">${d}</th>`; });
         headerHtml += `<th class="col-note">Note</th>`;
         headerTr.innerHTML = headerHtml;
@@ -937,20 +997,22 @@
 
             dateList.forEach(d => {
                 const irrVal = pData.dates[d];
-                const hasValue = irrVal !== undefined && irrVal !== null && !isNaN(irrVal);
+                const hasValue = GiReview.valid(irrVal);
                 
                 if (hasValue) {
                     const isNormal = irrVal >= minIrr && irrVal <= maxIrr;
-                    const cellClass = isNormal ? 'number-col col-date' : 'number-col col-date anomaly-cell';
+                    const acceptance=giReviewByPlant[plant]?.days?.[d],accepted=GiReview.confirmed(acceptance,irrVal);if(acceptance?.confirmed&&!accepted)acceptance.confirmed=false;
+                    const cellClass = isNormal ? 'number-col col-date' : accepted?'number-col col-date accepted-cell':'number-col col-date anomaly-cell';
 
-                    if (isNormal) {
+                    if (isNormal || accepted) {
                         plantValidIrrSum += irrVal; plantValidDays++; plantNormalDays++;
                         totalValidIrrSum += irrVal; totalValidCount++; totalNormalDaysCount++;
                     } else { anomalyDaysCount++; }
 
+                    const dayButton=(!isNormal||acceptance)?`<button type="button" class="gi-day-btn ${accepted?'accepted':''}" data-plant="${escapeHtml(plant)}" data-date="${d}" ${SolarCloud.roleCanEdit()?'':'disabled'} title="${escapeHtml(giText(accepted?'รับรองแล้ว':'ยืนยันค่าถูกต้อง',accepted?'Accepted':'Confirm correct value')+(acceptance?' · '+acceptance.name+' · '+acceptance.at:''))}" aria-label="${escapeHtml(giText('ยืนยันค่าแสง','Confirm irradiance')+' '+plant+' '+d)}">${accepted?'✓':'?'}</button>`:'';
                     if (isEditMode) {
                         dayCellsHtml += `<td class="${cellClass}"><input type="number" step="0.001" class="cell-input data-irr-input" data-plant="${escapeHtml(plant)}" data-date="${d}" value="${irrVal.toFixed(3)}"></td>`;
-                    } else { dayCellsHtml += `<td class="${cellClass}">${irrVal.toFixed(3)}</td>`; }
+                    } else { dayCellsHtml += `<td class="${cellClass}">${irrVal.toFixed(3)}${dayButton}</td>`; }
                 } else {
                     missingDaysCount++;
                     if (isEditMode) {
@@ -971,6 +1033,8 @@
                 statusBadgeHtml = `<span class="status-badge status-normal" title="All values normal"><i data-lucide="check-circle" size="16"></i></span>`;
             }
 
+            const monthStatus=monthlyReviewStatus(plant,selectedReviewMonth);
+            if(activeReviewFilter!=='ALL'&&(!selectedReviewMonth||activeReviewFilter!==monthStatus))return;
             if (activeStatusFilter !== 'ALL' && activeStatusFilter !== statusCategory) return;
             const plantAvgIrr = plantValidDays > 0 ? (plantValidIrrSum / plantValidDays) : 0;
 
@@ -983,6 +1047,7 @@
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td class="col-status">${statusBadgeHtml}</td>
+                <td class="col-review"><button type="button" class="gi-review-btn ${monthStatus}" data-plant="${escapeHtml(plant)}" ${selectedReviewMonth&&Object.entries(pData.dates).some(([date,value])=>date.startsWith(selectedReviewMonth+'-')&&GiReview.valid(value))&&SolarCloud.roleCanEdit()?'':'disabled'} title="${escapeHtml(selectedReviewMonth?giText(monthStatus==='reviewed'?'ตรวจแล้ว':monthStatus==='recheck'?'ต้องตรวจซ้ำ':'ยังไม่ตรวจ',monthStatus==='reviewed'?'Reviewed':monthStatus==='recheck'?'Needs recheck':'Unreviewed')+' · '+selectedReviewMonth+(giReviewByPlant[plant]?.months?.[selectedReviewMonth]?.at?' · '+giReviewByPlant[plant].months[selectedReviewMonth].name+' · '+giReviewByPlant[plant].months[selectedReviewMonth].at:''):giText('เลือกเพียงหนึ่งเดือนเพื่อยืนยันหรือกรอง','Select one month to review or filter'))}" aria-label="${escapeHtml(giText('ตรวจรายเดือน','Monthly review')+' '+plant)}">${monthStatus==='reviewed'?'✓':monthStatus==='recheck'?'↻':'○'}</button></td>
                 <td class="col-plant">
                     <div class="plant-cell-content">
                         <span class="plant-name-text" title="${escapeHtml(plant)}"><strong>${escapeHtml(plant)}</strong></span>
@@ -991,7 +1056,7 @@
                 </td>
                 <td class="col-province"><button class="province-button" data-plant="${escapeHtml(plant)}" onclick="openProvincePopup(this.dataset.plant)" title="${escapeHtml(pData.address||'')}"><span>${escapeHtml(provinceLabel(pData.province||'ไม่ระบุ'))}</span><i class="fa-solid fa-chevron-down"></i></button></td>
                 <td class="number-col avg-col col-avg">${plantAvgIrr.toFixed(3)}</td>
-                <td class="number-col normal-col col-normal">${plantNormalDays} / ${dateList.length}</td>
+                <td class="number-col normal-col col-normal" title="${giText('ค่าปกติหรือรับรองรายวันแล้ว','In range or accepted daily values')}">${plantNormalDays} / ${dateList.length}</td>
                 <td class="number-col col-kwp">${pData.capacity.toLocaleString()}</td>
                 ${dayCellsHtml}
                 <td class="col-note"><input type="text" class="note-input data-note-input" data-plant="${escapeHtml(plant)}" value="${escapeHtml(pData.note || '')}" placeholder="Add note..."></td>
@@ -1004,7 +1069,7 @@
             const message = selectedPlants.size && activeStatusFilter !== 'ALL'
                 ? (giLanguage()==='en'?'The selected plant does not match the current status filter.':'โครงการที่เลือกไม่ตรงกับสถานะที่กรองอยู่')
                 : (giLanguage()==='en'?'No plants match the current filters.':'ไม่พบโครงการตามตัวกรองที่เลือก');
-            tr.innerHTML = `<td colspan="${dateList.length + 7}" style="text-align:center;padding:20px;color:var(--text-muted)">${message}</td>`;
+            tr.innerHTML = `<td colspan="${dateList.length + 8}" style="text-align:center;padding:20px;color:var(--text-muted)">${message}</td>`;
             tbody.appendChild(tr);
         }
         bindDynamicEvents();
@@ -1023,6 +1088,8 @@
     }
 
     function bindDynamicEvents() {
+        document.querySelectorAll('.gi-day-btn').forEach(button=>button.onclick=()=>confirmGiDay(button.dataset.plant,button.dataset.date));
+        document.querySelectorAll('.gi-review-btn').forEach(button=>button.onclick=()=>confirmGiMonth(button.dataset.plant));
         document.querySelectorAll('.data-irr-input').forEach(input => { input.onchange = (e) => updateCellData(e.target.dataset.plant, e.target.dataset.date, e.target.value); });
         document.querySelectorAll('.data-note-input').forEach(input => { input.onchange = (e) => updateNoteData(e.target.dataset.plant, e.target.value); });
         document.querySelectorAll('.btn-copy').forEach(btn => { btn.onclick = (e) => copyPlantIrr(e.target.dataset.plant); });
@@ -1172,7 +1239,7 @@
         const ok=await SolarCloud.confirmDialog("ล้างข้อมูลทั้งหมด","ข้อมูลที่นำเข้าและค่าที่แก้ไขในหน้านี้จะถูกล้าง",{tone:"danger",icon:"!",confirmText:"ล้างข้อมูล"});
         if (ok) {
             allPlantsSet.clear(); selectedPlants.clear(); datesSet.clear(); selectedTrendPlants.clear(); sourceFileNames = [];
-            plantMasterData = {}; originalPlantData = {}; copiedIrrData = null; isFileUploaded = false;
+            plantMasterData = {}; originalPlantData = {}; copiedIrrData = null; giReviewByPlant={};savedGiOverrides={};activeReviewFilter='ALL';isFileUploaded = false;
             activeStatusFilter = 'ALL'; activeProvinceFilter = 'ALL';
             document.querySelectorAll('.btn-filter-status').forEach(btn => btn.classList.remove('active'));
             document.getElementById('btnFilterAll').classList.add('active');
@@ -1215,23 +1282,27 @@
   const irrSelection=id=>Array.from(document.getElementById(id)?.selectedOptions||[]).map(option=>option.value);
   const globalIrradianceCloudAdapter={
     capture(){
-      const overrides={};
+      const overrides=JSON.parse(JSON.stringify(savedGiOverrides));
       Object.keys(plantMasterData).forEach(name=>{
         const current=plantMasterData[name],original=originalPlantData[name]||{capacity:0,province:'ไม่ระบุ',note:'',dates:{}};
-        const changedDates={};
+        const changedDates={...(savedGiOverrides[name]?.dates||{})};
         const dates=new Set([...Object.keys(original.dates||{}),...Object.keys(current.dates||{})]);
-        dates.forEach(date=>{const a=current.dates?.[date],b=original.dates?.[date];if(a!==b)changedDates[date]=a===undefined?null:a});
-        if(current.capacity!==original.capacity||(current.province||'ไม่ระบุ')!==(original.province||'ไม่ระบุ')||(current.note||'')!==(original.note||'')||Object.keys(changedDates).length)overrides[name]={capacity:current.capacity,province:current.province||'ไม่ระบุ',note:current.note||'',dates:changedDates};
+        dates.forEach(date=>{const a=current.dates?.[date],b=original.dates?.[date];if(a!==b)changedDates[date]=a===undefined?null:a;else delete changedDates[date]});
+        if(current.capacity!==original.capacity||(current.province||'ไม่ระบุ')!==(original.province||'ไม่ระบุ')||(current.note||'')!==(original.note||'')||Object.keys(changedDates).length||giReviewByPlant[name])overrides[name]={capacity:current.capacity,province:current.province||'ไม่ระบุ',note:current.note||'',dates:changedDates,...(giReviewByPlant[name]?{giReview:giReviewByPlant[name]}:{})};
+        else delete overrides[name];
       });
       const sortedDates=[...datesSet].sort();
       return {
         baseData:{plants:originalPlantData,dates:sortedDates,availableMonths:[...availableIrrMonths],loadedMonth:loadedIrrMonth,sourceFiles:[...sourceFileNames]},
-        userState:{overrides,provinceOverrides:{...persistentProvinceByPlant},selectedPlants:[...selectedPlants],allPlantsSelected:selectedPlants.size===allPlantsSet.size&&[...allPlantsSet].every(name=>selectedPlants.has(name)),selectedTrendPlants:[...selectedTrendPlants],minIrr:document.getElementById('minIrr').value,maxIrr:document.getElementById('maxIrr').value,activeStatusFilter,activeProvinceFilter,activeTrendProvinceFilter,selectedPeriod:loadedIrrMonth,fullDataLoaded:giFullDataLoaded,filters:{years:irrSelection('yearFilter'),months:irrSelection('monthFilter'),days:irrSelection('dayFilter')},trendFilters:{years:document.getElementById('trendYearSel')?.options.length?irrSelection('trendYearSel'):[...restoredTrendYears],months:document.getElementById('trendMonthSel')?.options.length?irrSelection('trendMonthSel'):[...restoredTrendMonths],granularity:trendGranularity}},
+        userState:{overrides,provinceOverrides:{...persistentProvinceByPlant},selectedPlants:[...selectedPlants],allPlantsSelected:selectedPlants.size===allPlantsSet.size&&[...allPlantsSet].every(name=>selectedPlants.has(name)),selectedTrendPlants:[...selectedTrendPlants],minIrr:document.getElementById('minIrr').value,maxIrr:document.getElementById('maxIrr').value,activeStatusFilter,activeProvinceFilter,activeTrendProvinceFilter,activeReviewFilter,selectedPeriod:loadedIrrMonth,fullDataLoaded:giFullDataLoaded,filters:{years:irrSelection('yearFilter'),months:irrSelection('monthFilter'),days:irrSelection('dayFilter')},trendFilters:{years:document.getElementById('trendYearSel')?.options.length?irrSelection('trendYearSel'):[...restoredTrendYears],months:document.getElementById('trendMonthSel')?.options.length?irrSelection('trendMonthSel'):[...restoredTrendMonths],granularity:trendGranularity}},
         periodKey:sortedDates.length?sortedDates[0].slice(0,7):null,
         sourceFiles:[...sourceFileNames]
       };
     },
     async restore(base,state){
+      savedGiOverrides=JSON.parse(JSON.stringify(state.overrides||{}));giReviewByPlant={};
+      Object.entries(savedGiOverrides).forEach(([name,entry])=>{if(entry.giReview)giReviewByPlant[name]=JSON.parse(JSON.stringify(entry.giReview))});
+      activeReviewFilter=state.activeReviewFilter||'ALL';
       originalPlantData=JSON.parse(JSON.stringify(base.plants||{}));
       Object.values(originalPlantData).forEach(plant=>{plant.address=plant.address||'';plant.province=plant.province||detectProvince(plant.address)});
       plantMasterData=JSON.parse(JSON.stringify(originalPlantData));
@@ -1240,7 +1311,7 @@
       loadedIrrMonth=base.loadedMonth||state.selectedPeriod||null;
       giFullDataLoaded=!!state.fullDataLoaded&&!base.loadedMonth;
       persistentProvinceByPlant={...(state.provinceOverrides||{})};
-      Object.entries(state.overrides||{}).forEach(([name,saved])=>{if(saved.province)persistentProvinceByPlant[name]=saved.province;if(!plantMasterData[name])return;if(saved.capacity!=null)plantMasterData[name].capacity=saved.capacity;if(saved.province)plantMasterData[name].province=saved.province;if(saved.note!=null)plantMasterData[name].note=saved.note;Object.entries(saved.dates||{}).forEach(([date,value])=>{if(value===null)delete plantMasterData[name].dates[date];else plantMasterData[name].dates[date]=value})});
+      Object.entries(state.overrides||{}).forEach(([name,saved])=>{if(saved.province)persistentProvinceByPlant[name]=saved.province;if(!plantMasterData[name])return;if(saved.capacity!=null)plantMasterData[name].capacity=saved.capacity;if(saved.province)plantMasterData[name].province=saved.province;if(saved.note!=null)plantMasterData[name].note=saved.note;Object.entries(saved.dates||{}).forEach(([date,value])=>{if(!datesSet.has(date))return;if(value===null)delete plantMasterData[name].dates[date];else plantMasterData[name].dates[date]=value})});
       Object.entries(persistentProvinceByPlant).forEach(([name,province])=>{if(plantMasterData[name])plantMasterData[name].province=province||'ไม่ระบุ'});
       const basePlantNames=Object.keys(plantMasterData),savedSelectedPlants=Array.isArray(state.selectedPlants)?state.selectedPlants:basePlantNames;
       selectedPlants=state.allPlantsSelected===false?new Set(savedSelectedPlants.filter(name=>allPlantsSet.has(name))):new Set(basePlantNames);
