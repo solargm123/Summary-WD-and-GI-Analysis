@@ -10,7 +10,7 @@ const {JSDOM}=require('jsdom');
  w.SolarCloud={getLanguage:()=> 'th',session:async()=>null,roleCanEdit:()=>canEdit,collaborationActor:()=>({userId:'test-user',name:'Test reviewer'}),confirmDialog:async()=>true,notice:()=>{},scheduleSave:r=>saves.push(r),initAnalysis:(type,adapter)=>w.testAdapter=adapter};
  vm.runInContext(fs.readFileSync('gi-review.js','utf8'),dom.getInternalVMContext());
  vm.runInContext([...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join('\n'),dom.getInternalVMContext());
- const base={plants:{A:{capacity:100,province:'กรุงเทพมหานคร',dates:{'2026-09-01':2,'2026-09-02':5}},B:{capacity:50,province:'กรุงเทพมหานคร',dates:{'2026-09-01':null,'2026-09-02':4}}},dates:['2026-09-01','2026-09-02'],loadedMonth:'2026-09'};
+ const base={plants:{A:{capacity:100,province:'กรุงเทพมหานคร',dates:{'2026-09-01':2,'2026-09-02':5}},B:{capacity:50,province:'ระยอง',dates:{'2026-09-01':null,'2026-09-02':4}}},dates:['2026-09-01','2026-09-02'],loadedMonth:'2026-09'};
  const q=s=>d.querySelector(s),qa=s=>d.querySelectorAll(s),average=()=>q('#tableBody tr .col-avg').textContent;
  await w.testAdapter.restore(base,{minIrr:3.5,maxIrr:7});assert.equal(qa('#tableBody tr').length,2);assert.equal(average(),'5.000');
  // The shared icon decorator must never append a second icon to review controls.
@@ -18,6 +18,13 @@ const {JSDOM}=require('jsdom');
  const iconContext={document:d,iconMap:{},iconFor:()=> 'fa-circle-dot'};vm.runInNewContext(iconCode,iconContext);iconContext.ensureIcons();iconContext.ensureIcons();
  for(const button of qa('.gi-review-btn,.gi-day-btn'))assert.equal(button.querySelectorAll('i').length,1);
  assert.equal(w.getComputedStyle(q('.gi-review-btn')).width,'22px');assert.equal(w.getComputedStyle(q('.gi-day-btn')).width,'18px');
+ // Province filtering scopes both rows and the plant picker; no silent reset to All.
+ w.openProvinceFilterPopup('table');assert.equal(qa('#provinceOptionList button').length,3);w.closeProvincePopup();
+ w.setProvinceFilter('ระยอง');assert.equal(qa('#tableBody tr').length,1);assert.equal(q('#tableBody .plant-name-text').textContent,'B');assert.equal(q('#totalCount').innerText,1);assert.equal(qa('#plantListContainer .plant-item').length,1);
+ q('#searchPlant').value='A';w.renderPlantList();assert.equal(qa('#plantListContainer .plant-search-result').length,0);
+ w.setProvinceFilter('กรุงเทพมหานคร');assert.equal(q('#tableBody .plant-name-text').textContent,'A');assert.equal(q('#provinceStatusFilterLabel').textContent,'กรุงเทพมหานคร');
+ w.toggleSelectAll(false);assert.equal(q('#provinceStatusFilterLabel').textContent,'กรุงเทพมหานคร');
+ w.setProvinceFilter('ALL');assert.equal(qa('#tableBody tr').length,2);
  // Exercise the same button handlers that a real click invokes.
  await q('.gi-review-btn[data-plant="A"]').onclick();assert.equal(q('.gi-review-btn[data-plant="A"]').className,'gi-review-btn reviewed');
  assert.equal(qa('#tableBody tr:first-child .anomaly-cell').length,1);assert.equal(average(),'5.000');

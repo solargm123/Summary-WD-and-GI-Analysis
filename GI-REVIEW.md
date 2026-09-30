@@ -1,4 +1,4 @@
-# GI Review R1.1
+# GI Review R1.2
 
 Daily acceptance and project/month review are separate.
 
@@ -13,3 +13,5 @@ Daily acceptance and project/month review are separate.
 Validation: `node tests/gi-review.spec.cjs` requires jsdom. Tests use an isolated DOM and fake save/dialog adapter, never production data. They verify daily acceptance, monthly independence, changed/reverted values, filtering, restore and partial-month retention, Viewer denial and PR thresholds. Production database writes require separate verification in the Solar workspace.
 
 R1.1 UI: review controls use the existing Font Awesome icon set (22px monthly / 18px daily). Explicit icon markup prevents the shared UI decorator adding duplicate icons. Status colors use theme tokens and keyboard focus is visible.
+
+R1.2 province filtering: filter popups list only provinces present in the loaded projects, with counts. Selecting a table province selects projects in that province and scopes plant search/picker and its counts. The province filter no longer resets to All when a plant selection is empty or belongs to another province. The province editor still exposes the shared province catalog for assigning metadata.
