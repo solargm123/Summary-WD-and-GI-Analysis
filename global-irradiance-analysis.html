@@ -289,6 +289,16 @@ body{zoom:.75;min-height:calc(100vh / .75)}
 #resultTable th.col-province,#resultTable th.col-avg,#resultTable th.col-normal,#resultTable th.col-kwp{left:auto;z-index:10!important;box-shadow:none}
 }
 </style>
+<style id="giSummaryControls20261001">
+#giSummaryCards[hidden]{display:none!important}
+#giSummaryToggle{min-height:34px;font-weight:700;gap:8px}
+#provinceStatusFilter,#trendProvinceSel,.threshold-box,.threshold-box label,.threshold-box input{font-weight:700!important}
+#provinceStatusFilter,#trendProvinceSel{padding:8px 12px;min-height:36px;border-radius:10px}
+#provinceStatusFilter:hover,#trendProvinceSel:hover{border-color:var(--accent-blue)}
+#provinceStatusFilter:focus-visible,#trendProvinceSel:focus-visible,#giSummaryToggle:focus-visible{outline:2px solid var(--accent-blue);outline-offset:2px}
+.threshold-box{padding:6px 10px;min-height:36px;gap:8px}
+.threshold-box input{width:64px;min-height:28px;font:inherit;font-weight:700;padding:3px 6px}
+</style>
 </head>
 <body class="solar-gi">
 
@@ -315,7 +325,7 @@ body{zoom:.75;min-height:calc(100vh / .75)}
 
     <!-- TAB 1: DATA TABLE -->
     <div id="tableTab" class="tab-content active">
-        <div class="top-grid">
+        <div class="top-grid" id="giSummaryCards">
             <div class="upload-card" id="dropzone" style="cursor:default">
                 <i class="fa-solid fa-database" style="color: var(--accent-blue); margin-bottom: 6px;"></i>
                 <h4 id="uploadStatus" style="font-weight: 600; font-size: 0.9rem;">ข้อมูลกลางจาก Analysis Center</h4>
@@ -345,6 +355,7 @@ body{zoom:.75;min-height:calc(100vh / .75)}
         <div class="card table-card">
             <div class="table-header-bar">
                 <h3><i class="fa-solid fa-table" style="color: var(--accent-blue);"></i> เปรียบเทียบ Global Irradiation รายวัน (kWh/m²) <small style="font-size:.65rem;color:var(--text-muted)">GI Review R1.2</small></h3>
+                <button type="button" id="giSummaryToggle" class="btn btn-secondary" aria-controls="giSummaryCards" aria-expanded="true" onclick="toggleGiSummary()"><i class="fa-solid fa-chevron-up" aria-hidden="true"></i><span data-solar-th="ซ่อนสรุป" data-solar-en="Hide summary">ซ่อนสรุป</span></button>
             </div>
 
             <div class="status-filter-bar">
@@ -617,6 +628,17 @@ body{zoom:.75;min-height:calc(100vh / .75)}
         actionFn();
     }
 
+    function toggleGiSummary(){
+        const cards=document.getElementById('giSummaryCards'),button=document.getElementById('giSummaryToggle');
+        cards.hidden=!cards.hidden;
+        button.setAttribute('aria-expanded',String(!cards.hidden));
+        button.querySelector('i').className='fa-solid '+(cards.hidden?'fa-chevron-down':'fa-chevron-up');
+        const label=button.querySelector('span');
+        label.dataset.solarTh=cards.hidden?'แสดงสรุป':'ซ่อนสรุป';
+        label.dataset.solarEn=cards.hidden?'Show summary':'Hide summary';
+        label.textContent=giText(label.dataset.solarTh,label.dataset.solarEn);
+        scheduleGiScrollWidth();
+    }
     let giTabRequest=0;
     async function switchTab(tabId, btnEl) {
         const tabRequest=++giTabRequest;
