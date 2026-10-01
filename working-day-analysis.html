@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20261001-manual-cancel"></script>
+    <script src="cloud-core.js?v=20261001-method-reset"></script>
     <style> 
         html, body, body *:not(i), button, input, select, option, textarea, table, th, td, code {
             font-family: 'Bai Jamjuree', Tahoma, Arial, sans-serif !important;
@@ -1674,6 +1674,7 @@ body.wd-theme-switching *::after{
         }
         function updateCalculationMethod(id, method) {
             const plant = plantData.find(p => p.id === id);
+            if(plant&&method==='edit-other'&&typeof WDPeriod!=='undefined'){calculateAndRender();WDPeriod.openManual(id);return;}
             if (!plant || !['m1', 'm2', 'other'].includes(method)) return;
             if(method==='other'&&typeof WDPeriod!=='undefined'){calculateAndRender();WDPeriod.openManual(id,true);return;}
             const month=document.getElementById('monthSelect').value,key=projectStableKey(plant);
@@ -2545,6 +2546,7 @@ body.wd-theme-switching *::after{
                     if(row.isConnected){row.replaceWith(next);if(cursor===row)cursor=next;}
                     row=next;wdRowHtml.set(row,html);
                 }
+                row.querySelectorAll('select[data-method]').forEach(select=>{select.value=select.dataset.method;});
                 if(row!==cursor)tbody.insertBefore(row,cursor);
                 cursor=row.nextElementSibling;existing.delete(String(id));
             });
@@ -2646,11 +2648,12 @@ body.wd-theme-switching *::after{
                     
                     <td class="p-3 text-center">
                         <div class="flex items-center justify-center gap-2">
-                            <div class="flex flex-col items-start gap-0.5"><select onchange="updateCalculationMethod(${item.id}, this.value)" class="wd-method-select border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded px-2 py-1.5 text-xs">
+                            <div class="flex flex-col items-start gap-0.5"><select data-method="${item.calculationMethod}" onchange="updateCalculationMethod(${item.id}, this.value)" class="wd-method-select border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded px-2 py-1.5 text-xs">
                                 <option value="m1" ${item.calculationMethod === 'm1' ? 'selected' : ''}>${currentLanguage === 'th' ? 'วิธีที่ 1' : 'Method 1'}</option>
                                 <option value="m2" ${item.calculationMethod === 'm2' ? 'selected' : ''}>${currentLanguage === 'th' ? 'วิธีที่ 2' : 'Method 2'}</option>
                                 <option value="other" ${item.calculationMethod === 'other' ? 'selected' : ''}>${currentLanguage === 'th' ? 'อื่นๆ' : 'Other'}</option>
-                            </select><small class="text-[9px] ${item.methodSource==='auto'?'text-violet-500':'text-slate-400'}">${item.methodSource==='auto'?'Auto from MKT':'Manual'}</small>${item.calculationMethod==='other'?WDPeriod.manualHtml(item):''}</div>
+                                ${item.calculationMethod==='other'?`<option value="edit-other">${currentLanguage==='th'?'แก้ไขจำนวนวัน / เหตุผล':'Edit days / reason'}</option>`:''}
+                            </select><small class="text-[9px] ${item.methodSource==='auto'?'text-violet-500':'text-slate-400'}">${item.methodSource==='auto'?'Auto from MKT':'Manual'}</small></div>
                             <button onclick="openNoteModal(${item.id})" class="${item.note ? 'bg-amber-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'} border border-slate-300 dark:border-slate-700 rounded px-2 py-1.5" title="Note"><i class="fa-solid fa-note-sticky"></i></button>
                         </div>
                     </td>
@@ -2780,8 +2783,8 @@ body.wd-theme-switching *::after{
 
         syncTableScrollbars();
     </script>
-    <script src="working-day-summary.js?v=20261001-manual-cancel"></script>
-    <script src="working-day-period.js?v=20261001-manual-cancel"></script>
+    <script src="working-day-summary.js?v=20261001-method-reset"></script>
+    <script src="working-day-period.js?v=20261001-method-reset"></script>
     <script>
       const workingDayCloudAdapter={
         presenceContext:()=>WDReview.presenceContext(),
