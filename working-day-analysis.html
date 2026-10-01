@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20261001-method-compact"></script>
+    <script src="cloud-core.js?v=20261002-method-align"></script>
     <style> 
         html, body, body *:not(i), button, input, select, option, textarea, table, th, td, code {
             font-family: 'Bai Jamjuree', Tahoma, Arial, sans-serif !important;
@@ -2647,7 +2647,7 @@ body.wd-theme-switching *::after{
                     
                     <td class="p-3 text-center">
                         <div class="flex items-center justify-center gap-2">
-                            <div class="flex flex-col items-start gap-0.5"><button type="button" onclick="WDPeriod.methodMenu(this,${item.id})" aria-haspopup="menu" aria-expanded="false" class="wd-method-select wd-method-pill"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2m4 0h2m-8 4h2m4 0h2m-8 3h2m4 0h2"/></svg><b>${currentLanguage==='th'?(item.calculationMethod==='m1'?'วิธีที่ 1':item.calculationMethod==='m2'?'วิธีที่ 2':'อื่นๆ'):(item.calculationMethod==='m1'?'Method 1':item.calculationMethod==='m2'?'Method 2':'Other')}</b><svg class="wd-method-chevron" width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m3 4.5 3 3 3-3"/></svg></button><select hidden aria-hidden="true" tabindex="-1" style="display:none" data-method="${item.calculationMethod}" onchange="updateCalculationMethod(${item.id}, this.value)" class="wd-method-select border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded px-2 py-1.5 text-xs">
+                            <div class="flex flex-col items-start gap-0.5"><button type="button" onclick="WDPeriod.methodMenu(this,${item.id})" aria-haspopup="menu" aria-expanded="false" class="wd-method-trigger wd-method-pill"><b>${currentLanguage==='th'?(item.calculationMethod==='m1'?'วิธีที่ 1':item.calculationMethod==='m2'?'วิธีที่ 2':'อื่นๆ'):(item.calculationMethod==='m1'?'Method 1':item.calculationMethod==='m2'?'Method 2':'Other')}</b><svg class="wd-method-chevron" width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m3 4.5 3 3 3-3"/></svg></button><select hidden aria-hidden="true" tabindex="-1" style="display:none" data-method="${item.calculationMethod}" onchange="updateCalculationMethod(${item.id}, this.value)" class="wd-method-select border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded px-2 py-1.5 text-xs">
                                 <option value="m1" ${item.calculationMethod === 'm1' ? 'selected' : ''}>${currentLanguage === 'th' ? 'วิธีที่ 1' : 'Method 1'}</option>
                                 <option value="m2" ${item.calculationMethod === 'm2' ? 'selected' : ''}>${currentLanguage === 'th' ? 'วิธีที่ 2' : 'Method 2'}</option>
                                 <option value="other" ${item.calculationMethod === 'other' ? 'selected' : ''}>${currentLanguage === 'th' ? 'อื่นๆ' : 'Other'}</option>
@@ -2781,8 +2781,8 @@ body.wd-theme-switching *::after{
 
         syncTableScrollbars();
     </script>
-    <script src="working-day-summary.js?v=20261001-method-compact"></script>
-    <script src="working-day-period.js?v=20261001-method-compact"></script>
+    <script src="working-day-summary.js?v=20261002-method-align"></script>
+    <script src="working-day-period.js?v=20261002-method-align"></script>
     <script>
       const workingDayCloudAdapter={
         presenceContext:()=>WDReview.presenceContext(),
