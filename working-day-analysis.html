@@ -2547,14 +2547,14 @@ body.wd-theme-switching *::after{
             const searchText = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
             const calculationContext = getCalculationContext();
 
-            const filteredData = plantData.filter(p =>
+            let filteredData = plantData.filter(p =>
                 p.visible &&
                 p.name.toLowerCase().includes(searchText) &&
                 matchesMktFilter(p) &&
                 (currentMethodFilter === 'all' || p.calculationMethod === currentMethodFilter)
             );
 
-            if (typeof WDReview !== 'undefined') WDReview.render(filteredData, calculationContext);
+            if (typeof WDReview !== 'undefined') {WDReview.render(filteredData, calculationContext);filteredData=WDReview.filterPlants(filteredData)}
 
             if (filteredData.length === 0) {
                 tbody.innerHTML = `
@@ -2759,7 +2759,7 @@ body.wd-theme-switching *::after{
 
         syncTableScrollbars();
     </script>
-    <script src="working-day-summary.js?v=20261001-check-column"></script>
+    <script src="working-day-summary.js?v=20261001-review-filter"></script>
     <script>
       const workingDayCloudAdapter={
         presenceContext:()=>WDReview.presenceContext(),

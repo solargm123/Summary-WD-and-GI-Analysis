@@ -101,6 +101,7 @@ const WDReview = (() => {
   function toggleReview(id) {
     const plant = findPlant(id), actor = SolarCloud.collaborationActor();
     if (!plant || !month() || !actor || !SolarCloud.roleCanEdit()) return;
+    if(!['m1','m2'].includes(plant.calculationMethod)){SolarCloud.notice(text('ต้องเลือกวิธีคำนวณก่อน','Select a calculation method'),text('โครงการนี้เลือก Other อยู่ กรุณาเลือกวิธีที่ 1 หรือ 2 ก่อนตรวจ','This project uses Other. Select Method 1 or Method 2 before reviewing.'),'danger');document.querySelector('[data-wd-plant="'+plant.id+'"] .wd-method-select')?.focus();return;}
     const metrics = calculatePlantMetrics(plant);
     if (!metrics.valid) { SolarCloud.notice(text('ยังตรวจเสร็จไม่ได้','Cannot mark reviewed'),text('กรุณาตรวจค่าคำนวณที่ไม่ถูกต้องก่อน','Please correct invalid calculation inputs first'));return; }
     const state=reviewState(plant);
@@ -168,7 +169,7 @@ const WDReview = (() => {
     $('wdDetailsTab').setAttribute('aria-selected',String(!summary));
     $('wdSummaryTab').setAttribute('aria-selected',String(summary));
     $('wdSummaryPanel').hidden=!summary;
-    $('wdReviewFilterToolbar').hidden=!summary;
+    $('wdReviewFilterToolbar').hidden=false;
     $('tableScrollContainer').hidden=summary;
 
     const query=$('searchInput').value.trim(),status=$('wdSearchStatus');
@@ -178,6 +179,10 @@ const WDReview = (() => {
     const warning=$('wdReviewWarning');
     warning.hidden=!changed.length;
     if(changed.length) warning.innerHTML=`<i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i><span>${text('ข้อมูลเปลี่ยนหลังตรวจแล้ว','Data changed after review')} · ${changed.length} ${text('โครงการ','projects')}${changed.length===1?' · '+escapeHtml(changed[0].name):''} — ${text('ตรวจผลอีกครั้งก่อนกดตรวจเสร็จ','Check the results before marking reviewed again')}</span>`;
+    const baseCounts={all:filtered.length,done:0,new:0,changed:0};
+    filtered.forEach(p=>baseCounts[reviewState(p)]++);
+    const options=[['all',text('ทั้งหมด','All')],['done',text('ตรวจแล้ว','Reviewed')],['new',text('ยังไม่ตรวจ','Not reviewed')],['changed',text('ต้องตรวจซ้ำ','Review again')]];
+    $('wdReviewFilterToolbar').innerHTML=`<label for="wdReviewFilter">${text('สถานะตรวจ','Review')}</label><select id="wdReviewFilter" onchange="WDReview.setReviewFilter(this.value)">${options.map(([v,l])=>`<option value="${v}" ${reviewFilter===v?'selected':''}>${l} (${baseCounts[v]})</option>`).join('')}</select>`;
     if (!summary) return;
     const sourceLabel = method => (context.targetMethod==='m1'&&method===2)||(context.targetMethod==='m2'&&method===1)
       ? text('ค่ากำหนดเอง','Custom value')
@@ -204,7 +209,8 @@ const WDReview = (() => {
   });
   document.addEventListener('visibilitychange',()=>{if(document.hidden)endEdit()});
   setInterval(()=>{if(editing){if(!presenceContext())endEdit();else SolarCloud.refreshPresence()}refreshStatuses()},30000);
-  return {isSummary:()=>activeTab==='summary',render,setTab,setReviewFilter,clearSearch,statusHtml,detailBadge,reviewLabel,toggleReview,refreshStatuses,beginEdit,endEdit,presenceContext,onPresence,onSaved,
+  function filterPlants(plants){return reviewFilter==='all'?plants:plants.filter(p=>reviewState(p)===reviewFilter)}
+  return {filterPlants,isSummary:()=>activeTab==='summary',render,setTab,setReviewFilter,clearSearch,statusHtml,detailBadge,reviewLabel,toggleReview,refreshStatuses,beginEdit,endEdit,presenceContext,onPresence,onSaved,
     captureReviews:()=>({...reviews}),restoreReviews:overrides=>{reviews=Object.fromEntries(Object.entries(overrides).filter(([key])=>key.startsWith('@review:')))}};
 })();
 
