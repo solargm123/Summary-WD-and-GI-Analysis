@@ -6,9 +6,15 @@
   const theme=()=>root.dataset.theme||root.dataset.fsTheme||(root.classList.contains('dark')?'dark':'light');
   const set=(node,key,value)=>{if(node.getAttribute(key)!==value)node.setAttribute(key,value)};
   function mountSwitch(original,kind,choose,container=original){
-    if(!original||original.dataset.solarSwitchMounted)return;
+    if(!original)return;
+    // Inline important wins legacy ID selectors that force old controls visible.
+    container.classList.add('solar-native-control');
+    container.style.setProperty('display','none','important');
+    if(original.dataset.solarSwitchMounted)return;
     original.dataset.solarSwitchMounted='true';
-    const group=document.createElement('div');group.className='solar-switch-group';
+    const owner=original.closest('#wdHeaderActions,#giHeaderActions,#prHeaderActions')||container.parentElement;
+    if(owner?.querySelector('[data-solar-control="'+kind+'"]'))return;
+    const group=document.createElement('div');group.className='solar-switch-group';group.dataset.solarControl=kind;
     const labels=kind==='language'?['EN','TH']:['☀ Light','☾ Dark'];
     group.innerHTML=`<span class="solar-switch-label">${labels[0]}</span><button type="button" class="solar-toggle" role="switch"><i class="solar-switch-sentinel" aria-hidden="true"></i><span class="solar-toggle-thumb"></span></button><span class="solar-switch-label">${labels[1]}</span>`;
     container.before(group);container.classList.add('solar-native-control');
@@ -37,7 +43,11 @@
       const themes=[...document.querySelectorAll('#themeButton,#themeBtn,[data-fs-theme],#giHeaderActions button[onclick*="setTheme"]')];
       themes.forEach(b=>mountSwitch(b,'theme',()=>b.click()));
     }
-    document.querySelectorAll('#exportExcelButton,#exportBtn,#saveBtn,header button[onclick*="export"],.topbar button[onclick*="export"]').forEach(b=>b.classList.add('solar-export-control'));
+    document.querySelectorAll('#exportExcelButton,#exportBtn,#saveBtn,header button[onclick*="export"],.topbar button[onclick*="export"]').forEach(b=>{
+      b.classList.add('solar-export-control');
+      for(const [key,value] of Object.entries({background:'#078b49',color:'#ffffff','border-color':'#078b49',height:'36px','min-height':'36px','font-weight':'700'}))b.style.setProperty(key,value,'important');
+    });
   }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
+  function start(){mount();requestAnimationFrame(mount)}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();

@@ -17,3 +17,6 @@ header .header-controls,header .header-actions{flex-wrap:wrap;min-width:0;max-wi
 header,.topbar{flex-wrap:wrap}
 @media(prefers-reduced-motion:reduce){.solar-toggle-thumb{transition:none}}
 @media(max-width:700px){.solar-switch-group{font-size:11px;padding:0 7px;gap:5px}#wdHeaderActions{justify-content:flex-end!important}}
+
+#wdHeaderActions #languageButton.solar-native-control,#wdHeaderActions #themeButton.solar-native-control{display:none!important}
+#wdHeaderActions #exportExcelButton.solar-export-control,#giHeaderActions button.solar-export-control,#prHeaderActions button.solar-export-control{background:#078b49!important;color:#fff!important;border-color:#078b49!important}

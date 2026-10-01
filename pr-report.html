@@ -109,7 +109,7 @@ body.solar-pr .pr-correction-input{width:150px;border-color:color-mix(in srgb,va
 body.solar-pr .pr-correction-input.edited{background:color-mix(in srgb,var(--blue) 10%,var(--card));border-color:var(--blue)}
 body.solar-pr #recordFilterModal input{width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text)}
 </style>
-<link rel="stylesheet" href="solar-controls.css?v=20261001-1">
+<link rel="stylesheet" href="solar-controls.css?v=20261001-2">
 </head>
 <body class="solar-pr">
 <div class="app">
@@ -440,6 +440,6 @@ function syncStickyRows(){const header=document.querySelector('.topbar');if(!hea
 document.addEventListener('DOMContentLoaded',()=>{syncStickyRows();if('ResizeObserver'in window)new ResizeObserver(syncStickyRows).observe(document.querySelector('.topbar'));window.addEventListener('resize',syncStickyRows,{passive:true})});
 </script>
 <script src="unified-ui.js?v=20261001-scoped"></script>
-<script src="solar-controls.js?v=20261001-1"></script>
+<script src="solar-controls.js?v=20261001-2"></script>
 </body>
 </html>
