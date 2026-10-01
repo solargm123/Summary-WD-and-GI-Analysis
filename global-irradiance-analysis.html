@@ -261,6 +261,11 @@
 #giResourcePager button:disabled{opacity:.35;cursor:default}#giResourcePager small{color:var(--text-muted)}
 </style><style id="giDesktopTable20261001">
 body{zoom:.75;min-height:calc(100vh / .75)}
+/* Fixed dialogs use unscaled viewport coordinates, independently of workspace zoom. */
+.modal-overlay,#trendPopupBackdrop,#trendControlsCard{zoom:calc(1 / .75)}
+.modal-overlay{width:100vw;height:100vh}
+#trendPopupBackdrop{width:100vw;height:100vh}
+#trendControlsCard{left:50vw;top:50vh}
 .container,.tab-content,.table-card{min-width:0;max-width:100%}
 .table-card{padding:12px}
 #mainTableContainer{min-height:0;height:var(--gi-table-height,60vh);max-height:none;max-width:100%;overscroll-behavior:contain;scrollbar-gutter:stable}
