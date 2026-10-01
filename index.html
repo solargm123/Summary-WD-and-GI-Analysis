@@ -12,7 +12,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="cloud-core.js?v=20260930-gi-province3"></script>
 <style>
 :root{
@@ -115,6 +114,31 @@ html[data-fs-theme="light"] .central-source b{color:#24334a}
 .name-review-warning{margin:12px 0;padding:11px 13px;border:1px solid #38bdf84d;border-radius:9px;background:#38bdf812;color:#bae6fd;font-size:.78rem}.name-review-table{overflow:auto;max-height:55vh}.name-review-table table{width:100%;border-collapse:collapse;font-size:.75rem}.name-review-table th,.name-review-table td{padding:10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}.name-review-table th{color:var(--muted);position:sticky;top:0;background:var(--card)}.name-review-table select{width:100%;min-width:180px;background:#0f172a;color:var(--text);border:1px solid var(--border);border-radius:7px;padding:7px;font-family:inherit}.capacity-warning{color:#fbbf24;font-size:.67rem;margin-top:3px}html[data-fs-theme="light"] .name-review-warning{color:#075985;background:#e0f2fe;border-color:#7dd3fc}html[data-fs-theme="light"] .name-review-table select{background:#fff;color:#172033}</style>
 <link rel="stylesheet" href="unified-ui.css?v=20260927-om-desktop1">
 <link rel="stylesheet" href="solar-controls.css?v=20261001-2">
+<style id="center-pc-performance">
+/* Desktop presentation; calculations and data access remain unchanged. */
+.main-ambient{background:radial-gradient(ellipse at 8% 0%,#4d75d826,transparent 52%),radial-gradient(ellipse at 95% 20%,#bea4631c,transparent 48%);}
+.main-ambient-orb,.main-grain{display:none!important;animation:none!important;filter:none!important}
+.workspace-head,.auth-card,.card,.central-hub,.workspace-modal-card{backdrop-filter:none!important}
+.workspace-head{flex-wrap:wrap;gap:16px;align-items:center}
+.brand-area,.brand-copy,.central-head>div,.project-row>*,.member-row>div{min-width:0}
+.workspace-actions{gap:8px;max-width:100%;flex-wrap:wrap}
+.workspace-head .workspace-actions{margin-left:auto}
+.brand-copy h1{font-size:clamp(21px,1.7vw,27px);line-height:1.3;overflow-wrap:anywhere}
+.subtitle,.card p,.central-head p,.user-chip,.project-meta{overflow-wrap:anywhere;line-height:1.6}
+.card h2{font-size:18px;line-height:1.4;overflow-wrap:anywhere}
+.card p{font-size:14px}.card .open{font-size:13px}
+.small-btn,.primary,.central-upload{font-size:13px;line-height:1.4;min-height:36px;white-space:normal;text-align:center}
+.central-head{flex-wrap:wrap;align-items:flex-start}.central-head>div:first-child{flex:1 1 360px}
+.central-head h2{font-size:21px;line-height:1.4}.central-head .workspace-actions{flex:0 1 auto}
+.central-stats{grid-template-columns:repeat(5,minmax(0,1fr))}.central-stats>div{min-width:0}
+.central-stats strong{font-size:18px;overflow-wrap:anywhere}.central-stats span{font-size:12px;line-height:1.5}
+.user-area{flex-wrap:wrap;min-width:0}.user-chip{max-width:280px}
+.workspace-modal-card{overscroll-behavior:contain;scrollbar-gutter:stable}
+.card{transition:transform .16s ease,border-color .16s ease}.card:hover{transform:translateY(-2px)}
+@media(min-width:901px){body{zoom:.9;min-height:calc(100vh / .9);padding:22px 28px 32px}.workspace{width:min(1420px,100%)}.workspace-modal{zoom:calc(1 / .9)}.workspace-modal-card{max-height:calc(100dvh - 48px)}}
+@media(max-width:1000px){.central-stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.central-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
 </head>
 <body class="solar-center">
 <div class="main-ambient" aria-hidden="true"><div class="main-ambient-orb one"></div><div class="main-ambient-orb two"></div><div class="main-ambient-orb three"></div></div>
@@ -346,9 +370,22 @@ let pendingCentralUpload=null;
 function updateCentralQueue(info={}){
   const box=byId('centralQueue'),total=Number(info.total||0),current=Number(info.current||0),percent=total?Math.round(current/total*100):0;box.classList.remove('hidden');box.dataset.state=info.state||'running';byId('centralQueueBar').style.width=percent+'%';byId('centralQueueCount').textContent=current+' / '+total;byId('centralQueueTitle').textContent=info.title||(info.stage==='reading'?'กำลังตรวจไฟล์':'กำลังบันทึกข้อมูล');byId('centralQueueDetail').textContent=info.file||'';byId('centralResumeButton').classList.toggle('hidden',info.state!=='error');
 }
+let centerExcelPromise=null;
+function ensureCenterExcel(){
+  if(window.XLSX)return Promise.resolve(window.XLSX);
+  if(centerExcelPromise)return centerExcelPromise;
+  centerExcelPromise=new Promise((resolve,reject)=>{
+    const script=document.createElement('script');
+    script.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+    script.onload=()=>{if(window.XLSX)resolve(window.XLSX);else{script.remove();centerExcelPromise=null;reject(new Error('Excel library unavailable'))}};
+    script.onerror=()=>{script.remove();centerExcelPromise=null;reject(new Error('โหลดเครื่องมือ Excel ไม่สำเร็จ กรุณาลองใหม่'))};
+    document.head.appendChild(script);
+  });
+  return centerExcelPromise;
+}
 async function uploadCentralData(event){
   const files=Array.from(event.target.files||[]);if(!files.length)return;const progress=byId('centralProgress'),message=byId('centralMessage');progress.classList.remove('hidden');message.className='central-message';message.textContent='ระบบจะตรวจและบันทึกทีละไฟล์ ปิดหน้านี้ได้หลังสถานะเสร็จสมบูรณ์';byId('centralQueueErrors').textContent='';
-  try{const prepared=await SolarCloud.prepareCentralBatchUpload(files,updateCentralQueue);pendingCentralUpload=prepared;if(prepared.candidates.length){showNameReview(prepared.candidates);progress.classList.add('hidden')}else await finishCentralUpload([])}catch(error){progress.classList.add('hidden');message.className='central-message error';message.textContent='เริ่มนำเข้าไม่สำเร็จ: '+error.message;updateCentralQueue({state:'error',title:'งานหยุดก่อนเริ่ม',total:files.length,current:0,file:error.message})}finally{event.target.value=''}
+  try{await ensureCenterExcel();const prepared=await SolarCloud.prepareCentralBatchUpload(files,updateCentralQueue);pendingCentralUpload=prepared;if(prepared.candidates.length){showNameReview(prepared.candidates);progress.classList.add('hidden')}else await finishCentralUpload([])}catch(error){progress.classList.add('hidden');message.className='central-message error';message.textContent='เริ่มนำเข้าไม่สำเร็จ: '+error.message;updateCentralQueue({state:'error',title:'งานหยุดก่อนเริ่ม',total:files.length,current:0,file:error.message})}finally{event.target.value=''}
 }
 function showNameReview(candidates){
   byId('nameReviewRows').innerHTML=candidates.map((x,i)=>{const capacityDiff=x.oldCapacity&&x.newCapacity?Math.abs(x.oldCapacity-x.newCapacity)/Math.max(x.oldCapacity,x.newCapacity):0;return`<tr><td><b>${escapeText(x.oldName)}</b><div class="subtitle">ข้อมูลเดิมถึง ${escapeText(x.oldLastDate||'—')}</div></td><td><b>${escapeText(x.newName)}</b><div class="subtitle">ข้อมูลใหม่ ${escapeText(x.newLastDate||'—')}</div></td><td>${Math.round(x.score*100)}%</td><td>${Number(x.oldCapacity||0).toLocaleString()} / ${Number(x.newCapacity||0).toLocaleString()} kWp${capacityDiff>.08?'<div class="capacity-warning"><i class="fa-solid fa-triangle-exclamation"></i> Capacity ต่างกันมาก กรุณาตรวจสอบ Phase / Meter / Building</div>':''}</td><td><select id="nameChoice${i}"><option value="use_new">เป็นโครงการเดียวกัน · ใช้ชื่อใหม่ย้อนหลัง</option><option value="keep_old">เป็นโครงการเดียวกัน · ใช้ชื่อเดิม</option><option value="separate" ${capacityDiff>.08?'selected':''}>เป็นคนละโครงการ</option></select></td></tr>`}).join('');byId('nameReviewModal').classList.remove('hidden')
