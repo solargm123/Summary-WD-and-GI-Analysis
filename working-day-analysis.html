@@ -1101,7 +1101,7 @@ body.wd-theme-switching *::after{
 .dark .wd-method-select:hover{background-color:#352953!important}
 .dark .wd-method-select option{background:#1e293b!important;color:#f8fafc!important}
 </style>
-</head>
+<style>.wd-m1{background:rgba(59,130,246,.12)!important;color:#2563eb}.wd-m2{background:rgba(16,185,129,.12)!important;color:#059669}.wd-m3{background:rgba(139,92,246,.12)!important;color:#8b5cf6}.wd-custom{background:rgba(148,163,184,.12)!important}.wd-method-badge{padding:4px 8px;border-radius:8px;font-weight:700;white-space:nowrap}</style></head>
 <body class="solar-wd wd-dock-collapsed bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen pb-2 transition-colors duration-200">
 
     <!-- Header Navigation -->
@@ -1307,8 +1307,8 @@ body.wd-theme-switching *::after{
                     <button id="method2FilterButton" onclick="setMethodFilter('m2')" class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-lg px-3 py-2 flex items-center gap-2 transition">
                         <i class="fa-solid fa-chart-line"></i><span>วิธีที่ 2</span><strong id="method2ProjectCount" class="bg-emerald-600 text-white rounded-full px-2 py-0.5">0</strong>
                     </button>
-                    <button id="otherFilterButton" onclick="setMethodFilter('other')" class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/70 text-amber-700 dark:text-amber-300 rounded-lg px-3 py-2 flex items-center gap-2 transition">
-                        <i class="fa-solid fa-layer-group"></i><span>อื่นๆ</span><strong id="otherProjectCount" class="bg-amber-500 text-white rounded-full px-2 py-0.5">0</strong>
+                    <button id="otherFilterButton" onclick="setMethodFilter('m3')" class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/70 text-amber-700 dark:text-amber-300 rounded-lg px-3 py-2 flex items-center gap-2 transition">
+                        <i class="fa-solid fa-layer-group"></i><span>วิธีที่ 3</span><strong id="otherProjectCount" class="bg-amber-500 text-white rounded-full px-2 py-0.5">0</strong>
                     </button>
                     <button onclick="openFormulaGuideModal()" class="bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-300 rounded-lg px-3 py-2 flex items-center gap-2">
                         <i class="fa-solid fa-square-root-variable"></i><span>ดูสมการ</span>
@@ -1521,7 +1521,7 @@ body.wd-theme-switching *::after{
                 formulaTitle1: '📌 สูตรการคำนวณ (วิธีที่ 1)', formulaTitle2: '📌 สูตรการคำนวณ (วิธีที่ 2)', formulaCode1: '(Days - Loss Days) + [ (PV Yield วัน Loss / Capacity) / Sun Hours ]',
                 formulaDesc1: '* คิดวันทำงานจริงจากวันที่ไม่มี Loss บวกด้วยสัดส่วนพลังงานที่ผลิตได้ในวันที่มี Loss', formulaDesc2: '* คำนวณหักลบจำนวนวันที่สูญเสียโดยใช้ Loss Due รวมทั้งเดือน ค่านี้ไม่เปลี่ยนเมื่อแก้ไขวันที่ Loss',
                 method1Short: 'วิธีที่ 1', method2Short: 'วิธีที่ 2', viewFormula: 'ดูสมการ', selectProjects: 'เลือกโครงการ', selectedMethodNote: 'วิธีที่เลือก / Note',
-                selectorTitle: 'เลือกโครงการที่ต้องการแสดง', searchProjects: 'ค้นหาชื่อโครงการ...', selectAll: 'เลือกทั้งหมด', clearSelection: 'ไม่เลือกทั้งหมด', formulaGuide: 'สมการคำนวณ Working Days', other: 'อื่นๆ', notePlaceholder: 'บันทึกหมายเหตุของโครงการ...', clearNote: 'ล้าง Note', save: 'บันทึก', darkMode: 'โหมดมืด', lightMode: 'โหมดสว่าง'
+                selectorTitle: 'เลือกโครงการที่ต้องการแสดง', searchProjects: 'ค้นหาชื่อโครงการ...', selectAll: 'เลือกทั้งหมด', clearSelection: 'ไม่เลือกทั้งหมด', formulaGuide: 'สมการคำนวณ Working Days', other: 'วิธีที่ 3', notePlaceholder: 'บันทึกหมายเหตุของโครงการ...', clearNote: 'ล้าง Note', save: 'บันทึก', darkMode: 'โหมดมืด', lightMode: 'โหมดสว่าง'
             },
             en: {
                 subtitle: 'Performance processing and working-days calculation for solar engineers', import: 'Import Reports', clearFiles: 'Clear Files',
@@ -1538,7 +1538,7 @@ body.wd-theme-switching *::after{
                 formulaTitle1: '📌 Calculation Formula (Method 1)', formulaTitle2: '📌 Calculation Formula (Method 2)', formulaCode1: '(Days - Loss Days) + [ (Loss-Day PV Yield / Capacity) / Sun Hours ]',
                 formulaDesc1: '* Adds equivalent production on selected loss days to the non-loss-day count.', formulaDesc2: '* Deducts equivalent lost days using the full-month Loss Due total, independent of selected loss dates.',
                 method1Short: 'Method 1', method2Short: 'Method 2', viewFormula: 'View Formulas', selectProjects: 'Select Projects', selectedMethodNote: 'Selected Method / Note',
-                selectorTitle: 'Select projects to display', searchProjects: 'Search projects...', selectAll: 'Select All', clearSelection: 'Clear All', formulaGuide: 'Working Days Formulas', other: 'Other', notePlaceholder: 'Enter a project note...', clearNote: 'Clear Note', save: 'Save', darkMode: 'Dark Mode', lightMode: 'Light Mode'
+                selectorTitle: 'Select projects to display', searchProjects: 'Search projects...', selectAll: 'Select All', clearSelection: 'Clear All', formulaGuide: 'Working Days Formulas', other: 'Method 3', notePlaceholder: 'Enter a project note...', clearNote: 'Clear Note', save: 'Save', darkMode: 'Dark Mode', lightMode: 'Light Mode'
             }
         };
 
@@ -1665,7 +1665,7 @@ body.wd-theme-switching *::after{
         }
         function updateCalculationMethod(id, method) {
             const plant = plantData.find(p => p.id === id);
-            if (!plant || !['m1', 'm2', 'other'].includes(method)) return;
+            if (!plant || !['m1', 'm2', 'm3', 'custom'].includes(method)) return;
             const month=document.getElementById('monthSelect').value,key=projectStableKey(plant);
             methodOverridesByMonth[month]=methodOverridesByMonth[month]||{};
             methodOverridesByMonth[month][key]=method;
@@ -1687,7 +1687,7 @@ body.wd-theme-switching *::after{
             const visiblePlants = plantData.filter(p => p.visible && matchesMktFilter(p));
             document.getElementById('method1ProjectCount').textContent = visiblePlants.filter(p => p.calculationMethod === 'm1').length;
             document.getElementById('method2ProjectCount').textContent = visiblePlants.filter(p => p.calculationMethod === 'm2').length;
-            document.getElementById('otherProjectCount').textContent = visiblePlants.filter(p => p.calculationMethod === 'other').length;
+            document.getElementById('otherProjectCount').textContent = visiblePlants.filter(p => p.calculationMethod === 'm3').length;
             document.getElementById('selectedProjectCount').textContent = `${visiblePlants.length}/${plantData.length}`;
             const m1Button = document.getElementById('method1FilterButton');
             const m2Button = document.getElementById('method2FilterButton');
@@ -1698,7 +1698,7 @@ body.wd-theme-switching *::after{
             m2Button.classList.toggle('ring-2', currentMethodFilter === 'm2');
             m2Button.classList.toggle('ring-emerald-500', currentMethodFilter === 'm2');
             m2Button.classList.toggle('ring-offset-2', currentMethodFilter === 'm2');
-            otherButton.classList.toggle('ring-2', currentMethodFilter === 'other');
+            otherButton.classList.toggle('ring-2', currentMethodFilter === 'm3');
             otherButton.classList.toggle('ring-amber-500', currentMethodFilter === 'other');
             otherButton.classList.toggle('ring-offset-2', currentMethodFilter === 'other');
             m1Button.setAttribute('aria-pressed', currentMethodFilter === 'm1');
@@ -1723,7 +1723,7 @@ body.wd-theme-switching *::after{
         function openFormulaGuideModal() {
             const th = currentLanguage === 'th';
             document.getElementById('formulaGuideTitle').textContent = th ? 'สมการคำนวณ Working Days' : 'Working Days Formulas';
-            document.getElementById('formulaGuideBody').innerHTML = `
+            document.getElementById('formulaGuideBody').innerHTML = `<div class="p-3 border rounded"><b>${th?'วิธีที่ 3':'Method 3'}</b><p>[(PV Yield on Loss Days ÷ Capacity) ÷ Sun Hours] + [Days − (Loss Due monthly × Loss Factor ÷ Capacity ÷ Sun Hours)]</p></div>
                 <div class="border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 rounded-xl p-4 space-y-3">
                     <h4 class="font-bold text-blue-700 dark:text-blue-400">${th ? 'วิธีที่ 1' : 'Method 1'}</h4>
                     <code class="block bg-white dark:bg-slate-950 border border-blue-100 dark:border-blue-900 rounded p-3 text-xs">(Days − Loss Days) + [(PV Yield on Loss Days ÷ Capacity) ÷ Sun Hours]</code>
@@ -1810,7 +1810,7 @@ body.wd-theme-switching *::after{
                 ['(Days - Loss Days) + [ (PV Yield วัน Loss / Capacity) / Sun Hours ]','formulaCode1'],
                 ['* คิดวันทำงานจริงจากวันที่ไม่มี Loss บวกด้วยสัดส่วนพลังงานที่ผลิตได้ในวันที่มี Loss','formulaDesc1'],
                 ['* คำนวณหักลบจำนวนวันที่สูญเสียโดยใช้ Loss Due รวมทั้งเดือน ค่านี้ไม่เปลี่ยนเมื่อแก้ไขวันที่ Loss','formulaDesc2'],
-                ['วิธีที่ 1','method1Short'], ['วิธีที่ 2','method2Short'], ['ดูสมการ','viewFormula'], ['เลือกโครงการ','selectProjects'], ['วิธีที่เลือก / Note','selectedMethodNote'],
+                ['วิธีที่ 1','method1Short'], ['วิธีที่ 2','method2Short'], ['วิธีที่ 3','other'], ['ดูสมการ','viewFormula'], ['เลือกโครงการ','selectProjects'], ['วิธีที่เลือก / Note','selectedMethodNote'],
                 ['เลือกโครงการที่ต้องการแสดง','selectorTitle'], ['ค้นหาชื่อโครงการ...','searchProjects'], ['เลือกทั้งหมด','selectAll'], ['ไม่เลือกทั้งหมด','clearSelection'],
                 ['สมการคำนวณ Working Days','formulaGuide'], ['อื่นๆ','other'], ['ล้าง Note','clearNote'], ['บันทึก','save'], ['ปิด','close'], ['โหมดมืด','darkMode'], ['โหมดสว่าง','lightMode']
             ];
@@ -2460,14 +2460,15 @@ body.wd-theme-switching *::after{
             const selected = getSelectedLossValues(item);
             const monthlyLossEnergy = Number(item.lossDueEnergy) || 0;
             const lossDaysCount = item.lossDaysArray.length;
-            if (!Number.isFinite(cap) || cap <= 0 || shM1 <= 0 || shM2 <= 0) {
-                return { valid: false, cap, daysInMonth, shObj, shM1, shM2, lossFactor, selected, monthlyLossEnergy, lossDaysCount, method1Days: 0, method2Days: 0 };
+            if (!Number.isFinite(cap) || cap <= 0 || shM1 <= 0 || shM2 <= 0 || shObj.chosenSH <= 0) {
+                return { valid: false, cap, daysInMonth, shObj, shM1, shM2, lossFactor, selected, monthlyLossEnergy, lossDaysCount, method1Days: 0, method2Days: 0, method3Days:0 };
             }
             const equivalentDaysFromLossPv = (selected.pvYield / cap) / shM1;
             const method1Days = Math.min(daysInMonth, Math.max(0, (daysInMonth - lossDaysCount) + equivalentDaysFromLossPv));
             const lossDaysEquivalent = (monthlyLossEnergy * lossFactor / cap) / shM2;
             const method2Days = Math.min(daysInMonth, Math.max(0, daysInMonth - lossDaysEquivalent));
-            return { valid: true, cap, daysInMonth, shObj, shM1, shM2, lossFactor, selected, monthlyLossEnergy, lossDaysCount, equivalentDaysFromLossPv, lossDaysEquivalent, method1Days, method2Days };
+            const method3Days=(selected.pvYield/cap)/shObj.chosenSH + daysInMonth-(monthlyLossEnergy*lossFactor/cap/shObj.chosenSH);
+            return { method3Days, valid: true, cap, daysInMonth, shObj, shM1, shM2, lossFactor, selected, monthlyLossEnergy, lossDaysCount, equivalentDaysFromLossPv, lossDaysEquivalent, method1Days, method2Days };
         }
 
         function openFormulaModal(id, method) {
@@ -2477,6 +2478,7 @@ body.wd-theme-switching *::after{
             const m = calculatePlantMetrics(item);
             const n = value => Number(value).toLocaleString(undefined, { maximumFractionDigits: 4 });
             const isM1 = method === 1;
+            if(method===3){document.getElementById('formulaModalTitle').textContent=currentLanguage==='th'?'วิธีที่ 3':'Method 3';document.getElementById('formulaModalBody').innerHTML=`<code>[(PV Yield on Loss Days ÷ Capacity) ÷ Sun Hours] + [Days − (Loss Due monthly × Loss Factor ÷ Capacity ÷ Sun Hours)]</code><p>= ${n(m.method3Days)}</p>`;document.getElementById('formulaModal').classList.remove('hidden');return}
             document.getElementById('formulaModalTitle').textContent = `${t('formula')} – ${item.name} – ${isM1 ? t('working1') : t('working2')}`;
             const formula = isM1
                 ? '(Days − Loss Days) + [(PV Yield on Loss Days ÷ Capacity) ÷ Sun Hours]'
@@ -2530,6 +2532,8 @@ body.wd-theme-switching *::after{
             while(cursor){const next=cursor.nextElementSibling;cursor.remove();cursor=next;}
         }
         function calculateAndRenderScoped() {
+            plantData.forEach(p=>{if(p.calculationMethod==='other')p.calculationMethod='m3'});
+            Object.values(methodOverridesByMonth).forEach(month=>Object.keys(month).forEach(key=>{if(month[key]==='other')month[key]='m3'}));
             if (calculateRenderFrame) {
                 cancelAnimationFrame(calculateRenderFrame);
                 calculateRenderFrame = 0;
@@ -2594,7 +2598,7 @@ body.wd-theme-switching *::after{
                     <td class="p-3 text-center sticky-col-1">
                         <input type="checkbox" ${item.visible ? 'checked' : ''} onchange="togglePlant(${item.id}, this.checked)" class="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-0 w-4 h-4 cursor-pointer">
                     </td>
-                    <td class="p-3 font-semibold text-slate-800 dark:text-slate-200 sticky-col-2" title="${escapeHtml(item.name)}"><span data-wd-detail-review="${item.id}">${WDReview.detailBadge(item)}</span>${escapeHtml(item.name)}</td>
+                    <td class="p-3 font-semibold text-slate-800 dark:text-slate-200 sticky-col-2" title="${escapeHtml(item.name)}"><span data-wd-detail-review="${item.id}" style="display:inline-flex;margin-right:6px">${WDReview.detailBadge(item)}</span>${escapeHtml(item.name)}</td>
 
                     <td class="p-3 text-right font-mono text-blue-700 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/70 font-bold sticky-col-3"><button onclick="openFormulaModal(${item.id}, 1)" class="underline decoration-dotted underline-offset-4" title="${t('formula')}">${metrics.valid ? method1Days.toFixed(2) : 'Invalid'}</button></td>
                     <td class="p-3 text-right font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/70 font-bold sticky-col-4 sticky-divider"><button onclick="openFormulaModal(${item.id}, 2)" class="underline decoration-dotted underline-offset-4" title="${t('formula')}">${metrics.valid ? method2Days.toFixed(2) : 'Invalid'}</button></td>
@@ -2627,8 +2631,8 @@ body.wd-theme-switching *::after{
                             <div class="flex flex-col items-start gap-0.5"><select onchange="updateCalculationMethod(${item.id}, this.value)" class="wd-method-select border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded px-2 py-1.5 text-xs">
                                 <option value="m1" ${item.calculationMethod === 'm1' ? 'selected' : ''}>${currentLanguage === 'th' ? 'วิธีที่ 1' : 'Method 1'}</option>
                                 <option value="m2" ${item.calculationMethod === 'm2' ? 'selected' : ''}>${currentLanguage === 'th' ? 'วิธีที่ 2' : 'Method 2'}</option>
-                                <option value="other" ${item.calculationMethod === 'other' ? 'selected' : ''}>${currentLanguage === 'th' ? 'อื่นๆ' : 'Other'}</option>
-                            </select><small class="text-[9px] ${item.methodSource==='auto'?'text-violet-500':'text-slate-400'}">${item.methodSource==='auto'?'Auto from MKT':'Manual'}</small></div>
+                                <option value="m3" ${item.calculationMethod === 'm3' ? 'selected' : ''}>${currentLanguage === 'th' ? 'วิธีที่ 3' : 'Method 3'}</option><option value="custom" ${item.calculationMethod === 'custom' ? 'selected' : ''}>${currentLanguage === 'th' ? 'วิธีอื่นๆ' : 'Other'}</option>
+                            </select><button class="wd-method-badge wd-m3" type="button" onclick="openFormulaModal(${item.id},3)" title="Method 3">${metrics.valid?metrics.method3Days.toFixed(2):'—'} · M3</button><small class="text-[9px] ${item.methodSource==='auto'?'text-violet-500':'text-slate-400'}">${item.methodSource==='auto'?'Auto from MKT':'Manual'}</small></div>
                             <button onclick="openNoteModal(${item.id})" class="${item.note ? 'bg-amber-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'} border border-slate-300 dark:border-slate-700 rounded px-2 py-1.5" title="Note"><i class="fa-solid fa-note-sticky"></i></button>
                         </div>
                     </td>
@@ -2711,7 +2715,8 @@ body.wd-theme-switching *::after{
                     [headers.m2]: parseFloat(m.method2Days.toFixed(4)),
                     [headers.m2Formula]: '=MIN(Days,MAX(0,Days-((MonthlyLoss*LossFactor)/Capacity/SunHoursM2)))',
                     [headers.m2Explain]: `${n(m.daysInMonth)}-((${n(m.monthlyLossEnergy)}*${n(m.lossFactor)})/${n(m.cap)}/${n(m.shM2)}) = ${n(m.method2Days)}`,
-                    [headers.selectedMethod]: item.calculationMethod === 'm1' ? (th ? 'วิธีที่ 1' : 'Method 1') : item.calculationMethod === 'm2' ? (th ? 'วิธีที่ 2' : 'Method 2') : (th ? 'อื่นๆ' : 'Other'),
+                    [th?'วันทำงาน วิธีที่ 3':'Working days Method 3']:parseFloat(m.method3Days.toFixed(4)),
+                    [headers.selectedMethod]: item.calculationMethod === 'm1' ? (th ? 'วิธีที่ 1' : 'Method 1') : item.calculationMethod === 'm2' ? (th ? 'วิธีที่ 2' : 'Method 2') : item.calculationMethod==='m3'?(th?'วิธีที่ 3':'Method 3'):(th ? 'วิธีอื่นๆ' : 'Other'),
                     [headers.note]: item.note || ''
                 };
             });
@@ -2750,7 +2755,7 @@ body.wd-theme-switching *::after{
 
         syncTableScrollbars();
     </script>
-    <script src="working-day-summary.js?v=20261001-pc90"></script>
+    <script src="working-day-summary.js?v=20261001-method3"></script>
     <script>
       const workingDayCloudAdapter={
         presenceContext:()=>WDReview.presenceContext(),
@@ -2932,6 +2937,14 @@ body.wd-theme-switching *::after{
 
 <script src="unified-ui.js?v=20261001-scoped"></script>
 <script src="solar-controls.js?v=20261001-3"></script>
+<script>
+document.addEventListener('keydown',event=>{
+ if(event.code!=='Space'||event.ctrlKey||event.altKey||event.metaKey)return;
+ const target=event.target;
+ if(target instanceof Element&&target.closest('textarea,input:not([type=checkbox]):not([type=radio]),[contenteditable=true]'))return;
+ if(target instanceof Element&&target.closest('button,select,input[type=checkbox],input[type=radio]'))event.preventDefault();
+},true);
+</script>
 </body>
 </html>
 
