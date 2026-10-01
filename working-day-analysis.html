@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20261002-muted-summary"></script>
+    <script src="cloud-core.js?v=20261002-loss-mkt"></script>
     <style> 
         html, body, body *:not(i), button, input, select, option, textarea, table, th, td, code {
             font-family: 'Bai Jamjuree', Tahoma, Arial, sans-serif !important;
@@ -1119,6 +1119,9 @@ body.wd-theme-switching *::after{
 .dark #tableBody td{color:#cbd5e1}.dark #tableBody .sticky-col-3{background:#202d3d!important;color:#b6c9df!important}.dark #tableBody .sticky-col-4{background:#21332c!important;color:#b7d0bf!important}.dark #tableBody td[class*="bg-amber"],.dark #tableBody td[class*="bg-rose"]{background:#182332!important}.dark #tableBody td.text-rose-700{color:#d4b6be!important}.dark #tableBody td.text-indigo-600,.dark #tableBody td.text-amber-600{color:#b9c6d5!important}.dark #tableBody input[type=number],.dark #tableBody button.bg-amber-500{background:#1e293b!important;color:#cbd5e1!important;border-color:#475569!important}
 .dark #tableBody .mkt-select{color-scheme:dark!important}.dark #tableBody .mkt-select.mkt-estimated{background:#25382f!important;border-color:#456052!important;color:#c3d8cb!important}.dark #tableBody .mkt-select.mkt-misestimated{background:#393326!important;border-color:#65583e!important;color:#ded1b5!important}.dark #tableBody .mkt-select.mkt-haveno{background:#3c2b32!important;border-color:#674752!important;color:#dec2cc!important}.dark #tableBody .mkt-select.mkt-question{background:#312c3e!important;border-color:#584c6d!important;color:#d0c6de!important}.dark #tableBody .mkt-select option{background:#1e293b!important;color:#e2e8f0!important}
 .dark #wdSummaryPanel .wd-selected-m1{background:#202d3d!important;color:#b6c9df!important}.dark #wdSummaryPanel .wd-selected-m2{background:#21332c!important;color:#b7d0bf!important}
+</style><style id="wd-compact-loss-mkt">
+#tableScrollContainer table th:nth-child(8),#tableScrollContainer table td:nth-child(8){width:84px!important;min-width:84px!important;max-width:84px!important}#tableScrollContainer table th:nth-child(12),#tableScrollContainer table td:nth-child(12){width:124px!important;min-width:124px!important;max-width:124px!important}
+#tableScrollContainer table th:nth-child(8),#tableScrollContainer table th:nth-child(12){white-space:normal!important;line-height:1.35;letter-spacing:0!important}#tableBody td:nth-child(8) button{width:26px!important;height:26px!important;min-height:26px!important;padding:0!important;border-radius:7px!important}#tableBody .wd-mkt-trigger{max-width:112px!important;font-size:10px!important;padding:0 6px!important}#tableBody .wd-mkt-trigger b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style></head>
 <body class="solar-wd wd-dock-collapsed bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen pb-2 transition-colors duration-200">
 
@@ -2643,15 +2646,15 @@ body.wd-theme-switching *::after{
                     
                     <td class="p-3 text-center font-mono text-[11px] bg-amber-50/20 dark:bg-amber-950/10">
                         <div class="flex items-center justify-center gap-2 min-h-9">
-                            <span class="flex-1 text-center">${lossDatesDisplay}</span>
-                            <button onclick="openLossModal(${item.id})" class="shrink-0 w-8 h-8 grid place-items-center bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition shadow-sm" title="แก้ไขวันที่เกิด Loss"><i class="fa-solid fa-pen"></i></button>
+                            
+                            <button onclick="openLossModal(${item.id})" class="shrink-0 w-8 h-8 grid place-items-center bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition shadow-sm" title="${currentLanguage==='th'?'เลือกวันที่เกิด Loss Due':'Select Loss Due dates'}" aria-label="${currentLanguage==='th'?'เลือกวันที่เกิด Loss Due':'Select Loss Due dates'}"><i class="fa-solid fa-pen"></i></button>
                         </div>
                     </td>
 
                     <td class="p-3 text-right font-mono font-semibold text-red-600 dark:text-red-400" hidden aria-hidden="true">${selected.lossEnergy.toLocaleString(undefined, {maximumFractionDigits: 2})}</td>
                     <td class="p-3 text-right font-mono font-bold text-rose-700 dark:text-rose-300 bg-rose-50/30 dark:bg-rose-950/20">${metrics.monthlyLossEnergy.toLocaleString(undefined, {maximumFractionDigits: 2})}</td>
                     <td class="p-3 text-right font-mono font-semibold text-indigo-600 dark:text-indigo-400">${selected.pvYield.toLocaleString(undefined, {maximumFractionDigits: 2})}</td>
-                    <td class="p-3 text-center"><select onchange="updateMktEstimate(${item.id}, this.value)" class="mkt-select w-full min-w-[180px] border border-slate-300 dark:border-slate-700 text-xs ${mktStatusClass(item.mktEstimate)}">${mktEstimateOptions(item.mktEstimate)}</select></td>
+                    <td class="p-3 text-center"><button type="button" class="wd-method-trigger wd-method-pill wd-mkt-trigger" onclick="WDPeriod.methodMenu(this,${item.id},'mkt')" aria-haspopup="menu" aria-expanded="false" title="${escapeHtml(item.mktEstimate||'Not specified')}"><b>${escapeHtml(item.mktEstimate?item.mktEstimate.replace(' 12:00 L',''):(currentLanguage==='th'?'ยังไม่ระบุ':'Not specified'))}</b><svg class="wd-method-chevron" width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m3 4.5 3 3 3-3"/></svg></button></td>
                     <td class="p-3 text-right font-mono font-bold text-amber-600 dark:text-amber-400 bg-amber-50/30 dark:bg-amber-950/20" title="M1: ${shM1.toFixed(2)} | M2: ${shM2.toFixed(2)}">${shM1.toFixed(2)} / ${shM2.toFixed(2)}</td>
                     
                     <td class="p-3 text-center">
@@ -2790,8 +2793,8 @@ body.wd-theme-switching *::after{
 
         syncTableScrollbars();
     </script>
-    <script src="working-day-summary.js?v=20261002-muted-summary"></script>
-    <script src="working-day-period.js?v=20261002-muted-summary"></script>
+    <script src="working-day-summary.js?v=20261002-loss-mkt"></script>
+    <script src="working-day-period.js?v=20261002-loss-mkt"></script>
     <script>
       const workingDayCloudAdapter={
         presenceContext:()=>WDReview.presenceContext(),

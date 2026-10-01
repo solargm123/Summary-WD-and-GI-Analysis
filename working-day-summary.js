@@ -76,7 +76,7 @@ const WDReview = (() => {
   function detailBadge(plant) {return reviewButtonHtml(plant)}
   // Ask before the first edit to a reviewed project in this page session; the choice is not stored.
   function guardReviewedEdit(event) {
-    const control=event.target.closest('#tableBody input[type="number"],#tableBody select,#tableBody button[onclick^="openLossModal"],#tableBody button[onclick^="openNoteModal"],#sunHoursTarget,#inputSunHoursCustom,input[name="sunHoursMode"]');
+    const control=event.target.closest('#tableBody input[type="number"],#tableBody select,#tableBody .wd-mkt-trigger,#tableBody button[onclick^="openLossModal"],#tableBody button[onclick^="openNoteModal"],#sunHoursTarget,#inputSunHoursCustom,input[name="sunHoursMode"]');
     if (!control || (event.type==='beforeinput' && !control.matches('input[type="number"]')) ||
         (event.type==='keydown' && ['Tab','Shift','Control','Alt','Meta','Escape'].includes(event.key))) return;
     const row=control.closest('[data-wd-plant]'),plant=row&&findPlant(row.dataset.wdPlant);
