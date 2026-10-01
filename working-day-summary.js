@@ -101,12 +101,12 @@ const WDReview = (() => {
   function toggleReview(id) {
     const plant = findPlant(id);
     if (!plant) return;
-    if(!['m1','m2'].includes(plant.calculationMethod)){SolarCloud.notice(text('ต้องเลือกวิธีคำนวณก่อน','Select a calculation method'),text('โครงการนี้เลือก Other อยู่ กรุณาเลือกวิธีที่ 1 หรือ 2 ก่อนตรวจ','This project uses Other. Select Method 1 or Method 2 before reviewing.'),'danger');document.querySelector('[data-wd-plant="'+plant.id+'"] .wd-method-select')?.focus();return;}
+    if(plant.calculationMethod==='other'&&!WDPeriod.scope(plant)?.confirmed){SolarCloud.notice(text('กรอกวันเองก่อนตรวจ','Enter Manual days before review'),text('กรุณากรอก Working days พร้อมเหตุผล','Enter Manual Working days and a reason'),'danger');WDPeriod.open(id);return;}
     const actor=SolarCloud.collaborationActor();
     if(!month()||!SolarCloud.roleCanEdit()){SolarCloud.notice(text('ยังตรวจไม่ได้','Cannot review'),text('ต้องเลือกเดือนและมีสิทธิ์แก้ไขก่อน','Select a month and use an editor account before reviewing'),'danger');return}
     if(!actor){SolarCloud.notice(text('กำลังเชื่อมต่อสถานะผู้ใช้','User status is not connected'),text('ระบบยังไม่พร้อมบันทึกสถานะตรวจ กรุณาลองอีกครั้งเมื่อเชื่อมต่อแล้ว','Review status cannot be saved until the user connection is ready'),'danger');return}
     const metrics = calculatePlantMetrics(plant);
-    if (!metrics.valid) { SolarCloud.notice(text('ยังตรวจเสร็จไม่ได้','Cannot mark reviewed'),text('กรุณาตรวจค่าคำนวณที่ไม่ถูกต้องก่อน','Please correct invalid calculation inputs first'));return; }
+    if (!(plant.calculationMethod==='other'?metrics.manualValid:metrics.valid)) { SolarCloud.notice(text('ยังตรวจเสร็จไม่ได้','Cannot mark reviewed'),metrics.periodError||text('กรุณาตรวจค่าคำนวณที่ไม่ถูกต้องก่อน','Please correct invalid calculation inputs first'));return; }
     const state=reviewState(plant);
     reviews[reviewKey(plant)] = JSON.stringify({done:state!=='changed',again:state==='done',by:actor.name,userId:actor.userId,at:new Date().toISOString(),fingerprint:currentFingerprint(plant)});
     editApproved.delete(reviewKey(plant));
@@ -195,7 +195,7 @@ const WDReview = (() => {
     const summaryPlants=reviewFilter==='all'?filtered:filtered.filter(plant=>reviewState(plant)===reviewFilter);
     const rows=summaryPlants.map(plant=>{
       const m=calculatePlantMetrics(plant,context);
-      return `<tr data-wd-plant="${plant.id}"><th scope="row">${escapeHtml(plant.name)}</th><td>${m.valid?number(m.shM1):'—'}</td><td class="wd-result ${plant.calculationMethod==='m1'?'wd-selected-m1':''}">${m.valid?number(m.method1Days):'—'}</td><td>${m.valid?number(m.shM2):'—'}</td><td class="wd-result ${plant.calculationMethod==='m2'?'wd-selected-m2':''}">${m.valid?number(m.method2Days):'—'}</td><td><small class="wd-project-status" data-wd-status="${plant.id}">${statusHtml(plant)}</small>${reviewButtonHtml(plant)}</td></tr>`;
+      return `<tr data-wd-plant="${plant.id}"><th scope="row">${escapeHtml(plant.name)}<small>${WDPeriod.button(plant)}${plant.calculationMethod==='other'?WDPeriod.manualHtml(plant):''}</small></th><td>${m.valid?number(m.shM1):'—'}</td><td class="wd-result ${plant.calculationMethod==='m1'?'wd-selected-m1':''}">${m.valid?number(m.method1Days):'—'}</td><td>${m.valid?number(m.shM2):'—'}</td><td class="wd-result ${plant.calculationMethod==='m2'?'wd-selected-m2':''}">${m.valid?number(m.method2Days):'—'}</td><td><small class="wd-project-status" data-wd-status="${plant.id}">${statusHtml(plant)}</small>${reviewButtonHtml(plant)}</td></tr>`;
     }).join('');
     const choices=[['all',text('ทั้งหมด','All')],['done',text('ตรวจแล้ว','Reviewed')],['new',text('ยังไม่ตรวจ','Not reviewed')],['changed',text('ต้องตรวจซ้ำ','Review again')]];
     $('wdReviewFilterToolbar').innerHTML=`<label for="wdReviewFilter">${text('สถานะตรวจ','Review')}</label><select id="wdReviewFilter" onchange="WDReview.setReviewFilter(this.value)">${choices.map(([value,label])=>`<option value="${value}" ${reviewFilter===value?'selected':''}>${label} (${reviewCounts[value]})</option>`).join('')}</select>`;
@@ -214,6 +214,6 @@ const WDReview = (() => {
   setInterval(()=>{if(editing){if(!presenceContext())endEdit();else SolarCloud.refreshPresence()}refreshStatuses()},30000);
   function filterPlants(plants){return reviewFilter==='all'?plants:plants.filter(p=>reviewState(p)===reviewFilter)}
   return {filterPlants,isSummary:()=>activeTab==='summary',render,setTab,setReviewFilter,clearSearch,statusHtml,detailBadge,reviewLabel,toggleReview,refreshStatuses,beginEdit,endEdit,presenceContext,onPresence,onSaved,
-    captureReviews:()=>({...reviews}),restoreReviews:overrides=>{reviews=Object.fromEntries(Object.entries(overrides).filter(([key])=>key.startsWith('@review:')))}};
+    isReviewed:reviewed,captureReviews:()=>({...reviews}),restoreReviews:overrides=>{reviews=Object.fromEntries(Object.entries(overrides).filter(([key])=>key.startsWith('@review:')))}};
 })();
 

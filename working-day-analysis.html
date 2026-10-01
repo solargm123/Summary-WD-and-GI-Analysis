@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20261001-review-warning"></script>
+    <script src="cloud-core.js?v=20261001-period-detect"></script>
     <style> 
         html, body, body *:not(i), button, input, select, option, textarea, table, th, td, code {
             font-family: 'Bai Jamjuree', Tahoma, Arial, sans-serif !important;
@@ -1353,7 +1353,7 @@ body.wd-theme-switching *::after{
                                 <i class="fa-solid fa-pen-to-square text-amber-500 mr-1"></i> วันที่เกิด Loss Due
                             </th>
                             
-                            <th id="thSelectedLossEnergy" class="p-3 text-right">Loss Due Export<br><span class="text-[10px] font-normal text-slate-400">(kWh)</span></th>
+                            <th id="thSelectedLossEnergy" class="p-3 text-right" hidden aria-hidden="true">Loss Due Export<br><span class="text-[10px] font-normal text-slate-400">(kWh)</span></th>
                             <th id="thMonthlyLossEnergy" class="p-3 text-right bg-rose-50/40 dark:bg-rose-950/20">Loss Due monthly<br><span class="text-[10px] font-normal text-slate-400">(kWh)</span></th>
                             <th id="thSelectedPvYield" class="p-3 text-right">PV Yield วัน Loss<br><span class="text-[10px] font-normal text-slate-400">(kWh)</span></th>
                             <th class="p-3 text-center min-w-[190px]">MKT Estimate</th>
@@ -1905,7 +1905,7 @@ body.wd-theme-switching *::after{
             plantData.forEach(plant => {
                 bucket[projectStableKey(plant)] = {
                     customDaysInMonth: Math.max(1, Math.min(31, Number(plant.customDaysInMonth) || currentDaysInMonth)),
-                    lossDaysArray: [...(plant.lossDaysArray || [])].filter(day => Number.isInteger(day) && day >= 1 && day <= (Number(plant.customDaysInMonth)||currentDaysInMonth))
+                    lossDaysArray: [...(plant.lossDaysArray || [])].filter(day => Number.isInteger(day) && day >= 1 && day <= (typeof WDPeriod!=='undefined'&&WDPeriod.hasDailyScope(plant)?currentDaysInMonth:Number(plant.customDaysInMonth)||currentDaysInMonth))
                 };
             });
             monthPlantOverrides[monthKey] = bucket;
@@ -1919,7 +1919,7 @@ body.wd-theme-switching *::after{
                 if (!saved) return;
                 if (Array.isArray(saved.lossDaysArray)) {
                     plant.lossDaysArray = [...new Set(saved.lossDaysArray.map(Number))]
-                        .filter(day => Number.isInteger(day) && day >= 1 && day <= plant.customDaysInMonth)
+                        .filter(day => Number.isInteger(day) && day >= 1 && day <= (typeof WDPeriod!=='undefined'&&WDPeriod.hasDailyScope(plant)?currentDaysInMonth:plant.customDaysInMonth))
                         .sort((a,b) => a-b);
                 }
             });
@@ -2201,7 +2201,7 @@ body.wd-theme-switching *::after{
                 const recordKey = `${monthKey}|${fileDay ?? 'none'}|${normalizedName.toLowerCase()}`;
                 if (parsedKeys && parsedKeys.has(recordKey)) continue;
                 if (parsedKeys) parsedKeys.add(recordKey);
-                rawRecordsByFile.push({ projectId:null, fileName, name: normalizedName, cap, pv, specEnergy, loss, recordDay: fileDay, monthKey });
+                rawRecordsByFile.push({ projectId:null, fileName, name: normalizedName, cap, pv, specEnergy, loss, lossAvailable:lossIdx>=0&&row[lossIdx]!=null&&String(row[lossIdx]).trim()!=='', recordDay: fileDay, monthKey });
                 added++;
             }
 
@@ -2246,6 +2246,7 @@ body.wd-theme-switching *::after{
                         pv: rec.pv,
                         specEnergy: rec.specEnergy,
                         loss: rec.loss,
+                        lossAvailable: rec.lossAvailable,
                         hasLoss: rec.loss > 0
                     };
                 }
@@ -2295,6 +2296,7 @@ body.wd-theme-switching *::after{
         }
 
         function updatePlantDays(id, value) {
+            if (typeof WDPeriod !== 'undefined') return WDPeriod.open(id);
             const plant = plantData.find(p => p.id === id);
             if (!plant) return;
             const parsed=Math.round(Number(value));
@@ -2319,8 +2321,10 @@ body.wd-theme-switching *::after{
             const grid = document.getElementById('modalDaysGrid');
             grid.innerHTML = '';
 
-            const daysLimit = Number(plant.customDaysInMonth) || currentDaysInMonth;
+            const includedDays = typeof WDPeriod !== 'undefined' ? WDPeriod.dayList(plant) : null;
+            const daysLimit = includedDays ? currentDaysInMonth : Number(plant.customDaysInMonth) || currentDaysInMonth;
             for (let d = 1; d <= daysLimit; d++) {
+                if (includedDays && !includedDays.includes(d)) continue;
                 const isSelected = plant.lossDaysArray.includes(d);
                 const btn = document.createElement('button');
                 btn.type = 'button';
@@ -2358,7 +2362,7 @@ body.wd-theme-switching *::after{
             if (currentEditingPlantId === null) return;
             const plant = plantData.find(p => p.id === currentEditingPlantId);
             if (!plant) return;
-            const daysLimit = Number(plant.customDaysInMonth) || currentDaysInMonth;
+            const daysLimit = typeof WDPeriod !== 'undefined' && WDPeriod.hasDailyScope(plant) ? currentDaysInMonth : Number(plant.customDaysInMonth) || currentDaysInMonth;
             plant.lossDaysArray = [...plant.originalLossDaysArray].filter(d => d <= daysLimit);
             rememberCurrentMonthPlantState(document.getElementById('monthSelect').value);
             openLossModal(currentEditingPlantId);
@@ -2408,6 +2412,9 @@ body.wd-theme-switching *::after{
         }
 
         function getCalculatedSunHours(plant, context = getCalculationContext()) {
+            return typeof WDPeriod !== 'undefined' ? WDPeriod.sunHours(plant,context,getCalculatedSunHoursLegacy) : getCalculatedSunHoursLegacy(plant,context);
+        }
+        function getCalculatedSunHoursLegacy(plant, context = getCalculationContext()) {
             const { mode, customVal } = context;
             const days = Math.max(1,Math.min(31,Number(plant.customDaysInMonth)||currentDaysInMonth));
 
@@ -2458,6 +2465,9 @@ body.wd-theme-switching *::after{
             return contexts.get(key);
         }
         function calculatePlantMetricsUncached(item, context) {
+            return typeof WDPeriod !== 'undefined' ? WDPeriod.metrics(item,context,calculatePlantMetricsLegacy) : calculatePlantMetricsLegacy(item,context);
+        }
+        function calculatePlantMetricsLegacy(item, context) {
             const cap = Number(item.cap);
             const daysInMonth = Math.max(1,Math.min(31,Number(item.customDaysInMonth)||currentDaysInMonth));
             const shObj = getCalculatedSunHours(item, context);
@@ -2594,8 +2604,9 @@ body.wd-theme-switching *::after{
                 if(!showDetails)return;
                 let lossDatesDisplay = `<span class="text-slate-400 italic wd-loss-none">${t('noLoss')}</span>`;
                 if (lossDaysCount > 0) {
-                    const allLossDates = item.lossDaysArray.join(', ');
-                    lossDatesDisplay = `<span class="wd-loss-days-preview wd-loss-days-all" title="${escapeHtml(allLossDates)}">${item.lossDaysArray.map(day=>`<span class="wd-loss-day-micro">${day}</span>`).join('')}</span>`;
+                    const scopedDays=WDPeriod.dayList(item),displayLossDays=scopedDays?item.lossDaysArray.filter(day=>scopedDays.includes(day)):item.lossDaysArray;
+                    const allLossDates = displayLossDays.join(', ');
+                    lossDatesDisplay = `<span class="wd-loss-days-preview wd-loss-days-all" title="${escapeHtml(allLossDates)}">${displayLossDays.map(day=>`<span class="wd-loss-day-micro">${day}</span>`).join('')}</span>`;
                 }
 
                 renderedRows.push({id:item.id,html:`
@@ -2613,7 +2624,7 @@ body.wd-theme-switching *::after{
                     </td>
 
                     <td class="p-3 text-center bg-amber-50/20 dark:bg-amber-950/10">
-                        <input type="number" min="1" max="31" step="1" value="${daysInMonth}" onchange="updatePlantDays(${item.id}, this.value)" class="w-16 h-8 bg-amber-50/60 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 rounded-md px-2 font-mono text-center font-bold text-amber-900 dark:text-amber-200 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500" title="${currentLanguage==='th'?'แก้ไขจำนวนวันของโครงการนี้':'Edit days for this plant'}">
+                        ${WDPeriod.button(item)}
                     </td>
 
                     <td class="p-3 text-center font-mono font-semibold text-slate-800 dark:text-slate-200">${lossDaysCount}</td>
@@ -2625,8 +2636,8 @@ body.wd-theme-switching *::after{
                         </div>
                     </td>
 
-                    <td class="p-3 text-right font-mono font-semibold text-red-600 dark:text-red-400">${selected.lossEnergy.toLocaleString(undefined, {maximumFractionDigits: 2})}</td>
-                    <td class="p-3 text-right font-mono font-bold text-rose-700 dark:text-rose-300 bg-rose-50/30 dark:bg-rose-950/20">${(Number(item.lossDueEnergy)||0).toLocaleString(undefined, {maximumFractionDigits: 2})}</td>
+                    <td class="p-3 text-right font-mono font-semibold text-red-600 dark:text-red-400" hidden aria-hidden="true">${selected.lossEnergy.toLocaleString(undefined, {maximumFractionDigits: 2})}</td>
+                    <td class="p-3 text-right font-mono font-bold text-rose-700 dark:text-rose-300 bg-rose-50/30 dark:bg-rose-950/20">${metrics.monthlyLossEnergy.toLocaleString(undefined, {maximumFractionDigits: 2})}</td>
                     <td class="p-3 text-right font-mono font-semibold text-indigo-600 dark:text-indigo-400">${selected.pvYield.toLocaleString(undefined, {maximumFractionDigits: 2})}</td>
                     <td class="p-3 text-center"><select onchange="updateMktEstimate(${item.id}, this.value)" class="mkt-select w-full min-w-[180px] border border-slate-300 dark:border-slate-700 text-xs ${mktStatusClass(item.mktEstimate)}">${mktEstimateOptions(item.mktEstimate)}</select></td>
                     <td class="p-3 text-right font-mono font-bold text-amber-600 dark:text-amber-400 bg-amber-50/30 dark:bg-amber-950/20" title="M1: ${shM1.toFixed(2)} | M2: ${shM2.toFixed(2)}">${shM1.toFixed(2)} / ${shM2.toFixed(2)}</td>
@@ -2637,7 +2648,7 @@ body.wd-theme-switching *::after{
                                 <option value="m1" ${item.calculationMethod === 'm1' ? 'selected' : ''}>${currentLanguage === 'th' ? 'วิธีที่ 1' : 'Method 1'}</option>
                                 <option value="m2" ${item.calculationMethod === 'm2' ? 'selected' : ''}>${currentLanguage === 'th' ? 'วิธีที่ 2' : 'Method 2'}</option>
                                 <option value="other" ${item.calculationMethod === 'other' ? 'selected' : ''}>${currentLanguage === 'th' ? 'อื่นๆ' : 'Other'}</option>
-                            </select><small class="text-[9px] ${item.methodSource==='auto'?'text-violet-500':'text-slate-400'}">${item.methodSource==='auto'?'Auto from MKT':'Manual'}</small></div>
+                            </select><small class="text-[9px] ${item.methodSource==='auto'?'text-violet-500':'text-slate-400'}">${item.methodSource==='auto'?'Auto from MKT':'Manual'}</small>${item.calculationMethod==='other'?WDPeriod.manualHtml(item):''}</div>
                             <button onclick="openNoteModal(${item.id})" class="${item.note ? 'bg-amber-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'} border border-slate-300 dark:border-slate-700 rounded px-2 py-1.5" title="Note"><i class="fa-solid fa-note-sticky"></i></button>
                         </div>
                     </td>
@@ -2710,18 +2721,23 @@ body.wd-theme-switching *::after{
                     [headers.sh2]: parseFloat(m.shM2.toFixed(4)),
                     [headers.lossFactor]: m.lossFactor,
                     [headers.lossCount]: m.lossDaysCount,
-                    [headers.lossDates]: item.lossDaysArray.join(', '),
-                    [headers.lossEnergy]: parseFloat(m.selected.lossEnergy.toFixed(4)),
+                    [headers.lossDates]: item.lossDaysArray.filter(day=>!WDPeriod.dayList(item)||WDPeriod.dayList(item).includes(day)).join(', '),
                     [headers.monthlyLoss]: parseFloat(m.monthlyLossEnergy.toFixed(4)),
                     [headers.pv]: parseFloat(m.selected.pvYield.toFixed(4)),
-                    [headers.m1]: parseFloat(m.method1Days.toFixed(4)),
+                    [headers.m1]: m.valid?parseFloat(m.method1Days.toFixed(4)):null,
                     [headers.m1Formula]: '=MIN(Days,MAX(0,(Days-LossDays)+((SelectedPV/Capacity)/SunHoursM1)))',
                     [headers.m1Explain]: `(${n(m.daysInMonth)}-${n(m.lossDaysCount)})+((${n(m.selected.pvYield)}/${n(m.cap)})/${n(m.shM1)}) = ${n(m.method1Days)}`,
-                    [headers.m2]: parseFloat(m.method2Days.toFixed(4)),
+                    [headers.m2]: m.valid?parseFloat(m.method2Days.toFixed(4)):null,
                     [headers.m2Formula]: '=MIN(Days,MAX(0,Days-((MonthlyLoss*LossFactor)/Capacity/SunHoursM2)))',
                     [headers.m2Explain]: `${n(m.daysInMonth)}-((${n(m.monthlyLossEnergy)}*${n(m.lossFactor)})/${n(m.cap)}/${n(m.shM2)}) = ${n(m.method2Days)}`,
                     [headers.selectedMethod]: item.calculationMethod === 'm1' ? (th ? 'วิธีที่ 1' : 'Method 1') : item.calculationMethod === 'm2' ? (th ? 'วิธีที่ 2' : 'Method 2') : (th ? 'อื่นๆ' : 'Other'),
                     [headers.note]: item.note || ''
+                    , [th?'วันที่เริ่มคำนวณ':'Calculation start']:WDPeriod.scope(item)?.confirmed?document.getElementById('monthSelect').value+'-'+String(WDPeriod.scope(item).start).padStart(2,'0'):''
+                    , [th?'วันที่สิ้นสุดคำนวณ':'Calculation end']:WDPeriod.scope(item)?.confirmed?document.getElementById('monthSelect').value+'-'+String(WDPeriod.scope(item).end).padStart(2,'0'):''
+                    , [th?'วันทำงานที่เลือก':'Final Working days']:item.calculationMethod==='other'?(m.manualValid?m.manualDays:null):m.valid?(item.calculationMethod==='m1'?m.method1Days:m.method2Days):null
+                    , [th?'เหตุผล Manual':'Manual reason']:WDPeriod.scope(item)?.manualReason||''
+                    , [th?'เหตุผลช่วงวันที่':'Period reason']:WDPeriod.scope(item)?.reason||''
+                    , [th?'วันที่ยกเว้น':'Excluded dates']:(WDPeriod.scope(item)?.excluded||[]).join(', ')
                 };
             });
 
@@ -2745,8 +2761,11 @@ body.wd-theme-switching *::after{
             selectedPlants.forEach((item, index) => {
                 const row = index + 2;
                 const m = exportMetrics.get(item);
-                wsResults[`M${row}`] = { t: 'n', f: `IFERROR(MIN(C${row},MAX(0,(C${row}-H${row})+((L${row}/B${row})/E${row}))),0)`, v: m.method1Days };
-                wsResults[`P${row}`] = { t: 'n', f: `IFERROR(MIN(C${row},MAX(0,C${row}-((K${row}*G${row})/B${row}/F${row}))),0)`, v: m.method2Days };
+                if(!m.valid)return;
+                const keys=Object.keys(resultsRows[index]),cell=key=>XLSX.utils.encode_col(keys.indexOf(key))+row;
+                const days=cell(headers.days),cap=cell(headers.cap),lossDays=cell(headers.lossCount),pv=cell(headers.pv),sh1=cell(headers.sh1),sh2=cell(headers.sh2),loss=cell(headers.monthlyLoss),factor=cell(headers.lossFactor);
+                wsResults[cell(headers.m1)] = { t: 'n', f: `IFERROR(MIN(${days},MAX(0,(${days}-${lossDays})+((${pv}/${cap})/${sh1}))),0)`, v: m.method1Days };
+                wsResults[cell(headers.m2)] = { t: 'n', f: `IFERROR(MIN(${days},MAX(0,${days}-((${loss}*${factor})/${cap}/${sh2}))),0)`, v: m.method2Days };
             });
             wb.Workbook = { CalcPr: { fullCalcOnLoad: true, forceFullCalc: true, calcMode: 'auto' } };
 
@@ -2759,12 +2778,13 @@ body.wd-theme-switching *::after{
 
         syncTableScrollbars();
     </script>
-    <script src="working-day-summary.js?v=20261001-review-warning"></script>
+    <script src="working-day-summary.js?v=20261001-period-detect"></script>
+    <script src="working-day-period.js?v=20261001-period-detect"></script>
     <script>
       const workingDayCloudAdapter={
         presenceContext:()=>WDReview.presenceContext(),
         onPresence:(users,connected)=>WDReview.onPresence(users,connected),
-        onSaved:(state,sent)=>WDReview.onSaved(state,sent),
+        onSaved:(state,sent)=>{WDPeriod.syncSaved(state,sent);WDReview.onSaved(state,sent)},
         capture(){
           const selectedMonth=document.getElementById('monthSelect').value||null;
           const sunMode=document.querySelector('input[name="sunHoursMode"]:checked')?.value||'custom';
@@ -2775,6 +2795,7 @@ body.wd-theme-switching *::after{
           Object.entries(mktEstimateByProject).forEach(([key,value])=>{overrides['@mkt:'+key]={mktEstimate:value}});
           Object.entries(methodOverridesByMonth).forEach(([month,projects])=>Object.entries(projects||{}).forEach(([key,method])=>{overrides['@method:'+month+':'+key]={method}}));
           Object.assign(overrides,WDReview.captureReviews());
+          Object.assign(overrides,WDPeriod.capture());
           return {
             baseData:{records:rawRecordsByFile,detectedMonths:[...detectedMonths]},
             // Keep legacy period entries for synchronization; only versioned entries affect calculations.
@@ -2795,6 +2816,7 @@ body.wd-theme-switching *::after{
           persistedPeriodOverrides=Object.fromEntries(Object.entries(overrides).filter(([key])=>key.startsWith('@period:')));
           persistedPlantFields=Object.fromEntries(Object.entries(overrides).filter(([key,value])=>!key.startsWith('@')&&value&&typeof value==='object'&&!Array.isArray(value)));
           WDReview.restoreReviews(overrides);
+          WDPeriod.restore(overrides);
           const acceptMonthLossState=restoredMonthLossStateVersion===3;
           mktEstimateByProject={};methodOverridesByMonth={};monthPlantOverrides={};activeMonthKey=null;
           Object.entries(overrides).forEach(([key,value])=>{
@@ -2883,6 +2905,7 @@ body.wd-theme-switching *::after{
       </div>
       <div class="wd-work-actions">
         <span id="wdWorkspaceStatus">Ready</span>
+        <button id="wdDetectPeriods" type="button" class="wd-work-btn" onclick="this.disabled=true;WDPeriod.metadata(true).finally(()=>this.disabled=false)"><i class="fa-solid fa-calendar-check"></i><span data-solar-th="ตรวจช่วงวันที่" data-solar-en="Detect dates">ตรวจช่วงวันที่</span></button>
         <button id="wdDockReveal" type="button" class="wd-work-btn"><i class="fa-solid fa-sliders"></i><span>Controls</span></button>
         <button id="wdFocusTable" type="button" class="wd-work-btn"><i class="fa-solid fa-expand"></i><span>Focus table</span></button>
       </div>`;
@@ -2943,5 +2966,3 @@ body.wd-theme-switching *::after{
 <script src="solar-controls.js?v=20261001-3"></script>
 </body>
 </html>
-
-

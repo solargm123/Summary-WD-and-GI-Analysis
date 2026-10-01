@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "scripts": { "test": "node working-day-period.cjs" },
+  "devDependencies": { "jsdom": "26.1.0" }
+}
