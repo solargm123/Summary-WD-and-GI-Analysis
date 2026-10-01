@@ -1364,7 +1364,7 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
         if(trendChart){trendChart.data.labels=periods;trendChart.data.datasets=datasets;trendChart.options.plugins.legend.labels.color=textColor;trendChart.options.scales.x.ticks.color=textColor;trendChart.options.scales.y.ticks.color=textColor;trendChart.options.scales.x.grid.color=gridColor;trendChart.options.scales.y.grid.color=gridColor;trendChart.options.scales.y.title.color=textColor;datasets.forEach((d,i)=>trendChart.setDatasetVisibility(i,!hiddenLabels.has(d.label)));trendChart.update('none');return}
         const ctx=document.getElementById('irrTrendChart').getContext('2d');
         trendChart=new Chart(ctx,{type:'line',data:{labels:periods,datasets},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',onClick:onTrendLegendClick,labels:{usePointStyle:true,color:textColor,font:{family:'Bai Jamjuree',size:11},boxWidth:12}},tooltip:{animation:false,itemSort:(a,b)=>(Number(b.raw)||0)-(Number(a.raw)||0),callbacks:{label:context=>` ${context.dataset.label}: ${context.raw!==null&&Number.isFinite(Number(context.raw))?Number(context.raw).toFixed(3):'-'} kWh/m²`}}},scales:{x:{ticks:{color:textColor,font:{family:'Bai Jamjuree'}},grid:{color:gridColor}},y:{title:{display:true,text:'Average Global Irradiation (kWh/m²)',color:textColor,font:{family:'Bai Jamjuree'}},ticks:{color:textColor,font:{family:'Bai Jamjuree'}},grid:{color:gridColor},beginAtZero:true}}}});
-        renderTrendPeerRows(trendChart);
+        
     }
 
     async function resetData() {

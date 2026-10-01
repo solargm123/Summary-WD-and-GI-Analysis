@@ -243,7 +243,7 @@
     if(project&&project.id)currentProject=project;
     lastSharedState=sharedState(currentProject?.user_state||{});
   }
-  async function persistFieldPatchChunk(patches,reason='manual',force=false,clientVersion=null,finalize=true){
+  async function persistFieldPatches(patches,reason='manual',force=false,clientVersion=null){
     const payload=adapter.capturePeriodKey?.()||adapter.capture();
     const changes=historyChanges(patches);
     const {data,error}=await getClient().rpc('save_analysis_field_patches',{
@@ -259,22 +259,9 @@
       pendingFieldConflict={patches,reason,serverVersion:data.serverVersion,conflicts:data.conflicts||[]};
       setConflictState(true);setStatus('แก้ไขช่องเดียวกัน — กรุณาเลือกข้อมูล','conflict');showFieldConflict();return false;
     }
-    setProjectFromRpc(data);pendingFieldConflict=null;setConflictState(false);
-    if(finalize){dirty=pendingPatches().length>0;setStatus(dirty?'มีการเปลี่ยนแปลง':'บันทึกแล้ว',dirty?'busy':'ok');adapter?.onSaved?.(cloneJson(lastSharedState),payload.userState||{})}
+    setProjectFromRpc(data);pendingFieldConflict=null;dirty=false;setConflictState(false);setStatus('บันทึกแล้ว','ok');
+    adapter?.onSaved?.(cloneJson(lastSharedState),payload.userState||{});
     if(channel)channel.send({type:'broadcast',event:'project_saved',payload:{userId:presenceSession?.userId||'',name:presenceSession?.name||'ผู้ใช้อื่น',version:currentProject.version,paths:patches.map(p=>p.path),at:new Date().toISOString()}}).catch(()=>{});
-    return true;
-  }
-  async function persistFieldPatches(patches,reason='manual',force=false,clientVersion=null){
-    const batchSize=500,total=Math.ceil(patches.length/batchSize);
-    for(let offset=0;offset<patches.length;offset+=batchSize){
-      const chunk=patches.slice(offset,offset+batchSize);
-      if(total>1)setStatus('กำลังบันทึกชุด '+(Math.floor(offset/batchSize)+1)+'/'+total+'...','busy');
-      const ok=await persistFieldPatchChunk(chunk,reason,force&&offset===0,offset===0?clientVersion:null,false);
-      if(!ok){pendingFieldConflict.remaining=patches.slice(offset+batchSize);dirty=true;return false}
-    }
-    dirty=pendingPatches().length>0;
-    setStatus(dirty?'มีการเปลี่ยนแปลง':'บันทึกแล้ว',dirty?'busy':'ok');
-    if(!dirty)adapter?.onSaved?.(cloneJson(lastSharedState),(adapter.capturePeriodKey?.()||adapter.capture()).userState||{});
     return true;
   }
   function scheduleSave(reason='edit'){if(!currentProject)return;saveLocalViewState();if(!roleCanEdit())return;dirty=true;setStatus('มีการเปลี่ยนแปลง','busy');clearTimeout(saveTimer);saveTimer=setTimeout(()=>save(reason),1500)}
@@ -284,9 +271,10 @@
     try{
       const patches=pendingPatches();
       if(!patches.length){dirty=false;setConflictState(false);setStatus('ไม่มีข้อมูลใหม่ต้องบันทึก','ok');return}
+      if(patches.length>1000)throw new Error('มีการแก้ไขมากกว่า 1,000 ช่อง กรุณาบันทึกเป็นช่วงย่อย');
       await persistFieldPatches(patches,reason,false);
     }catch(error){
-      dirty=true;const raw=error.message||String(error),friendly=/permission_denied|42501/i.test(raw)?'บัญชีนี้ยังไม่มีสิทธิ์ Editor ใน Workspace':/project_locked_completed/i.test(raw)?'งานนี้ถูกล็อกเป็น Completed':/statement timeout/i.test(raw)?'ฐานข้อมูลใช้เวลานานเกินกำหนด กรุณาลองอีกครั้ง':raw;
+      const raw=error.message||String(error),friendly=/permission_denied|42501/i.test(raw)?'บัญชีนี้ยังไม่มีสิทธิ์ Editor ใน Workspace':/project_locked_completed/i.test(raw)?'งานนี้ถูกล็อกเป็น Completed':/statement timeout/i.test(raw)?'ฐานข้อมูลใช้เวลานานเกินกำหนด กรุณาลองอีกครั้ง':raw;
       setStatus('บันทึกไม่สำเร็จ: '+friendly,'error');if(reason==='manual')notice('บันทึกไม่สำเร็จ',friendly,'danger');console.error('Field save failed:',error);
     }finally{saving=false}
   }
@@ -517,7 +505,7 @@
   async function keepMyConflict(){
     if(!pendingFieldConflict||saving)return;
     const pending=pendingFieldConflict;$('solarCloudModal')?.classList.remove('open');saving=true;setStatus('กำลังบันทึกค่าของคุณ...','busy');
-    try{await persistFieldPatches([...pending.patches,...(pending.remaining||[])],pending.reason,true,pending.serverVersion)}catch(error){setStatus('บันทึกไม่สำเร็จ','error');notice('บันทึกไม่สำเร็จ',error.message,'danger')}finally{saving=false}
+    try{await persistFieldPatches(pending.patches,pending.reason,true,pending.serverVersion)}catch(error){setStatus('บันทึกไม่สำเร็จ','error');notice('บันทึกไม่สำเร็จ',error.message,'danger')}finally{saving=false}
   }
   function resolveConflict(){
     if(!currentProject)return;

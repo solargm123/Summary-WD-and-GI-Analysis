@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20261001-batched-save"></script>
+    <script src="cloud-core.js?v=20260929-wd-save1"></script>
     <style> 
         html, body, body *:not(i), button, input, select, option, textarea, table, th, td, code {
             font-family: 'Bai Jamjuree', Tahoma, Arial, sans-serif !important;
@@ -1101,7 +1101,7 @@ body.wd-theme-switching *::after{
 .dark .wd-method-select:hover{background-color:#352953!important}
 .dark .wd-method-select option{background:#1e293b!important;color:#f8fafc!important}
 </style>
-<style>.wd-review-button[data-review-state=done]{background:#dcfce7!important;color:#15803d!important;border:1px solid #86efac!important}.wd-review-button[data-review-state=changed]{background:#fef9c3!important;color:#a16207!important;border:1px solid #fde047!important}.wd-review-button[data-review-state=new]{background:transparent!important;color:#94a3b8!important;border:1px solid #cbd5e1!important}.wd-review-button{padding:4px 7px!important;border-radius:7px;font-size:10px;white-space:nowrap}</style><style>.wd-m1{background:rgba(59,130,246,.12)!important}.wd-m2{background:rgba(16,185,129,.12)!important}.wd-other{background:rgba(148,163,184,.10)!important}</style></head>
+</head>
 <body class="solar-wd wd-dock-collapsed bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen pb-2 transition-colors duration-200">
 
     <!-- Header Navigation -->
@@ -1602,7 +1602,7 @@ body.wd-theme-switching *::after{
             calculateAndRender();
         }
 
-        function projectStableKey(plant) { return 'name:'+String(plant?.name||'').trim().toLowerCase(); }
+        function projectStableKey(plant) { return String(plant?.projectId || plant?.projectKey || ('name:'+(plant?.name||'').toLowerCase())); }
         function defaultMethodForMkt(status) { return ['Misestimated 12:00 L','Misestimated?'].includes(status) ? 'm2' : 'm1'; }
         function mktEstimateOptions(selected) {
             return ['<option value="">Not specified</option>',...MKT_ESTIMATE_OPTIONS.map(value=>`<option value="${value}" ${value===selected?'selected':''}>${value}</option>`)].join('');
@@ -2252,7 +2252,7 @@ body.wd-theme-switching *::after{
                     }
                 });
 
-                const stableKey='name:'+key,legacyKey='name:'+key;
+                const stableKey=String(plantObj.projectId||('name:'+key)),legacyKey='name:'+key;
                 const mktEstimate=Object.prototype.hasOwnProperty.call(mktEstimateByProject,stableKey)?mktEstimateByProject[stableKey]:(mktEstimateByProject[legacyKey]||'');
                 const manualMethod=methodOverridesByMonth[targetMonthKey]?.[stableKey]||methodOverridesByMonth[targetMonthKey]?.[legacyKey];
                 plantData.push({
@@ -2530,8 +2530,6 @@ body.wd-theme-switching *::after{
             while(cursor){const next=cursor.nextElementSibling;cursor.remove();cursor=next;}
         }
         function calculateAndRenderScoped() {
-            plantData.forEach(p=>{if(['m3','custom'].includes(p.calculationMethod))p.calculationMethod='other'});
-            Object.values(methodOverridesByMonth).forEach(values=>Object.keys(values).forEach(k=>{if(['m3','custom'].includes(values[k]))values[k]='other'}));
             if (calculateRenderFrame) {
                 cancelAnimationFrame(calculateRenderFrame);
                 calculateRenderFrame = 0;
@@ -2596,7 +2594,7 @@ body.wd-theme-switching *::after{
                     <td class="p-3 text-center sticky-col-1">
                         <input type="checkbox" ${item.visible ? 'checked' : ''} onchange="togglePlant(${item.id}, this.checked)" class="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-0 w-4 h-4 cursor-pointer">
                     </td>
-                    <td class="p-3 font-semibold text-slate-800 dark:text-slate-200 sticky-col-2" title="${escapeHtml(item.name)}"><span data-wd-detail-review="${item.id}">${WDReview.checkingButton(item)}</span>${escapeHtml(item.name)}</td>
+                    <td class="p-3 font-semibold text-slate-800 dark:text-slate-200 sticky-col-2" title="${escapeHtml(item.name)}"><span data-wd-detail-review="${item.id}">${WDReview.detailBadge(item)}</span>${escapeHtml(item.name)}</td>
 
                     <td class="p-3 text-right font-mono text-blue-700 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/70 font-bold sticky-col-3"><button onclick="openFormulaModal(${item.id}, 1)" class="underline decoration-dotted underline-offset-4" title="${t('formula')}">${metrics.valid ? method1Days.toFixed(2) : 'Invalid'}</button></td>
                     <td class="p-3 text-right font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/70 font-bold sticky-col-4 sticky-divider"><button onclick="openFormulaModal(${item.id}, 2)" class="underline decoration-dotted underline-offset-4" title="${t('formula')}">${metrics.valid ? method2Days.toFixed(2) : 'Invalid'}</button></td>
@@ -2752,7 +2750,7 @@ body.wd-theme-switching *::after{
 
         syncTableScrollbars();
     </script>
-    <script src="working-day-summary.js?v=20261001-checking-fix"></script>
+    <script src="working-day-summary.js?v=20261001-pc90"></script>
     <script>
       const workingDayCloudAdapter={
         presenceContext:()=>WDReview.presenceContext(),
@@ -2934,7 +2932,7 @@ body.wd-theme-switching *::after{
 
 <script src="unified-ui.js?v=20261001-scoped"></script>
 <script src="solar-controls.js?v=20261001-3"></script>
-<script>document.addEventListener('keydown',event=>{if(event.code==='Space'&&event.target instanceof Element&&event.target.closest('button,select,input[type=checkbox],input[type=radio]'))event.preventDefault()},true);</script></body>
+</body>
 </html>
 
 

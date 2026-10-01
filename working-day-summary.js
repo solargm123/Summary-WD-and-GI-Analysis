@@ -70,7 +70,6 @@ const WDReview = (() => {
   function reviewState(plant) { return reviewed(plant) ? 'done' : review(plant)?.done ? 'changed' : 'new'; }
   function reviewIcon(plant) { return reviewState(plant)==='done' ? 'fa-rotate-left' : reviewState(plant)==='changed' ? 'fa-rotate' : 'fa-circle-check'; }
   function reviewButtonHtml(plant) { const done=reviewed(plant);return `<button type="button" class="wd-review-button" data-wd-review="${plant.id}" data-review-state="${reviewState(plant)}" aria-pressed="${done}" onclick="WDReview.toggleReview(${plant.id})" ${SolarCloud.roleCanEdit()?'':'disabled'}><i class="fa-solid ${reviewIcon(plant)}" aria-hidden="true"></i><span>${reviewLabel(plant)}</span></button>`; }
-  function checkingButton(plant){return reviewButtonHtml(plant).replace(/<span>.*?<\/span>/,'<span>Checking</span>')}
   function detailBadge(plant) {
     const state=reviewState(plant);
     if (state==='new') return '';
@@ -81,7 +80,6 @@ const WDReview = (() => {
   }
   // Ask before the first edit to a reviewed project in this page session; the choice is not stored.
   function guardReviewedEdit(event) {
-    if(event.type==='keydown'&&event.code==='Space'&&!event.target.matches('textarea,input:not([type=checkbox]):not([type=radio])'))return;
     const control=event.target.closest('#tableBody input[type="number"],#tableBody select,#tableBody button[onclick^="openLossModal"],#tableBody button[onclick^="openNoteModal"],#sunHoursTarget,#inputSunHoursCustom,input[name="sunHoursMode"]');
     if (!control || (event.type==='beforeinput' && !control.matches('input[type="number"]')) ||
         (event.type==='keydown' && ['Tab','Shift','Control','Alt','Meta','Escape'].includes(event.key))) return;
@@ -124,7 +122,7 @@ const WDReview = (() => {
     });
     document.querySelectorAll('[data-wd-detail-review]').forEach(node=>{
       const plant=plants.get(node.dataset.wdDetailReview);
-      if(plant){const html=checkingButton(plant);if(node.innerHTML!==html)node.innerHTML=html;}
+      if(plant){const html=detailBadge(plant);if(node.innerHTML!==html)node.innerHTML=html;}
     });
     document.querySelectorAll('[data-wd-review]').forEach(node => {
       const plant = plants.get(node.dataset.wdReview);
@@ -191,12 +189,11 @@ const WDReview = (() => {
     const summaryPlants=reviewFilter==='all'?filtered:filtered.filter(plant=>reviewState(plant)===reviewFilter);
     const rows=summaryPlants.map(plant=>{
       const m=calculatePlantMetrics(plant,context);
-      const method=plant.calculationMethod,finalValue=method==='m1'?m.method1Days:method==='m2'?m.method2Days:null;
-      return `<tr data-wd-plant="${plant.id}"><th scope="row">${escapeHtml(plant.name)}</th><td class="wd-${method}">${method==='m1'?'Method 1':method==='m2'?'Method 2':text('อื่นๆ','Other')}</td><td>${m.valid?number(m.shM1):'—'}</td><td class="${method==='m1'?'wd-m1':''}"><button onclick="openFormulaModal(${plant.id},1)">${m.valid?number(m.method1Days):'—'}</button></td><td>${m.valid?number(m.shM2):'—'}</td><td class="${method==='m2'?'wd-m2':''}"><button onclick="openFormulaModal(${plant.id},2)">${m.valid?number(m.method2Days):'—'}</button></td><td class="wd-${method}">${m.valid&&finalValue!==null?number(finalValue):'—'}</td><td><small class="wd-project-status" data-wd-status="${plant.id}">${statusHtml(plant)}</small>${reviewButtonHtml(plant)}</td></tr>`;
+      return `<tr data-wd-plant="${plant.id}"><th scope="row">${escapeHtml(plant.name)}</th><td>${m.valid?number(m.shM1):'—'}</td><td class="wd-result">${m.valid?number(m.method1Days):'—'}</td><td>${m.valid?number(m.shM2):'—'}</td><td class="wd-result">${m.valid?number(m.method2Days):'—'}</td><td><small class="wd-project-status" data-wd-status="${plant.id}">${statusHtml(plant)}</small>${reviewButtonHtml(plant)}</td></tr>`;
     }).join('');
     const choices=[['all',text('ทั้งหมด','All')],['done',text('ตรวจแล้ว','Reviewed')],['new',text('ยังไม่ตรวจ','Not reviewed')],['changed',text('ต้องตรวจซ้ำ','Review again')]];
     $('wdReviewFilterToolbar').innerHTML=`<label for="wdReviewFilter">${text('สถานะตรวจ','Review')}</label><select id="wdReviewFilter" onchange="WDReview.setReviewFilter(this.value)">${choices.map(([value,label])=>`<option value="${value}" ${reviewFilter===value?'selected':''}>${label} (${reviewCounts[value]})</option>`).join('')}</select>`;
-    $('wdSummaryPanel').innerHTML=`<div class="wd-summary-scroll"><table><thead><tr><th>${text('โครงการ','Project')}</th><th>Selected Method</th><th>Sun Hours M1</th><th>Working days M1</th><th>Sun Hours M2</th><th>Working days M2</th><th>Final Working days</th><th>Checking</th></tr></thead><tbody>${rows||'<tr><td colspan="8">—</td></tr>'}</tbody></table></div>`;
+    $('wdSummaryPanel').innerHTML=`<div class="wd-summary-scroll"><table><caption class="sr-only">${text('ข้อมูลเดือนที่เลือกคำนวณด้วยพารามิเตอร์ปัจจุบัน','Selected month calculated with current parameters')}</caption><colgroup><col class="wd-col-project"><col class="wd-col-metric"><col class="wd-col-metric"><col class="wd-col-metric"><col class="wd-col-metric"><col class="wd-col-status"></colgroup><thead><tr><th rowspan="2" scope="col">${text('โครงการ','Project')}</th><th colspan="2" scope="colgroup">${text('วิธี 1','Method 1')}<small>${escapeHtml(sourceLabel(1))}</small></th><th colspan="2" scope="colgroup">${text('วิธี 2','Method 2')}<small>${escapeHtml(sourceLabel(2))}</small></th><th rowspan="2" scope="col">${text('สถานะงานเดือนนี้','Review status for this month')}</th></tr><tr><th>Sun Hours</th><th>${text('วันทำงาน','Working days')}</th><th>Sun Hours</th><th>${text('วันทำงาน','Working days')}</th></tr></thead><tbody>${rows||`<tr><td colspan="6">${text('ไม่มีข้อมูลตรงกับเดือนและตัวกรองที่เลือก','No data for the selected month and filters')}</td></tr>`}</tbody></table></div>`;
   }
   document.addEventListener('focusin',event=>{
     const row=event.target.closest('[data-wd-plant]');
@@ -209,7 +206,7 @@ const WDReview = (() => {
   });
   document.addEventListener('visibilitychange',()=>{if(document.hidden)endEdit()});
   setInterval(()=>{if(editing){if(!presenceContext())endEdit();else SolarCloud.refreshPresence()}refreshStatuses()},30000);
-  return {isSummary:()=>activeTab==='summary',render,setTab,setReviewFilter,clearSearch,statusHtml,detailBadge,checkingButton,reviewLabel,toggleReview,refreshStatuses,beginEdit,endEdit,presenceContext,onPresence,onSaved,
+  return {isSummary:()=>activeTab==='summary',render,setTab,setReviewFilter,clearSearch,statusHtml,detailBadge,reviewLabel,toggleReview,refreshStatuses,beginEdit,endEdit,presenceContext,onPresence,onSaved,
     captureReviews:()=>({...reviews}),restoreReviews:overrides=>{reviews=Object.fromEntries(Object.entries(overrides).filter(([key])=>key.startsWith('@review:')))}};
 })();
 
