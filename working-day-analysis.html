@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20261002-method-align"></script>
+    <script src="cloud-core.js?v=20261002-muted-summary"></script>
     <style> 
         html, body, body *:not(i), button, input, select, option, textarea, table, th, td, code {
             font-family: 'Bai Jamjuree', Tahoma, Arial, sans-serif !important;
@@ -1110,7 +1110,16 @@ body.wd-theme-switching *::after{
 .wd-selected-m2{background:#d1fae5!important;color:#065f46!important;box-shadow:inset 3px 0 #10b981;font-weight:800!important}
 .dark .wd-selected-m1{background:#172b4d!important;color:#bfdbfe!important}
 .dark .wd-selected-m2{background:#10382d!important;color:#a7f3d0!important}
-</style><style>#tableBody .sticky-col-1 .wd-review-check{margin-right:0!important}#wdCheckingHeader{font-size:10px!important;letter-spacing:0!important}</style></head>
+</style><style>#tableBody .sticky-col-1 .wd-review-check{margin-right:0!important}#wdCheckingHeader{font-size:10px!important;letter-spacing:0!important}</style><style id="wd-muted-table">
+#tableBody td{color:#475569}#tableBody .sticky-col-3{background:#edf2f8!important;color:#405a78!important}#tableBody .sticky-col-4{background:#edf4f0!important;color:#416453!important}
+#tableBody td[class*="bg-amber"],#tableBody td[class*="bg-rose"]{background:#f8fafc!important}#tableBody td.text-rose-700{color:#80535c!important}#tableBody td.text-indigo-600,#tableBody td.text-amber-600{color:#586779!important}
+#tableBody input[type=number]{background:#f8fafc!important;color:#334155!important;border-color:#cbd5e1!important}#tableBody button.bg-amber-500{background:#edf1f5!important;color:#596779!important;box-shadow:none!important;border:1px solid #cbd5e1}
+#tableBody .mkt-select{text-shadow:none!important;color-scheme:light!important}#tableBody .mkt-select.mkt-estimated{background:#edf5f0!important;border-color:#b7ccbf!important;color:#3f6550!important}#tableBody .mkt-select.mkt-misestimated{background:#f7f2e8!important;border-color:#d9c9a6!important;color:#78613e!important}#tableBody .mkt-select.mkt-haveno{background:#f6edef!important;border-color:#d7bcc3!important;color:#81545f!important}#tableBody .mkt-select.mkt-question{background:#f0edf5!important;border-color:#c9bfd8!important;color:#685879!important}#tableBody .mkt-select option{background:#fff!important;color:#334155!important}
+#wdSummaryPanel .wd-selected-m1{background:#eaf0f7!important;color:#405a78!important;box-shadow:inset 2px 0 #8ba2ba}#wdSummaryPanel .wd-selected-m2{background:#eaf3ed!important;color:#416453!important;box-shadow:inset 2px 0 #8aab98}
+.dark #tableBody td{color:#cbd5e1}.dark #tableBody .sticky-col-3{background:#202d3d!important;color:#b6c9df!important}.dark #tableBody .sticky-col-4{background:#21332c!important;color:#b7d0bf!important}.dark #tableBody td[class*="bg-amber"],.dark #tableBody td[class*="bg-rose"]{background:#182332!important}.dark #tableBody td.text-rose-700{color:#d4b6be!important}.dark #tableBody td.text-indigo-600,.dark #tableBody td.text-amber-600{color:#b9c6d5!important}.dark #tableBody input[type=number],.dark #tableBody button.bg-amber-500{background:#1e293b!important;color:#cbd5e1!important;border-color:#475569!important}
+.dark #tableBody .mkt-select{color-scheme:dark!important}.dark #tableBody .mkt-select.mkt-estimated{background:#25382f!important;border-color:#456052!important;color:#c3d8cb!important}.dark #tableBody .mkt-select.mkt-misestimated{background:#393326!important;border-color:#65583e!important;color:#ded1b5!important}.dark #tableBody .mkt-select.mkt-haveno{background:#3c2b32!important;border-color:#674752!important;color:#dec2cc!important}.dark #tableBody .mkt-select.mkt-question{background:#312c3e!important;border-color:#584c6d!important;color:#d0c6de!important}.dark #tableBody .mkt-select option{background:#1e293b!important;color:#e2e8f0!important}
+.dark #wdSummaryPanel .wd-selected-m1{background:#202d3d!important;color:#b6c9df!important}.dark #wdSummaryPanel .wd-selected-m2{background:#21332c!important;color:#b7d0bf!important}
+</style></head>
 <body class="solar-wd wd-dock-collapsed bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen pb-2 transition-colors duration-200">
 
     <!-- Header Navigation -->
@@ -2781,8 +2790,8 @@ body.wd-theme-switching *::after{
 
         syncTableScrollbars();
     </script>
-    <script src="working-day-summary.js?v=20261002-method-align"></script>
-    <script src="working-day-period.js?v=20261002-method-align"></script>
+    <script src="working-day-summary.js?v=20261002-muted-summary"></script>
+    <script src="working-day-period.js?v=20261002-muted-summary"></script>
     <script>
       const workingDayCloudAdapter={
         presenceContext:()=>WDReview.presenceContext(),
