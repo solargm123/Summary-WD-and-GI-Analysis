@@ -308,6 +308,14 @@ body{zoom:.75;min-height:calc(100vh / .75)}
 .province-modal-heading{display:flex;align-items:center;gap:9px;min-width:0}
 #provinceModal .modal-header button,#trendControlsCard>h3 button{width:32px;height:32px;min-height:32px;padding:0;display:grid;place-items:center;flex-shrink:0;font-size:14px}
 #closeTrendChartButton{margin-left:auto;min-height:36px}
+</style><style>
+.gi-trend-legend{display:flex;flex-wrap:wrap;gap:7px;align-items:center;max-height:160px;overflow:auto;margin:10px 0;padding:8px;border:1px solid var(--card-border);border-radius:10px;scrollbar-gutter:stable}
+.gi-series-toggle{display:inline-flex;align-items:center;gap:7px;padding:6px 9px;min-height:32px;border:1px solid var(--card-border);border-radius:8px;background:var(--input-bg);color:var(--text-main);font:700 12px 'Bai Jamjuree',sans-serif;cursor:pointer;text-align:left;max-width:100%}
+.gi-series-toggle>span:last-child{overflow-wrap:anywhere}
+.gi-series-swatch{width:12px;height:12px;flex:0 0 12px;border-radius:3px}
+.gi-series-toggle.is-hidden>span:last-child{text-decoration:line-through;opacity:.55}
+.gi-series-toggle.is-hidden .gi-series-swatch{opacity:.35}
+.gi-series-toggle:focus-visible{outline:2px solid var(--accent-blue);outline-offset:2px}
 </style></head>
 <body class="solar-gi">
 
@@ -489,6 +497,7 @@ body{zoom:.75;min-height:calc(100vh / .75)}
                     </div>
                 </div>
 
+                <div id="giTrendLegend" class="gi-trend-legend" aria-label="Chart projects"></div>
                 <div class="chart-container">
                     <canvas id="irrTrendChart"></canvas>
                 </div>
@@ -1320,11 +1329,19 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
         body.innerHTML=rows.length?rows.map((row,index)=>`<tr><td>${index+1}</td><td>${escapeHtml(row.plant)}</td><td>${escapeHtml(provinceLabel(row.province))}</td><td>${row.periods}</td><td>${row.days}</td><td>${row.min==null?'-':row.min.toFixed(3)}</td><td>${row.avg==null?'-':row.avg.toFixed(3)}</td><td>${row.max==null?'-':row.max.toFixed(3)}</td></tr>`).join(''):`<tr><td colspan="8" class="trend-summary-empty">${en?'No data for the selected filters':'ไม่พบข้อมูลตามตัวกรองที่เลือก'}</td></tr>`;
     }
 
+    function renderGiTrendLegend(chart){
+        const box=document.getElementById('giTrendLegend');if(!box)return;
+        box.innerHTML=chart.data.datasets.map((dataset,index)=>{
+            const visible=chart.isDatasetVisible(index);
+            return `<button type="button" class="gi-series-toggle ${visible?'':'is-hidden'}" data-gi-series="${escapeHtml(dataset.label)}" aria-pressed="${visible}" title="${escapeHtml(dataset.label)}"><span class="gi-series-swatch" style="background:${dataset.borderColor}"></span><span>${escapeHtml(dataset.label)}</span></button>`;
+        }).join('');
+        if(!box.dataset.bound){box.dataset.bound='true';box.addEventListener('click',event=>{const button=event.target.closest('[data-gi-series]');if(!button||!box.contains(button)||!trendChart)return;onTrendLegendClick(event,{text:button.dataset.giSeries},{chart:trendChart})})}
+    }
     function onTrendLegendClick(event,item,legend){
         const chart=legend.chart;
         const index=chart.data.datasets.findIndex(d=>d.label===item.text);if(index<0)return;
         chart.setDatasetVisibility(index,!chart.isDatasetVisible(index));
-        chart.update('none');
+        chart.update('none');renderGiTrendLegend(chart);
     }
 
     function updateTrendChart() {
@@ -1361,10 +1378,11 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
         else{document.getElementById('chartMinVal').innerText='0.000';document.getElementById('chartMinInfo').innerText='-';document.getElementById('chartMaxVal').innerText='0.000';document.getElementById('chartMaxInfo').innerText='-';document.getElementById('chartAvgVal').innerText='0.000'}
 
         const isDark=document.documentElement.getAttribute('data-theme')==='dark',textColor=isDark?'#cbd5e1':'#475569',gridColor=isDark?'#47556944':'#cbd5e177';
-        if(trendChart){trendChart.data.labels=periods;trendChart.data.datasets=datasets;trendChart.options.plugins.legend.labels.color=textColor;trendChart.options.scales.x.ticks.color=textColor;trendChart.options.scales.y.ticks.color=textColor;trendChart.options.scales.x.grid.color=gridColor;trendChart.options.scales.y.grid.color=gridColor;trendChart.options.scales.y.title.color=textColor;datasets.forEach((d,i)=>trendChart.setDatasetVisibility(i,!hiddenLabels.has(d.label)));trendChart.update('none');return}
+        if(trendChart){trendChart.data.labels=periods;trendChart.data.datasets=datasets;trendChart.options.plugins.legend.labels.color=textColor;trendChart.options.scales.x.ticks.color=textColor;trendChart.options.scales.y.ticks.color=textColor;trendChart.options.scales.x.grid.color=gridColor;trendChart.options.scales.y.grid.color=gridColor;trendChart.options.scales.y.title.color=textColor;datasets.forEach((d,i)=>trendChart.setDatasetVisibility(i,!hiddenLabels.has(d.label)));trendChart.update('none');renderGiTrendLegend(trendChart);return}
         const ctx=document.getElementById('irrTrendChart').getContext('2d');
-        trendChart=new Chart(ctx,{type:'line',data:{labels:periods,datasets},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',onClick:onTrendLegendClick,labels:{usePointStyle:true,color:textColor,font:{family:'Bai Jamjuree',size:11},boxWidth:12}},tooltip:{animation:false,itemSort:(a,b)=>(Number(b.raw)||0)-(Number(a.raw)||0),callbacks:{label:context=>` ${context.dataset.label}: ${context.raw!==null&&Number.isFinite(Number(context.raw))?Number(context.raw).toFixed(3):'-'} kWh/m²`}}},scales:{x:{ticks:{color:textColor,font:{family:'Bai Jamjuree'}},grid:{color:gridColor}},y:{title:{display:true,text:'Average Global Irradiation (kWh/m²)',color:textColor,font:{family:'Bai Jamjuree'}},ticks:{color:textColor,font:{family:'Bai Jamjuree'}},grid:{color:gridColor},beginAtZero:true}}}});
+        trendChart=new Chart(ctx,{type:'line',data:{labels:periods,datasets},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false,position:'top',onClick:onTrendLegendClick,labels:{usePointStyle:true,color:textColor,font:{family:'Bai Jamjuree',size:11},boxWidth:12}},tooltip:{animation:false,itemSort:(a,b)=>(Number(b.raw)||0)-(Number(a.raw)||0),callbacks:{label:context=>` ${context.dataset.label}: ${context.raw!==null&&Number.isFinite(Number(context.raw))?Number(context.raw).toFixed(3):'-'} kWh/m²`}}},scales:{x:{ticks:{color:textColor,font:{family:'Bai Jamjuree'}},grid:{color:gridColor}},y:{title:{display:true,text:'Average Global Irradiation (kWh/m²)',color:textColor,font:{family:'Bai Jamjuree'}},ticks:{color:textColor,font:{family:'Bai Jamjuree'}},grid:{color:gridColor},beginAtZero:true}}}});
         
+        renderGiTrendLegend(trendChart);
     }
 
     async function resetData() {
