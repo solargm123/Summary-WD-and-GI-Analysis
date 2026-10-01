@@ -108,7 +108,7 @@ const WDReview = (() => {
     const metrics = calculatePlantMetrics(plant);
     if (!(plant.calculationMethod==='other'?metrics.manualValid:metrics.valid)) { SolarCloud.notice(text('ยังตรวจเสร็จไม่ได้','Cannot mark reviewed'),metrics.periodError||text('กรุณาตรวจค่าคำนวณที่ไม่ถูกต้องก่อน','Please correct invalid calculation inputs first'));return; }
     const state=reviewState(plant);
-    reviews[reviewKey(plant)] = JSON.stringify({done:state!=='changed',again:state==='done',by:actor.name,userId:actor.userId,at:new Date().toISOString(),fingerprint:currentFingerprint(plant)});
+    reviews[reviewKey(plant)] = JSON.stringify({done:true,again:state==='done',by:actor.name,userId:actor.userId,at:new Date().toISOString(),fingerprint:currentFingerprint(plant)});
     editApproved.delete(reviewKey(plant));
     editApproved.delete('@global:'+month());
     SolarCloud.scheduleSave('working_day_review');

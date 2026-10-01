@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20261002-pv-days"></script>
+    <script src="cloud-core.js?v=20261002-review-note-loss"></script>
     <style> 
         html, body, body *:not(i), button, input, select, option, textarea, table, th, td, code {
             font-family: 'Bai Jamjuree', Tahoma, Arial, sans-serif !important;
@@ -1122,6 +1122,9 @@ body.wd-theme-switching *::after{
 </style><style id="wd-compact-loss-mkt">
 #tableScrollContainer table th:nth-child(8),#tableScrollContainer table td:nth-child(8){width:84px!important;min-width:84px!important;max-width:84px!important}#tableScrollContainer table th:nth-child(12),#tableScrollContainer table td:nth-child(12){width:124px!important;min-width:124px!important;max-width:124px!important}
 #tableScrollContainer table th:nth-child(8),#tableScrollContainer table th:nth-child(12){white-space:normal!important;line-height:1.35;letter-spacing:0!important}#tableBody td:nth-child(8) button{width:26px!important;height:26px!important;min-height:26px!important;padding:0!important;border-radius:7px!important}#tableBody .wd-mkt-trigger{max-width:112px!important;font-size:10px!important;padding:0 6px!important}#tableBody .wd-mkt-trigger b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+</style><style id="wd-note-loss-controls">
+#tableBody td:nth-child(8) .wd-loss-date-button{display:inline-flex!important;width:36px!important;height:26px!important;padding:3px 6px!important;background:#f8fafc!important;color:#334155!important;border:1px solid #cbd5e1!important;border-radius:7px!important;box-shadow:none!important}#tableBody td:nth-child(8) .wd-loss-date-button:hover{background:#eef2ff!important;border-color:#a5b4fc!important}.dark #tableBody td:nth-child(8) .wd-loss-date-button{background:#1e293b!important;color:#e2e8f0!important;border-color:#475569!important}.dark #tableBody td:nth-child(8) .wd-loss-date-button:hover{background:#283650!important;border-color:#818cf8!important}
+#tableBody .wd-note-button{display:inline-grid;place-items:center;width:26px;height:26px;padding:0;border-radius:7px;border:1px solid #cbd5e1;background:#f8fafc;color:#94a3b8}#tableBody .wd-note-button[data-has-note=true]{background:#eaf0fa;color:#42658f;border-color:#aebfd6}#tableBody .wd-note-button:hover{border-color:#64748b}.dark #tableBody .wd-note-button{background:#1e293b;border-color:#475569;color:#64748b}.dark #tableBody .wd-note-button[data-has-note=true]{background:#23344a;border-color:#526e93;color:#b8cff0}
 </style></head>
 <body class="solar-wd wd-dock-collapsed bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen pb-2 transition-colors duration-200">
 
@@ -2619,12 +2622,8 @@ body.wd-theme-switching *::after{
                 }
 
                 if(!showDetails)return;
-                let lossDatesDisplay = `<span class="text-slate-400 italic wd-loss-none">${t('noLoss')}</span>`;
-                if (lossDaysCount > 0) {
-                    const scopedDays=WDPeriod.dayList(item),displayLossDays=scopedDays?item.lossDaysArray.filter(day=>scopedDays.includes(day)):item.lossDaysArray;
-                    const allLossDates = displayLossDays.join(', ');
-                    lossDatesDisplay = `<span class="wd-loss-days-preview wd-loss-days-all" title="${escapeHtml(allLossDates)}">${displayLossDays.map(day=>`<span class="wd-loss-day-micro">${day}</span>`).join('')}</span>`;
-                }
+                const displayLossDays=item.lossDaysArray.filter(day=>WDPeriod.dayList(item).includes(day));
+                const lossDatesTooltip=(currentLanguage==='th'?'วันที่เกิด Loss Due: ':'Loss Due dates: ')+(displayLossDays.length?displayLossDays.join(', '):t('noLoss'));
 
                 renderedRows.push({id:item.id,html:`
                     <tr data-wd-plant="${item.id}" class="hover:bg-slate-50 dark:hover:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800/60 ${!item.visible ? 'opacity-40' : ''}">
@@ -2649,7 +2648,7 @@ body.wd-theme-switching *::after{
                     <td class="p-3 text-center font-mono text-[11px] bg-amber-50/20 dark:bg-amber-950/10">
                         <div class="flex items-center justify-center gap-2 min-h-9">
                             
-                            <button onclick="openLossModal(${item.id})" class="shrink-0 w-8 h-8 grid place-items-center bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition shadow-sm" title="${currentLanguage==='th'?'เลือกวันที่เกิด Loss Due':'Select Loss Due dates'}" aria-label="${currentLanguage==='th'?'เลือกวันที่เกิด Loss Due':'Select Loss Due dates'}"><i class="fa-solid fa-pen"></i></button>
+                            <button type="button" onclick="openLossModal(${item.id})" class="wd-period-open wd-loss-date-button" data-period-state="${displayLossDays.length?'attention':'normal'}" title="${escapeHtml(lossDatesTooltip)}" aria-label="${escapeHtml(lossDatesTooltip)}"><i class="fa-regular fa-calendar" aria-hidden="true"></i><span class="wd-period-dot" aria-hidden="true"></span></button>
                         </div>
                     </td>
 
@@ -2666,7 +2665,7 @@ body.wd-theme-switching *::after{
                                 <option value="m2" ${item.calculationMethod === 'm2' ? 'selected' : ''}>${currentLanguage === 'th' ? 'วิธีที่ 2' : 'Method 2'}</option>
                                 <option value="other" ${item.calculationMethod === 'other' ? 'selected' : ''}>${currentLanguage === 'th' ? 'อื่นๆ' : 'Other'}</option>
                             </select><small class="text-[9px] ${item.methodSource==='auto'?'text-violet-500':'text-slate-400'}">${item.methodSource==='auto'?'Auto from MKT':'Manual'}</small></div>
-                            <button onclick="openNoteModal(${item.id})" class="${WDPeriod.note(item) ? 'bg-amber-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'} border border-slate-300 dark:border-slate-700 rounded px-2 py-1.5" title="Note"><i class="fa-solid fa-note-sticky"></i></button>
+                            <button type="button" onclick="openNoteModal(${item.id})" class="wd-note-button" data-has-note="${!!WDPeriod.note(item).trim()}" title="${escapeHtml(WDPeriod.note(item)||t('note'))}" aria-label="${currentLanguage==='th'?'หมายเหตุ':'Note'}"><i class="fa-solid fa-note-sticky" aria-hidden="true"></i></button>
                         </div>
                     </td>
                     </tr>`});
@@ -2795,8 +2794,8 @@ body.wd-theme-switching *::after{
 
         syncTableScrollbars();
     </script>
-    <script src="working-day-summary.js?v=20261002-pv-days"></script>
-    <script src="working-day-period.js?v=20261002-pv-days"></script>
+    <script src="working-day-summary.js?v=20261002-review-note-loss"></script>
+    <script src="working-day-period.js?v=20261002-review-note-loss"></script>
     <script>
       const workingDayCloudAdapter={
         presenceContext:()=>WDReview.presenceContext(),
