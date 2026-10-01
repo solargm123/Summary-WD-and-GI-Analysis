@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20261001-manual-split"></script>
+    <script src="cloud-core.js?v=20261001-manual-cancel"></script>
     <style> 
         html, body, body *:not(i), button, input, select, option, textarea, table, th, td, code {
             font-family: 'Bai Jamjuree', Tahoma, Arial, sans-serif !important;
@@ -1675,6 +1675,7 @@ body.wd-theme-switching *::after{
         function updateCalculationMethod(id, method) {
             const plant = plantData.find(p => p.id === id);
             if (!plant || !['m1', 'm2', 'other'].includes(method)) return;
+            if(method==='other'&&typeof WDPeriod!=='undefined'){calculateAndRender();WDPeriod.openManual(id,true);return;}
             const month=document.getElementById('monthSelect').value,key=projectStableKey(plant);
             methodOverridesByMonth[month]=methodOverridesByMonth[month]||{};
             methodOverridesByMonth[month][key]=method;
@@ -2779,8 +2780,8 @@ body.wd-theme-switching *::after{
 
         syncTableScrollbars();
     </script>
-    <script src="working-day-summary.js?v=20261001-manual-split"></script>
-    <script src="working-day-period.js?v=20261001-manual-split"></script>
+    <script src="working-day-summary.js?v=20261001-manual-cancel"></script>
+    <script src="working-day-period.js?v=20261001-manual-cancel"></script>
     <script>
       const workingDayCloudAdapter={
         presenceContext:()=>WDReview.presenceContext(),
