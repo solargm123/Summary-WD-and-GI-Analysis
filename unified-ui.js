@@ -23,6 +23,7 @@
   const thToEn=new Map(pairs),enToTh=new Map(pairs.map(([th,en])=>[en,th]));
   let language=localStorage.getItem('fusionLanguage')==='en'?'en':'th';
   let theme=localStorage.getItem('fusionTheme')==='light'?'light':'dark';
+  let publishedLanguage=null;
   const iconMap={sun:'fa-sun','trash-2':'fa-trash-can',download:'fa-file-arrow-down',table:'fa-table','line-chart':'fa-chart-line','upload-cloud':'fa-cloud-arrow-up',building:'fa-building',calendar:'fa-calendar-days','check-circle-2':'fa-circle-check',filter:'fa-filter','edit-3':'fa-pen-to-square','check-circle':'fa-circle-check','alert-triangle':'fa-triangle-exclamation','help-circle':'fa-circle-question',sliders:'fa-sliders',check:'fa-check'};
   const t=(th,en)=>language==='th'?th:en;
   function setTheme(next){
@@ -30,7 +31,7 @@
     const root=document.documentElement;root.dataset.fsTheme=theme;root.dataset.theme=theme;
     root.classList.toggle('dark',theme==='dark');root.classList.toggle('light',theme==='light');
     document.querySelectorAll('[data-fs-theme-icon]').forEach(i=>i.className='fa-solid '+(theme==='dark'?'fa-sun':'fa-moon'));
-    document.querySelectorAll('[data-fs-theme-label]').forEach(n=>n.textContent=theme==='dark'?t('โหมดสว่าง','Light'):t('โหมดมืด','Dark'));
+    document.querySelectorAll('[data-fs-theme-label]').forEach(n=>{const value=theme==='dark'?t('โหมดสว่าง','Light'):t('โหมดมืด','Dark');if(n.textContent!==value)n.textContent=value});
   }
   function translate(root=document.body){
     if(!root)return;
@@ -41,9 +42,9 @@
     }
     root.querySelectorAll?.('[placeholder],[title],[aria-label]').forEach(n=>['placeholder','title','aria-label'].forEach(a=>{const v=n.getAttribute(a);if(!v)return;const next=language==='en'?thToEn.get(v):enToTh.get(v);if(next)n.setAttribute(a,next)}));
     document.documentElement.lang=language;
-    document.querySelectorAll('[data-fs-lang-label]').forEach(n=>n.textContent=language==='th'?'EN':'ไทย');
-    document.querySelectorAll('[data-fs-theme-label]').forEach(n=>n.textContent=theme==='dark'?t('โหมดสว่าง','Light'):t('โหมดมืด','Dark'));
-    if(window.SolarCloud?.setLanguage)window.SolarCloud.setLanguage(language);
+    document.querySelectorAll('[data-fs-lang-label]').forEach(n=>{const value=language==='th'?'EN':'ไทย';if(n.textContent!==value)n.textContent=value});
+    document.querySelectorAll('[data-fs-theme-label]').forEach(n=>{const value=theme==='dark'?t('โหมดสว่าง','Light'):t('โหมดมืด','Dark');if(n.textContent!==value)n.textContent=value});
+    if(window.SolarCloud?.setLanguage&&publishedLanguage!==language){publishedLanguage=language;window.SolarCloud.setLanguage(language)}
   }
   function iconFor(button){
     const key=((button.id||'')+' '+(button.getAttribute('onclick')||'')+' '+button.textContent).toLowerCase();
@@ -68,10 +69,10 @@
   }
   function ensureIcons(root=document){
     root.querySelectorAll?.('i[data-lucide]').forEach(old=>{const i=document.createElement('i');i.className='fa-solid '+(iconMap[old.dataset.lucide]||'fa-circle-dot');i.style.cssText=old.style.cssText;old.replaceWith(i)});
-    root.querySelectorAll?.('button,.upload').forEach(b=>{if(b.closest('.fs-ui-toolbar')||b.querySelector('i'))return;const i=document.createElement('i');i.className='fa-solid '+iconFor(b);b.prepend(i)});
+    root.querySelectorAll?.('button,.upload').forEach(b=>{if(b.closest('.fs-ui-toolbar')||b.classList.contains('solar-native-control')||b.querySelector('i'))return;const i=document.createElement('i');i.className='fa-solid '+iconFor(b);b.prepend(i)});
     root.querySelectorAll?.('.logo,.brand-mark').forEach(n=>{if(!n.querySelector('i'))n.innerHTML='<i class="fa-solid fa-sun"></i>'});
     const cards=[['.working .icon','fa-calendar-check'],['.irr .icon','fa-sun'],['.pr .icon','fa-chart-line']];
-    cards.forEach(([sel,cls])=>root.querySelectorAll?.(sel).forEach(n=>n.innerHTML='<i class="fa-solid '+cls+'"></i>'));
+    cards.forEach(([sel,cls])=>root.querySelectorAll?.(sel).forEach(n=>{if(!n.querySelector('i.'+cls))n.innerHTML='<i class="fa-solid '+cls+'"></i>'}));
   }
   function toolbar(){
     const box=document.createElement('div');box.className='fs-ui-toolbar';
@@ -101,8 +102,20 @@
     }
     if(location.pathname.includes('working-day')&&language==='en'&&document.documentElement.lang!=='en'&&typeof window.toggleLanguage==='function')window.toggleLanguage();
     setTheme(theme);translate();ensureIcons();
-    let queued=false;new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;translate();ensureIcons()})}).observe(document.body,{childList:true,subtree:true});
+    let queued=false;const changedRoots=new Set();
+    new MutationObserver(records=>{
+      records.forEach(record=>record.addedNodes.forEach(node=>{
+        const element=node.parentElement;
+        if(element&&!element.closest('script,style'))changedRoots.add(element);
+      }));
+      if(queued||!changedRoots.size)return;queued=true;
+      requestAnimationFrame(()=>{
+        queued=false;const roots=[...changedRoots];changedRoots.clear();
+        roots.filter(node=>node.isConnected&&!roots.some(other=>other!==node&&other.contains(node))).forEach(node=>{translate(node);ensureIcons(node)});
+      });
+    }).observe(document.body,{childList:true,subtree:true});
   }
   window.FusionUI={setLanguage(v){language=v==='en'?'en':'th';localStorage.setItem('fusionLanguage',language);translate();ensureIcons()},setTheme,getLanguage:()=>language,getTheme:()=>theme};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount);else mount();
 })();
+

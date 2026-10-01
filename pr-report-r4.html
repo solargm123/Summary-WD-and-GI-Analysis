@@ -160,7 +160,8 @@ body.solar-pr .pr-difference.good{color:var(--green);background:color-mix(in srg
 body.solar-pr .pr-difference.watch{color:var(--amber);background:color-mix(in srgb,var(--amber) 8%,var(--card));font-weight:700}
 body.solar-pr .pr-difference.abnormal{color:var(--red);background:color-mix(in srgb,var(--red) 8%,var(--card));font-weight:700}
 body.solar-pr .pr-difference.nodata{color:var(--muted)}
-</style></head>
+</style><link rel="stylesheet" href="solar-controls.css?v=20261001-1">
+</head>
 <body class="solar-pr">
 <div class="app">
  <header class="topbar">
@@ -513,7 +514,7 @@ document.addEventListener('DOMContentLoaded',()=>{$('overviewRows').addEventList
 function syncStickyRows(){const header=document.querySelector('.topbar');if(!header)return;const top=parseFloat(getComputedStyle(header).top)||0;document.documentElement.style.setProperty('--pr-sticky-second-top',`${Math.ceil(top+header.offsetHeight+10)}px`)}
 document.addEventListener('DOMContentLoaded',()=>{syncStickyRows();if('ResizeObserver'in window)new ResizeObserver(syncStickyRows).observe(document.querySelector('.topbar'));window.addEventListener('resize',syncStickyRows,{passive:true})});
 </script>
-<script src="unified-ui.js?v=20260922-pr-i18n2"></script>
+<script src="unified-ui.js?v=20261001-scoped"></script>
 
 <script id="prViewportScroll20260930">
 /* Measure only layout: no table rebuilds, data loads or calculation changes. */
@@ -547,6 +548,7 @@ document.addEventListener('DOMContentLoaded',()=>{syncStickyRows();if('ResizeObs
  });
 })();
 </script>
+<script src="solar-controls.js?v=20261001-1"></script>
 </body>
 </html>
 

@@ -821,6 +821,7 @@ main .section .table-wrap.smart-page-scroll thead th{position:sticky;top:0;z-ind
 .recent-row[data-recent-movement]{grid-template-columns:105px 92px minmax(0,1fr) 70px 18px;gap:9px;font-size:11px}.recent-part{min-width:0}.recent-part>b,.recent-part .part-sub{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.recent-qty{text-align:right}.recent-open{color:var(--primary);font-size:20px;font-weight:700}
 @media(min-width:1000px){html{zoom:90%}}
 </style>
+<link rel="stylesheet" href="solar-controls.css?v=20261001-1">
 </head>
 <body>
 <!-- DATA CONTRACT V1.7.0: backend=local; future=supabase; schemaVersion=1.5.0. See User Guide / Project Handoff Note. -->
@@ -2789,5 +2790,6 @@ render();
 loadCloudCatalogue();
 if(window.SolarCloud)SolarCloud.getClient().auth.onAuthStateChange(event=>{if(event==="SIGNED_OUT")loadCloudCatalogue()});
 </script>
+<script src="solar-controls.js?v=20261001-1"></script>
 </body>
 </html>

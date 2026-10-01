@@ -348,6 +348,7 @@ h1,h2,.section-title,.workspaceName,.sidebarTitle,.navTitle,.projectTitle,.sideb
 .deviceTable .ageCell{white-space:nowrap}.severityBadge.Unknown{opacity:.82;border-style:dashed}
 @media(max-width:800px){.dqGrid{grid-template-columns:1fr 1fr}.dqIssue{grid-template-columns:1fr}.capacityLine{align-items:flex-start}}
 </style>
+<link rel="stylesheet" href="solar-controls.css?v=20261001-1">
 </head>
 <body>
 <div class="layoutShell" id="layoutShell">
@@ -1291,5 +1292,6 @@ wireSidebarNav();renderSidebarProjects();renderHelp();refreshFilterLabels();setM
 window.addEventListener("resize",()=>{cancelAnimationFrame(renderFrame);renderFrame=requestAnimationFrame(()=>{if(analyticsView==="incident")renderTrend();else if(analyticsView==="alarm")renderAlarmOverview()})});window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue=""}});
 applyLanguage();syncSidebarUI();updateCapacityInfo();markDirty(false);setControls(false);renderKPIs();renderAlarmOverview();updateDataHealthUI();
 </script>
+<script src="solar-controls.js?v=20261001-1"></script>
 </body>
 </html>

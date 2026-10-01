@@ -1079,6 +1079,7 @@ body.wd-theme-switching *::after{
 </style>
 
 <link rel="stylesheet" href="working-day-summary.css?v=20260928-8">
+<link rel="stylesheet" href="solar-controls.css?v=20261001-1">
 </head>
 <body class="solar-wd wd-dock-collapsed bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen pb-2 transition-colors duration-200">
 
@@ -1299,7 +1300,7 @@ body.wd-theme-switching *::after{
             </div>
 
             <section id="wdSummaryPanel" role="tabpanel" aria-labelledby="wdSummaryTab" hidden></section>
-            <div id="topTableScroll" class="border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950"><div id="topTableScrollInner"></div></div>
+            
             <div id="tableScrollContainer" class="overflow-x-auto" role="tabpanel" aria-labelledby="wdDetailsTab">
                 <table class="w-full text-left text-xs border-collapse">
                     <thead>
@@ -1526,53 +1527,7 @@ body.wd-theme-switching *::after{
             return String(value).replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
         }
 
-        function syncTableScrollbars() {
-            const top = document.getElementById('topTableScroll');
-            const table = document.getElementById('tableScrollContainer');
-            const inner = document.getElementById('topTableScrollInner');
-            if (!top || !table || !inner) return;
-
-            const updateTopScrollbarWidth = () => {
-                const width = Math.max(table.scrollWidth, table.clientWidth);
-                inner.style.width = `${width}px`;
-            };
-
-            // Width must follow the real table width, especially after window resize,
-            // language changes, filtering, or dock focus mode changes.
-            updateTopScrollbarWidth();
-            requestAnimationFrame(updateTopScrollbarWidth);
-
-            if (!top.dataset.synced) {
-                let syncFrame = 0;
-                const sync = (from, target) => {
-                    cancelAnimationFrame(syncFrame);
-                    syncFrame = requestAnimationFrame(() => {
-                        if (Math.abs(target.scrollLeft - from.scrollLeft) > 1) {
-                            target.scrollLeft = from.scrollLeft;
-                        }
-                    });
-                };
-                top.addEventListener('scroll', () => sync(top, table), { passive: true });
-                table.addEventListener('scroll', () => sync(table, top), { passive: true });
-                top.dataset.synced = 'true';
-
-                if (window.ResizeObserver) {
-                    let widthFrame=0;const scheduleWidth=()=>{if(!widthFrame)widthFrame=requestAnimationFrame(()=>{widthFrame=0;updateTopScrollbarWidth()})};
-                    const ro = new ResizeObserver(scheduleWidth);
-                    ro.observe(table);
-                    const dataTable = table.querySelector('table');
-                    if (dataTable) ro.observe(dataTable);
-                } else {
-                    window.addEventListener('resize', updateTopScrollbarWidth, { passive: true });
-                }
-
-                const body = document.getElementById('tableBody');
-                if (body && window.MutationObserver) {
-                    let rowWidthFrame=0;const mo = new MutationObserver(()=>{if(!rowWidthFrame)rowWidthFrame=requestAnimationFrame(()=>{rowWidthFrame=0;updateTopScrollbarWidth()})});
-                    mo.observe(body, { childList: true });
-                }
-            }
-        }
+        function syncTableScrollbars() { /* Single native table scrollbar. */ }
 
         function openProjectSelector() {
             document.getElementById('projectPopupSearch').value = document.getElementById('searchInput').value;
@@ -2463,7 +2418,16 @@ body.wd-theme-switching *::after{
             };
         }
 
+        let wdMetricScope=null;
         function calculatePlantMetrics(item, context = getCalculationContext()) {
+            if(!wdMetricScope)return calculatePlantMetricsUncached(item,context);
+            let contexts=wdMetricScope.get(item);
+            if(!contexts){contexts=new Map();wdMetricScope.set(item,contexts)}
+            const key=[context.mode,context.customVal,context.lossFactor,context.targetMethod].join('|');
+            if(!contexts.has(key))contexts.set(key,calculatePlantMetricsUncached(item,context));
+            return contexts.get(key);
+        }
+        function calculatePlantMetricsUncached(item, context) {
             const cap = Number(item.cap);
             const daysInMonth = Math.max(1,Math.min(31,Number(item.customDaysInMonth)||currentDaysInMonth));
             const shObj = getCalculatedSunHours(item, context);
@@ -2522,6 +2486,29 @@ body.wd-theme-switching *::after{
         }
 
         function calculateAndRender() {
+            wdMetricScope=new Map();
+            try { return calculateAndRenderScoped(); }
+            finally { wdMetricScope=null; }
+        }
+        const wdRowHtml=new WeakMap();
+        function reconcileWDRows(tbody,rows){
+            const existing=new Map([...tbody.querySelectorAll('tr[data-wd-plant]')].map(row=>[row.dataset.wdPlant,row]));
+            let cursor=tbody.firstElementChild;
+            rows.forEach(({id,html})=>{
+                let row=existing.get(String(id));
+                if(!row){row=document.createElement('tr');}
+                if(wdRowHtml.get(row)!==html){
+                    const template=document.createElement('template');template.innerHTML=html.trim();
+                    const next=template.content.firstElementChild;
+                    if(row.isConnected){row.replaceWith(next);if(cursor===row)cursor=next;}
+                    row=next;wdRowHtml.set(row,html);
+                }
+                if(row!==cursor)tbody.insertBefore(row,cursor);
+                cursor=row.nextElementSibling;existing.delete(String(id));
+            });
+            while(cursor){const next=cursor.nextElementSibling;cursor.remove();cursor=next;}
+        }
+        function calculateAndRenderScoped() {
             if (calculateRenderFrame) {
                 cancelAnimationFrame(calculateRenderFrame);
                 calculateRenderFrame = 0;
@@ -2555,7 +2542,8 @@ body.wd-theme-switching *::after{
                 return;
             }
 
-            let rowsHtml = '';
+            const renderedRows = [];
+            const showDetails=typeof WDReview==='undefined'||!WDReview.isSummary();
             let totalCap = 0, sumM1 = 0, sumM2 = 0, count = 0;
             let avgMonthlySHSum = 0, avgNonLossSHSum = 0;
 
@@ -2573,13 +2561,14 @@ body.wd-theme-switching *::after{
                     count++;
                 }
 
+                if(!showDetails)return;
                 let lossDatesDisplay = `<span class="text-slate-400 italic wd-loss-none">${t('noLoss')}</span>`;
                 if (lossDaysCount > 0) {
                     const allLossDates = item.lossDaysArray.join(', ');
                     lossDatesDisplay = `<span class="wd-loss-days-preview wd-loss-days-all" title="${escapeHtml(allLossDates)}">${item.lossDaysArray.map(day=>`<span class="wd-loss-day-micro">${day}</span>`).join('')}</span>`;
                 }
 
-                rowsHtml += `
+                renderedRows.push({id:item.id,html:`
                     <tr data-wd-plant="${item.id}" class="hover:bg-slate-50 dark:hover:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800/60 ${!item.visible ? 'opacity-40' : ''}">
                     <td class="p-3 text-center sticky-col-1">
                         <input type="checkbox" ${item.visible ? 'checked' : ''} onchange="togglePlant(${item.id}, this.checked)" class="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-0 w-4 h-4 cursor-pointer">
@@ -2622,9 +2611,10 @@ body.wd-theme-switching *::after{
                             <button onclick="openNoteModal(${item.id})" class="${item.note ? 'bg-amber-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'} border border-slate-300 dark:border-slate-700 rounded px-2 py-1.5" title="Note"><i class="fa-solid fa-note-sticky"></i></button>
                         </div>
                     </td>
-                    </tr>`;
+                    </tr>`});
             });
-            tbody.innerHTML = rowsHtml;
+            if(showDetails)reconcileWDRows(tbody,renderedRows);
+            else tbody.replaceChildren();
 
             if (filteredData.length > 0) {
                 document.getElementById('valMonthlyAvg').innerText = (avgMonthlySHSum / filteredData.length).toFixed(2) + ` ${t('hours')} ${t('overall')}`;
@@ -2677,8 +2667,9 @@ body.wd-theme-switching *::after{
                 SolarCloud.notice(currentLanguage==='th'?'ยังส่งออกไม่ได้':'Export unavailable',t('exportNoData'),'danger');
                 return;
             }
+            const exportContext=getCalculationContext(),exportMetrics=new Map();
             const resultsRows = selectedPlants.map(item => {
-                const m = calculatePlantMetrics(item);
+                const m = calculatePlantMetrics(item,exportContext);exportMetrics.set(item,m);
                 const n = value => Number(value).toLocaleString('en-US', { maximumFractionDigits: 4, useGrouping: false });
                 return {
                     [headers.plant]: item.name,
@@ -2723,7 +2714,7 @@ body.wd-theme-switching *::after{
             // Replace result cells with live Excel formulas while keeping readable formula columns.
             selectedPlants.forEach((item, index) => {
                 const row = index + 2;
-                const m = calculatePlantMetrics(item);
+                const m = exportMetrics.get(item);
                 wsResults[`M${row}`] = { t: 'n', f: `IFERROR(MIN(C${row},MAX(0,(C${row}-H${row})+((L${row}/B${row})/E${row}))),0)`, v: m.method1Days };
                 wsResults[`P${row}`] = { t: 'n', f: `IFERROR(MIN(C${row},MAX(0,C${row}-((K${row}*G${row})/B${row}/F${row}))),0)`, v: m.method2Days };
             });
@@ -2738,7 +2729,7 @@ body.wd-theme-switching *::after{
 
         syncTableScrollbars();
     </script>
-    <script src="working-day-summary.js?v=20260928-7"></script>
+    <script src="working-day-summary.js?v=20261001-opt-controls"></script>
     <script>
       const workingDayCloudAdapter={
         presenceContext:()=>WDReview.presenceContext(),
@@ -2918,7 +2909,9 @@ body.wd-theme-switching *::after{
 })();
 </script>
 
-<script src="unified-ui.js?v=20260915-wd-header-fix1"></script>
+<script src="unified-ui.js?v=20261001-scoped"></script>
+<script src="solar-controls.js?v=20261001-1"></script>
 </body>
 </html>
+
 

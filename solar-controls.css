@@ -1,0 +1,19 @@
+/* Compact ambient controls; no continuous animations or backdrop filters. */
+html :is(body,#wdHeaderActions,#giHeaderActions,#prHeaderActions) .solar-native-control{display:none!important}
+.solar-switch-group{display:inline-flex!important;align-items:center;justify-content:center;gap:7px;height:36px;box-sizing:border-box;padding:0 9px;border:1px solid var(--card-border,var(--line,#cbd5e1));border-radius:10px;background:var(--card-bg,var(--panel-solid,#fff));color:var(--text-main,var(--text,#243247));flex:0 0 auto;white-space:nowrap;font-family:'Bai Jamjuree',sans-serif;font-size:12px;font-weight:700;max-width:100%}
+.dark .solar-switch-group,[data-theme=dark] .solar-switch-group,[data-fs-theme=dark] .solar-switch-group{background:var(--card-bg,var(--panel-solid,#172334));color:#e2e8f0;border-color:#475569}
+.solar-switch-label{opacity:.6}.solar-switch-label.selected{opacity:1;font-weight:800}
+.solar-toggle{display:inline-block!important;position:relative!important;flex:0 0 42px!important;width:42px!important;min-width:42px!important;max-width:42px!important;height:24px!important;min-height:24px!important;padding:0!important;border:0!important;border-radius:999px!important;background:#7057ff!important;box-shadow:none!important;cursor:pointer;line-height:1!important;transform:none!important}
+.solar-toggle-thumb{position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .16s ease;pointer-events:none}
+.solar-toggle[aria-checked=true] .solar-toggle-thumb{transform:translateX(18px)}
+.solar-switch-sentinel{display:none!important}
+.solar-toggle:focus-visible{outline:2px solid #a99bff!important;outline-offset:3px}
+:is(body,#wdHeaderActions,#giHeaderActions,#prHeaderActions) button.solar-export-control{background:#078b49!important;border:1px solid #078b49!important;color:#fff!important;height:36px!important;min-height:36px!important;padding:0 12px!important;border-radius:10px!important;font-weight:700!important;font-size:12px!important;display:inline-flex!important;align-items:center;justify-content:center;gap:7px;white-space:nowrap;max-width:100%;box-shadow:0 2px 5px rgba(7,139,73,.14)!important}
+:is(body,#wdHeaderActions,#giHeaderActions,#prHeaderActions) button.solar-export-control:hover:not(:disabled){background:#06763e!important;border-color:#06763e!important}
+button.solar-export-control:disabled{opacity:.5;cursor:not-allowed}
+button.solar-export-control i,button.solar-export-control svg{color:#fff!important;width:16px!important;height:16px!important;flex-shrink:0}
+#wdHeaderActions,#giHeaderActions,#prHeaderActions,.fs-ui-toolbar,.head-actions,.topbar>.actions{flex-wrap:wrap!important;gap:7px!important;min-width:0!important;max-width:100%!important}
+header .header-controls,header .header-actions{flex-wrap:wrap;min-width:0;max-width:100%}
+header,.topbar{flex-wrap:wrap}
+@media(prefers-reduced-motion:reduce){.solar-toggle-thumb{transition:none}}
+@media(max-width:700px){.solar-switch-group{font-size:11px;padding:0 7px;gap:5px}#wdHeaderActions{justify-content:flex-end!important}}

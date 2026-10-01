@@ -32,7 +32,12 @@ const WDReview = (() => {
   function review(plant) {
     try { return JSON.parse(reviews[reviewKey(plant)] || 'null'); } catch { return null; }
   }
-  function reviewed(plant) {
+  function reviewed(plant){
+    if(!reviewScope)return reviewedUncached(plant);
+    if(!reviewScope.has(plant))reviewScope.set(plant,reviewedUncached(plant));
+    return reviewScope.get(plant);
+  }
+  function reviewedUncached(plant) {
     const value = review(plant);
     if (value?.done !== true) return false;
     // Existing full-snapshot reviews remain valid until the next review action.
@@ -108,15 +113,16 @@ const WDReview = (() => {
     SolarCloud.scheduleSave('working_day_review');
     calculateAndRender();
   }
-  function refreshStatuses() {
+  function refreshStatuses(){if(document.hidden)return;return withReviewScope(refreshStatusesScoped)}
+  function refreshStatusesScoped() {
     const plants = new Map(plantData.map(plant=>[String(plant.id),plant]));
     document.querySelectorAll('[data-wd-status]').forEach(node => {
       const plant = plants.get(node.dataset.wdStatus);
-      if (plant) node.innerHTML = statusHtml(plant);
+      if (plant) {const html=statusHtml(plant);if(node.innerHTML!==html)node.innerHTML=html;}
     });
     document.querySelectorAll('[data-wd-detail-review]').forEach(node=>{
       const plant=plants.get(node.dataset.wdDetailReview);
-      if(plant)node.innerHTML=detailBadge(plant);
+      if(plant){const html=detailBadge(plant);if(node.innerHTML!==html)node.innerHTML=html;}
     });
     document.querySelectorAll('[data-wd-review]').forEach(node => {
       const plant = plants.get(node.dataset.wdReview);
@@ -151,7 +157,13 @@ const WDReview = (() => {
   ['click','keydown','beforeinput','change'].forEach(type=>document.addEventListener(type,guardReviewedEdit,true));
   function setReviewFilter(value) { reviewFilter=['all','done','new','changed'].includes(value)?value:'all';calculateAndRender(); }
   function clearSearch() { $('searchInput').value='';$('projectPopupSearch').value='';calculateAndRender(); }
-  function render(filtered, context) {
+  let reviewScope=null;
+  function withReviewScope(fn){
+    const previous=reviewScope;reviewScope=new Map();
+    try{return fn()}finally{reviewScope=previous}
+  }
+  function render(filtered,context){return withReviewScope(()=>renderScoped(filtered,context))}
+  function renderScoped(filtered, context) {
     const summary = activeTab === 'summary';
     $('wdDetailsTab').querySelector('span').textContent=text('รายละเอียดและคำนวณ','Details and calculations');
     $('wdSummaryTab').querySelector('span').textContent=text('สรุปวันทำงาน','Working day summary');
@@ -160,7 +172,7 @@ const WDReview = (() => {
     $('wdSummaryPanel').hidden=!summary;
     $('wdReviewFilterToolbar').hidden=!summary;
     $('tableScrollContainer').hidden=summary;
-    $('topTableScroll').hidden=summary;
+
     const query=$('searchInput').value.trim(),status=$('wdSearchStatus');
     status.hidden=!query;
     status.innerHTML=`${text('ค้นหา','Search')}: <b>${escapeHtml(query)}</b> · ${filtered.length} ${text('โครงการ','projects')} <button onclick="WDReview.clearSearch()">${text('ล้างคำค้น','Clear search')}</button>`;
@@ -194,6 +206,7 @@ const WDReview = (() => {
   });
   document.addEventListener('visibilitychange',()=>{if(document.hidden)endEdit()});
   setInterval(()=>{if(editing){if(!presenceContext())endEdit();else SolarCloud.refreshPresence()}refreshStatuses()},30000);
-  return {render,setTab,setReviewFilter,clearSearch,statusHtml,detailBadge,reviewLabel,toggleReview,refreshStatuses,beginEdit,endEdit,presenceContext,onPresence,onSaved,
+  return {isSummary:()=>activeTab==='summary',render,setTab,setReviewFilter,clearSearch,statusHtml,detailBadge,reviewLabel,toggleReview,refreshStatuses,beginEdit,endEdit,presenceContext,onPresence,onSaved,
     captureReviews:()=>({...reviews}),restoreReviews:overrides=>{reviews=Object.fromEntries(Object.entries(overrides).filter(([key])=>key.startsWith('@review:')))}};
 })();
+
