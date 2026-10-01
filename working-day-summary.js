@@ -99,9 +99,12 @@ const WDReview = (() => {
       .finally(()=>editPending.delete(key));
   }
   function toggleReview(id) {
-    const plant = findPlant(id), actor = SolarCloud.collaborationActor();
-    if (!plant || !month() || !actor || !SolarCloud.roleCanEdit()) return;
+    const plant = findPlant(id);
+    if (!plant) return;
     if(!['m1','m2'].includes(plant.calculationMethod)){SolarCloud.notice(text('ต้องเลือกวิธีคำนวณก่อน','Select a calculation method'),text('โครงการนี้เลือก Other อยู่ กรุณาเลือกวิธีที่ 1 หรือ 2 ก่อนตรวจ','This project uses Other. Select Method 1 or Method 2 before reviewing.'),'danger');document.querySelector('[data-wd-plant="'+plant.id+'"] .wd-method-select')?.focus();return;}
+    const actor=SolarCloud.collaborationActor();
+    if(!month()||!SolarCloud.roleCanEdit()){SolarCloud.notice(text('ยังตรวจไม่ได้','Cannot review'),text('ต้องเลือกเดือนและมีสิทธิ์แก้ไขก่อน','Select a month and use an editor account before reviewing'),'danger');return}
+    if(!actor){SolarCloud.notice(text('กำลังเชื่อมต่อสถานะผู้ใช้','User status is not connected'),text('ระบบยังไม่พร้อมบันทึกสถานะตรวจ กรุณาลองอีกครั้งเมื่อเชื่อมต่อแล้ว','Review status cannot be saved until the user connection is ready'),'danger');return}
     const metrics = calculatePlantMetrics(plant);
     if (!metrics.valid) { SolarCloud.notice(text('ยังตรวจเสร็จไม่ได้','Cannot mark reviewed'),text('กรุณาตรวจค่าคำนวณที่ไม่ถูกต้องก่อน','Please correct invalid calculation inputs first'));return; }
     const state=reviewState(plant);
