@@ -101,7 +101,7 @@ const WDReview = (() => {
   function toggleReview(id) {
     const plant = findPlant(id);
     if (!plant) return;
-    if(plant.calculationMethod==='other'&&!WDPeriod.scope(plant)?.confirmed){SolarCloud.notice(text('กรอกวันเองก่อนตรวจ','Enter Manual days before review'),text('กรุณากรอก Working days พร้อมเหตุผล','Enter Manual Working days and a reason'),'danger');WDPeriod.open(id);return;}
+    if(plant.calculationMethod==='other'&&!calculatePlantMetrics(plant).manualValid){SolarCloud.notice(text('กรอกวันเองก่อนตรวจ','Enter Manual days before review'),text('กรุณากรอก Working days พร้อมเหตุผล','Enter Manual Working days and a reason'),'danger');WDPeriod.openManual(id);return;}
     const actor=SolarCloud.collaborationActor();
     if(!month()||!SolarCloud.roleCanEdit()){SolarCloud.notice(text('ยังตรวจไม่ได้','Cannot review'),text('ต้องเลือกเดือนและมีสิทธิ์แก้ไขก่อน','Select a month and use an editor account before reviewing'),'danger');return}
     if(!actor){SolarCloud.notice(text('กำลังเชื่อมต่อสถานะผู้ใช้','User status is not connected'),text('ระบบยังไม่พร้อมบันทึกสถานะตรวจ กรุณาลองอีกครั้งเมื่อเชื่อมต่อแล้ว','Review status cannot be saved until the user connection is ready'),'danger');return}
@@ -216,4 +216,3 @@ const WDReview = (() => {
   return {filterPlants,isSummary:()=>activeTab==='summary',render,setTab,setReviewFilter,clearSearch,statusHtml,detailBadge,reviewLabel,toggleReview,refreshStatuses,beginEdit,endEdit,presenceContext,onPresence,onSaved,
     isReviewed:reviewed,captureReviews:()=>({...reviews}),restoreReviews:overrides=>{reviews=Object.fromEntries(Object.entries(overrides).filter(([key])=>key.startsWith('@review:')))}};
 })();
-

@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20261001-period-compact"></script>
+    <script src="cloud-core.js?v=20261001-manual-split"></script>
     <style> 
         html, body, body *:not(i), button, input, select, option, textarea, table, th, td, code {
             font-family: 'Bai Jamjuree', Tahoma, Arial, sans-serif !important;
@@ -1680,6 +1680,7 @@ body.wd-theme-switching *::after{
             methodOverridesByMonth[month][key]=method;
             plant.calculationMethod = method;plant.methodSource='manual';
             calculateAndRender();
+            if(method==='other'&&typeof WDPeriod!=='undefined')WDPeriod.openManual(id);
         }
 
         function setMethodFilter(method) {
@@ -2778,8 +2779,8 @@ body.wd-theme-switching *::after{
 
         syncTableScrollbars();
     </script>
-    <script src="working-day-summary.js?v=20261001-period-detect"></script>
-    <script src="working-day-period.js?v=20261001-period-compact"></script>
+    <script src="working-day-summary.js?v=20261001-manual-split"></script>
+    <script src="working-day-period.js?v=20261001-manual-split"></script>
     <script>
       const workingDayCloudAdapter={
         presenceContext:()=>WDReview.presenceContext(),

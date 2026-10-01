@@ -14,6 +14,7 @@ Working Day user-state snapshots were saved privately in `WorkingDay_State_Backu
 - Confirmation stores one atomic JSON string under `overrides[@wdscope:<month>:<project>]`. Original day count and loss-day state are retained. Existing RPC permissions and schemas are unchanged.
 - After confirmation, M1/M2 retain their established formulas but use the same inclusive date set for day count, loss-day PV, daily loss totals and Specific-based Sun Hours. Missing data blocks automatic confirmation; Manual requires final days and a reason.
 - A changed scope invalidates review. “Restore pre-confirmation values” restores that project's original day/loss-date settings.
+- Manual has its own compact editor, opened automatically when selecting Other. It only saves final days and a reason. Date/COD confirmation is a separate dialog; neither editor clears the other's data. Manual-only entries do not imply confirmation of report dates or COD.
 - Selected Loss Due Export is removed from visible calculation columns and result export. Raw Source Data remains available.
 - Full-month projects without a confirmed scope retain previous results. Historical reduced counts are flagged, never converted to guessed dates.
 
