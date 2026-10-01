@@ -492,6 +492,7 @@ body{zoom:.75;min-height:calc(100vh / .75)}
                 <div class="chart-container">
                     <canvas id="irrTrendChart"></canvas>
                 </div>
+                <div class="trend-summary" id="trendLowTable"><div class="trend-summary-head"><h4 id="trendLowTitle"></h4><span id="trendLowMeta"></span></div><div class="trend-summary-scroll"><table><thead><tr id="trendLowHeader"></tr></thead><tbody id="trendLowBody"></tbody></table></div><div style="display:flex;justify-content:flex-end;gap:8px;padding:10px"><button class="btn btn-secondary" id="trendLowPrev" onclick="changeTrendLowPage(-1)">‹</button><span id="trendLowPage"></span><button class="btn btn-secondary" id="trendLowNext" onclick="changeTrendLowPage(1)">›</button></div></div>
                 <div class="trend-summary">
                     <div class="trend-summary-head"><h4 id="trendSummaryTitle">ตารางสรุป GI ของโครงการที่เลือก</h4><span id="trendSummaryMeta">-</span></div>
                     <div class="trend-summary-scroll"><table><thead><tr id="trendSummaryHeader"></tr></thead><tbody id="trendSummaryBody"></tbody></table></div>
@@ -619,7 +620,7 @@ body{zoom:.75;min-height:calc(100vh / .75)}
         const total=counts?Object.values(counts).reduce((sum,value)=>sum+value,0):0;
         document.getElementById('provinceOptionList').innerHTML=names.filter(name=>{const label=name==='ALL'?(giLanguage()==='en'?'All provinces':'ทุกจังหวัด'):provinceLabel(name);return !query||name.toLowerCase().includes(query)||label.toLowerCase().includes(query)||(PROVINCE_EN[name]||'').toLowerCase().includes(query)}).map(name=>{
             const label=name==='ALL'?(giLanguage()==='en'?'All provinces':'ทุกจังหวัด'):provinceLabel(name),secondary=name==='ALL'?'All':(giLanguage()==='en'?name:PROVINCE_EN[name]),count=name==='ALL'?total:(counts?.[name]||0);
-            return `<button class="province-option ${name===selected?'active':''}" onclick="selectProvince('${name}')"><span class="province-option-row"><span>${escapeHtml(label)}</span>${counts?`<b class="province-count">${count}</b>`:''}</span><small>${escapeHtml(secondary||'')}</small></button>`
+            return `<button class="province-option ${name===selected?'active':''}" onclick="selectProvince('${name}')"><span class="province-option-row"><i class="fa-solid fa-location-dot province-pin" aria-hidden="true"></i><span>${escapeHtml(label)}</span>${counts?`<b class="province-count">${count}</b>`:''}</span><small>${escapeHtml(secondary||'')}</small></button>`
         }).join('')
     }
     function selectProvince(value){if(currentProvinceMode==='table'){setProvinceFilter(value);closeProvincePopup()}else if(currentProvinceMode==='trend'){activeTrendProvinceFilter=value||'ALL';selectedTrendPlants=new Set(trendAvailablePlants());syncTrendProvinceSelect();renderTrendPlantList();updateTrendChart();closeProvincePopup()}else{updateProvinceData(currentProvincePlant,value);closeProvincePopup();renderTableAndMetrics()}}
@@ -1168,7 +1169,7 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
                         <div style="display:flex; gap:4px;">${actionBtns}</div>
                     </div>
                 </td>
-                <td class="col-province"><button class="province-button" data-plant="${escapeHtml(plant)}" onclick="openProvincePopup(this.dataset.plant)" title="${escapeHtml(pData.address||'')}"><span>${escapeHtml(provinceLabel(pData.province||'ไม่ระบุ'))}</span><i class="fa-solid fa-chevron-down"></i></button></td>
+                <td class="col-province"><button class="province-button" data-plant="${escapeHtml(plant)}" onclick="openProvincePopup(this.dataset.plant)" title="${escapeHtml(pData.address||'')}"><i class="fa-solid fa-location-dot province-pin" aria-hidden="true"></i><span>${escapeHtml(provinceLabel(pData.province||'ไม่ระบุ'))}</span><i class="fa-solid fa-chevron-down"></i></button></td>
                 <td class="number-col avg-col col-avg">${plantAvgIrr.toFixed(3)}</td>
                 <td class="number-col normal-col col-normal" title="${giText('ค่าปกติหรือรับรองรายวันแล้ว','In range or accepted daily values')}">${plantNormalDays} / ${dateList.length}</td>
                 <td class="number-col col-kwp">${pData.capacity.toLocaleString()}</td>
@@ -1320,6 +1321,23 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
         body.innerHTML=rows.length?rows.map((row,index)=>`<tr><td>${index+1}</td><td>${escapeHtml(row.plant)}</td><td>${escapeHtml(provinceLabel(row.province))}</td><td>${row.periods}</td><td>${row.days}</td><td>${row.min==null?'-':row.min.toFixed(3)}</td><td>${row.avg==null?'-':row.avg.toFixed(3)}</td><td>${row.max==null?'-':row.max.toFixed(3)}</td></tr>`).join(''):`<tr><td colspan="8" class="trend-summary-empty">${en?'No data for the selected filters':'ไม่พบข้อมูลตามตัวกรองที่เลือก'}</td></tr>`;
     }
 
+    let trendLowRows=[],trendLowPage=0;
+    function changeTrendLowPage(delta){trendLowPage=Math.max(0,Math.min(Math.max(0,Math.ceil(trendLowRows.length/50)-1),trendLowPage+delta));renderTrendLowTable()}
+    function renderTrendLowTable(){
+        const en=giLanguage()==='en',limit=Number(document.getElementById('minIrr').value),pages=Math.max(1,Math.ceil(trendLowRows.length/50));
+        document.getElementById('trendLowTitle').textContent=en?'GI below normal range':'รายการ GI ต่ำกว่าช่วงปกติ';
+        document.getElementById('trendLowMeta').textContent=`${trendModeLabel()} · GI < ${limit.toFixed(3)} · ${trendLowRows.length} ${en?'records':'รายการ'}`;
+        document.getElementById('trendLowHeader').innerHTML=`<th>${en?'Project':'โครงการ'}</th><th>${en?'Province':'จังหวัด'}</th><th>${en?'Period':'ช่วงเวลา'}</th><th>GI (kWh/m²)</th><th>${en?'Below threshold':'ต่ำกว่าเกณฑ์'}</th>`;
+        document.getElementById('trendLowBody').innerHTML=trendLowRows.slice(trendLowPage*50,trendLowPage*50+50).map(r=>`<tr><td>${escapeHtml(r.plant)}</td><td>${escapeHtml(provinceLabel(r.province))}</td><td>${escapeHtml(r.period)}</td><td style="color:var(--accent-red);font-weight:700">${r.value.toFixed(3)}</td><td>${(limit-r.value).toFixed(3)}</td></tr>`).join('')||`<tr><td colspan="5" class="trend-summary-empty">${en?'No values below normal range for the chart selection':'ไม่พบค่าต่ำกว่าช่วงปกติตามข้อมูลที่เลือกในกราฟ'}</td></tr>`;
+        document.getElementById('trendLowPage').textContent=`${trendLowPage+1} / ${pages}`;
+        document.getElementById('trendLowPrev').disabled=trendLowPage===0;document.getElementById('trendLowNext').disabled=trendLowPage+1>=pages;
+    }
+    function onTrendLegendClick(event,item,legend){
+        const dataset=legend.chart.data.datasets[item.datasetIndex];if(!dataset)return;
+        if(dataset.isBaseline){document.getElementById('chkShowAvgLine').checked=false}
+        else{selectedTrendPlants.delete(dataset.label);renderTrendPlantList()}
+        updateTrendChart();
+    }
     function updateTrendChart() {
         if(!document.getElementById('trendTab').classList.contains('active'))return;
         const yearNode=document.getElementById('trendYearSel'),monthNode=document.getElementById('trendMonthSel');
@@ -1332,7 +1350,8 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
         const filteredDates=Array.from(datesSet).filter(date=>{const parts=date.split('-'),yearOk=!selYears.length||selYears.includes(parts[0]),monthOk=trendGranularity!=='daily'||!selMonths.length||selMonths.includes(parts[1]);return yearOk&&monthOk}).sort();
         const periods=[...new Set(filteredDates.map(trendPeriodKey))].sort(),selected=Array.from(selectedTrendPlants).filter(plant=>activeTrendProvinceFilter==='ALL'||(plantMasterData[plant]?.province||'ไม่ระบุ')===activeTrendProvinceFilter).sort();
         const periodAverage=Object.fromEntries(periods.map(period=>[period,{sum:0,count:0}]));
-        const datasets=[],summaryRows=[];
+        const datasets=[],summaryRows=[];trendLowRows=[];trendLowPage=0;
+        const lowLimit=Number(document.getElementById('minIrr').value);
         let minObj={val:Infinity,plant:'-',date:'-'},maxObj={val:-Infinity,plant:'-',date:'-'},totalValSum=0,totalValCount=0;
 
         selected.forEach((plant,index)=>{
@@ -1340,21 +1359,21 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
             const buckets=Object.fromEntries(periods.map(period=>[period,{sum:0,count:0}]));let dayCount=0;
             filteredDates.forEach(date=>{const numeric=Number(pData.dates?.[date]);if(pData.dates?.[date]===undefined||pData.dates?.[date]===null||!Number.isFinite(numeric))return;const bucket=buckets[trendPeriodKey(date)];bucket.sum+=numeric;bucket.count++;dayCount++});
             const dataPoints=periods.map(period=>buckets[period].count?buckets[period].sum/buckets[period].count:null),valid=dataPoints.filter(value=>value!==null&&Number.isFinite(value));
-            dataPoints.forEach((value,periodIndex)=>{if(value===null)return;const period=periods[periodIndex];totalValSum+=value;totalValCount++;periodAverage[period].sum+=value;periodAverage[period].count++;if(value<minObj.val)minObj={val:value,plant,date:period};if(value>maxObj.val)maxObj={val:value,plant,date:period}});
+            dataPoints.forEach((value,periodIndex)=>{if(value===null)return;const period=periods[periodIndex];if(value<lowLimit)trendLowRows.push({plant,province:pData.province||'ไม่ระบุ',period,value});totalValSum+=value;totalValCount++;periodAverage[period].sum+=value;periodAverage[period].count++;if(value<minObj.val)minObj={val:value,plant,date:period};if(value>maxObj.val)maxObj={val:value,plant,date:period}});
             summaryRows.push({plant,province:pData.province||'ไม่ระบุ',periods:valid.length,days:dayCount,min:valid.length?Math.min(...valid):null,avg:valid.length?valid.reduce((sum,value)=>sum+value,0)/valid.length:null,max:valid.length?Math.max(...valid):null});
             datasets.push({label:plant,data:dataPoints,borderColor:chartColors[index%chartColors.length],backgroundColor:chartColors[index%chartColors.length],tension:.15,spanGaps:true,borderWidth:2,pointRadius:dataPoints.length>120?0:trendGranularity==='daily'?2:3,pointHoverRadius:5});
         });
 
-        if(showAvgLine&&selected.length){const avgPoints=periods.map(period=>periodAverage[period].count?periodAverage[period].sum/periodAverage[period].count:null);datasets.unshift({label:`★ Baseline ${trendModeLabel()} Avg`,data:avgPoints,borderColor:'#fbbf24',borderDash:[5,5],borderWidth:2.5,pointRadius:0,fill:false,order:-1})}
-        renderTrendSummaryTable(summaryRows,periods.length);
+        if(showAvgLine&&selected.length){const avgPoints=periods.map(period=>periodAverage[period].count?periodAverage[period].sum/periodAverage[period].count:null);datasets.unshift({isBaseline:true,label:`★ Baseline ${trendModeLabel()} Avg`,data:avgPoints,borderColor:'#fbbf24',borderDash:[5,5],borderWidth:2.5,pointRadius:0,fill:false,order:-1})}
+        renderTrendSummaryTable(summaryRows,periods.length);renderTrendLowTable();
 
         if(totalValCount){document.getElementById('chartMinVal').innerText=minObj.val.toFixed(3);document.getElementById('chartMinInfo').innerText=`${minObj.plant} (${minObj.date})`;document.getElementById('chartMaxVal').innerText=maxObj.val.toFixed(3);document.getElementById('chartMaxInfo').innerText=`${maxObj.plant} (${maxObj.date})`;document.getElementById('chartAvgVal').innerText=(totalValSum/totalValCount).toFixed(3)}
         else{document.getElementById('chartMinVal').innerText='0.000';document.getElementById('chartMinInfo').innerText='-';document.getElementById('chartMaxVal').innerText='0.000';document.getElementById('chartMaxInfo').innerText='-';document.getElementById('chartAvgVal').innerText='0.000'}
 
         const isDark=document.documentElement.getAttribute('data-theme')==='dark',textColor=isDark?'#cbd5e1':'#475569',gridColor=isDark?'#47556944':'#cbd5e177';
-        if(trendChart){trendChart.data.labels=periods;trendChart.data.datasets=datasets;trendChart.options.plugins.legend.labels.color=textColor;trendChart.options.scales.x.ticks.color=textColor;trendChart.options.scales.y.ticks.color=textColor;trendChart.options.scales.x.grid.color=gridColor;trendChart.options.scales.y.grid.color=gridColor;trendChart.options.scales.y.title.color=textColor;trendChart.update('none');return}
+        if(trendChart){trendChart.data.labels=periods;trendChart.data.datasets=datasets;trendChart.options.plugins.legend.labels.color=textColor;trendChart.options.scales.x.ticks.color=textColor;trendChart.options.scales.y.ticks.color=textColor;trendChart.options.scales.x.grid.color=gridColor;trendChart.options.scales.y.grid.color=gridColor;trendChart.options.scales.y.title.color=textColor;datasets.forEach((_,index)=>trendChart.setDatasetVisibility(index,true));trendChart.update('none');return}
         const ctx=document.getElementById('irrTrendChart').getContext('2d');
-        trendChart=new Chart(ctx,{type:'line',data:{labels:periods,datasets},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{color:textColor,font:{family:'Bai Jamjuree',size:11},boxWidth:12}},tooltip:{animation:false,itemSort:(a,b)=>(Number(b.raw)||0)-(Number(a.raw)||0),callbacks:{label:context=>` ${context.dataset.label}: ${context.raw!==null&&Number.isFinite(Number(context.raw))?Number(context.raw).toFixed(3):'-'} kWh/m²`}}},scales:{x:{ticks:{color:textColor,font:{family:'Bai Jamjuree'}},grid:{color:gridColor}},y:{title:{display:true,text:'Average Global Irradiation (kWh/m²)',color:textColor,font:{family:'Bai Jamjuree'}},ticks:{color:textColor,font:{family:'Bai Jamjuree'}},grid:{color:gridColor},beginAtZero:true}}}});
+        trendChart=new Chart(ctx,{type:'line',data:{labels:periods,datasets},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',onClick:onTrendLegendClick,labels:{color:textColor,font:{family:'Bai Jamjuree',size:11},boxWidth:12}},tooltip:{animation:false,itemSort:(a,b)=>(Number(b.raw)||0)-(Number(a.raw)||0),callbacks:{label:context=>` ${context.dataset.label}: ${context.raw!==null&&Number.isFinite(Number(context.raw))?Number(context.raw).toFixed(3):'-'} kWh/m²`}}},scales:{x:{ticks:{color:textColor,font:{family:'Bai Jamjuree'}},grid:{color:gridColor}},y:{title:{display:true,text:'Average Global Irradiation (kWh/m²)',color:textColor,font:{family:'Bai Jamjuree'}},ticks:{color:textColor,font:{family:'Bai Jamjuree'}},grid:{color:gridColor},beginAtZero:true}}}});
     }
 
     async function resetData() {
