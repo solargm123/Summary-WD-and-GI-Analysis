@@ -492,7 +492,6 @@ body{zoom:.75;min-height:calc(100vh / .75)}
                 <div class="chart-container">
                     <canvas id="irrTrendChart"></canvas>
                 </div>
-                <div class="trend-summary" id="trendLowTable"><div class="trend-summary-head"><h4 id="trendLowTitle"></h4><span id="trendLowMeta"></span></div><div class="trend-summary-scroll"><table><thead><tr id="trendLowHeader"></tr></thead><tbody id="trendLowBody"></tbody></table></div><div style="display:flex;justify-content:flex-end;gap:8px;padding:10px"><button class="btn btn-secondary" id="trendLowPrev" onclick="changeTrendLowPage(-1)">‹</button><span id="trendLowPage"></span><button class="btn btn-secondary" id="trendLowNext" onclick="changeTrendLowPage(1)">›</button></div></div>
                 <div class="trend-summary">
                     <div class="trend-summary-head"><h4 id="trendSummaryTitle">ตารางสรุป GI ของโครงการที่เลือก</h4><span id="trendSummaryMeta">-</span></div>
                     <div class="trend-summary-scroll"><table><thead><tr id="trendSummaryHeader"></tr></thead><tbody id="trendSummaryBody"></tbody></table></div>
@@ -1321,32 +1320,11 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
         body.innerHTML=rows.length?rows.map((row,index)=>`<tr><td>${index+1}</td><td>${escapeHtml(row.plant)}</td><td>${escapeHtml(provinceLabel(row.province))}</td><td>${row.periods}</td><td>${row.days}</td><td>${row.min==null?'-':row.min.toFixed(3)}</td><td>${row.avg==null?'-':row.avg.toFixed(3)}</td><td>${row.max==null?'-':row.max.toFixed(3)}</td></tr>`).join(''):`<tr><td colspan="8" class="trend-summary-empty">${en?'No data for the selected filters':'ไม่พบข้อมูลตามตัวกรองที่เลือก'}</td></tr>`;
     }
 
-    let trendLowRows=[],trendLowPage=0;
-    function changeTrendLowPage(delta){trendLowPage=Math.max(0,Math.min(Math.max(0,Math.ceil(trendLowRows.length/50)-1),trendLowPage+delta));renderTrendLowTable()}
-    function renderTrendLowTable(){
-        const en=giLanguage()==='en',limit=Number(document.getElementById('minIrr').value),pages=Math.max(1,Math.ceil(trendLowRows.length/50));
-        document.getElementById('trendLowTitle').textContent=en?'GI below selected-project average':'GI ต่ำกว่าค่าเฉลี่ยโครงการที่แสดง';
-        document.getElementById('trendLowMeta').textContent=`${trendModeLabel()} · ${en?'Below visible-project average':'ต่ำกว่าค่าเฉลี่ยเส้นที่แสดง'} · ${trendLowRows.length} ${en?'records':'รายการ'}`;
-        document.getElementById('trendLowHeader').innerHTML=`<th>${en?'Project':'โครงการ'}</th><th>${en?'Province':'จังหวัด'}</th><th>${en?'Period':'ช่วงเวลา'}</th><th>GI (kWh/m²)</th><th>${en?'Below average':'ต่ำกว่าค่าเฉลี่ย'}</th>`;
-        document.getElementById('trendLowBody').innerHTML=trendLowRows.slice(trendLowPage*50,trendLowPage*50+50).map(r=>`<tr style="background:rgba(239,68,68,.09)"><td>${escapeHtml(r.plant)}</td><td>${escapeHtml(provinceLabel(r.province))}</td><td>${escapeHtml(r.period)}</td><td style="color:var(--accent-red);font-weight:700">${r.value.toFixed(3)}</td><td>${(r.average-r.value).toFixed(3)}</td></tr>`).join('')||`<tr><td colspan="5" class="trend-summary-empty">${en?'No values below the average of visible projects (at least two required)':'ไม่พบค่าต่ำกว่าค่าเฉลี่ยโครงการที่แสดง (ต้องมีอย่างน้อย 2 โครงการ)'}</td></tr>`;
-        document.getElementById('trendLowPage').textContent=`${trendLowPage+1} / ${pages}`;
-        document.getElementById('trendLowPrev').disabled=trendLowPage===0;document.getElementById('trendLowNext').disabled=trendLowPage+1>=pages;
-    }
-    function renderTrendPeerRows(chart){
-        const peers=chart.data.datasets.filter((d,i)=>!d.isBaseline&&chart.isDatasetVisible(i));
-        trendLowRows=[];trendLowPage=0;
-        chart.data.labels.forEach((period,index)=>{
-            const valid=peers.filter(d=>d.data[index]!==null&&Number.isFinite(d.data[index]));
-            if(valid.length<2)return;
-            const average=valid.reduce((sum,d)=>sum+d.data[index],0)/valid.length;
-            valid.forEach(d=>{if(d.data[index]<average)trendLowRows.push({plant:d.label,province:plantMasterData[d.label]?.province||'ไม่ระบุ',period,value:d.data[index],average})});
-        });
-        renderTrendLowTable();
-    }
     function onTrendLegendClick(event,item,legend){
         const chart=legend.chart;
-        chart.setDatasetVisibility(item.datasetIndex,!chart.isDatasetVisible(item.datasetIndex));
-        chart.update('none');renderTrendPeerRows(chart);
+        const index=chart.data.datasets.findIndex(d=>d.label===item.text);if(index<0)return;
+        chart.setDatasetVisibility(index,!chart.isDatasetVisible(index));
+        chart.update('none');
     }
 
     function updateTrendChart() {
@@ -1362,8 +1340,8 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
         const periods=[...new Set(filteredDates.map(trendPeriodKey))].sort(),selected=Array.from(selectedTrendPlants).filter(plant=>activeTrendProvinceFilter==='ALL'||(plantMasterData[plant]?.province||'ไม่ระบุ')===activeTrendProvinceFilter).sort();
         const periodAverage=Object.fromEntries(periods.map(period=>[period,{sum:0,count:0}]));
         const hiddenLabels=new Set(trendChart?trendChart.data.datasets.filter((d,i)=>!trendChart.isDatasetVisible(i)).map(d=>d.label):[]);
-        const datasets=[],summaryRows=[];trendLowRows=[];trendLowPage=0;
-        const lowLimit=Number(document.getElementById('minIrr').value);
+        const datasets=[],summaryRows=[];
+        
         let minObj={val:Infinity,plant:'-',date:'-'},maxObj={val:-Infinity,plant:'-',date:'-'},totalValSum=0,totalValCount=0;
 
         selected.forEach((plant,index)=>{
@@ -1383,7 +1361,7 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
         else{document.getElementById('chartMinVal').innerText='0.000';document.getElementById('chartMinInfo').innerText='-';document.getElementById('chartMaxVal').innerText='0.000';document.getElementById('chartMaxInfo').innerText='-';document.getElementById('chartAvgVal').innerText='0.000'}
 
         const isDark=document.documentElement.getAttribute('data-theme')==='dark',textColor=isDark?'#cbd5e1':'#475569',gridColor=isDark?'#47556944':'#cbd5e177';
-        if(trendChart){trendChart.data.labels=periods;trendChart.data.datasets=datasets;trendChart.options.plugins.legend.labels.color=textColor;trendChart.options.scales.x.ticks.color=textColor;trendChart.options.scales.y.ticks.color=textColor;trendChart.options.scales.x.grid.color=gridColor;trendChart.options.scales.y.grid.color=gridColor;trendChart.options.scales.y.title.color=textColor;datasets.forEach((d,i)=>trendChart.setDatasetVisibility(i,!d.hidden));trendChart.update('none');renderTrendPeerRows(trendChart);return}
+        if(trendChart){trendChart.data.labels=periods;trendChart.data.datasets=datasets;trendChart.options.plugins.legend.labels.color=textColor;trendChart.options.scales.x.ticks.color=textColor;trendChart.options.scales.y.ticks.color=textColor;trendChart.options.scales.x.grid.color=gridColor;trendChart.options.scales.y.grid.color=gridColor;trendChart.options.scales.y.title.color=textColor;datasets.forEach((d,i)=>trendChart.setDatasetVisibility(i,!hiddenLabels.has(d.label)));trendChart.update('none');return}
         const ctx=document.getElementById('irrTrendChart').getContext('2d');
         trendChart=new Chart(ctx,{type:'line',data:{labels:periods,datasets},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',onClick:onTrendLegendClick,labels:{usePointStyle:true,color:textColor,font:{family:'Bai Jamjuree',size:11},boxWidth:12}},tooltip:{animation:false,itemSort:(a,b)=>(Number(b.raw)||0)-(Number(a.raw)||0),callbacks:{label:context=>` ${context.dataset.label}: ${context.raw!==null&&Number.isFinite(Number(context.raw))?Number(context.raw).toFixed(3):'-'} kWh/m²`}}},scales:{x:{ticks:{color:textColor,font:{family:'Bai Jamjuree'}},grid:{color:gridColor}},y:{title:{display:true,text:'Average Global Irradiation (kWh/m²)',color:textColor,font:{family:'Bai Jamjuree'}},ticks:{color:textColor,font:{family:'Bai Jamjuree'}},grid:{color:gridColor},beginAtZero:true}}}});
         renderTrendPeerRows(trendChart);
