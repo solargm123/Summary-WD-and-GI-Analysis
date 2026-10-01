@@ -1292,6 +1292,6 @@ wireSidebarNav();renderSidebarProjects();renderHelp();refreshFilterLabels();setM
 window.addEventListener("resize",()=>{cancelAnimationFrame(renderFrame);renderFrame=requestAnimationFrame(()=>{if(analyticsView==="incident")renderTrend();else if(analyticsView==="alarm")renderAlarmOverview()})});window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue=""}});
 applyLanguage();syncSidebarUI();updateCapacityInfo();markDirty(false);setControls(false);renderKPIs();renderAlarmOverview();updateDataHealthUI();
 </script>
-<script src="solar-controls.js?v=20261001-2"></script>
+<script src="solar-controls.js?v=20261001-3"></script>
 </body>
 </html>

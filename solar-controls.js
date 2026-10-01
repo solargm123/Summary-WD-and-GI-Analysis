@@ -6,7 +6,7 @@
   const theme=()=>root.dataset.theme||root.dataset.fsTheme||(root.classList.contains('dark')?'dark':'light');
   const set=(node,key,value)=>{if(node.getAttribute(key)!==value)node.setAttribute(key,value)};
   function mountSwitch(original,kind,choose,container=original){
-    if(!original)return;
+    if(!original || original.tagName!=='BUTTON' || !container || container===root || container===document.body || !container.parentElement)return;
     // Inline important wins legacy ID selectors that force old controls visible.
     container.classList.add('solar-native-control');
     container.style.setProperty('display','none','important');
@@ -38,9 +38,9 @@
       const light=document.getElementById('lightBtn');
       if(light)mountSwitch(light,'theme',()=>document.getElementById(theme()==='dark'?'lightBtn':'darkBtn').click(),light.parentElement);
     }else{
-      const languages=[...document.querySelectorAll('#languageButton,#langBtn,[data-fs-lang],#giHeaderActions button[onclick*="toggleGiLanguage"]')];
+      const languages=[...document.querySelectorAll('#languageButton,#langBtn,button[data-fs-lang],#giHeaderActions button[onclick*="toggleGiLanguage"]')];
       languages.forEach(b=>mountSwitch(b,'language',()=>{b.click();if(b.id==='languageButton'&&window.FusionUI)window.FusionUI.setLanguage(root.lang)}));
-      const themes=[...document.querySelectorAll('#themeButton,#themeBtn,[data-fs-theme],#giHeaderActions button[onclick*="setTheme"]')];
+      const themes=[...document.querySelectorAll('#themeButton,#themeBtn,button[data-fs-theme],#giHeaderActions button[onclick*="setTheme"]')];
       themes.forEach(b=>mountSwitch(b,'theme',()=>b.click()));
     }
     document.querySelectorAll('#exportExcelButton,#exportBtn,#saveBtn,header button[onclick*="export"],.topbar button[onclick*="export"]').forEach(b=>{
