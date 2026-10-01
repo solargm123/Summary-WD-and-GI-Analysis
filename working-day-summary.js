@@ -39,7 +39,7 @@ const WDReview = (() => {
   }
   function reviewedUncached(plant) {
     const value = review(plant);
-    if (value?.done !== true) return false;
+    if (value?.done !== true || value.again) return false;
     // Existing full-snapshot reviews remain valid until the next review action.
     return value.fingerprint === (value.fingerprint?.startsWith('h1:') ? currentFingerprint(plant) : fingerprint(plant));
   }
@@ -69,15 +69,11 @@ const WDReview = (() => {
   function reviewLabel(plant) { return reviewed(plant) ? text('เปิดตรวจอีกครั้ง','Reopen review') : review(plant)?.done ? text('ตรวจอีกครั้ง','Review again') : text('ตรวจเสร็จ','Mark reviewed'); }
   function reviewState(plant) { return reviewed(plant) ? 'done' : review(plant)?.done ? 'changed' : 'new'; }
   function reviewIcon(plant) { return reviewState(plant)==='done' ? 'fa-rotate-left' : reviewState(plant)==='changed' ? 'fa-rotate' : 'fa-circle-check'; }
-  function reviewButtonHtml(plant) { const done=reviewed(plant);return `<button type="button" class="wd-review-button" data-wd-review="${plant.id}" data-review-state="${reviewState(plant)}" aria-pressed="${done}" onclick="WDReview.toggleReview(${plant.id})" ${SolarCloud.roleCanEdit()?'':'disabled'}><i class="fa-solid ${reviewIcon(plant)}" aria-hidden="true"></i><span>${reviewLabel(plant)}</span></button>`; }
-  function detailBadge(plant) {
-    const state=reviewState(plant);
-    if (state==='new') return '';
-    const saved=SolarCloud.isSharedValueSaved(['overrides',reviewKey(plant)],reviews[reviewKey(plant)]);
-    const label=state==='changed' ? text('ข้อมูลเปลี่ยน','Changed') : saved ? text('ตรวจแล้ว','Reviewed') : text('รอบันทึก','Pending save');
-    const icon=state==='changed'?'fa-triangle-exclamation':saved?'fa-circle-check':'fa-clock';
-    return `<span class="wd-detail-review wd-detail-review-${state}${state==='done'&&!saved?' wd-detail-review-pending':''}" title="${label}"><i class="fa-solid ${icon}" aria-hidden="true"></i>${label}</span>`;
+  function reviewButtonHtml(plant) {
+    const state=reviewState(plant),label=state==='done'?text('ตรวจแล้ว','Reviewed'):state==='changed'?text('ตรวจอีกครั้ง','Review again'):text('ยังไม่ตรวจ','Not reviewed');
+    return `<button type="button" role="checkbox" class="wd-review-button wd-review-check" data-wd-review="${plant.id}" data-review-state="${state}" aria-checked="${state==='done'?'true':state==='changed'?'mixed':'false'}" aria-label="${label}" title="${label}" onclick="WDReview.toggleReview(${plant.id})" ${SolarCloud.roleCanEdit()?'':'disabled'}><i class="fa-solid ${state==='done'?'fa-check':state==='changed'?'fa-rotate-right':''}" aria-hidden="true"></i></button>`;
   }
+  function detailBadge(plant) {return reviewButtonHtml(plant)}
   // Ask before the first edit to a reviewed project in this page session; the choice is not stored.
   function guardReviewedEdit(event) {
     const control=event.target.closest('#tableBody input[type="number"],#tableBody select,#tableBody button[onclick^="openLossModal"],#tableBody button[onclick^="openNoteModal"],#sunHoursTarget,#inputSunHoursCustom,input[name="sunHoursMode"]');
@@ -107,7 +103,8 @@ const WDReview = (() => {
     if (!plant || !month() || !actor || !SolarCloud.roleCanEdit()) return;
     const metrics = calculatePlantMetrics(plant);
     if (!metrics.valid) { SolarCloud.notice(text('ยังตรวจเสร็จไม่ได้','Cannot mark reviewed'),text('กรุณาตรวจค่าคำนวณที่ไม่ถูกต้องก่อน','Please correct invalid calculation inputs first'));return; }
-    reviews[reviewKey(plant)] = JSON.stringify({done:!reviewed(plant),by:actor.name,userId:actor.userId,at:new Date().toISOString(),fingerprint:currentFingerprint(plant)});
+    const state=reviewState(plant);
+    reviews[reviewKey(plant)] = JSON.stringify({done:state!=='changed',again:state==='done',by:actor.name,userId:actor.userId,at:new Date().toISOString(),fingerprint:currentFingerprint(plant)});
     editApproved.delete(reviewKey(plant));
     editApproved.delete('@global:'+month());
     SolarCloud.scheduleSave('working_day_review');
@@ -126,7 +123,7 @@ const WDReview = (() => {
     });
     document.querySelectorAll('[data-wd-review]').forEach(node => {
       const plant = plants.get(node.dataset.wdReview);
-      if (plant) { node.dataset.reviewState=reviewState(plant);node.setAttribute('aria-pressed',String(reviewed(plant)));node.querySelector('i').className='fa-solid '+reviewIcon(plant);node.querySelector('span').textContent=reviewLabel(plant);node.disabled=!SolarCloud.roleCanEdit(); }
+      if (plant) { const html=reviewButtonHtml(plant);if(node.outerHTML!==html)node.outerHTML=html; }
     });
   }
   function onSaved(state, sent) {
@@ -189,7 +186,7 @@ const WDReview = (() => {
     const summaryPlants=reviewFilter==='all'?filtered:filtered.filter(plant=>reviewState(plant)===reviewFilter);
     const rows=summaryPlants.map(plant=>{
       const m=calculatePlantMetrics(plant,context);
-      return `<tr data-wd-plant="${plant.id}"><th scope="row">${escapeHtml(plant.name)}</th><td>${m.valid?number(m.shM1):'—'}</td><td class="wd-result">${m.valid?number(m.method1Days):'—'}</td><td>${m.valid?number(m.shM2):'—'}</td><td class="wd-result">${m.valid?number(m.method2Days):'—'}</td><td><small class="wd-project-status" data-wd-status="${plant.id}">${statusHtml(plant)}</small>${reviewButtonHtml(plant)}</td></tr>`;
+      return `<tr data-wd-plant="${plant.id}"><th scope="row">${escapeHtml(plant.name)}</th><td>${m.valid?number(m.shM1):'—'}</td><td class="wd-result ${plant.calculationMethod==='m1'?'wd-selected-m1':''}">${m.valid?number(m.method1Days):'—'}</td><td>${m.valid?number(m.shM2):'—'}</td><td class="wd-result ${plant.calculationMethod==='m2'?'wd-selected-m2':''}">${m.valid?number(m.method2Days):'—'}</td><td><small class="wd-project-status" data-wd-status="${plant.id}">${statusHtml(plant)}</small>${reviewButtonHtml(plant)}</td></tr>`;
     }).join('');
     const choices=[['all',text('ทั้งหมด','All')],['done',text('ตรวจแล้ว','Reviewed')],['new',text('ยังไม่ตรวจ','Not reviewed')],['changed',text('ต้องตรวจซ้ำ','Review again')]];
     $('wdReviewFilterToolbar').innerHTML=`<label for="wdReviewFilter">${text('สถานะตรวจ','Review')}</label><select id="wdReviewFilter" onchange="WDReview.setReviewFilter(this.value)">${choices.map(([value,label])=>`<option value="${value}" ${reviewFilter===value?'selected':''}>${label} (${reviewCounts[value]})</option>`).join('')}</select>`;

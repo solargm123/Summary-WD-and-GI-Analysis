@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20260929-wd-save1"></script>
+    <script src="cloud-core.js?v=20261001-trend-clean"></script>
     <style> 
         html, body, body *:not(i), button, input, select, option, textarea, table, th, td, code {
             font-family: 'Bai Jamjuree', Tahoma, Arial, sans-serif !important;
@@ -1101,7 +1101,16 @@ body.wd-theme-switching *::after{
 .dark .wd-method-select:hover{background-color:#352953!important}
 .dark .wd-method-select option{background:#1e293b!important;color:#f8fafc!important}
 </style>
-</head>
+<style>
+.wd-review-check{width:26px!important;height:26px!important;min-height:26px!important;padding:0!important;border-radius:7px!important;display:inline-grid!important;place-items:center!important;border:1px solid #94a3b8!important;background:transparent!important;vertical-align:middle;margin-right:7px;color:#64748b!important}
+.wd-review-check i{margin:0!important;font-size:12px}
+.wd-review-check[data-review-state=done]{background:#dcfce7!important;border-color:#4ade80!important;color:#15803d!important}
+.wd-review-check[data-review-state=changed]{background:#ffedd5!important;border-color:#fb923c!important;color:#c2410c!important}
+.wd-selected-m1{background:#dbeafe!important;color:#1e40af!important;box-shadow:inset 3px 0 #3b82f6;font-weight:800!important}
+.wd-selected-m2{background:#d1fae5!important;color:#065f46!important;box-shadow:inset 3px 0 #10b981;font-weight:800!important}
+.dark .wd-selected-m1{background:#172b4d!important;color:#bfdbfe!important}
+.dark .wd-selected-m2{background:#10382d!important;color:#a7f3d0!important}
+</style></head>
 <body class="solar-wd wd-dock-collapsed bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen pb-2 transition-colors duration-200">
 
     <!-- Header Navigation -->
@@ -2750,7 +2759,7 @@ body.wd-theme-switching *::after{
 
         syncTableScrollbars();
     </script>
-    <script src="working-day-summary.js?v=20261001-pc90"></script>
+    <script src="working-day-summary.js?v=20261001-check-cycle"></script>
     <script>
       const workingDayCloudAdapter={
         presenceContext:()=>WDReview.presenceContext(),
