@@ -300,7 +300,15 @@ body{zoom:.75;min-height:calc(100vh / .75)}
 .threshold-box input{width:64px;min-height:28px;font:inherit;font-weight:700;padding:3px 6px}
 </style>
 <link rel="stylesheet" href="solar-controls.css?v=20261001-2">
-</head>
+<style id="giProvinceIconRefine">
+.province-filter-select{justify-content:flex-start;gap:9px}
+.province-filter-select>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.province-pin{display:inline-grid;place-items:center;width:26px;height:26px;flex:0 0 26px;font-size:13px!important;margin:0!important;border-radius:8px;background:color-mix(in srgb,var(--accent-blue) 12%,transparent);color:var(--accent-blue)}
+.province-filter-select>.fa-chevron-down{font-size:10px!important;margin:0!important;opacity:.7}
+.province-modal-heading{display:flex;align-items:center;gap:9px;min-width:0}
+#provinceModal .modal-header button,#trendControlsCard>h3 button{width:32px;height:32px;min-height:32px;padding:0;display:grid;place-items:center;flex-shrink:0;font-size:14px}
+#closeTrendChartButton{margin-left:auto;min-height:36px}
+</style></head>
 <body class="solar-gi">
 
 <div class="container">
@@ -377,7 +385,7 @@ body{zoom:.75;min-height:calc(100vh / .75)}
                     <button class="btn btn-edit" id="toggleEditBtn" onclick="checkFileAndRun(toggleEditMode)"><i class="fa-solid fa-pen-to-square"></i> แก้ไขค่า Irradiation</button>
                     <div class="province-filter-wrap">
                         <span data-solar-th="จังหวัด:" data-solar-en="Province:" style="font-size:.78rem;color:var(--text-muted);font-weight:600;">จังหวัด:</span>
-                        <button id="provinceStatusFilter" type="button" class="province-filter-select" onclick="openProvinceFilterPopup('table')"><span id="provinceStatusFilterLabel">ทุกจังหวัด</span><i class="fa-solid fa-chevron-down"></i></button>
+                        <button id="provinceStatusFilter" type="button" class="province-filter-select" onclick="openProvinceFilterPopup('table')"><i class="fa-solid fa-location-dot province-pin" aria-hidden="true"></i><span id="provinceStatusFilterLabel">ทุกจังหวัด</span><i class="fa-solid fa-chevron-down"></i></button>
                     </div>
                 </div>
             </div>
@@ -457,10 +465,11 @@ body{zoom:.75;min-height:calc(100vh / .75)}
 
             <div class="card">
                 <div class="trend-toolbar">
+                    <button type="button" id="closeTrendChartButton" class="btn btn-secondary" onclick="closeTrendChart()" aria-label="Close chart"><i class="fa-solid fa-xmark" aria-hidden="true"></i><span data-solar-th="ปิดกราฟ" data-solar-en="Close chart">ปิดกราฟ</span></button>
                     <label class="trend-mode-picker"><small data-solar-th="รูปแบบกราฟ" data-solar-en="Chart view">รูปแบบกราฟ</small><select id="trendGranularitySel" onchange="setTrendGranularity(this.value)"><option value="daily">รายวัน / Daily</option><option value="monthly">รายเดือน / Monthly</option><option value="yearly">รายปี / Yearly</option></select></label>
                     <button id="trendDatePickerButton" type="button" class="trend-popup-button" onclick="openTrendFilters('date')"><span><small id="trendDatePickerCaption">เลือกเดือน / ปี</small><strong id="trendDatePickerLabel">ทุกช่วงเวลา</strong></span><i class="fa-solid fa-calendar-days"></i></button>
                     <button id="trendPlantPickerButton" type="button" class="trend-popup-button" onclick="openTrendFilters('plants')"><span><small id="trendPlantPickerCaption">โครงการ</small><strong><span id="trendPlantPickerText">เลือกโครงการ</span> <b id="trendPlantPickerCount">0/0</b></strong></span><i class="fa-solid fa-list-check"></i></button>
-                    <div class="province-filter-wrap"><span data-solar-th="จังหวัด:" data-solar-en="Province:" style="font-weight:700">จังหวัด:</span><button id="trendProvinceSel" type="button" class="province-filter-select" onclick="openProvinceFilterPopup('trend')"><span id="trendProvinceLabel">ทุกจังหวัด</span><i class="fa-solid fa-chevron-down"></i></button></div>
+                    <div class="province-filter-wrap"><span data-solar-th="จังหวัด:" data-solar-en="Province:" style="font-weight:700">จังหวัด:</span><button id="trendProvinceSel" type="button" class="province-filter-select" onclick="openProvinceFilterPopup('trend')"><i class="fa-solid fa-location-dot province-pin" aria-hidden="true"></i><span id="trendProvinceLabel">ทุกจังหวัด</span><i class="fa-solid fa-chevron-down"></i></button></div>
                 </div>
                 <div class="chart-stats-grid">
                     <div class="stat-card">
@@ -546,7 +555,7 @@ body{zoom:.75;min-height:calc(100vh / .75)}
 <div class="modal-overlay" id="provinceModal" onclick="if(event.target===this)closeProvincePopup()">
     <div class="modal-content">
         <div class="modal-header">
-            <h3 id="provinceModalTitle">เลือกจังหวัด / Select province</h3>
+            <h3 class="province-modal-heading"><i class="fa-solid fa-location-dot province-pin" aria-hidden="true"></i><span id="provinceModalTitle">เลือกจังหวัด / Select province</span></h3>
             <button class="btn btn-secondary" onclick="closeProvincePopup()">✕</button>
         </div>
         <input id="provinceSearch" class="province-search" type="search" placeholder="ค้นหาจังหวัด / Search province" oninput="renderProvinceOptions()">
@@ -643,6 +652,7 @@ body{zoom:.75;min-height:calc(100vh / .75)}
     let giTabRequest=0;
     async function switchTab(tabId, btnEl) {
         const tabRequest=++giTabRequest;
+        closeTrendFilters();
         if(tabId!=='trendTab'&&trendChart){trendChart.destroy();trendChart=null}
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -690,6 +700,8 @@ body{zoom:.75;min-height:calc(100vh / .75)}
         document.getElementById('trendControlsCard').classList.add('open');document.getElementById('trendPopupBackdrop').classList.add('open');
         updateTrendPopupLanguage();if(mode==='plants'){document.getElementById('searchTrendPlant').value='';renderTrendPlantList()}
     }
+    function closeTrendChart(){const button=document.querySelector('.tab-btn[onclick*="tableTab"]');if(button)switchTab('tableTab',button)}
+    document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.getElementById('trendControlsCard').classList.contains('open'))closeTrendFilters()});
     function closeTrendFilters(){document.getElementById('trendControlsCard').classList.remove('open');document.getElementById('trendPopupBackdrop').classList.remove('open')}
 
     function toggleEditMode() {
@@ -1309,6 +1321,7 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
     }
 
     function updateTrendChart() {
+        if(!document.getElementById('trendTab').classList.contains('active'))return;
         const yearNode=document.getElementById('trendYearSel'),monthNode=document.getElementById('trendMonthSel');
         if(!yearNode||!monthNode)return;
         const selYears=Array.from(yearNode.selectedOptions).map(o=>o.value),selMonths=Array.from(monthNode.selectedOptions).map(o=>o.value);
