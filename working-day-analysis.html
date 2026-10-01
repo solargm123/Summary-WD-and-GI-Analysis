@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20261002-loss-mkt"></script>
+    <script src="cloud-core.js?v=20261002-pv-days"></script>
     <style> 
         html, body, body *:not(i), button, input, select, option, textarea, table, th, td, code {
             font-family: 'Bai Jamjuree', Tahoma, Arial, sans-serif !important;
@@ -1768,7 +1768,7 @@ body.wd-theme-switching *::after{
             if (!plant) return;
             currentNotePlantId = id;
             document.getElementById('noteModalTitle').textContent = `${currentLanguage === 'th' ? 'หมายเหตุ' : 'Note'} – ${plant.name}`;
-            document.getElementById('noteTextarea').value = plant.note || '';
+            document.getElementById('noteTextarea').value = WDPeriod.note(plant);
             document.getElementById('noteModal').classList.remove('hidden');
         }
 
@@ -1776,7 +1776,7 @@ body.wd-theme-switching *::after{
 
         function saveProjectNote() {
             const plant = plantData.find(p => p.id === currentNotePlantId);
-            if (plant) plant.note = document.getElementById('noteTextarea').value.trim();
+            if (plant) {const value=document.getElementById('noteTextarea').value.trim(),auto=WDPeriod.firstNote(plant);plant.note=auto?value.split(auto).join('').trim():value;}
             closeNoteModal();
             calculateAndRender();
         }
@@ -2007,6 +2007,7 @@ body.wd-theme-switching *::after{
                 aggregateDataByMonth(val);
                 applyMonthPlantState(val);
                 activeMonthKey = val;
+                WDPeriod.addFirstNotes();
                 calculateAndRender();
             }
         }
@@ -2215,7 +2216,7 @@ body.wd-theme-switching *::after{
                 const recordKey = `${monthKey}|${fileDay ?? 'none'}|${normalizedName.toLowerCase()}`;
                 if (parsedKeys && parsedKeys.has(recordKey)) continue;
                 if (parsedKeys) parsedKeys.add(recordKey);
-                rawRecordsByFile.push({ projectId:null, fileName, name: normalizedName, cap, pv, specEnergy, loss, lossAvailable:lossIdx>=0&&row[lossIdx]!=null&&String(row[lossIdx]).trim()!=='', recordDay: fileDay, monthKey });
+                rawRecordsByFile.push({ projectId:null, fileName, name: normalizedName, cap, pv, pvAvailable:row[pvIdx]!=null&&String(row[pvIdx]).trim()!==''&&Number.isFinite(pv)&&/[-+]?[0-9]*\.?[0-9]+/.test(String(row[pvIdx])), specEnergy, loss, lossAvailable:lossIdx>=0&&row[lossIdx]!=null&&String(row[lossIdx]).trim()!=='', recordDay: fileDay, monthKey });
                 added++;
             }
 
@@ -2258,6 +2259,7 @@ body.wd-theme-switching *::after{
                 if (rec.recordDay !== null) {
                     aggregated[key].dailyMap[rec.recordDay] = {
                         pv: rec.pv,
+                        pvAvailable:rec.pvAvailable,
                         specEnergy: rec.specEnergy,
                         loss: rec.loss,
                         lossAvailable: rec.lossAvailable,
@@ -2664,7 +2666,7 @@ body.wd-theme-switching *::after{
                                 <option value="m2" ${item.calculationMethod === 'm2' ? 'selected' : ''}>${currentLanguage === 'th' ? 'วิธีที่ 2' : 'Method 2'}</option>
                                 <option value="other" ${item.calculationMethod === 'other' ? 'selected' : ''}>${currentLanguage === 'th' ? 'อื่นๆ' : 'Other'}</option>
                             </select><small class="text-[9px] ${item.methodSource==='auto'?'text-violet-500':'text-slate-400'}">${item.methodSource==='auto'?'Auto from MKT':'Manual'}</small></div>
-                            <button onclick="openNoteModal(${item.id})" class="${item.note ? 'bg-amber-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'} border border-slate-300 dark:border-slate-700 rounded px-2 py-1.5" title="Note"><i class="fa-solid fa-note-sticky"></i></button>
+                            <button onclick="openNoteModal(${item.id})" class="${WDPeriod.note(item) ? 'bg-amber-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'} border border-slate-300 dark:border-slate-700 rounded px-2 py-1.5" title="Note"><i class="fa-solid fa-note-sticky"></i></button>
                         </div>
                     </td>
                     </tr>`});
@@ -2746,9 +2748,9 @@ body.wd-theme-switching *::after{
                     [headers.m2Formula]: '=MIN(Days,MAX(0,Days-((MonthlyLoss*LossFactor)/Capacity/SunHoursM2)))',
                     [headers.m2Explain]: `${n(m.daysInMonth)}-((${n(m.monthlyLossEnergy)}*${n(m.lossFactor)})/${n(m.cap)}/${n(m.shM2)}) = ${n(m.method2Days)}`,
                     [headers.selectedMethod]: item.calculationMethod === 'm1' ? (th ? 'วิธีที่ 1' : 'Method 1') : item.calculationMethod === 'm2' ? (th ? 'วิธีที่ 2' : 'Method 2') : (th ? 'อื่นๆ' : 'Other'),
-                    [headers.note]: item.note || ''
-                    , [th?'วันที่เริ่มคำนวณ':'Calculation start']:WDPeriod.scope(item)?.confirmed?document.getElementById('monthSelect').value+'-'+String(WDPeriod.scope(item).start).padStart(2,'0'):''
-                    , [th?'วันที่สิ้นสุดคำนวณ':'Calculation end']:WDPeriod.scope(item)?.confirmed?document.getElementById('monthSelect').value+'-'+String(WDPeriod.scope(item).end).padStart(2,'0'):''
+                    [headers.note]: WDPeriod.note(item)
+                    , [th?'วันที่เริ่มคำนวณ':'Calculation start']:WDPeriod.dayList(item).length?document.getElementById('monthSelect').value+'-'+String(WDPeriod.dayList(item)[0]).padStart(2,'0'):''
+                    , [th?'วันที่สิ้นสุดคำนวณ':'Calculation end']:WDPeriod.dayList(item).length?document.getElementById('monthSelect').value+'-'+String(WDPeriod.dayList(item).slice(-1)[0]).padStart(2,'0'):''
                     , [th?'วันทำงานที่เลือก':'Final Working days']:item.calculationMethod==='other'?(m.manualValid?m.manualDays:null):m.valid?(item.calculationMethod==='m1'?m.method1Days:m.method2Days):null
                     , [th?'เหตุผล Manual':'Manual reason']:WDPeriod.scope(item)?.manualReason||''
                     , [th?'เหตุผลช่วงวันที่':'Period reason']:WDPeriod.scope(item)?.reason||''
@@ -2793,8 +2795,8 @@ body.wd-theme-switching *::after{
 
         syncTableScrollbars();
     </script>
-    <script src="working-day-summary.js?v=20261002-loss-mkt"></script>
-    <script src="working-day-period.js?v=20261002-loss-mkt"></script>
+    <script src="working-day-summary.js?v=20261002-pv-days"></script>
+    <script src="working-day-period.js?v=20261002-pv-days"></script>
     <script>
       const workingDayCloudAdapter={
         presenceContext:()=>WDReview.presenceContext(),

@@ -29,3 +29,13 @@ The old page ignores `@wdscope:` entries; existing day-count/loss settings remai
 Run `npm ci --prefix tests` then `npm test --prefix tests`. Tests cover legacy M1/M2, prior-history vs first report, inclusive COD, excluded dates including late-month loss, trial/COD separation, Manual bounds/reason, review invalidation, capture/restore/month isolation, original-value reset, missing daily Loss, editor/viewer, TH/EN, Excel column/formula mapping, and compact metadata integration.
 
 Known limitations: first recorded date is a suggestion, not a confirmed COD. Name matching is exact after Unicode/whitespace normalization; unmatched or renamed projects remain unverified. No automatic reconstruction of absent daily data or prorating of monthly-only Loss.
+
+
+## PV Yield day-count release (2026-10-02)
+Backup branch: `backup/working-day-before-pv-days-20261002`.
+To restore the UI and previous day-count behavior, copy `working-day-analysis.html`,
+`working-day-period.js`, and `working-day-summary.js` from this branch into a new commit
+on main. Restore the Working Day URL cache key in `cloud-core.js`; preserve other pages.
+Raw records, legacy monthly day overrides, and original loss dates remain unchanged.
+New calendar confirmations use the existing per-project/month scope and record original
+legacy values. Any confirmations made after release must be reviewed when rolling back.
