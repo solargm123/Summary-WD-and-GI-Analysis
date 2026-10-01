@@ -1080,6 +1080,27 @@ body.wd-theme-switching *::after{
 
 <link rel="stylesheet" href="working-day-summary.css?v=20260928-8">
 <link rel="stylesheet" href="solar-controls.css?v=20261001-2">
+<style id="wd-pc90">
+@media(min-width:1024px){
+ body.solar-wd{zoom:.9;height:calc(100dvh / .9)!important;min-height:calc(100dvh / .9)!important}
+ #lossModal,#monthYearModal,#mktFilterModal,#formulaModal,#projectSelectorModal,#formulaGuideModal,#methodProjectsModal,#noteModal{zoom:calc(1 / .9);padding:20px!important}
+}
+#projectSelectorModal{backdrop-filter:none!important}
+#projectSelectorModal>div{width:min(560px,calc(100vw - 40px))!important;max-width:560px!important;max-height:calc(100dvh - 48px)!important;padding:18px!important;display:flex;flex-direction:column;gap:12px;overflow:hidden!important}
+#projectSelectorModal>div>*{margin-top:0!important;flex-shrink:0}
+#projectSelectorTitle{font-size:15px;line-height:1.4}
+#projectSelectorModal h3{min-width:0;overflow-wrap:anywhere}
+#projectSelectorModal button{min-height:34px;flex-shrink:0}
+#projectSelectorList{flex:1 1 auto!important;min-height:0;max-height:min(46dvh,360px)!important;overflow:auto!important;overscroll-behavior:contain;scrollbar-gutter:stable}
+#projectSelectorList label{min-width:0;overflow-wrap:anywhere}
+.wd-method-select{appearance:none!important;min-width:106px;max-width:100%;min-height:32px!important;border-radius:9px!important;padding:6px 28px 6px 10px!important;font-size:12px!important;font-weight:700!important;line-height:1.4;border:1px solid #c4b5fd!important;background-color:#f5f3ff!important;color:#5b21b6!important;color-scheme:light!important;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237c3aed' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")!important;background-repeat:no-repeat!important;background-position:right 10px center!important;cursor:pointer}
+.wd-method-select:hover{background-color:#ede9fe!important;border-color:#a78bfa!important}
+.wd-method-select:focus-visible{outline:2px solid #8b5cf6!important;outline-offset:2px;box-shadow:none!important}
+.wd-method-select option{background:#ffffff!important;color:#334155!important}
+.dark .wd-method-select{background-color:#292044!important;color:#ede9fe!important;border-color:#6d589b!important;color-scheme:dark!important}
+.dark .wd-method-select:hover{background-color:#352953!important}
+.dark .wd-method-select option{background:#1e293b!important;color:#f8fafc!important}
+</style>
 </head>
 <body class="solar-wd wd-dock-collapsed bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen pb-2 transition-colors duration-200">
 
@@ -1266,7 +1287,7 @@ body.wd-theme-switching *::after{
         <!-- Main Engineering Data Table -->
         <div id="wdTableCard" class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-colors duration-200">
             <div class="wd-summary-tabs" role="tablist" aria-label="Working Day">
-                <button id="wdDetailsTab" role="tab" aria-selected="true" aria-controls="tableScrollContainer" onclick="WDReview.setTab('details')"><i class="fa-solid fa-table-cells" aria-hidden="true"></i><span>รายละเอียดและคำนวณ</span></button>
+                <button id="wdDetailsTab" role="tab" aria-selected="true" aria-controls="tableScrollContainer" onclick="WDReview.setTab('details')"><i class="fa-solid fa-table-cells" aria-hidden="true"></i><span>คำนวณ</span></button>
                 <button id="wdSummaryTab" role="tab" aria-selected="false" aria-controls="wdSummaryPanel" onclick="WDReview.setTab('summary')"><i class="fa-solid fa-list-check" aria-hidden="true"></i><span>สรุปวันทำงาน</span></button>
             </div>
             <div id="wdSearchStatus" class="wd-search-status" hidden></div>
@@ -2729,7 +2750,7 @@ body.wd-theme-switching *::after{
 
         syncTableScrollbars();
     </script>
-    <script src="working-day-summary.js?v=20261001-opt-controls"></script>
+    <script src="working-day-summary.js?v=20261001-pc90"></script>
     <script>
       const workingDayCloudAdapter={
         presenceContext:()=>WDReview.presenceContext(),
