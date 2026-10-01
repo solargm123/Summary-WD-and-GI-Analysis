@@ -162,6 +162,7 @@ const WDReview = (() => {
   function render(filtered,context){return withReviewScope(()=>renderScoped(filtered,context))}
   function renderScoped(filtered, context) {
     const summary = activeTab === 'summary';
+    if($('wdCheckingHeader'))$('wdCheckingHeader').textContent=text('ตรวจ','Check');
     $('wdDetailsTab').querySelector('span').textContent=text('คำนวณ','Calculate');
     $('wdSummaryTab').querySelector('span').textContent=text('สรุปวันทำงาน','Working day summary');
     $('wdDetailsTab').setAttribute('aria-selected',String(!summary));
