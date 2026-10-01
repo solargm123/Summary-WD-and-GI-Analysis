@@ -260,6 +260,7 @@
 #giResourcePager button{background:var(--card-bg);color:var(--text-main);border:1px solid var(--card-border);border-radius:6px;padding:3px 10px;cursor:pointer}
 #giResourcePager button:disabled{opacity:.35;cursor:default}#giResourcePager small{color:var(--text-muted)}
 </style><style id="giDesktopTable20261001">
+body{zoom:.75;min-height:calc(100vh / .75)}
 .container,.tab-content,.table-card{min-width:0;max-width:100%}
 .table-card{padding:12px}
 #mainTableContainer{min-height:0;height:var(--gi-table-height,60vh);max-height:none;max-width:100%;overscroll-behavior:contain;scrollbar-gutter:stable}
@@ -702,7 +703,8 @@
         const table = document.getElementById('resultTable');
         if (!table) return;
         const available=window.innerHeight-Math.max(16,mainTableContainer.getBoundingClientRect().top)-28;
-        const height=Math.max(180,Math.min(window.innerHeight*.72,available));
+        const pageZoom=parseFloat(getComputedStyle(document.body).zoom)||1;
+        const height=Math.max(180,Math.min(window.innerHeight*.72,available)/pageZoom);
         const value=Math.round(height)+'px';
         if(mainTableContainer.style.getPropertyValue('--gi-table-height')!==value)mainTableContainer.style.setProperty('--gi-table-height',value);
         // Match scroll ranges even when the table has a vertical scrollbar.
