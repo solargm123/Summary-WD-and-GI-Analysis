@@ -177,6 +177,19 @@
 #gi-map-module .gimap-cluster-dot{display:flex;align-items:center;justify-content:center;box-sizing:border-box;border-radius:50%;background:var(--dot-color);border:2px solid white;color:#fff;font-size:12px;font-weight:700;box-shadow:0 2px 6px #15212940}
 #gi-map-module .gimap-cluster-dot.selected{outline:3px solid #367bf580}
 </style>
+<style>
+#gi-map-module .gimap-marker-label{max-width:150px;padding:5px 7px;border-radius:10px}
+#gi-map-module .gimap-marker-label span{font-size:18px}
+#gi-map-module .gimap-marker-label.compact span{font-size:16px}
+#gi-map-module .gimap-marker-label.tiny span{font-size:14px}
+#gi-map-module .gimap-marker-label.tiny{padding:3px 5px;gap:4px}
+#gi-map-module .gimap-marker-label .pin{width:8px;height:8px;flex-basis:8px}
+#gi-map-module .gimap-view-controls{position:absolute;top:115px;left:12px;z-index:950;display:flex;gap:5px}
+#gi-map-module .gimap-view-controls button{padding:5px 9px;font-size:10px;background:#fff;box-shadow:0 2px 8px #172a3a20}
+#gi-map-module.hide-sidebar .gimap-app{grid-template-columns:minmax(0,1fr)}
+#gi-map-module.hide-sidebar .gimap-sidebar,#gi-map-module.hide-topbar .gimap-topbar,#gi-map-module.hide-timeline .gimap-timeline{display:none}
+#gi-map-module.hide-topbar .gimap-view-controls{top:12px}
+</style>
 </head>
 
 <body style="margin:0;height:100vh">
@@ -242,6 +255,11 @@
     </aside>
 
     <main class="gimap-main">
+      <nav class="gimap-view-controls" aria-label="แสดงหรือซ่อนส่วนประกอบ">
+        <button class="gimap-btn" data-view-toggle="sidebar" aria-expanded="true">ซ่อนตัวกรอง</button>
+        <button class="gimap-btn" data-view-toggle="topbar" aria-expanded="true">ซ่อนสรุป</button>
+        <button class="gimap-btn" data-view-toggle="timeline" aria-expanded="true">ซ่อนเดือน</button>
+      </nav>
       <div class="gimap-map" data-role="map"></div>
 
       <div class="gimap-map-error" data-role="map-error">
@@ -547,7 +565,7 @@
   }
 
   function markerHTML(p,zoom,st,isSelected,isPeer,isDim){
-    const v=gi(p),mode=zoom<=6?"tiny":zoom<=8?"compact":"full";
+    const v=gi(p),mode=zoom<=9?"tiny":zoom<=11?"compact":"full";
     return `<div class="gimap-marker-label ${mode} ${isSelected?"selected":""} ${isPeer?"peer-marker":""} ${isDim?"dim":""}">
       <i class="pin" style="background:${st.color}"></i>
       <div class="txt"><b>${mode==="full"?esc(p.name):""}</b><span>${fmtGI(v)}</span>${mode==="full"&&v!==null?"<small>kWh/m²/day</small>":""}</div>
@@ -638,7 +656,7 @@
       (analysis?.peers||[]).forEach(x=>{if(!renderList.some(p=>p.id===x.project.id))renderList.push(x.project)});
     }
 
-    if(zoom<=8){
+    if(zoom<8){
       const groups=[];
       for(const p of renderList.filter(validProject)){const pixel=map.latLngToLayerPoint([p.lat,p.lng]);let group=groups.find(g=>Math.hypot(g.x-pixel.x,g.y-pixel.y)<=55);if(!group){group={x:pixel.x,y:pixel.y,projects:[]};groups.push(group)}if(!group.projects.some(q=>q.id===p.id))group.projects.push(p)}
       for(const group of groups){const projects=group.projects,count=projects.length,center=[projects.reduce((s,p)=>s+p.lat,0)/count,projects.reduce((s,p)=>s+p.lng,0)/count];
@@ -654,8 +672,8 @@
     renderList.filter(validProject).forEach(p=>{
       const st=statusFor(p),isSelected=p.id===String(state.selectedId),isPeer=peerIds.has(p.id);
       const isDim=state.selectedId!=null&&!isSelected&&!isPeer;
-      const icon=L.divIcon({className:"",html:markerHTML(p,zoom,st,isSelected,isPeer,isDim),iconSize:[175,38],iconAnchor:[10,19]});
-      const screen=map.latLngToLayerPoint([p.lat,p.lng]);let group=occupied.find(x=>Math.abs(x.x-screen.x)<(zoom<=8?70:175)&&Math.abs(x.y-screen.y)<40);if(!group){group={x:screen.x,y:screen.y,count:0};occupied.push(group)}const index=group.count++,offset=Math.floor(index/3)*44,dx=(index%3)*(zoom<=8?80:180);icon.options.iconAnchor=[10-dx,19+offset];if(offset||dx){const label=map.layerPointToLatLng([screen.x+dx,screen.y-offset]);L.polyline([[p.lat,p.lng],label],{color:'#718096',weight:1,opacity:.65,interactive:false}).addTo(markerLayer)}
+      const icon=L.divIcon({className:"",html:markerHTML(p,zoom,st,isSelected,isPeer,isDim),iconSize:[zoom<10?86:zoom<12?112:150,zoom<10?28:zoom<12?34:46],iconAnchor:[10,19]});
+      const screen=map.latLngToLayerPoint([p.lat,p.lng]);let group=occupied.find(x=>Math.abs(x.x-screen.x)<(zoom<10?90:zoom<12?116:155)&&Math.abs(x.y-screen.y)<(zoom<10?30:46));if(!group){group={x:screen.x,y:screen.y,count:0};occupied.push(group)}const index=group.count++,offset=Math.floor(index/3)*(zoom<10?32:48),dx=(index%3)*(zoom<10?94:zoom<12?120:160);icon.options.iconAnchor=[10-dx,19+offset];if(offset||dx){const label=map.layerPointToLatLng([screen.x+dx,screen.y-offset]);L.polyline([[p.lat,p.lng],label],{color:'#718096',weight:1,opacity:.65,interactive:false}).addTo(markerLayer)}
       const m=L.marker([p.lat,p.lng],{icon,zIndexOffset:isSelected?1000:isPeer?500:0}).addTo(markerLayer);
       m.bindTooltip(hoverHTML(p,st),{direction:"top",offset:[0,-16],opacity:1});
       m.on("click",()=>{
@@ -700,6 +718,12 @@
     markerLayer=L.layerGroup().addTo(map);
     compareLayer=L.layerGroup().addTo(map);
     map.on("zoomend",()=>renderMarkers());
+    root.querySelectorAll('[data-view-toggle]').forEach(button=>{button.onclick=()=>{
+      const key=button.dataset.viewToggle,hidden=root.classList.toggle('hide-'+key);
+      button.setAttribute('aria-expanded',String(!hidden));
+      button.textContent=(hidden?'แสดง':'ซ่อน')+({sidebar:'ตัวกรอง',topbar:'สรุป',timeline:'เดือน'}[key]);
+      requestAnimationFrame(()=>{map.invalidateSize();renderMarkers()});
+    }});
   }
 
   function clearFilters(){
@@ -867,8 +891,8 @@
 })(window);
 </script>
 
-<script src="gi-map-v4-live.js?v=20261002-map-cluster1"></script>
-<script src="gi-map-location-ui.js?v=20261002-map-cluster1"></script>
+<script src="gi-map-v4-live.js?v=20261002-map-zoom2"></script>
+<script src="gi-map-location-ui.js?v=20261002-map-zoom2"></script>
 
 <!--
 =========================================================
