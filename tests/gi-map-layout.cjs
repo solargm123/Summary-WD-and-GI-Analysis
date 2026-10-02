@@ -1,11 +1,3 @@
-const fs=require('fs'),vm=require('vm'),assert=require('assert/strict'),{JSDOM}=require('jsdom');
-const html=fs.readFileSync('map-release/global-irradiance-analysis.html','utf8');
-const dom=new JSDOM(html,{runScripts:'outside-only'}),w=dom.window,d=w.document;
-const tabs=[...d.querySelectorAll('.nav-tabs .tab-btn')].map(b=>b.getAttribute('onclick'));
-assert.ok(tabs.findIndex(s=>s.includes('mapTab'))>tabs.findIndex(s=>s.includes('trendTab')));
-const ids=[...d.querySelectorAll('[id]')].map(e=>e.id);assert.equal(ids.length,new Set(ids).size);
-assert.ok(d.querySelector('#giMapExplorer #giMapSearch'));assert.ok(d.querySelector('#giMapExplorer #giMapMonth'));
-vm.runInContext(fs.readFileSync('map-release/gi-map.js','utf8'),dom.getInternalVMContext());
-w.GiMap.togglePanel();assert.equal(d.getElementById('giMapExplorer').hidden,true);assert.equal(d.getElementById('giMapPanelToggle').getAttribute('aria-expanded'),'false');
-w.GiMap.togglePanel();assert.equal(d.getElementById('giMapExplorer').hidden,false);assert.equal(d.getElementById('giMapPanelToggle').getAttribute('aria-expanded'),'true');
-dom.window.close();console.log('PASS: tab order, unique IDs, search/month placement, panel collapse and ARIA state.');
+// V4 layout is locked to the uploaded source; verify isolation/navigation instead.
+require('./gi-map-v4.cjs');
+require('./gi-map-launcher.cjs');

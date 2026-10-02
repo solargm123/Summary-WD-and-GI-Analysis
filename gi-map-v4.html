@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Global Irradiance Map — V4 Integration Ready</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+<style>
+/* =========================================================
+   GI MAP MODULE — NAMESPACED CSS
+   All selectors are scoped under #gi-map-module
+   ========================================================= */
+#gi-map-module{
+  --bg:#f3f6f8;--panel:rgba(255,255,255,.93);--text:#152129;--muted:#6b7882;
+  --line:#e4eaee;--shadow:0 18px 46px rgba(23,42,58,.13);
+  --green:#25a66a;--orange:#f39a35;--red:#df5361;--gray:#98a3ab;--blue:#367bf5;--dark:#172a3a;
+  width:100%;height:100%;min-height:680px;position:relative;overflow:hidden;
+  font-family:"Bai Jamjuree",system-ui,sans-serif;font-weight:600;color:var(--text);background:var(--bg);
+}
+#gi-map-module *{box-sizing:border-box}
+#gi-map-module button,#gi-map-module input,#gi-map-module select{font:inherit}
+#gi-map-module button{font-weight:700}
+
+#gi-map-module .gimap-app{height:100%;display:grid;grid-template-columns:minmax(280px,310px) minmax(0,1fr)}
+#gi-map-module .gimap-sidebar{padding:16px;border-right:1px solid var(--line);background:rgba(248,250,252,.97);overflow:auto;z-index:900;scrollbar-width:thin}
+#gi-map-module .gimap-brand{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+#gi-map-module .gimap-logo{width:40px;height:40px;flex:0 0 40px;border-radius:13px;display:grid;place-items:center;color:#fff;font-size:15px;font-weight:700;background:linear-gradient(135deg,#172a3a,#367bf5);box-shadow:0 8px 20px rgba(54,123,245,.22)}
+#gi-map-module .gimap-brand h1{margin:0;font-size:clamp(14px,1.1vw,17px);line-height:1.15;font-weight:700}
+#gi-map-module .gimap-brand small{display:block;margin-top:3px;color:var(--muted);font-size:10px;font-weight:600}
+#gi-map-module .gimap-badge{display:inline-flex;align-items:center;padding:4px 7px;border-radius:999px;background:#fff3df;color:#a66a20;font-size:8px;font-weight:700;border:1px solid #f2dfbd;margin-left:5px}
+
+#gi-map-module .gimap-card{background:#fff;border:1px solid var(--line);border-radius:17px;padding:13px;margin-bottom:10px;box-shadow:0 4px 16px rgba(20,38,55,.035)}
+#gi-map-module .gimap-card-title{font-size:11px;font-weight:700;color:#5d6972;text-transform:uppercase;letter-spacing:.08em;margin-bottom:9px}
+#gi-map-module label{display:block;margin:8px 0 5px;font-size:11px;color:var(--muted);font-weight:700}
+#gi-map-module select,#gi-map-module input[type=text],#gi-map-module input[type=number]{width:100%;min-width:0;height:38px;border:1px solid var(--line);border-radius:11px;background:#fbfcfd;padding:0 10px;outline:none;color:var(--text);font-size:12px;font-weight:600}
+#gi-map-module select:focus,#gi-map-module input:focus{border-color:#9ebff8;box-shadow:0 0 0 3px rgba(54,123,245,.08)}
+#gi-map-module .gimap-region-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#gi-map-module .gimap-chip{min-width:0;height:34px;border:1px solid var(--line);background:#fff;border-radius:10px;font-size:11px;cursor:pointer;color:#53616b}
+#gi-map-module .gimap-chip.active{background:var(--dark);border-color:var(--dark);color:#fff}
+
+#gi-map-module .gimap-rule-summary{display:grid;gap:6px}
+#gi-map-module .gimap-rule-line{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px}
+#gi-map-module .gimap-rule-line b{font-size:11px;white-space:nowrap}
+#gi-map-module .gimap-dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
+#gi-map-module .gimap-rule-actions{display:grid;grid-template-columns:1fr auto;gap:7px;margin-top:10px}
+#gi-map-module .gimap-btn{height:35px;border:1px solid var(--line);border-radius:11px;background:#fff;padding:0 11px;cursor:pointer;font-size:11px;font-weight:700;color:#53616b}
+#gi-map-module .gimap-btn.primary{background:var(--dark);border-color:var(--dark);color:#fff}
+#gi-map-module .gimap-rule-note{font-size:10px;color:#89949c;line-height:1.45;margin-top:8px;font-weight:600}
+
+#gi-map-module .gimap-main{position:relative;min-width:0;overflow:hidden}
+#gi-map-module .gimap-map{position:absolute;inset:0;background:#dfe7eb}
+#gi-map-module .gimap-map-error{position:absolute;inset:0;z-index:1000;background:#eef2f4;display:none;place-items:center;text-align:center;padding:30px}
+#gi-map-module .gimap-map-error.show{display:grid}
+#gi-map-module .gimap-map-error .box{max-width:430px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:var(--shadow)}
+#gi-map-module .gimap-map-error h3{margin:0 0 8px;font-size:16px}
+#gi-map-module .gimap-map-error p{margin:0;color:var(--muted);font-size:12px;line-height:1.6}
+
+#gi-map-module .gimap-topbar{position:absolute;z-index:800;top:14px;left:14px;right:14px;display:flex;gap:9px;align-items:stretch;pointer-events:none}
+#gi-map-module .gimap-metrics{display:grid;grid-template-columns:repeat(5,minmax(100px,1fr));gap:8px;flex:1;min-width:0}
+#gi-map-module .gimap-metric,#gi-map-module .gimap-time-card{pointer-events:auto;background:var(--panel);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.9);border-radius:15px;box-shadow:var(--shadow)}
+#gi-map-module .gimap-metric{padding:10px 11px;min-width:0}
+#gi-map-module .gimap-metric small{display:block;color:var(--muted);font-size:9px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#gi-map-module .gimap-metric strong{display:block;margin-top:3px;font-size:clamp(16px,1.45vw,21px);line-height:1.08;font-weight:700}
+#gi-map-module .gimap-metric em{display:block;margin-top:2px;color:#8b969e;font-size:9px;font-style:normal;font-weight:600}
+#gi-map-module .green{color:var(--green)} #gi-map-module .orange{color:var(--orange)} #gi-map-module .red{color:var(--red)}
+#gi-map-module .gimap-time-card{width:132px;flex:0 0 132px;padding:10px 12px;background:rgba(23,42,58,.94);color:#fff;display:flex;flex-direction:column;justify-content:center}
+#gi-map-module .gimap-time-card small{font-size:9px;opacity:.72;font-weight:700}
+#gi-map-module .gimap-time-card strong{font-size:15px;margin-top:3px;line-height:1.15;font-weight:700}
+
+#gi-map-module .gimap-detail{position:absolute;z-index:850;right:14px;top:100px;width:min(350px,calc(100% - 28px));max-height:calc(100% - 220px);overflow:auto;display:none;background:rgba(255,255,255,.97);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.95);border-radius:20px;padding:14px;box-shadow:var(--shadow)}
+#gi-map-module .gimap-detail.show{display:block}
+#gi-map-module .gimap-close{float:right;width:28px;height:28px;border:0;border-radius:9px;background:#eff3f5;cursor:pointer;color:#50606b;font-size:17px}
+#gi-map-module .gimap-kicker{font-size:9px;font-weight:700;letter-spacing:.09em;color:#88939b}
+#gi-map-module .gimap-detail h3{margin:3px 34px 2px 0;font-size:15px;line-height:1.25;font-weight:700}
+#gi-map-module .gimap-sub{font-size:10px;color:var(--muted)}
+#gi-map-module .gimap-status-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px}
+#gi-map-module .gimap-status-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:700}
+#gi-map-module .gimap-confidence{font-size:10px;color:var(--muted);font-weight:700}
+#gi-map-module .gimap-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}
+#gi-map-module .gimap-kv{border:1px solid var(--line);border-radius:12px;padding:8px;min-width:0}
+#gi-map-module .gimap-kv small{display:block;color:var(--muted);font-size:9px;font-weight:700}
+#gi-map-module .gimap-kv strong{display:block;margin-top:2px;font-size:13px;line-height:1.15;font-weight:700;overflow:hidden;text-overflow:ellipsis}
+#gi-map-module .gimap-diverge{position:relative;height:9px;margin:12px 0 5px;background:#edf1f3;border-radius:999px;overflow:hidden}
+#gi-map-module .gimap-diverge::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;background:#7f8a92}
+#gi-map-module .gimap-diverge i{position:absolute;height:100%;top:0;border-radius:999px}
+#gi-map-module .gimap-scale{display:flex;justify-content:space-between;color:#8a959d;font-size:8px;font-weight:700}
+#gi-map-module .gimap-peer-title{margin-top:12px;font-size:10px;color:#5d6972;font-weight:700}
+#gi-map-module .gimap-peer-list{display:grid;gap:6px;margin-top:7px}
+#gi-map-module .gimap-peer{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;border:1px solid var(--line);border-radius:11px;padding:7px 8px;font-size:9px}
+#gi-map-module .gimap-peer b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}
+#gi-map-module .gimap-peer span{color:var(--muted);white-space:nowrap;font-weight:700}
+#gi-map-module .gimap-empty-peer{border:1px dashed var(--line);border-radius:11px;padding:10px;text-align:center;color:#89949c;font-size:10px}
+
+#gi-map-module .gimap-timeline{position:absolute;z-index:800;left:50%;transform:translateX(-50%);bottom:14px;width:min(900px,calc(100% - 34px));background:rgba(255,255,255,.95);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.95);border-radius:20px;padding:11px 13px;box-shadow:var(--shadow)}
+#gi-map-module .gimap-timeline-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+#gi-map-module .gimap-timeline-title{font-size:11px;font-weight:700}
+#gi-map-module .gimap-timeline-tools{display:flex;align-items:center;gap:6px}
+#gi-map-module .gimap-year-select{height:31px;width:auto;min-width:76px;padding:0 8px;font-size:10px;font-weight:700}
+#gi-map-module .gimap-month-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:4px}
+#gi-map-module .gimap-month-btn{height:35px;min-width:0;border:1px solid var(--line);border-radius:9px;background:#fff;cursor:pointer;color:#6f7b84;font-size:9px;font-weight:700;padding:0 2px;position:relative}
+#gi-map-module .gimap-month-btn.active{background:var(--dark);border-color:var(--dark);color:#fff}
+#gi-map-module .gimap-month-btn.no-data{opacity:.42}
+#gi-map-module .gimap-month-btn::after{content:"";position:absolute;left:50%;transform:translateX(-50%);bottom:4px;width:4px;height:4px;border-radius:50%;background:#b3bcc2}
+#gi-map-module .gimap-month-btn.active::after{background:#fff}
+#gi-map-module .gimap-month-btn.no-data::after{background:transparent;border:1px solid #aab4bb}
+#gi-map-module .gimap-timeline-legend{display:flex;gap:12px;margin-top:6px;color:#8a959d;font-size:8px;font-weight:700}
+#gi-map-module .gimap-tl-dot{width:5px;height:5px;border-radius:50%;background:#7f8a92;display:inline-block}.gimap-tl-dot.hollow{background:transparent!important;border:1px solid #9ba5ad}
+
+#gi-map-module .gimap-marker-label{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(255,255,255,.95);border-radius:13px;padding:6px 8px;box-shadow:0 8px 22px rgba(22,36,48,.17);white-space:nowrap;max-width:190px}
+#gi-map-module .gimap-marker-label .pin{width:11px;height:11px;flex:0 0 11px;border-radius:50%;box-shadow:0 0 0 3px rgba(255,255,255,.7)}
+#gi-map-module .gimap-marker-label .txt{min-width:0}
+#gi-map-module .gimap-marker-label b{display:block;font-size:10px;line-height:1.05;overflow:hidden;text-overflow:ellipsis}
+#gi-map-module .gimap-marker-label span{display:block;margin-top:2px;font-size:9px;color:#697780;font-weight:700}
+#gi-map-module .gimap-marker-label.compact b,#gi-map-module .gimap-marker-label.tiny b{display:none}
+#gi-map-module .gimap-marker-label.selected{outline:3px solid rgba(54,123,245,.28);transform:scale(1.03)}
+#gi-map-module .gimap-marker-label.peer-marker{outline:2px solid rgba(23,42,58,.15)}
+#gi-map-module .gimap-marker-label.dim{opacity:.25}
+#gi-map-module .leaflet-div-icon{background:transparent!important;border:0!important}
+#gi-map-module .leaflet-tooltip{border:0!important;border-radius:15px!important;padding:0!important;box-shadow:0 14px 35px rgba(22,36,48,.2)!important}
+#gi-map-module .gimap-hover-card{min-width:225px;padding:11px 12px}
+#gi-map-module .gimap-hover-card h4{margin:0 0 3px;font-size:12px;font-weight:700}
+#gi-map-module .gimap-hover-card p{margin:0;color:#6c7881;font-size:9px;font-weight:600}
+#gi-map-module .gimap-hover-row{display:flex;justify-content:space-between;gap:14px;margin-top:7px;font-size:9px;font-weight:700}
+#gi-map-module .gimap-hover-row b{font-size:11px}
+#gi-map-module .gimap-hover-note{margin-top:7px;padding-top:6px;border-top:1px solid #edf0f2;color:#8a959d;font-size:8px;line-height:1.4}
+
+#gi-map-module .gimap-empty-state{position:absolute;z-index:780;left:50%;top:50%;transform:translate(-50%,-50%);display:none;width:min(320px,calc(100% - 30px));background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px;text-align:center;box-shadow:var(--shadow)}
+#gi-map-module .gimap-empty-state.show{display:block}
+#gi-map-module .gimap-empty-state h3{margin:0 0 5px;font-size:14px}
+#gi-map-module .gimap-empty-state p{margin:0 0 10px;color:var(--muted);font-size:10px;line-height:1.5}
+
+#gi-map-module .gimap-settings-backdrop{position:absolute;inset:0;z-index:2000;background:rgba(16,28,38,.38);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px}
+#gi-map-module .gimap-settings-backdrop.show{display:flex}
+#gi-map-module .gimap-settings{width:min(460px,100%);background:#fff;border-radius:22px;border:1px solid var(--line);padding:16px;box-shadow:0 28px 70px rgba(16,28,38,.25)}
+#gi-map-module .gimap-settings-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+#gi-map-module .gimap-settings h2{margin:0;font-size:16px}
+#gi-map-module .gimap-settings .sub{font-size:10px;color:var(--muted);margin-top:3px}
+#gi-map-module .gimap-settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:13px}
+#gi-map-module .gimap-settings-footer{display:flex;justify-content:space-between;gap:8px;margin-top:14px}
+#gi-map-module .gimap-settings-footer .right{display:flex;gap:7px}
+#gi-map-module .gimap-validation{display:none;margin-top:9px;color:var(--red);font-size:10px;font-weight:700}
+#gi-map-module .gimap-validation.show{display:block}
+
+@media(max-width:1200px){
+  #gi-map-module .gimap-app{grid-template-columns:270px minmax(0,1fr)}
+  #gi-map-module .gimap-metrics{grid-template-columns:repeat(3,minmax(100px,1fr))}
+  #gi-map-module .gimap-metric:nth-child(4),#gi-map-module .gimap-metric:nth-child(5){display:none}
+  #gi-map-module .gimap-detail{top:142px}
+}
+@media(max-width:850px){
+  #gi-map-module .gimap-app{grid-template-columns:230px minmax(0,1fr)}
+  #gi-map-module .gimap-metrics{grid-template-columns:repeat(2,minmax(95px,1fr))}
+  #gi-map-module .gimap-metric:nth-child(3){display:none}
+  #gi-map-module .gimap-time-card{width:110px;flex-basis:110px}
+  #gi-map-module .gimap-month-grid{grid-template-columns:repeat(6,1fr)}
+  #gi-map-module .gimap-detail{top:130px;right:10px;width:310px;max-height:calc(100% - 245px)}
+}
+</style>
+</head>
+
+<body style="margin:0;height:100vh">
+
+<div id="gi-map-module">
+  <div class="gimap-app">
+    <aside class="gimap-sidebar">
+      <button class="gimap-btn" data-action="return-gi" style="margin-bottom:10px">← กลับ Global Irradiance Analysis</button>
+      <div class="gimap-brand">
+        <div class="gimap-logo">GI</div>
+        <div>
+          <h1>Global Irradiance Map</h1>
+          <small>Thailand Solar Performance View <span class="gimap-badge" data-role="data-badge">NO DATA</span></small>
+        </div>
+      </div>
+
+      <section class="gimap-card">
+        <div class="gimap-card-title">ค้นหาและกรองข้อมูล</div>
+        <input data-role="search" type="text" placeholder="ค้นหาชื่อโครงการ..."/>
+        <label>จังหวัด</label>
+        <select data-role="province"><option value="">ทุกจังหวัด</option></select>
+        <label>โครงการ</label>
+        <select data-role="project"><option value="">ทุกโครงการ</option></select>
+      </section>
+
+      <section class="gimap-card">
+        <div class="gimap-card-title">ภูมิภาค</div>
+        <div class="gimap-region-grid" data-role="region-chips">
+          <button class="gimap-chip active" data-region="">ทั้งหมด</button>
+          <button class="gimap-chip" data-region="เหนือ">เหนือ</button>
+          <button class="gimap-chip" data-region="อีสาน">อีสาน</button>
+          <button class="gimap-chip" data-region="กลาง">กลาง</button>
+          <button class="gimap-chip" data-region="ตะวันออก">ตะวันออก</button>
+          <button class="gimap-chip" data-region="ตะวันตก">ตะวันตก</button>
+          <button class="gimap-chip" data-region="ใต้">ใต้</button>
+        </div>
+      </section>
+
+      <section class="gimap-card">
+        <div class="gimap-card-title">Nearby Comparison</div>
+        <div class="gimap-rule-summary">
+          <div class="gimap-rule-line"><span>Radius</span><b data-role="summary-radius">20 km</b></div>
+          <div class="gimap-rule-line"><span>Method</span><b data-role="summary-method">Median</b></div>
+          <div class="gimap-rule-line"><span>Minimum Nearby</span><b data-role="summary-minpeers">2 projects</b></div>
+        </div>
+        <div class="gimap-rule-actions">
+          <button class="gimap-btn primary" data-action="open-settings">⚙ Customize</button>
+          <button class="gimap-btn" data-action="clear-selection">Clear</button>
+        </div>
+        <div class="gimap-rule-note">คลิกโครงการบนแผนที่เพื่อดูวงรัศมีและโครงการที่ถูกนำมาเปรียบเทียบ</div>
+      </section>
+
+      <section class="gimap-card">
+        <div class="gimap-card-title">สถานะเทียบพื้นที่ใกล้เคียง</div>
+        <div class="gimap-rule-summary">
+          <div class="gimap-rule-line"><span><i class="gimap-dot" style="background:var(--green)"></i>Normal</span><b data-role="legend-normal">≥ -5%</b></div>
+          <div class="gimap-rule-line"><span><i class="gimap-dot" style="background:var(--orange)"></i>Watch</span><b data-role="legend-watch">-10% ถึง &lt; -5%</b></div>
+          <div class="gimap-rule-line"><span><i class="gimap-dot" style="background:var(--red)"></i>Abnormal</span><b data-role="legend-abnormal">&lt; -10%</b></div>
+          <div class="gimap-rule-line"><span><i class="gimap-dot" style="background:var(--gray)"></i>No Comparison</span><b>&lt; minimum nearby</b></div>
+        </div>
+      </section>
+    </aside>
+
+    <main class="gimap-main">
+      <div class="gimap-map" data-role="map"></div>
+
+      <div class="gimap-map-error" data-role="map-error">
+        <div class="box">
+          <h3>ไม่สามารถโหลดแผนที่ได้</h3>
+          <p>Module นี้ใช้ Leaflet และ OpenStreetMap Tile กรุณาตรวจสอบการเชื่อมต่อหรือเปลี่ยน Tile Provider ในโปรแกรมหลัก</p>
+        </div>
+      </div>
+
+      <div class="gimap-topbar">
+        <div class="gimap-metrics">
+          <div class="gimap-metric"><small>GI เฉลี่ยที่แสดง</small><strong data-role="m-avg">—</strong><em>kWh/m²/day</em></div>
+          <div class="gimap-metric"><small>Compared</small><strong data-role="m-compared">—</strong><em data-role="m-compared-sub">projects</em></div>
+          <div class="gimap-metric"><small>Normal</small><strong class="green" data-role="m-normal">—</strong><em>projects</em></div>
+          <div class="gimap-metric"><small>Watch</small><strong class="orange" data-role="m-watch">—</strong><em>projects</em></div>
+          <div class="gimap-metric"><small>Abnormal</small><strong class="red" data-role="m-abnormal">—</strong><em>projects</em></div>
+        </div>
+        <div class="gimap-time-card">
+          <small>SELECTED PERIOD</small>
+          <strong data-role="period-label">—</strong>
+        </div>
+      </div>
+
+      <aside class="gimap-detail" data-role="detail">
+        <button class="gimap-close" data-action="close-detail">×</button>
+        <div data-role="detail-body"></div>
+      </aside>
+
+      <div class="gimap-empty-state" data-role="empty-state">
+        <h3>ไม่พบโครงการ</h3>
+        <p>ไม่มีข้อมูลตรงกับตัวกรองปัจจุบัน</p>
+        <button class="gimap-btn primary" data-action="clear-filters">Clear Filters</button>
+      </div>
+
+      <section class="gimap-timeline">
+        <div class="gimap-timeline-head">
+          <div class="gimap-timeline-title">Monthly Irradiance Timeline</div>
+          <div class="gimap-timeline-tools">
+            <span style="font-size:9px;color:var(--muted)">ปี</span>
+            <select class="gimap-year-select" data-role="year"></select>
+          </div>
+        </div>
+        <div class="gimap-month-grid" data-role="month-grid"></div>
+        <div class="gimap-timeline-legend">
+          <span><i class="gimap-tl-dot"></i>มีข้อมูล</span>
+          <span><i class="gimap-tl-dot hollow"></i>มีบางโครงการไม่มีข้อมูล</span>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="gimap-settings-backdrop" data-role="settings-backdrop">
+    <div class="gimap-settings">
+      <div class="gimap-settings-head">
+        <div>
+          <h2>Nearby Comparison Settings</h2>
+          <div class="sub">แก้ค่าแล้วกด Apply</div>
+        </div>
+        <button class="gimap-close" data-action="close-settings">×</button>
+      </div>
+
+      <div class="gimap-settings-grid">
+        <div><label>Comparison Radius (km)</label><input data-role="set-radius" type="number" min="1" max="200" step="1"/></div>
+        <div><label>Minimum Nearby Projects</label><input data-role="set-minpeers" type="number" min="1" max="20" step="1"/></div>
+        <div><label>Normal Threshold (%)</label><input data-role="set-normal" type="number" min="-100" max="100" step="0.5"/></div>
+        <div><label>Abnormal Below (%)</label><input data-role="set-abnormal" type="number" min="-100" max="100" step="0.5"/></div>
+        <div style="grid-column:1/-1">
+          <label>Comparison Method</label>
+          <select data-role="set-method">
+            <option value="median">Median — ลดผลจาก Outlier</option>
+            <option value="mean">Mean — ค่าเฉลี่ยทั่วไป</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="gimap-validation" data-role="validation"></div>
+
+      <div class="gimap-settings-footer">
+        <button class="gimap-btn" data-action="reset-settings">Reset Default</button>
+        <div class="right">
+          <button class="gimap-btn" data-action="cancel-settings">Cancel</button>
+          <button class="gimap-btn primary" data-action="apply-settings">Apply</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* =========================================================
+   GI MAP MODULE API
+   window.GIMap
+   ========================================================= */
+(function(global){
+  "use strict";
+
+  const ROOT_ID="gi-map-module";
+  const monthsTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  const monthsFull=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+
+  let root=null,map=null,markerLayer=null,compareLayer=null,bound=false;
+  let data=[];
+  let options={
+    tileUrl:"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    tileAttribution:"© OpenStreetMap",
+    dataLabel:"NO DATA",
+    onProjectSelect:null,
+    onPeriodChange:null,
+    onRulesChange:null
+  };
+
+  const state={
+    region:"",province:"",project:"",search:"",
+    year:null,month:0,selectedId:null,
+    rules:{radius:20,minPeers:3,normal:-10,abnormal:-20,method:"median"}
+  };
+
+  const $=(sel)=>root?.querySelector(sel);
+  const $$=(sel)=>[...(root?.querySelectorAll(sel)||[])];
+
+  function normalizeProject(raw,index){
+    const projectId=raw.projectId ?? raw.id ?? `P${index+1}`;
+    const projectName=raw.projectName ?? raw.name ?? `Project ${index+1}`;
+    const latitude=Number(raw.latitude ?? raw.lat);
+    const longitude=Number(raw.longitude ?? raw.lng);
+    const capacity=Number(raw.capacity ?? raw.capacityKwp ?? 0);
+
+    const irr={};
+
+    // Preferred production schema:
+    // irradiance: {"2026":{"01":4.5,"02":4.8}}
+    if(raw.irradiance && typeof raw.irradiance==="object"){
+      Object.entries(raw.irradiance).forEach(([year,months])=>{
+        irr[String(year)]={};
+        if(Array.isArray(months)){
+          months.forEach((v,i)=>{ irr[String(year)][String(i+1).padStart(2,"0")]=v; });
+        }else{
+          Object.entries(months||{}).forEach(([m,v])=>{
+            const key=String(Number(m)).padStart(2,"0");
+            irr[String(year)][key]=v;
+          });
+        }
+      });
+    }
+
+    // Compatibility adapter for old yearlyGI schema.
+    if(raw.yearlyGI && typeof raw.yearlyGI==="object"){
+      Object.entries(raw.yearlyGI).forEach(([year,arr])=>{
+        irr[String(year)] = irr[String(year)] || {};
+        (arr||[]).forEach((v,i)=>{ irr[String(year)][String(i+1).padStart(2,"0")]=v; });
+      });
+    }
+
+    return {
+      id:String(projectId),
+      name:String(projectName).replace(/[&<>"\']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","\'":"&#39;"}[c])),
+      province:String(raw.province ?? ""),
+      region:String(raw.region ?? ""),
+      lat:latitude,
+      lng:longitude,
+      capacity:Number.isFinite(capacity)?capacity:0,
+      irradiance:irr,
+      meta:raw.meta ?? null
+    };
+  }
+
+  function validProject(p){
+    return p && Number.isFinite(p.lat) && Number.isFinite(p.lng);
+  }
+
+  function setBadge(){
+    const badge=$('[data-role="data-badge"]');
+    if(badge) badge.textContent=options.dataLabel || (data.length?"LIVE DATA":"NO DATA");
+  }
+
+  function years(){
+    return [...new Set(data.flatMap(p=>Object.keys(p.irradiance||{}).map(Number)).filter(Number.isFinite))].sort((a,b)=>b-a);
+  }
+
+  function gi(p,year=state.year,month=state.month){
+    if(!p || year==null)return null;
+    const v=p.irradiance?.[String(year)]?.[String(month+1).padStart(2,"0")];
+    return Number.isFinite(Number(v)) ? Number(v) : null;
+  }
+
+  function hav(a,b){
+    const R=6371,dLat=(b.lat-a.lat)*Math.PI/180,dLon=(b.lng-a.lng)*Math.PI/180;
+    const la1=a.lat*Math.PI/180,la2=b.lat*Math.PI/180;
+    const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLon/2)**2;
+    return 2*R*Math.asin(Math.sqrt(h));
+  }
+
+  function median(vals){
+    const a=[...vals].sort((x,y)=>x-y),mid=Math.floor(a.length/2);
+    return a.length%2?a[mid]:(a[mid-1]+a[mid])/2;
+  }
+
+  function visibleProjects(){
+    const q=state.search.trim().toLowerCase();
+    return data.filter(p=>
+      (!state.region||p.region===state.region)&&
+      (!state.province||p.province===state.province)&&
+      (!state.project||String(p.id)===state.project)&&
+      (!q||p.name.toLowerCase().includes(q))
+    );
+  }
+
+  function nearby(p){
+    if(options.compare)return options.compare(p,state,data);
+    const targetGI=gi(p);
+    if(targetGI===null)return {eligible:false,reason:"no-data",peers:[],base:null,diff:null};
+
+    const peers=data
+      .filter(q=>q.id!==p.id && gi(q)!==null)
+      .map(q=>({project:q,distance:hav(p,q),gi:gi(q)}))
+      .filter(x=>x.distance<=state.rules.radius)
+      .sort((a,b)=>a.distance-b.distance);
+
+    if(peers.length<state.rules.minPeers)return {eligible:false,reason:"insufficient",peers,base:null,diff:null};
+
+    const vals=peers.map(x=>x.gi);
+    const base=state.rules.method==="median"?median(vals):vals.reduce((s,v)=>s+v,0)/vals.length;
+    const diff=base===0?null:(targetGI-base)/base*100;
+    return {eligible:diff!==null,reason:diff===null?"invalid-base":"ok",peers,base,diff};
+  }
+
+  function statusFor(p){
+    const n=nearby(p);
+    if(!n.eligible)return {key:"none",name:n.reason==="no-data"?"No Data":"No Comparison",color:"#98a3ab",analysis:n};
+    if(n.diff<state.rules.abnormal-1e-8)return {key:"abnormal",name:"Abnormal",color:"#df5361",analysis:n};
+    if(n.diff<=state.rules.normal+1e-8)return {key:"watch",name:"Watch",color:"#f39a35",analysis:n};
+    return {key:"normal",name:"Normal",color:"#25a66a",analysis:n};
+  }
+
+  function confidence(count){
+    if(count>=5)return "High";
+    if(count>=state.rules.minPeers)return "Medium";
+    return "Insufficient";
+  }
+
+  const fmtGI=v=>v===null?"No Data":v.toFixed(2);
+  const fmtDiff=v=>v===null?"—":`${v>0?"+":""}${v.toFixed(1)}%`;
+
+  function populateYears(){
+    const ys=years();
+    const el=$('[data-role="year"]');
+    if(!el)return;
+    if(!ys.length){
+      state.year=null;el.innerHTML='<option value="">No Data</option>';return;
+    }
+    if(!ys.includes(Number(state.year)))state.year=ys[0];
+    el.innerHTML=ys.map(y=>`<option value="${y}" ${y===Number(state.year)?"selected":""}>${y}</option>`).join("");
+  }
+
+  function populateFilters(){
+    const prov=[...new Set(data.filter(p=>!state.region||p.region===state.region).map(p=>p.province).filter(Boolean))].sort();
+    const provEl=$('[data-role="province"]');
+    provEl.innerHTML='<option value="">ทุกจังหวัด</option>'+prov.map(v=>`<option value="${v}" ${v===state.province?"selected":""}>${v}</option>`).join("");
+
+    const plist=data.filter(p=>(!state.region||p.region===state.region)&&(!state.province||p.province===state.province));
+    const projEl=$('[data-role="project"]');
+    projEl.innerHTML='<option value="">ทุกโครงการ</option>'+plist.map(p=>`<option value="${p.id}" ${String(p.id)===state.project?"selected":""}>${p.name}</option>`).join("");
+  }
+
+  function updateRuleSummary(){
+    $('[data-role="summary-radius"]').textContent=`${state.rules.radius} km`;
+    $('[data-role="summary-method"]').textContent=state.rules.method==="median"?"Median":"Mean";
+    $('[data-role="summary-minpeers"]').textContent=`${state.rules.minPeers} projects`;
+    $('[data-role="legend-normal"]').textContent=`≥ ${state.rules.normal}%`;
+    $('[data-role="legend-watch"]').textContent=`${state.rules.abnormal}% ถึง < ${state.rules.normal}%`;
+    $('[data-role="legend-abnormal"]').textContent=`< ${state.rules.abnormal}%`;
+  }
+
+  function monthComplete(m){
+    const arr=visibleProjects();
+    if(!arr.length)return false;
+    return arr.every(p=>gi(p,state.year,m)!==null);
+  }
+
+  function renderMonths(){
+    const grid=$('[data-role="month-grid"]');
+    grid.innerHTML=monthsTH.map((m,i)=>{
+      const complete=monthComplete(i);
+      return `<button class="gimap-month-btn ${i===state.month?"active":""} ${complete?"":"no-data"}" data-month="${i}">${m}</button>`;
+    }).join("");
+    $('[data-role="period-label"]').textContent=state.year==null?"—":`${monthsFull[state.month]} ${state.year}`;
+  }
+
+  function renderDashboard(list){
+    const vals=list.map(p=>gi(p)).filter(v=>v!==null);
+    const avg=vals.length?vals.reduce((s,v)=>s+v,0)/vals.length:null;
+    const statuses=list.map(statusFor);
+    const compared=statuses.filter(s=>s.key!=="none").length;
+    $('[data-role="m-avg"]').textContent=avg===null?"—":avg.toFixed(2);
+    $('[data-role="m-compared"]').textContent=`${compared} / ${list.length}`;
+    $('[data-role="m-compared-sub"]').textContent=`${list.length-compared} no comparison`;
+    $('[data-role="m-normal"]').textContent=statuses.filter(s=>s.key==="normal").length;
+    $('[data-role="m-watch"]').textContent=statuses.filter(s=>s.key==="watch").length;
+    $('[data-role="m-abnormal"]').textContent=statuses.filter(s=>s.key==="abnormal").length;
+  }
+
+  function markerHTML(p,zoom,st,isSelected,isPeer,isDim){
+    const v=gi(p),mode=zoom<=6?"tiny":zoom<=8?"compact":"full";
+    return `<div class="gimap-marker-label ${mode} ${isSelected?"selected":""} ${isPeer?"peer-marker":""} ${isDim?"dim":""}">
+      <i class="pin" style="background:${st.color}"></i>
+      <div class="txt"><b>${mode==="full"?p.name:""}</b><span>${fmtGI(v)}${v===null?"":" kWh/m²/day"}</span></div>
+    </div>`;
+  }
+
+  function hoverHTML(p,st){
+    const n=st.analysis;
+    return `<div class="gimap-hover-card">
+      <h4>${p.name}</h4>
+      <p>${p.province||"-"} · ${p.region||"-"} · ${p.capacity.toLocaleString()} kWp</p>
+      <div class="gimap-hover-row"><span>GI</span><b>${fmtGI(gi(p))}</b></div>
+      <div class="gimap-hover-row"><span>${state.rules.method==="median"?"Nearby Median":"Nearby Mean"}</span><b>${n.base===null?"—":n.base.toFixed(2)}</b></div>
+      <div class="gimap-hover-row"><span>Difference</span><b style="color:${st.color}">${fmtDiff(n.diff)}</b></div>
+      <div class="gimap-hover-row"><span>Nearby</span><b>${n.peers.length}</b></div>
+      <div class="gimap-hover-note">${st.key==="none"?(n.reason==="no-data"?"ไม่มี GI สำหรับช่วงเวลานี้":`ต้องมีอย่างน้อย ${state.rules.minPeers} โครงการในรัศมี ${state.rules.radius} km`):`${st.name} · Confidence ${confidence(n.peers.length)}`}</div>
+    </div>`;
+  }
+
+  function detailHTML(p){
+    const st=statusFor(p),n=st.analysis,v=gi(p);
+    let bar='<i style="left:50%;width:0;background:'+st.color+'"></i>';
+    if(n.diff!==null){
+      const d=Math.max(-20,Math.min(20,n.diff));
+      bar=d<0
+        ? `<i style="left:${50+(d/20)*50}%;width:${-(d/20)*50}%;background:${st.color}"></i>`
+        : `<i style="left:50%;width:${(d/20)*50}%;background:${st.color}"></i>`;
+    }
+    const peers=n.peers.length?n.peers.map(x=>`<div class="gimap-peer"><b>${x.project.name}</b><span>${x.distance.toFixed(1)} km</span><span>${x.gi.toFixed(2)}</span></div>`).join("")
+      : `<div class="gimap-empty-peer">ไม่มีโครงการที่มีข้อมูลอยู่ในรัศมี ${state.rules.radius} km</div>`;
+
+    return `<div class="gimap-kicker">PROJECT DETAIL</div>
+      <h3>${p.name}</h3>
+      <div class="gimap-sub">${p.province||"-"} · ${p.region||"-"} · ${state.year?monthsFull[state.month]+" "+state.year:"—"}</div>
+      <div class="gimap-status-row">
+        <span class="gimap-status-pill" style="background:${st.color}18;color:${st.color}"><i class="gimap-dot" style="background:${st.color};margin:0"></i>${st.name}</span>
+        <span class="gimap-confidence">Confidence: ${st.key==="none"?"—":confidence(n.peers.length)}</span>
+      </div>
+      <div class="gimap-detail-grid">
+        <div class="gimap-kv"><small>Project GI</small><strong>${fmtGI(v)}</strong></div>
+        <div class="gimap-kv"><small>${state.rules.method==="median"?"Nearby Median":"Nearby Mean"}</small><strong>${n.base===null?"—":n.base.toFixed(2)}</strong></div>
+        <div class="gimap-kv"><small>Difference</small><strong style="color:${st.color}">${fmtDiff(n.diff)}</strong></div>
+        <div class="gimap-kv"><small>Capacity</small><strong>${p.capacity.toLocaleString()} kWp</strong></div>
+      </div>
+      <div class="gimap-diverge">${bar}</div>
+      <div class="gimap-scale"><span>-20%</span><span>0%</span><span>+20%</span></div>
+      <div class="gimap-peer-title">PROJECTS USED FOR COMPARISON · ${n.peers.length}</div>
+      <div class="gimap-peer-list">${peers}</div>`;
+  }
+
+  function renderDetail(){
+    const panel=$('[data-role="detail"]');
+    if(state.selectedId==null){panel.classList.remove("show");return}
+    const p=data.find(x=>x.id===String(state.selectedId));
+    if(!p){state.selectedId=null;panel.classList.remove("show");return}
+    $('[data-role="detail-body"]').innerHTML=detailHTML(p);
+    panel.classList.add("show");
+  }
+
+  function renderComparison(){
+    if(!map||!compareLayer)return;
+    compareLayer.clearLayers();
+    if(state.selectedId==null)return;
+    const p=data.find(x=>x.id===String(state.selectedId));
+    if(!p)return;
+    const n=nearby(p);
+    L.circle([p.lat,p.lng],{radius:state.rules.radius*1000,color:"#367bf5",weight:1.5,fillColor:"#367bf5",fillOpacity:.055,dashArray:"6 7"}).addTo(compareLayer);
+    n.peers.forEach(x=>L.polyline([[p.lat,p.lng],[x.project.lat,x.project.lng]],{color:"#172a3a",weight:1,opacity:.25,dashArray:"3 5"}).addTo(compareLayer));
+  }
+
+  function renderMarkers(){
+    if(!map||!markerLayer)return;
+    markerLayer.clearLayers();
+
+    const list=visibleProjects();
+    $('[data-role="empty-state"]').classList.toggle("show",list.length===0);
+    renderDashboard(list);
+    renderMonths();
+
+    const selected=state.selectedId!=null?data.find(p=>p.id===String(state.selectedId)):null;
+    const analysis=selected?nearby(selected):null;
+    const peerIds=new Set(analysis?.peers.map(x=>x.project.id)||[]);
+    const zoom=map.getZoom();
+
+    const renderList=[...list];
+    if(selected){
+      if(!renderList.some(x=>x.id===selected.id))renderList.push(selected);
+      (analysis?.peers||[]).forEach(x=>{if(!renderList.some(p=>p.id===x.project.id))renderList.push(x.project)});
+    }
+
+    renderList.forEach(p=>{
+      const st=statusFor(p),isSelected=p.id===String(state.selectedId),isPeer=peerIds.has(p.id);
+      const isDim=state.selectedId!=null&&!isSelected&&!isPeer;
+      const icon=L.divIcon({className:"",html:markerHTML(p,zoom,st,isSelected,isPeer,isDim),iconSize:[175,38],iconAnchor:[10,19]});
+      const m=L.marker([p.lat,p.lng],{icon,zIndexOffset:isSelected?1000:isPeer?500:0}).addTo(markerLayer);
+      m.bindTooltip(hoverHTML(p,st),{direction:"top",offset:[0,-16],opacity:1});
+      m.on("click",()=>{
+        state.selectedId=p.id;
+        render();
+        if(typeof options.onProjectSelect==="function")options.onProjectSelect({...p},getState());
+      });
+    });
+
+    renderComparison();
+    renderDetail();
+  }
+
+  function fitVisible(){
+    if(!map)return;
+    const list=visibleProjects();
+    if(!list.length)return;
+    if(list.length===1){map.flyTo([list[0].lat,list[0].lng],11,{duration:.3});return}
+    map.fitBounds(L.latLngBounds(list.map(p=>[p.lat,p.lng])),{padding:[70,70],maxZoom:10,animate:true,duration:.3});
+  }
+
+  function render(refit=false){
+    if(!root)return;
+    populateYears();
+    populateFilters();
+    updateRuleSummary();
+    renderMarkers();
+    if(refit)fitVisible();
+  }
+
+  function initMap(){
+    if(typeof L==="undefined"){
+      $('[data-role="map-error"]').classList.add("show");
+      return;
+    }
+    const mapEl=$('[data-role="map"]');
+    if(map){map.remove();map=null}
+    map=L.map(mapEl,{zoomControl:false,preferCanvas:true}).setView([13.3,101.0],6);
+    L.control.zoom({position:"bottomright"}).addTo(map);
+    L.tileLayer(options.tileUrl,{maxZoom:18,attribution:options.tileAttribution}).addTo(map);
+    markerLayer=L.layerGroup().addTo(map);
+    compareLayer=L.layerGroup().addTo(map);
+    map.on("zoomend",()=>renderMarkers());
+  }
+
+  function clearFilters(){
+    Object.assign(state,{region:"",province:"",project:"",search:"",selectedId:null});
+    $('[data-role="search"]').value="";
+    $$('[data-role="region-chips"] .gimap-chip').forEach(b=>b.classList.toggle("active",b.dataset.region===""));
+    render(true);
+  }
+
+  function openSettings(){
+    $('[data-role="set-radius"]').value=state.rules.radius;
+    $('[data-role="set-minpeers"]').value=state.rules.minPeers;
+    $('[data-role="set-normal"]').value=state.rules.normal;
+    $('[data-role="set-abnormal"]').value=state.rules.abnormal;
+    $('[data-role="set-method"]').value=state.rules.method;
+    $('[data-role="validation"]').classList.remove("show");
+    $('[data-role="settings-backdrop"]').classList.add("show");
+  }
+
+  function closeSettings(){$('[data-role="settings-backdrop"]').classList.remove("show")}
+
+  function bind(){
+    if(bound)return; bound=true;
+
+    root.addEventListener("input",e=>{
+      if(e.target.matches('[data-role="search"]')){
+        state.search=e.target.value;state.selectedId=null;render(false);
+      }
+    });
+
+    root.addEventListener("change",e=>{
+      if(e.target.matches('[data-role="province"]')){
+        state.province=e.target.value;state.project="";state.selectedId=null;render(true);
+      }else if(e.target.matches('[data-role="project"]')){
+        state.project=e.target.value;state.selectedId=null;render(true);
+      }else if(e.target.matches('[data-role="year"]')){
+        state.year=Number(e.target.value);render(false);
+        if(typeof options.onPeriodChange==="function")options.onPeriodChange({year:state.year,month:state.month+1},getState());
+      }
+    });
+
+    root.addEventListener("click",e=>{
+      const chip=e.target.closest(".gimap-chip");
+      if(chip){
+        state.region=chip.dataset.region;state.province="";state.project="";state.selectedId=null;
+        $$('[data-role="region-chips"] .gimap-chip').forEach(x=>x.classList.toggle("active",x===chip));
+        render(true);return;
+      }
+
+      const month=e.target.closest(".gimap-month-btn");
+      if(month){
+        state.month=Number(month.dataset.month);render(false);
+        if(typeof options.onPeriodChange==="function")options.onPeriodChange({year:state.year,month:state.month+1},getState());
+        return;
+      }
+
+      const action=e.target.closest("[data-action]")?.dataset.action;
+      if(!action)return;
+
+      if(action==="open-settings")openSettings();
+      if(action==="clear-selection"){state.selectedId=null;render(false)}
+      if(action==="close-detail"){state.selectedId=null;render(false)}
+      if(action==="clear-filters")clearFilters();
+      if(action==="close-settings"||action==="cancel-settings")closeSettings();
+      if(action==="reset-settings"){
+        $('[data-role="set-radius"]').value=20;
+        $('[data-role="set-minpeers"]').value=3;
+        $('[data-role="set-normal"]').value=-10;
+        $('[data-role="set-abnormal"]').value=-20;
+        $('[data-role="set-method"]').value="median";
+      }
+      if(action==="apply-settings"){
+        const next={
+          radius:Number($('[data-role="set-radius"]').value),
+          minPeers:Number($('[data-role="set-minpeers"]').value),
+          normal:Number($('[data-role="set-normal"]').value),
+          abnormal:Number($('[data-role="set-abnormal"]').value),
+          method:$('[data-role="set-method"]').value
+        };
+        let err="";
+        if(!Number.isFinite(next.radius)||next.radius<1||next.radius>200)err="Radius ต้องอยู่ระหว่าง 1–200 km";
+        else if(!Number.isInteger(next.minPeers)||next.minPeers<1||next.minPeers>20)err="Minimum Nearby ต้องเป็นจำนวนเต็ม 1–20";
+        else if(!Number.isFinite(next.normal)||!Number.isFinite(next.abnormal))err="Threshold ต้องเป็นตัวเลข";
+        else if(next.abnormal>=next.normal)err="Abnormal threshold ต้องต่ำกว่า Normal threshold";
+        const box=$('[data-role="validation"]');
+        if(err){box.textContent=err;box.classList.add("show");return}
+        state.rules=next;closeSettings();render(false);
+        if(typeof options.onRulesChange==="function")options.onRulesChange({...state.rules},getState());
+      }
+    });
+  }
+
+  function init(config={}){
+    root=document.getElementById(config.rootId||ROOT_ID);
+    if(!root)throw new Error("GIMap root element not found");
+    options={...options,...config};
+    setBadge();
+    initMap();
+    bind();
+    render(false);
+    return api;
+  }
+
+  function setData(input,{label}={}){
+    data=(Array.isArray(input)?input:[]).map(normalizeProject).filter(validProject);
+    if(label)options.dataLabel=label;
+    setBadge();
+
+    const ys=years();
+    state.year=ys[0]??null;
+    state.month=Math.max(0,Math.min(11,state.month));
+    state.selectedId=null;
+
+    render(true);
+    return {loaded:data.length,years:ys};
+  }
+
+  function setYear(year){
+    const y=Number(year);
+    if(years().includes(y)){state.year=y;render(false);return true}
+    return false;
+  }
+
+  function setMonth(month){
+    const m=Number(month);
+    const idx=(m>=1&&m<=12)?m-1:m;
+    if(Number.isInteger(idx)&&idx>=0&&idx<=11){state.month=idx;render(false);return true}
+    return false;
+  }
+
+  function selectProject(projectId){
+    const id=String(projectId);
+    if(!data.some(p=>p.id===id))return false;
+    state.selectedId=id;render(false);
+    const p=data.find(x=>x.id===id);
+    if(map&&p)map.panTo([p.lat,p.lng],{animate:true});
+    return true;
+  }
+
+  function setRules(rules={}){
+    const next={...state.rules,...rules};
+    if(next.abnormal>=next.normal)throw new Error("abnormal must be lower than normal");
+    state.rules=next;render(false);return {...state.rules};
+  }
+
+  function getState(){
+    return JSON.parse(JSON.stringify({
+      ...state,
+      dataCount:data.length,
+      availableYears:years()
+    }));
+  }
+
+  function destroy(){
+    if(map){map.remove();map=null}
+    markerLayer=null;compareLayer=null;
+    data=[];state.selectedId=null;
+    if(root)root.innerHTML="";
+    root=null;bound=false;
+  }
+
+  const api={init,setData,setYear,setMonth,selectProject,setRules,refresh:()=>render(false),fit:fitVisible,getState,destroy};
+  global.GIMap=api;
+
+})(window);
+</script>
+
+<script src="gi-map-v4-live.js?v=20261002-map-v4live"></script>
+
+<!--
+=========================================================
+MAIN PROGRAM INTEGRATION EXAMPLE
+
+1) Keep the #gi-map-module HTML block.
+2) Keep the namespaced CSS.
+3) Keep the GIMap API script.
+4) DELETE the DEMO BOOTSTRAP block.
+5) In your main program:
+
+GIMap.init({
+  rootId: "gi-map-module",
+  dataLabel: "LIVE DATA",
+  onProjectSelect: (project, state) => {
+    console.log("Selected:", project);
+  },
+  onPeriodChange: (period, state) => {
+    console.log("Period:", period);
+  }
+});
+
+GIMap.setData(realProjectData, {label:"LIVE DATA"});
+
+Preferred data schema:
+{
+  projectId: "BGPL001",
+  projectName: "Project A",
+  province: "Chonburi",
+  region: "ตะวันออก",
+  latitude: 13.3611,
+  longitude: 100.9847,
+  capacity: 1250,
+  irradiance: {
+    "2026": {
+      "01": 4.82,
+      "02": 5.14,
+      "03": null
+    }
+  }
+}
+
+Public API:
+GIMap.setData(data)
+GIMap.setYear(2026)
+GIMap.setMonth(9)        // 1-12 accepted
+GIMap.selectProject("BGPL001")
+GIMap.setRules({radius:20,minPeers:3,normal:-5,abnormal:-10,method:"median"})
+GIMap.refresh()
+GIMap.fit()
+GIMap.getState()
+GIMap.destroy()
+=========================================================
+-->
+
+</body>
+</html>

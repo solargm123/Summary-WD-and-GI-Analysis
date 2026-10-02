@@ -357,17 +357,8 @@ body{zoom:.75;min-height:calc(100vh / .75)}
     <div class="nav-tabs">
         <button class="tab-btn active" onclick="switchTab('tableTab', this)"><i class="fa-solid fa-table"></i> ตารางข้อมูล</button>
         <button class="tab-btn" onclick="switchTab('trendTab', this)"><i class="fa-solid fa-chart-line"></i> แนวโน้ม Irradiation</button>
-        <button class="tab-btn" onclick="switchTab('mapTab', this)"><i class="fa-solid fa-map-location-dot"></i> Map overview</button>
+        <button class="tab-btn" onclick="GIMapLauncher.open(this)"><i class="fa-solid fa-map-location-dot"></i> Map overview</button>
     </div>
-
-<div id="mapTab" class="tab-content">
-
- <p id="giMapMessage" class="gi-map-muted" role="status"></p>
- <div class="gi-map-layout"><button type="button" class="btn btn-secondary gi-map-panel-toggle" id="giMapPanelToggle" aria-expanded="true" aria-controls="giMapExplorer" onclick="GiMap.togglePanel()"><i class="fa-solid fa-list"></i> <span id="giMapPanelLabel">โครงการ</span></button><aside id="giMapExplorer" class="gi-map-sidebar"><div class="gi-map-heading"><h3>Map overview</h3><span>20 km</span></div> <div class="gi-map-toolbar"><button class="btn btn-secondary" onclick="GiMap.controls()"><span id="giMapFilterLabel">ตัวกรองร่วมกับตาราง</span></button><button class="btn btn-secondary" onclick="GiMap.fit()"><span id="giMapFitLabel">ดูทุกหมุด</span></button><label>Month <select id="giMapMonth" aria-label="Map month"></select></label><span id="giMapCount"></span></div><p id="giMapPeriod" class="gi-map-muted"></p><input id="giMapSearch" placeholder="ค้นหาโครงการ / Search projects" aria-label="Search map projects"><div id="giMapList"></div></aside><div id="giMapCanvas" aria-label="Project map"></div><aside id="giMapDetail" hidden class="gi-map-sidebar">เลือกหมุดหรือโครงการเพื่อดูรายละเอียด / Select a project</aside><div class="gi-map-legend"><span style="--level:#16a34a">ปกติ / Normal</span><span style="--level:#ca8a04">ต่ำ 10–20%</span><span style="--level:#dc2626">ต่ำ &gt;20%</span><span style="--level:#0284c7">สูง &gt;20%</span><span style="--level:#64748b">ข้อมูลไม่พอ / Insufficient</span></div></div>
- <details class="gi-map-extra"><summary id="giMapToolsLabel">เครื่องมือพิกัด / Coordinate tools</summary><p id="giMapPreview" class="gi-map-muted"></p><div class="gi-map-toolbar"><label class="btn btn-secondary"><i class="fa-solid fa-map-location-dot"></i><span id="giMapImportLabel">เลือกไฟล์พิกัด</span><input id="giMapFile" type="file" accept=".xlsx" hidden></label><button class="btn btn-secondary" onclick="GiMap.open()"><span id="giMapRetryLabel">ลองแผนที่ใหม่</span></button></div>
- <details class="gi-map-extra"><summary><span id="giMapAddLabel">เพิ่มพิกัด</span> · Preview</summary><div class="gi-map-toolbar"><select id="giMapAddPlant" aria-label="Project for location"></select><textarea id="giMapAddCoords" rows="2" placeholder="Latitude, Longitude" aria-label="Latitude, Longitude"></textarea><button class="btn btn-secondary" onclick="GiMap.add()">Apply</button></div></details>
- <details class="gi-map-extra"><summary id="giMapMatchCount">รายการจับคู่พิกัด / Coordinate matching</summary><div id="giMapMapping"></div></details></details>
-</div>
 
     <!-- TAB 1: DATA TABLE -->
     <div id="tableTab" class="tab-content active">
@@ -1515,7 +1506,7 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
 <script src="unified-ui.js?v=20261001-scoped"></script>
 <script src="solar-controls.js?v=20261001-3"></script>
 <script src="gi-map-peer.js?v=20261002-map-ui2"></script>
-<script src="gi-map.js?v=20261002-map-ui2"></script>
+<script src="gi-map.js?v=20261002-map-v4live"></script>
+<script src="gi-map-launcher.js?v=20261002-map-v4live"></script>
 </body>
 </html>
-
