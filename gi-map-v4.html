@@ -173,6 +173,10 @@
 #gi-map-module .gimap-location-row{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:10px;border-bottom:1px solid var(--line);font-size:12px}
 </style>
 <style>#gi-map-module .gimap-marker-label .txt small{display:block;font-size:8px;color:var(--muted);font-weight:500}</style>
+<style>
+#gi-map-module .gimap-cluster-dot{display:flex;align-items:center;justify-content:center;box-sizing:border-box;border-radius:50%;background:var(--dot-color);border:2px solid white;color:#fff;font-size:12px;font-weight:700;box-shadow:0 2px 6px #15212940}
+#gi-map-module .gimap-cluster-dot.selected{outline:3px solid #367bf580}
+</style>
 </head>
 
 <body style="margin:0;height:100vh">
@@ -634,6 +638,18 @@
       (analysis?.peers||[]).forEach(x=>{if(!renderList.some(p=>p.id===x.project.id))renderList.push(x.project)});
     }
 
+    if(zoom<=8){
+      const groups=[];
+      for(const p of renderList.filter(validProject)){const pixel=map.latLngToLayerPoint([p.lat,p.lng]);let group=groups.find(g=>Math.hypot(g.x-pixel.x,g.y-pixel.y)<=55);if(!group){group={x:pixel.x,y:pixel.y,projects:[]};groups.push(group)}if(!group.projects.some(q=>q.id===p.id))group.projects.push(p)}
+      for(const group of groups){const projects=group.projects,count=projects.length,center=[projects.reduce((s,p)=>s+p.lat,0)/count,projects.reduce((s,p)=>s+p.lng,0)/count];
+        const statuses=projects.map(statusFor),status=statuses.find(s=>s.key==='abnormal')||statuses.find(s=>s.key==='watch')||statuses.find(s=>s.key==='normal')||statuses[0];
+        const containsSelected=projects.some(p=>p.id===String(state.selectedId)),size=count>1?30:12;
+        const icon=L.divIcon({className:'',html:'<div class="gimap-cluster-dot '+(containsSelected?'selected':'')+'" style="--dot-color:'+status.color+';width:'+size+'px;height:'+size+'px">'+(count>1?count:'')+'</div>',iconSize:[size,size],iconAnchor:[size/2,size/2]});
+        L.marker(center,{icon,zIndexOffset:containsSelected?1000:0}).addTo(markerLayer).bindTooltip(count+' โครงการที่แสดง · คลิกเพื่อซูม',{direction:'top'}).on('click',()=>{if(count===1){state.selectedId=projects[0].id;map.setView([projects[0].lat,projects[0].lng],11);render()}else map.fitBounds(L.latLngBounds(projects.map(p=>[p.lat,p.lng])),{padding:[65,65],maxZoom:Math.min(14,zoom+3),animate:true})});
+      }
+      renderComparison();renderDetail();return;
+    }
+
     const occupied=[];
     renderList.filter(validProject).forEach(p=>{
       const st=statusFor(p),isSelected=p.id===String(state.selectedId),isPeer=peerIds.has(p.id);
@@ -851,8 +867,8 @@
 })(window);
 </script>
 
-<script src="gi-map-v4-live.js?v=20261002-map-v4fix2"></script>
-<script src="gi-map-location-ui.js?v=20261002-map-v4fix2"></script>
+<script src="gi-map-v4-live.js?v=20261002-map-cluster1"></script>
+<script src="gi-map-location-ui.js?v=20261002-map-cluster1"></script>
 
 <!--
 =========================================================

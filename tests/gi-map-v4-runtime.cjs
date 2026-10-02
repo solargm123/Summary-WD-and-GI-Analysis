@@ -1,6 +1,7 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert/strict'),{JSDOM}=require('jsdom');
 const html=fs.readFileSync('map-release/gi-map-v4.html','utf8'),dom=new JSDOM(html,{runScripts:'outside-only',url:'https://example.test/map'}),w=dom.window,ctx=dom.getInternalVMContext(),layers=[];
-const map={setView(){return this},on(){return this},getZoom(){return 6},fitBounds(){},flyTo(){},panTo(){},latLngToLayerPoint(){return {x:500,y:300}},layerPointToLatLng(x){return x},remove(){}};
+let zoom=9;
+const map={setView(){return this},on(){return this},getZoom(){return zoom},fitBounds(){},flyTo(){},panTo(){},latLngToLayerPoint(){return {x:500,y:300}},layerPointToLatLng(x){return x},remove(){}};
 const shape=()=>({on(){return this},bindTooltip(){return this},addTo(layer){layer.items?.push(this);return this}});
 w.L={map:()=>map,control:{zoom:shape},tileLayer:shape,layerGroup:()=>{const layer={items:[],addTo(){return this},clearLayers(){this.items=[]}};layers.push(layer);return layer},latLngBounds:x=>x,divIcon:options=>({options}),marker:(coords,options)=>Object.assign(shape(),{coords,options}),circle:shape,circleMarker:shape,polyline:shape};
 for(const m of html.matchAll(/<script>([\s\S]*?)<\/script>/g))vm.runInContext(m[1],ctx);
@@ -13,4 +14,5 @@ assert.ok(w.GIMap.selectProject('a'));assert.ok(layers[0].items.length>3);
 w.document.querySelector('[data-action="locations"]').click();assert.ok(w.document.querySelector('.gimap-location-backdrop').classList.contains('show'));assert.ok(w.document.querySelector('[data-list]').textContent.includes('missing'));
 assert.equal(w.GIMapLocationUI.parse('13,100\n14,101').length,2);assert.throws(()=>w.GIMapLocationUI.parse('13,100\n13,100'));assert.throws(()=>w.GIMapLocationUI.parse('91,100'));
 w.document.querySelector('[data-missing]').checked=false;w.document.querySelector('[data-missing]').dispatchEvent(new w.Event('change',{bubbles:true}));assert.equal(w.document.querySelectorAll('[data-edit]').length,4);
+zoom=6;w.GIMap.refresh();const clusters=layers[0].items.filter(x=>x.coords);assert.equal(clusters.length,1);assert.ok(clusters[0].options.icon.options.html.includes('>3</div>'));assert.ok(!clusters[0].options.icon.options.html.includes('4.000'));
 dom.window.close();console.log('PASS: complete project/year lists, no 0/0 phantom marker, numeric labels, collision offset, sublocations and location editor.');
