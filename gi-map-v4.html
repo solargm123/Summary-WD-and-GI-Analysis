@@ -442,13 +442,13 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
   }
 
   function years(){
-    return [...new Set(data.flatMap(p=>Object.keys(p.irradiance||{}).map(Number)).filter(Number.isFinite))].sort((a,b)=>b-a);
+    return [...new Set(visibleProjects(true).flatMap(p=>Object.keys(p.irradiance||{}).filter(y=>Array.from({length:12},(_,m)=>gi(p,+y,m)).some(v=>v!==null)).map(Number)).filter(Number.isFinite))].sort((a,b)=>b-a);
   }
 
   function gi(p,year=state.year,month=state.month){
     if(!p || year==null)return null;
     const v=p.irradiance?.[String(year)]?.[String(month+1).padStart(2,"0")];
-    return Number.isFinite(Number(v)) ? Number(v) : null;
+    return v!==null && v!==undefined && v!=="" && Number.isFinite(Number(v)) ? Number(v) : null;
   }
 
   function hav(a,b){
@@ -463,9 +463,10 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
     return a.length%2?a[mid]:(a[mid-1]+a[mid])/2;
   }
 
-  function visibleProjects(){
+  function visibleProjects(includeMissing=false){
     const q=state.search.trim().toLowerCase();
     return data.filter(p=>
+      (includeMissing||gi(p)!==null)&&
       (!state.region||p.region===state.region)&&
       (!state.province||p.province===state.province)&&
       (!state.project||String(p.id)===state.project)&&
@@ -525,7 +526,7 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
     const provEl=$('[data-role="province"]');
     provEl.innerHTML='<option value="">ทุกจังหวัด</option>'+prov.map(v=>`<option value="${esc(v)}" ${v===state.province?"selected":""}>${esc(v)}</option>`).join("");
 
-    const plist=data.filter(p=>(!state.region||p.region===state.region)&&(!state.province||p.province===state.province));
+    const plist=data.filter(p=>gi(p)!==null&&(!state.region||p.region===state.region)&&(!state.province||p.province===state.province));
     const projEl=$('[data-role="project"]');
     projEl.innerHTML='<option value="">ทุกโครงการ</option>'+plist.map(p=>`<option value="${p.id}" ${String(p.id)===state.project?"selected":""}>${esc(p.name)}</option>`).join("");
   }
@@ -540,7 +541,7 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
   }
 
   function monthComplete(m){
-    const arr=visibleProjects();
+    const arr=visibleProjects(true);
     if(!arr.length)return false;
     return arr.every(p=>gi(p,state.year,m)!==null);
   }
@@ -548,6 +549,7 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
   function renderMonths(){
     const grid=$('[data-role="month-grid"]');
     grid.innerHTML=monthsTH.map((m,i)=>{
+      if(!visibleProjects(true).some(p=>gi(p,state.year,i)!==null))return "";
       const complete=monthComplete(i);
       return `<button class="gimap-month-btn ${i===state.month?"active":""} ${complete?"":"no-data"}" data-month="${i}">${m}</button>`;
     }).join("");
@@ -648,7 +650,7 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
     renderDashboard(list);
     renderMonths();
 
-    const selected=state.selectedId!=null?data.find(p=>p.id===String(state.selectedId)):null;
+    const selected=state.selectedId!=null?data.find(p=>p.id===String(state.selectedId)&&gi(p)!==null):null;
     const analysis=selected?nearby(selected):null;
     const peerIds=new Set(analysis?.peers.map(x=>x.project.id)||[]);
     const zoom=map.getZoom();
@@ -702,6 +704,7 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
   function render(refit=false){
     if(!root)return;
     populateYears();
+    if(state.selectedId&&!data.some(p=>p.id===String(state.selectedId)&&gi(p)!==null))state.selectedId=null;
     populateFilters();
     updateRuleSummary();
     renderMarkers();
@@ -894,8 +897,8 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 })(window);
 </script>
 
-<script src="gi-map-v4-live.js?v=20261002-map-font1"></script>
-<script src="gi-map-location-ui.js?v=20261002-map-font1"></script>
+<script src="gi-map-v4-live.js?v=20261002-map-period1"></script>
+<script src="gi-map-location-ui.js?v=20261002-map-period1"></script>
 
 <!--
 =========================================================

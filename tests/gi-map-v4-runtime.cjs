@@ -18,4 +18,8 @@ w.document.querySelector('[data-missing]').checked=false;w.document.querySelecto
 zoom=6;w.GIMap.refresh();const clusters=layers[0].items.filter(x=>x.coords);assert.equal(clusters.length,1);assert.ok(clusters[0].options.icon.options.html.includes('>3</div>'));assert.ok(!clusters[0].options.icon.options.html.includes('4.000'));
 zoom=8;w.GIMap.refresh();assert.ok(layers[0].items.some(x=>x.options?.icon.options.html.includes('4.000')));
 for(const key of ['sidebar','topbar','timeline']){const button=w.document.querySelector('[data-view-toggle="'+key+'"]');button.click();assert.ok(w.document.querySelector('#gi-map-module').classList.contains('hide-'+key));assert.equal(button.getAttribute('aria-expanded'),'false');button.click();assert.ok(!w.document.querySelector('#gi-map-module').classList.contains('hide-'+key));}
+const limited=project('only-september',13.05);limited.irradiance={2026:{'09':0,'08':null}};
+w.dispatchEvent(new w.MessageEvent('message',{source:w,origin:'https://example.test',data:{type:'gi-map-data',payload:{...payload,projects:[limited],period:'2026-09'}}}));
+assert.ok(layers[0].items.some(x=>x.options?.icon.options.html.includes('0.000')));
+w.GIMap.setMonth(8);assert.equal(layers[0].items.filter(x=>x.coords).length,0);assert.ok(!w.document.querySelector('[data-role="project"]').textContent.includes('only-september'));assert.equal(w.document.querySelectorAll('[data-month]').length,1);
 dom.window.close();console.log('PASS: complete project/year lists, no 0/0 phantom marker, numeric labels, collision offset, sublocations and location editor.');
