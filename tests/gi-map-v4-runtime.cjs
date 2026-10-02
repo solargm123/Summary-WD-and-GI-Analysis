@@ -31,4 +31,9 @@ w.GIMap.setMonth(8);assert.equal(layers[0].items.filter(x=>x.coords).length,0);a
 vm.runInContext(fs.readFileSync('map-release/gi-map-language.js','utf8'),ctx);
 w.GIMapLanguage.set('en');assert.equal(w.document.querySelector('.gimap-timeline-title').textContent,'Monthly Irradiance Timeline');assert.equal(w.document.querySelector('[data-month="8"]').textContent,'Sep');assert.ok(w.document.querySelector('[data-view-toggle="sidebar"]').textContent.includes('filters'));
 w.GIMapLanguage.set('th');assert.equal(w.document.querySelector('.gimap-timeline-title').textContent,'ค่าแสงรายเดือน');assert.equal(w.document.querySelector('[data-month="8"]').textContent,'ก.ย.');
+w.GIMap.setMonth(9);
+vm.runInContext(fs.readFileSync('map-release/gi-map-filter-picker.js','utf8'),ctx);
+w.document.querySelector('[data-picker="project"]').click();
+let picker=w.document.querySelector('.gimap-picker-overlay');assert.ok(picker);const input=picker.querySelector('input');input.value='only-september';input.dispatchEvent(new w.Event('input'));assert.equal(picker.querySelectorAll('[role="option"]').length,1);picker.querySelector('[role="option"]').click();assert.equal(w.document.querySelector('[data-role="project"]').value,'only-september');assert.equal(w.document.querySelector('.gimap-picker-overlay'),null);
+w.document.querySelector('[data-picker="province"]').click();picker=w.document.querySelector('.gimap-picker-overlay');picker.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert.equal(w.document.querySelector('.gimap-picker-overlay'),null);assert.equal(w.document.querySelector('[data-role="project"]').value,'only-september');
 w.GIMapLanguage.destroy();dom.window.close();console.log('PASS: complete project/year lists, no 0/0 phantom marker, numeric labels, density clusters at close zoom, separated points, cluster project list, sublocations, periods, language and location editor.');
