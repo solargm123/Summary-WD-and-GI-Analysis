@@ -1,0 +1,17 @@
+const assert=require('assert/strict');
+require('../gi-map-peer.js');
+const {compare,distance,median}=globalThis.GiMapPeer;
+const dates=['2026-09-01','2026-09-02'];
+const p=(lat,value,extra={})=>({points:[{lat,lng:100}],dates:{[dates[0]]:value,...extra}});
+const peers=[p(13.01,5),p(13.02,5),p(13.03,5)];
+for(const [value,level] of [[5,'normal'],[4.5,'watch'],[4,'watch'],[3.99,'low'],[6,'normal'],[6.01,'high'],[0,'low']])assert.equal(compare(p(13,value),peers,dates).level,level);
+assert.equal(compare(p(13,5),peers.slice(0,2),dates).level,'insufficient');
+assert.equal(compare(p(13,5),[p(13.01,5),p(13.01,5),p(13.01,5)],dates).level,'insufficient');
+assert.equal(compare(p(13,5),[p(13,5),...peers.slice(0,2)],dates).level,'insufficient');
+assert.equal(compare(p(13,5),[...peers.slice(0,2),p(14,5)],dates).level,'insufficient');
+assert.equal(compare(p(13,5,{[dates[1]]:0}),peers,dates).days,1);
+assert.equal(compare(p(13,5),[p(13.01,5),p(13.02,5),p(13.03,100)],dates).referenceAverage,5);
+assert.equal(compare(p(13,5),[p(13.01,0),p(13.02,0),p(13.03,0)],dates).level,'insufficient');
+assert.equal(median([1,3,2]),2);assert.equal(median([1,2]),1.5);
+assert.ok(distance({lat:13,lng:100},{lat:13.1,lng:100})<20);
+console.log('PASS: radius, same-site exclusion, minimum 3 sites, same-day data, median, zero values, 10/20 percent boundaries.');
