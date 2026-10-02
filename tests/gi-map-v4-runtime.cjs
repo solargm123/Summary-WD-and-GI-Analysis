@@ -1,8 +1,8 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert/strict'),{JSDOM}=require('jsdom');
 const html=fs.readFileSync('map-release/gi-map-v4.html','utf8'),dom=new JSDOM(html,{runScripts:'outside-only',url:'https://example.test/map'}),w=dom.window,ctx=dom.getInternalVMContext(),layers=[];
-let zoom=9,pixelSpread=false;
+let zoom=9,pixelSpread=false;const mapEvents={};
 w.requestAnimationFrame=callback=>callback();
-const map={invalidateSize(){return this},setView(){return this},on(){return this},closePopup(){},getZoom(){return zoom},fitBounds(){},flyTo(){},panTo(){},latLngToLayerPoint(coords){return {x:pixelSpread?coords[0]*100000:500,y:300}},layerPointToLatLng(x){return x},remove(){}};
+const map={invalidateSize(){return this},setView(){return this},on(name,handler){mapEvents[name]=handler;return this},closePopup(){},getZoom(){return zoom},fitBounds(){},flyTo(){},panTo(){},latLngToLayerPoint(coords){return {x:pixelSpread?coords[0]*100000:500,y:300}},layerPointToLatLng(x){return x},remove(){}};
 const shape=()=>({bindPopup(html){this.popup=html;return this},openPopup(){return this},on(){return this},bindTooltip(){return this},addTo(layer){layer.items?.push(this);return this}});
 w.L={map:()=>map,control:{zoom:shape},tileLayer:shape,layerGroup:()=>{const layer={items:[],addTo(){return this},clearLayers(){this.items=[]}};layers.push(layer);return layer},latLngBounds:x=>x,divIcon:options=>({options}),marker:(coords,options)=>Object.assign(shape(),{coords,options}),circle:shape,circleMarker:shape,polyline:shape};
 vm.runInContext(fs.readFileSync('map-release/gi-map-label-layout.js','utf8'),ctx);
@@ -11,6 +11,9 @@ for(const path of ['gi-map-v4-live.js','gi-map-location-ui.js'])vm.runInContext(
 const project=(id,lat)=>({projectId:id,projectName:'Plant & '+id,latitude:lat,longitude:lat==null?null:100,province:'ชลบุรี',capacity:100,irradiance:{2023:{'03':5},2026:{'09':4}},meta:{dates:{'2026-09-01':4},points:lat==null?[]:[{lat,lng:100},{lat:lat+.001,lng:100.001}],expected:[]}});
 const payload={projects:[project('a',13),project('b',13.01),project('c',13.02),project('missing',null)],period:'2026-09',label:'LIVE DATA',canEdit:true,locationNote:'DB',unlocated:1};
 w.dispatchEvent(new w.MessageEvent('message',{source:w,origin:'https://example.test',data:{type:'gi-map-data',payload}}));
+const canvas=w.document.querySelector('[data-role="map"]');canvas.getBoundingClientRect=()=>({left:100,top:100,right:1100,bottom:700,width:1000,height:600});
+const tip=w.document.createElement('div');tip.getBoundingClientRect=()=>({left:1000,top:-50,right:1250,bottom:200,width:250,height:250});
+mapEvents.tooltipopen({tooltip:{getElement:()=>tip}});assert.equal(tip.style.marginTop,'162px');assert.equal(tip.style.marginLeft,'-162px');assert.ok(tip.classList.contains('gimap-tooltip-shifted'));
 const allGI=w.document.querySelector('[data-role="show-all-gi"]');allGI.checked=true;allGI.dispatchEvent(new w.Event('change'));
 assert.equal(w.GIMap.getState().dataCount,4);assert.deepEqual([...w.GIMap.getState().availableYears],[2026,2023]);assert.equal(layers[0].items.filter(x=>x.coords).length,3);assert.ok(layers[0].items.some(x=>x.options?.icon.options.html.includes('4.000')));assert.equal(new Set(layers[0].items.filter(x=>x.coords).map(x=>x.options.icon.options.iconAnchor.join(','))).size,3);
 assert.ok(w.GIMap.selectProject('a'));assert.ok(layers[0].items.length>3);

@@ -224,6 +224,8 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 <link rel="icon" type="image/x-icon" sizes="16x16 32x32 48x48" href="favicon.ico?v=20261002-field1">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20261002-field1">
 <style>
+#gi-map-module .leaflet-tooltip-pane{z-index:1100}
+#gi-map-module .leaflet-tooltip.gimap-tooltip-shifted:before{display:none}
 #gi-map-module .gimap-marker-label{width:150px;max-width:150px}
 #gi-map-module .gimap-marker-label.compact{width:112px}
 #gi-map-module .gimap-marker-label.tiny{width:86px}
@@ -781,6 +783,23 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
     markerLayer=L.layerGroup().addTo(map);
     compareLayer=L.layerGroup().addTo(map);
     map.on("moveend",()=>renderMarkers());
+    map.on('tooltipopen',event=>{
+      const element=event.tooltip?.getElement();
+      if(!element)return;
+      element.style.marginLeft='0px';element.style.marginTop='0px';
+      element.classList.remove('gimap-tooltip-shifted');
+      const bounds=mapEl.getBoundingClientRect(),padding=12;
+      if(bounds.width<=padding*2||bounds.height<=padding*2)return;
+      element.style.maxWidth=(bounds.width-padding*2)+'px';
+      element.style.maxHeight=(bounds.height-padding*2)+'px';
+      element.style.overflow='auto';
+      const box=element.getBoundingClientRect();
+      const x=Math.max(bounds.left+padding,Math.min(box.left,bounds.right-padding-box.width));
+      const y=Math.max(bounds.top+padding,Math.min(box.top,bounds.bottom-padding-box.height));
+      const dx=x-box.left,dy=y-box.top;
+      element.style.marginLeft=dx+'px';element.style.marginTop=dy+'px';
+      element.classList.toggle('gimap-tooltip-shifted',dx!==0||dy!==0);
+    });
     $('[data-role="show-all-gi"]').onchange=e=>{state.showAllGI=e.target.checked;renderMarkers()};
     mapEl.onclick=e=>{const button=e.target.closest('[data-cluster-project]');if(button){e.stopPropagation();map.closePopup();selectProject(button.dataset.clusterProject)}};
     root.querySelectorAll('[data-view-toggle]').forEach(button=>{button.onclick=()=>{
@@ -956,10 +975,10 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 })(window);
 </script>
 
-<script src="gi-map-label-layout.js?v=20261002-map-spacing1"></script>
-<script src="gi-map-language.js?v=20261002-map-spacing1"></script>
-<script src="gi-map-v4-live.js?v=20261002-map-spacing1"></script>
-<script src="gi-map-location-ui.js?v=20261002-map-spacing1"></script>
+<script src="gi-map-label-layout.js?v=20261002-map-hover1"></script>
+<script src="gi-map-language.js?v=20261002-map-hover1"></script>
+<script src="gi-map-v4-live.js?v=20261002-map-hover1"></script>
+<script src="gi-map-location-ui.js?v=20261002-map-hover1"></script>
 
 <!--
 =========================================================
