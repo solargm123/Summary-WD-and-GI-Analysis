@@ -20,10 +20,11 @@ function compare(p,state,data){
  const own=p.meta?.dates||{},groups=new Map();
  if(!Object.entries(own).some(([d,v])=>d.startsWith(month+'-')&&value(v)))return {eligible:false,reason:'no-data',peers:[],base:null,diff:null};
  for(const q of data){if(!Number.isFinite(q.lat)||!Number.isFinite(q.lng)||key(q)===key(p))continue;const km=distance(p,q);if(km<.001||km>state.rules.radius)continue;const k=key(q);if(!groups.has(k))groups.set(k,[]);groups.get(k).push({project:q,distance:km})}
+ const available=[...groups.values()].map(group=>{const entries=group.map(x=>({...x,readings:Object.entries(x.project.meta?.dates||{}).filter(([d,v])=>d.startsWith(month+'-')&&value(v))})).filter(x=>x.readings.length);if(!entries.length)return null;const rep=entries[0],readings=rep.readings.map(([,v])=>v);return {project:rep.project,distance:Math.min(...group.map(x=>x.distance)),gi:readings.reduce((s,v)=>s+v,0)/readings.length,comparisonUsed:false};}).filter(Boolean).sort((a,b)=>a.distance-b.distance);
  let total=0,reference=0,days=0;const used=new Map();
  for(const [day,v] of Object.entries(own)){if(!day.startsWith(month+'-')||!value(v))continue;const readings=[];for(const [k,group] of groups){const valid=group.filter(x=>value(x.project.meta?.dates?.[day]));if(valid.length)readings.push({k,group:valid,gi:median(valid.map(x=>x.project.meta.dates[day]))})}if(readings.length<state.rules.minPeers)continue;const vals=readings.map(x=>x.gi),base=state.rules.method==='mean'?vals.reduce((s,v)=>s+v,0)/vals.length:median(vals);if(!(base>0))continue;total+=v;reference+=base;days++;for(const x of readings){const rep=x.group[0];let u=used.get(x.k);if(!u){u={project:rep.project,distance:rep.distance,total:0,count:0};used.set(x.k,u)}u.total+=x.gi;u.count++}}
  const peers=[...used.values()].map(x=>({project:x.project,distance:x.distance,gi:x.total/x.count})).sort((a,b)=>a.distance-b.distance);
- if(!days)return {eligible:false,reason:'insufficient',peers,base:null,diff:null};
+ if(!days)return {eligible:false,reason:'insufficient',peers:available,nearbySites:groups.size,availableSites:available.length,comparisonDays:0,base:null,diff:null};
  return {eligible:true,reason:'ok',peers,base:reference/days,diff:(total/reference-1)*100};
 }
 const caches=new WeakMap();

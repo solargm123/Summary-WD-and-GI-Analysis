@@ -639,8 +639,9 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
         ? `<i style="left:${50+(d/20)*50}%;width:${-(d/20)*50}%;background:${st.color}"></i>`
         : `<i style="left:50%;width:${(d/20)*50}%;background:${st.color}"></i>`;
     }
-    const peers=n.peers.length?n.peers.map(x=>`<div class="gimap-peer"><b>${esc(x.project.name)}</b><span>${x.distance.toFixed(1)} km</span><span>${x.gi.toFixed(2)}</span></div>`).join("")
-      : `<div class="gimap-empty-peer">ไม่มีโครงการที่มีข้อมูลอยู่ในรัศมี ${state.rules.radius} km</div>`;
+    const comparisonNote=!n.eligible&&n.peers.length?`<div class="gimap-empty-peer">${n.peers.length<state.rules.minPeers?'มีข้อมูล GI ใกล้เคียง '+n.peers.length+' จุด ต้องมีอย่างน้อย '+state.rules.minPeers+' จุด':'มีโครงการใกล้เคียง แต่ข้อมูลวันเดียวกันไม่เพียงพอสำหรับเปรียบเทียบ'} · รายการด้านล่างแสดงค่าเฉลี่ยรายเดือน</div>`:'';
+    const peers=n.peers.length?comparisonNote+n.peers.map(x=>`<div class="gimap-peer"><b>${esc(x.project.name)}</b><span>${x.distance.toFixed(1)} km</span><span>${x.gi.toFixed(2)}</span></div>`).join("")
+      : `<div class="gimap-empty-peer">${n.nearbySites>0?'มีโครงการใกล้เคียง '+n.nearbySites+' จุด แต่ไม่มีข้อมูล GI ในเดือนที่เลือก':'ไม่พบจุดเปรียบเทียบอื่นในรัศมี '+state.rules.radius+' km (ไม่นับโครงการที่ใช้พิกัดเดียวกัน)'}</div>`;
 
     return `<div class="gimap-kicker">PROJECT DETAIL</div>
       <h3>${esc(p.name)}</h3>
@@ -976,11 +977,11 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 })(window);
 </script>
 
-<script src="gi-map-label-layout.js?v=20261002-map-region1"></script>
-<script src="gi-map-language.js?v=20261002-map-region1"></script>
-<script src="gi-map-v4-live.js?v=20261002-map-region1"></script>
-<script src="gi-map-filter-picker.js?v=20261002-map-region1"></script>
-<script src="gi-map-location-ui.js?v=20261002-map-region1"></script>
+<script src="gi-map-label-layout.js?v=20261002-map-nearby1"></script>
+<script src="gi-map-language.js?v=20261002-map-nearby1"></script>
+<script src="gi-map-v4-live.js?v=20261002-map-nearby1"></script>
+<script src="gi-map-filter-picker.js?v=20261002-map-nearby1"></script>
+<script src="gi-map-location-ui.js?v=20261002-map-nearby1"></script>
 
 <!--
 =========================================================
