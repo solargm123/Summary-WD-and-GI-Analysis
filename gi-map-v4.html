@@ -223,6 +223,12 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 <link rel="icon" type="image/svg+xml" href="favicon.svg?v=20261002-field1">
 <link rel="icon" type="image/x-icon" sizes="16x16 32x32 48x48" href="favicon.ico?v=20261002-field1">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20261002-field1">
+<style>
+#gi-map-module .gimap-marker-label{width:150px;max-width:150px}
+#gi-map-module .gimap-marker-label.compact{width:112px}
+#gi-map-module .gimap-marker-label.tiny{width:86px}
+#gi-map-module .gimap-marker-label.selected{transform:none}
+</style>
 </head>
 
 <body style="margin:0;height:100vh">
@@ -699,6 +705,22 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
       const group=!state.showAllGI&&p.id!==String(state.selectedId)?groups.find(g=>!g.selected&&Math.abs(g.x-pixel.x)<(zoom<8?55:110)&&Math.abs(g.y-pixel.y)<(zoom<8?55:48)):null;
       if(group)group.projects.push(p);else groups.push({x:pixel.x,y:pixel.y,selected:p.id===String(state.selectedId),projects:[p]});
     }
+    groups.sort((a,b)=>Number(b.selected)-Number(a.selected)||String(a.projects[0].id).localeCompare(String(b.projects[0].id)));
+    const containerSize=typeof map.getSize==='function'?map.getSize():null;
+    const origin=typeof map.containerPointToLayerPoint==='function'?map.containerPointToLayerPoint([0,0]):{x:0,y:0};
+    const layout=GIMapLabelLayout.create(containerSize);
+    function positionIcon(coords,icon,size,anchor){
+      const layer=map.latLngToLayerPoint(coords),pixel={x:layer.x-origin.x,y:layer.y-origin.y};
+      const position=layout.place(pixel,size,anchor);
+      if(!position)return false;
+      icon.options.iconAnchor=position.anchor;
+      if(position.moved){
+        const r=position.rect,end=[origin.x+Math.max(r.x,Math.min(pixel.x,r.x+r.w)),origin.y+Math.max(r.y,Math.min(pixel.y,r.y+r.h))];
+        L.polyline([coords,map.layerPointToLatLng(end)],{color:'#718096',weight:1,opacity:.45,interactive:false}).addTo(markerLayer);
+        L.circleMarker(coords,{radius:2,color:'#718096',weight:1,fillOpacity:1,interactive:false}).addTo(markerLayer);
+      }
+      return true;
+    }
     for(const group of groups){
       const projects=group.projects,count=projects.length;
       if(count>1){
@@ -706,7 +728,8 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
         const color=alerts?'#df5361':watch?'#f39a35':statuses.some(s=>s.key==='normal')?'#25a66a':'#98a3ab';
         const center=[projects.reduce((sum,p)=>sum+p.lat,0)/count,projects.reduce((sum,p)=>sum+p.lng,0)/count];
         const badge=(alerts?'<em class="alert">'+alerts+' <span>ผิดปกติ</span></em>':'')+(watch?'<em class="watch">'+watch+' <span>เฝ้าระวัง</span></em>':'');
-        const icon=L.divIcon({className:'',html:'<div class="gimap-density-cluster" style="--cluster-color:'+color+'"><b>'+count+'</b><small>โครงการ</small><div class="gimap-cluster-badges">'+badge+'</div></div>',iconSize:[54,54],iconAnchor:[27,27]});
+        const icon=L.divIcon({className:'',html:'<div class="gimap-density-cluster" style="margin-left:53px;margin-top:23px;--cluster-color:'+color+'"><b>'+count+'</b><small>โครงการ</small><div class="gimap-cluster-badges">'+badge+'</div></div>',iconSize:[54,54],iconAnchor:[27,27]});
+        if(!positionIcon(center,icon,[160,80],[80,50])){icon.options.html='<div class="gimap-cluster-dot" style="--dot-color:'+color+';width:20px;height:20px"></div>';icon.options.iconSize=[20,20];icon.options.iconAnchor=[10,10];}
         const marker=L.marker(center,{icon,zIndexOffset:alerts?700:watch?600:100}).addTo(markerLayer);
         const popup='<div class="gimap-cluster-list"><strong>โครงการในกลุ่ม</strong>'+projects.map(p=>'<button data-cluster-project="'+esc(p.id)+'"><span>'+esc(p.name)+'</span><b style="color:'+statusFor(p).color+'">'+fmtGI(gi(p))+'</b></button>').join('')+'</div>';
         marker.bindTooltip(count+' โครงการ · คลิกเพื่อซูม / เลือกโครงการ',{direction:'top'}).bindPopup(popup,{maxWidth:320,maxHeight:260});
@@ -715,7 +738,10 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
       }
       const p=projects[0],st=statusFor(p),isSelected=p.id===String(state.selectedId),isPeer=peerIds.has(p.id),isDim=state.selectedId!=null&&!isSelected&&!isPeer;
       const useLabel=state.showAllGI||zoom>=8||isSelected;
-      const icon=L.divIcon({className:'',html:useLabel?markerHTML(p,zoom,st,isSelected,isPeer,isDim):'<div class="gimap-cluster-dot" style="--dot-color:'+st.color+';width:12px;height:12px"></div>',iconSize:useLabel?[zoom<10?86:zoom<12?112:150,zoom<10?28:zoom<12?34:46]:[12,12],iconAnchor:useLabel?[10,19]:[6,6]});
+      const icon=L.divIcon({className:'',html:useLabel?markerHTML(p,zoom,st,isSelected,isPeer,isDim):'<div class="gimap-cluster-dot" style="--dot-color:'+st.color+';width:12px;height:12px"></div>',iconSize:useLabel?[zoom<10?86:zoom<12?112:150,zoom<10?28:zoom<12?34:54]:[12,12],iconAnchor:useLabel?[10,19]:[6,6]});
+      if(useLabel&&!positionIcon([p.lat,p.lng],icon,icon.options.iconSize,[10,19])){
+        icon.options.html='<div class="gimap-cluster-dot" style="--dot-color:'+st.color+';width:12px;height:12px"></div>';icon.options.iconSize=[12,12];icon.options.iconAnchor=[6,6];
+      }
       L.marker([p.lat,p.lng],{icon,zIndexOffset:isSelected?1000:st.key==='abnormal'?700:st.key==='watch'?600:0}).addTo(markerLayer).bindTooltip(hoverHTML(p,st),{direction:'top',offset:[0,-16],opacity:1}).on('click',()=>{state.selectedId=p.id;render();if(typeof options.onProjectSelect==='function')options.onProjectSelect({...p},getState())});
     }
 
@@ -754,7 +780,7 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
     L.tileLayer(options.tileUrl,{maxZoom:18,attribution:options.tileAttribution}).addTo(map);
     markerLayer=L.layerGroup().addTo(map);
     compareLayer=L.layerGroup().addTo(map);
-    map.on("zoomend",()=>renderMarkers());
+    map.on("moveend",()=>renderMarkers());
     $('[data-role="show-all-gi"]').onchange=e=>{state.showAllGI=e.target.checked;renderMarkers()};
     mapEl.onclick=e=>{const button=e.target.closest('[data-cluster-project]');if(button){e.stopPropagation();map.closePopup();selectProject(button.dataset.clusterProject)}};
     root.querySelectorAll('[data-view-toggle]').forEach(button=>{button.onclick=()=>{
@@ -930,9 +956,10 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 })(window);
 </script>
 
-<script src="gi-map-language.js?v=20261002-map-density1"></script>
-<script src="gi-map-v4-live.js?v=20261002-map-density1"></script>
-<script src="gi-map-location-ui.js?v=20261002-map-density1"></script>
+<script src="gi-map-label-layout.js?v=20261002-map-spacing1"></script>
+<script src="gi-map-language.js?v=20261002-map-spacing1"></script>
+<script src="gi-map-v4-live.js?v=20261002-map-spacing1"></script>
+<script src="gi-map-location-ui.js?v=20261002-map-spacing1"></script>
 
 <!--
 =========================================================
