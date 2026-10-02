@@ -15,6 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="cloud-core.js?v=20261002-presence-throttle"></script>
 
+    <script src="gi-average.js?v=20261003-map-average1"></script>
     <script src="gi-review.js?v=20260930-gi-province3"></script>
     <style>
         :root[data-theme="dark"] {
@@ -611,6 +612,7 @@ body{zoom:.75;min-height:calc(100vh / .75)}
     let allPlantsSet = new Set(), selectedPlants = new Set(), datesSet = new Set(), sourceFileNames = [];
     let availableIrrMonths = [], loadedIrrMonth = null, giFullDataLoaded = false, giPeriodLoading = false;
     let plantMasterData = {}, originalPlantData = {}, copiedIrrData = null, persistentProvinceByPlant = {};
+    let giMonthlyNotes = {};
     let giReviewByPlant = {}, savedGiOverrides = {}, activeReviewFilter = "ALL";
     let isEditMode = false, isFileUploaded = false, activeStatusFilter = 'ALL', activeProvinceFilter = 'ALL', activeTrendProvinceFilter = 'ALL', currentProvincePlant = null, currentProvinceMode='plant';
 
@@ -915,13 +917,13 @@ body{zoom:.75;min-height:calc(100vh / .75)}
         if (years.length !== 1 || months.length !== 1) return;
         const requested = years[0] + '-' + months[0];
         if (requested === loadedIrrMonth || !availableIrrMonths.includes(requested)) return;
-        giPeriodLoading = true;
+        giPeriodLoading = true;renderTableAndMetrics();
         try {
             await SolarCloud.loadCentralPeriod(requested);
         } catch (error) {
             SolarCloud.notice('โหลดเดือนไม่สำเร็จ', error.message || String(error), 'danger');
         } finally {
-            giPeriodLoading = false;
+            giPeriodLoading = false;renderTableAndMetrics();
         }
     }
 
@@ -1037,7 +1039,7 @@ body{zoom:.75;min-height:calc(100vh / .75)}
         renderTableAndMetrics();
     }
 
-    function updateNoteData(plantKey, val) { if (plantMasterData[plantKey]) plantMasterData[plantKey].note = val; }
+    function updateNoteData(plantKey,val,month){if(!month||giPeriodLoading||!plantMasterData[plantKey]||!SolarCloud.roleCanEdit())return;giMonthlyNotes[plantKey]||={};giMonthlyNotes[plantKey][month]=val;SolarCloud.scheduleSave('gi_monthly_note');}
     function updateProvinceData(plantKey,val){if(plantMasterData[plantKey]){const province=val||'ไม่ระบุ';plantMasterData[plantKey].province=province;persistentProvinceByPlant[plantKey]=province}}
 
     function copyPlantIrr(plantKey) {
@@ -1185,7 +1187,7 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
             if (activeStatusFilter !== 'ALL' && activeStatusFilter !== statusCategory) return;
             const rowNumber=matchedPlants++;
             if(!giExportRendering&&(rowNumber<giPlantPage*40||rowNumber>=(giPlantPage+1)*40))return;
-            const plantAvgIrr = plantValidDays > 0 ? (plantValidIrrSum / plantValidDays) : 0;
+            const plantAvgIrr = GiAverage.calculate(pData.dates,dateList,{min:minIrr,max:maxIrr,acceptances:giReviewByPlant[plant]?.days}).average??0;
 
             let actionBtns = isEditMode ? `
                 <button class="btn-action btn-copy" data-plant="${escapeHtml(plant)}">Copy</button>
@@ -1208,7 +1210,7 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
                 <td class="number-col normal-col col-normal" title="${giText('ค่าปกติหรือรับรองรายวันแล้ว','In range or accepted daily values')}">${plantNormalDays} / ${dateList.length}</td>
                 <td class="number-col col-kwp">${pData.capacity.toLocaleString()}</td>
                 ${dayCellsHtml}
-                <td class="col-note"><input type="text" class="note-input data-note-input" data-plant="${escapeHtml(plant)}" value="${escapeHtml(pData.note || '')}" placeholder="Add note..."></td>
+                <td class="col-note"><input type="text" class="note-input data-note-input" data-plant="${escapeHtml(plant)}" data-month="${selectedReviewMonth||''}" value="${escapeHtml(giMonthlyNotes[plant]?.[selectedReviewMonth]||'')}" placeholder="${giText(selectedReviewMonth?'Note '+selectedReviewMonth:'เลือกหนึ่งเดือนเพื่อกรอกโน้ต',selectedReviewMonth?'Note '+selectedReviewMonth:'Select one month to add note')}" ${!selectedReviewMonth||giPeriodLoading||!canEdit?'disabled':''} title="${escapeHtml(pData.note?giText('หมายเหตุเดิมของโครงการ: ','Legacy project note: ')+pData.note:'')}"></td>
             `;
             rowFragment.appendChild(tr);
         });
@@ -1248,9 +1250,10 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
             else if(button.classList.contains('btn-paste'))pastePlantIrr(p);
             else if(button.classList.contains('btn-restore'))restorePlantData(p);
         });
+        body.addEventListener('input',e=>{const input=e.target;if(input.classList.contains('data-note-input'))updateNoteData(input.dataset.plant,input.value,input.dataset.month);});
         body.addEventListener('change',e=>{const input=e.target,p=input.dataset.plant;
             if(input.classList.contains('data-irr-input'))updateCellData(p,input.dataset.date,input.value);
-            else if(input.classList.contains('data-note-input'))updateNoteData(p,input.value);
+            else if(input.classList.contains('data-note-input'))updateNoteData(p,input.value,input.dataset.month);
         });
     }
 
@@ -1416,7 +1419,7 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
         const ok=await SolarCloud.confirmDialog("ล้างข้อมูลทั้งหมด","ข้อมูลที่นำเข้าและค่าที่แก้ไขในหน้านี้จะถูกล้าง",{tone:"danger",icon:"!",confirmText:"ล้างข้อมูล"});
         if (ok) {
             allPlantsSet.clear(); selectedPlants.clear(); datesSet.clear(); selectedTrendPlants.clear(); sourceFileNames = [];
-            plantMasterData = {}; originalPlantData = {}; copiedIrrData = null; giReviewByPlant={};savedGiOverrides={};activeReviewFilter='ALL';isFileUploaded = false;
+            plantMasterData = {}; originalPlantData = {}; copiedIrrData = null; giReviewByPlant={};giMonthlyNotes={};savedGiOverrides={};activeReviewFilter='ALL';isFileUploaded = false;
             activeStatusFilter = 'ALL'; activeProvinceFilter = 'ALL';
             document.querySelectorAll('.btn-filter-status').forEach(btn => btn.classList.remove('active'));
             document.getElementById('btnFilterAll').classList.add('active');
@@ -1466,7 +1469,7 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
         const changedDates={...(savedGiOverrides[name]?.dates||{})};
         const dates=new Set([...Object.keys(original.dates||{}),...Object.keys(current.dates||{})]);
         dates.forEach(date=>{const a=current.dates?.[date],b=original.dates?.[date];if(a!==b)changedDates[date]=a===undefined?null:a;else delete changedDates[date]});
-        if(current.capacity!==original.capacity||(current.province||'ไม่ระบุ')!==(original.province||'ไม่ระบุ')||(current.note||'')!==(original.note||'')||Object.keys(changedDates).length||giReviewByPlant[name])overrides[name]={capacity:current.capacity,province:current.province||'ไม่ระบุ',note:current.note||'',dates:changedDates,...(giReviewByPlant[name]?{giReview:giReviewByPlant[name]}:{})};
+        if(current.capacity!==original.capacity||(current.province||'ไม่ระบุ')!==(original.province||'ไม่ระบุ')||(current.note||'')!==(original.note||'')||Object.keys(changedDates).length||giReviewByPlant[name]||Object.keys(giMonthlyNotes[name]||{}).length)overrides[name]={capacity:current.capacity,province:current.province||'ไม่ระบุ',note:current.note||'',dates:changedDates,...(giMonthlyNotes[name]?{monthlyNotes:structuredClone(giMonthlyNotes[name])}:{}),...(giReviewByPlant[name]?{giReview:giReviewByPlant[name]}:{})};
         else delete overrides[name];
       });
       const sortedDates=[...datesSet].sort();
@@ -1478,8 +1481,8 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
       };
     },
     async restore(base,state){
-      savedGiOverrides=structuredClone(state.overrides||{});giReviewByPlant={};
-      Object.entries(savedGiOverrides).forEach(([name,entry])=>{if(entry.giReview)giReviewByPlant[name]=structuredClone(entry.giReview)});
+      savedGiOverrides=structuredClone(state.overrides||{});giReviewByPlant={};giMonthlyNotes={};
+      Object.entries(savedGiOverrides).forEach(([name,entry])=>{if(entry.monthlyNotes)giMonthlyNotes[name]=structuredClone(entry.monthlyNotes);if(entry.giReview)giReviewByPlant[name]=structuredClone(entry.giReview)});
       activeReviewFilter=state.activeReviewFilter||'ALL';
       originalPlantData=structuredClone(base.plants||{});
       Object.values(originalPlantData).forEach(plant=>{plant.address=plant.address||'';plant.province=plant.province||detectProvince(plant.address)});
@@ -1509,9 +1512,9 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
 <script src="unified-ui.js?v=20261001-scoped"></script>
 <script src="solar-controls.js?v=20261001-3"></script>
 <script src="gi-map-peer.js?v=20261002-map-ui2"></script>
-<script src="gi-map.js?v=20261003-map-refresh1"></script>
-<script src="gi-map-data.js?v=20261003-map-refresh1"></script>
-<script src="gi-map-launcher.js?v=20261003-map-refresh1"></script>
+<script src="gi-map.js?v=20261003-map-average1"></script>
+<script src="gi-map-data.js?v=20261003-map-average1"></script>
+<script src="gi-map-launcher.js?v=20261003-map-average1"></script>
 </body>
 </html>
 
