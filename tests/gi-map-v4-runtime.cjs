@@ -22,4 +22,7 @@ const limited=project('only-september',13.05);limited.irradiance={2026:{'09':0,'
 w.dispatchEvent(new w.MessageEvent('message',{source:w,origin:'https://example.test',data:{type:'gi-map-data',payload:{...payload,projects:[limited],period:'2026-09'}}}));
 assert.ok(layers[0].items.some(x=>x.options?.icon.options.html.includes('0.000')));
 w.GIMap.setMonth(8);assert.equal(layers[0].items.filter(x=>x.coords).length,0);assert.ok(!w.document.querySelector('[data-role="project"]').textContent.includes('only-september'));assert.equal(w.document.querySelectorAll('[data-month]').length,1);
-dom.window.close();console.log('PASS: complete project/year lists, no 0/0 phantom marker, numeric labels, collision offset, sublocations and location editor.');
+vm.runInContext(fs.readFileSync('map-release/gi-map-language.js','utf8'),ctx);
+w.GIMapLanguage.set('en');assert.equal(w.document.querySelector('.gimap-timeline-title').textContent,'Monthly Irradiance Timeline');assert.equal(w.document.querySelector('[data-month="8"]').textContent,'Sep');assert.ok(w.document.querySelector('[data-view-toggle="sidebar"]').textContent.includes('filters'));
+w.GIMapLanguage.set('th');assert.equal(w.document.querySelector('.gimap-timeline-title').textContent,'ค่าแสงรายเดือน');assert.equal(w.document.querySelector('[data-month="8"]').textContent,'ก.ย.');
+w.GIMapLanguage.destroy();dom.window.close();console.log('PASS: complete project/year lists, no 0/0 phantom marker, numeric labels, collision offset, sublocations and location editor.');

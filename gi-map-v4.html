@@ -193,6 +193,19 @@
 <style>
 html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-module *::after{font-family:"Bai Jamjuree",system-ui,sans-serif!important}
 </style>
+<style>
+#gi-map-module .gimap-timeline{background:#edf3f8;border:1px solid #b8c9d8;padding:13px 15px;box-shadow:0 6px 24px #172a3a30}
+#gi-map-module .gimap-timeline-title{font-size:14px;color:#172a3a}
+#gi-map-module .gimap-month-grid{gap:6px}
+#gi-map-module .gimap-month-btn{height:40px;background:#dce7f0;border:1px solid #9db2c5;color:#20384e;font-size:12px;opacity:1}
+#gi-map-module .gimap-month-btn:hover{background:#c1d5e8;border-color:#367bf5}
+#gi-map-module .gimap-month-btn.active{background:#203e5b;color:white;border:2px solid #367bf5;box-shadow:0 2px 8px #203e5b30}
+#gi-map-module .gimap-month-btn.no-data{background:#f4f7fa;border-style:dashed;color:#465b6c;opacity:1}
+#gi-map-module .gimap-month-btn.no-data.active{background:#203e5b;color:white}
+#gi-map-module .gimap-month-btn.active::after{background:#fff}
+#gi-map-module .gimap-timeline-legend{font-size:10px;color:#465b6c}
+#gi-map-module .gimap-year-select{font-size:12px;border-color:#9db2c5;background:#fff;color:#172a3a}
+</style>
 </head>
 
 <body style="margin:0;height:100vh">
@@ -897,8 +910,9 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 })(window);
 </script>
 
-<script src="gi-map-v4-live.js?v=20261002-map-period1"></script>
-<script src="gi-map-location-ui.js?v=20261002-map-period1"></script>
+<script src="gi-map-language.js?v=20261002-map-lang1"></script>
+<script src="gi-map-v4-live.js?v=20261002-map-lang1"></script>
+<script src="gi-map-location-ui.js?v=20261002-map-lang1"></script>
 
 <!--
 =========================================================
