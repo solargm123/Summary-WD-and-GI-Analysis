@@ -206,6 +206,20 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 #gi-map-module .gimap-timeline-legend{font-size:10px;color:#465b6c}
 #gi-map-module .gimap-year-select{font-size:12px;border-color:#9db2c5;background:#fff;color:#172a3a}
 </style>
+<style>
+#gi-map-module .gimap-density-cluster{width:54px;height:54px;border-radius:50%;background:#fff;border:3px solid var(--cluster-color);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 3px 12px #172a3a30;color:#172a3a;position:relative}
+#gi-map-module .gimap-density-cluster b{font-size:19px;line-height:1.1}
+#gi-map-module .gimap-density-cluster small{font-size:8px}
+#gi-map-module .gimap-cluster-badges{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);display:flex;gap:3px;white-space:nowrap}
+#gi-map-module .gimap-cluster-badges em{font-style:normal;color:white;border-radius:9px;padding:2px 5px;font-size:9px;background:#f39a35}
+#gi-map-module .gimap-cluster-badges .alert{background:#df5361}
+#gi-map-module .gimap-cluster-list{max-height:240px;overflow:auto;min-width:220px}
+#gi-map-module .gimap-cluster-list button{display:flex;justify-content:space-between;gap:12px;width:100%;text-align:left;padding:8px;border:0;border-bottom:1px solid #e4eaee;background:white;cursor:pointer;font-size:11px}
+#gi-map-module .gimap-cluster-list button:hover{background:#edf3f8}
+#gi-map-module .gimap-gi-switch{display:flex;align-items:center;gap:5px;margin:0;background:white;border:1px solid #c2cfdb;border-radius:10px;padding:5px 9px;color:#20384e;font-size:10px;box-shadow:0 2px 8px #172a3a20}
+#gi-map-module .gimap-gi-switch input{width:14px;height:14px;accent-color:#203e5b}
+#gi-map-module .gimap-view-controls{flex-wrap:wrap;max-width:calc(100% - 24px)}
+</style>
 </head>
 
 <body style="margin:0;height:100vh">
@@ -272,6 +286,7 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 
     <main class="gimap-main">
       <nav class="gimap-view-controls" aria-label="แสดงหรือซ่อนส่วนประกอบ">
+        <label class="gimap-gi-switch"><input type="checkbox" data-role="show-all-gi"> <span>แสดงค่า GI ทั้งหมด</span></label>
         <button class="gimap-btn" data-view-toggle="sidebar" aria-expanded="true">ซ่อนตัวกรอง</button>
         <button class="gimap-btn" data-view-toggle="topbar" aria-expanded="true">ซ่อนสรุป</button>
         <button class="gimap-btn" data-view-toggle="timeline" aria-expanded="true">ซ่อนเดือน</button>
@@ -392,7 +407,7 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 
   const state={
     region:"",province:"",project:"",search:"",
-    year:null,month:0,selectedId:null,
+    year:null,month:0,selectedId:null,showAllGI:false,
     rules:{radius:20,minPeers:3,normal:-10,abnormal:-20,method:"median"}
   };
 
@@ -674,32 +689,32 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
       (analysis?.peers||[]).forEach(x=>{if(!renderList.some(p=>p.id===x.project.id))renderList.push(x.project)});
     }
 
-    if(zoom<8){
-      const groups=[];
-      for(const p of renderList.filter(validProject)){const pixel=map.latLngToLayerPoint([p.lat,p.lng]);let group=groups.find(g=>Math.hypot(g.x-pixel.x,g.y-pixel.y)<=55);if(!group){group={x:pixel.x,y:pixel.y,projects:[]};groups.push(group)}if(!group.projects.some(q=>q.id===p.id))group.projects.push(p)}
-      for(const group of groups){const projects=group.projects,count=projects.length,center=[projects.reduce((s,p)=>s+p.lat,0)/count,projects.reduce((s,p)=>s+p.lng,0)/count];
-        const statuses=projects.map(statusFor),status=statuses.find(s=>s.key==='abnormal')||statuses.find(s=>s.key==='watch')||statuses.find(s=>s.key==='normal')||statuses[0];
-        const containsSelected=projects.some(p=>p.id===String(state.selectedId)),size=count>1?30:12;
-        const icon=L.divIcon({className:'',html:'<div class="gimap-cluster-dot '+(containsSelected?'selected':'')+'" style="--dot-color:'+status.color+';width:'+size+'px;height:'+size+'px">'+(count>1?count:'')+'</div>',iconSize:[size,size],iconAnchor:[size/2,size/2]});
-        L.marker(center,{icon,zIndexOffset:containsSelected?1000:0}).addTo(markerLayer).bindTooltip(count+' โครงการที่แสดง · คลิกเพื่อซูม',{direction:'top'}).on('click',()=>{if(count===1){state.selectedId=projects[0].id;map.setView([projects[0].lat,projects[0].lng],11);render()}else map.fitBounds(L.latLngBounds(projects.map(p=>[p.lat,p.lng])),{padding:[65,65],maxZoom:Math.min(14,zoom+3),animate:true})});
-      }
-      renderComparison();renderDetail();return;
+    const groups=[];
+    const candidates=renderList.filter(validProject);
+    for(const p of candidates){
+      const pixel=map.latLngToLayerPoint([p.lat,p.lng]);
+      const group=!state.showAllGI&&p.id!==String(state.selectedId)?groups.find(g=>!g.selected&&Math.abs(g.x-pixel.x)<(zoom<8?55:110)&&Math.abs(g.y-pixel.y)<(zoom<8?55:48)):null;
+      if(group)group.projects.push(p);else groups.push({x:pixel.x,y:pixel.y,selected:p.id===String(state.selectedId),projects:[p]});
     }
-
-    const occupied=[];
-    renderList.filter(validProject).forEach(p=>{
-      const st=statusFor(p),isSelected=p.id===String(state.selectedId),isPeer=peerIds.has(p.id);
-      const isDim=state.selectedId!=null&&!isSelected&&!isPeer;
-      const icon=L.divIcon({className:"",html:markerHTML(p,zoom,st,isSelected,isPeer,isDim),iconSize:[zoom<10?86:zoom<12?112:150,zoom<10?28:zoom<12?34:46],iconAnchor:[10,19]});
-      const screen=map.latLngToLayerPoint([p.lat,p.lng]);let group=occupied.find(x=>Math.abs(x.x-screen.x)<(zoom<10?90:zoom<12?116:155)&&Math.abs(x.y-screen.y)<(zoom<10?30:46));if(!group){group={x:screen.x,y:screen.y,count:0};occupied.push(group)}const index=group.count++,offset=Math.floor(index/3)*(zoom<10?32:48),dx=(index%3)*(zoom<10?94:zoom<12?120:160);icon.options.iconAnchor=[10-dx,19+offset];if(offset||dx){const label=map.layerPointToLatLng([screen.x+dx,screen.y-offset]);L.polyline([[p.lat,p.lng],label],{color:'#718096',weight:1,opacity:.65,interactive:false}).addTo(markerLayer)}
-      const m=L.marker([p.lat,p.lng],{icon,zIndexOffset:isSelected?1000:isPeer?500:0}).addTo(markerLayer);
-      m.bindTooltip(hoverHTML(p,st),{direction:"top",offset:[0,-16],opacity:1});
-      m.on("click",()=>{
-        state.selectedId=p.id;
-        render();
-        if(typeof options.onProjectSelect==="function")options.onProjectSelect({...p},getState());
-      });
-    });
+    for(const group of groups){
+      const projects=group.projects,count=projects.length;
+      if(count>1){
+        const statuses=projects.map(statusFor),alerts=statuses.filter(s=>s.key==='abnormal').length,watch=statuses.filter(s=>s.key==='watch').length;
+        const color=alerts?'#df5361':watch?'#f39a35':statuses.some(s=>s.key==='normal')?'#25a66a':'#98a3ab';
+        const center=[projects.reduce((sum,p)=>sum+p.lat,0)/count,projects.reduce((sum,p)=>sum+p.lng,0)/count];
+        const badge=(alerts?'<em class="alert">'+alerts+' <span>ผิดปกติ</span></em>':'')+(watch?'<em class="watch">'+watch+' <span>เฝ้าระวัง</span></em>':'');
+        const icon=L.divIcon({className:'',html:'<div class="gimap-density-cluster" style="--cluster-color:'+color+'"><b>'+count+'</b><small>โครงการ</small><div class="gimap-cluster-badges">'+badge+'</div></div>',iconSize:[54,54],iconAnchor:[27,27]});
+        const marker=L.marker(center,{icon,zIndexOffset:alerts?700:watch?600:100}).addTo(markerLayer);
+        const popup='<div class="gimap-cluster-list"><strong>โครงการในกลุ่ม</strong>'+projects.map(p=>'<button data-cluster-project="'+esc(p.id)+'"><span>'+esc(p.name)+'</span><b style="color:'+statusFor(p).color+'">'+fmtGI(gi(p))+'</b></button>').join('')+'</div>';
+        marker.bindTooltip(count+' โครงการ · คลิกเพื่อซูม / เลือกโครงการ',{direction:'top'}).bindPopup(popup,{maxWidth:320,maxHeight:260});
+        marker.on('click',()=>{const spread=projects.some(p=>Math.abs(p.lat-projects[0].lat)+Math.abs(p.lng-projects[0].lng)>.00001);if(spread&&zoom<16)map.fitBounds(L.latLngBounds(projects.map(p=>[p.lat,p.lng])),{padding:[80,80],maxZoom:Math.min(18,zoom+2),animate:true});else marker.openPopup()});
+        continue;
+      }
+      const p=projects[0],st=statusFor(p),isSelected=p.id===String(state.selectedId),isPeer=peerIds.has(p.id),isDim=state.selectedId!=null&&!isSelected&&!isPeer;
+      const useLabel=state.showAllGI||zoom>=8||isSelected;
+      const icon=L.divIcon({className:'',html:useLabel?markerHTML(p,zoom,st,isSelected,isPeer,isDim):'<div class="gimap-cluster-dot" style="--dot-color:'+st.color+';width:12px;height:12px"></div>',iconSize:useLabel?[zoom<10?86:zoom<12?112:150,zoom<10?28:zoom<12?34:46]:[12,12],iconAnchor:useLabel?[10,19]:[6,6]});
+      L.marker([p.lat,p.lng],{icon,zIndexOffset:isSelected?1000:st.key==='abnormal'?700:st.key==='watch'?600:0}).addTo(markerLayer).bindTooltip(hoverHTML(p,st),{direction:'top',offset:[0,-16],opacity:1}).on('click',()=>{state.selectedId=p.id;render();if(typeof options.onProjectSelect==='function')options.onProjectSelect({...p},getState())});
+    }
 
     if(selected&&validProject(selected)){(selected.meta?.points||[]).slice(1).forEach((point,i)=>{L.circleMarker([point.lat,point.lng],{radius:7,color:'#367bf5',weight:2,fillOpacity:.7}).bindTooltip(esc(selected.name)+' · '+(i+2)+'/'+selected.meta.points.length+' · GI '+fmtGI(gi(selected))).addTo(markerLayer)})}
     renderComparison();
@@ -737,6 +752,8 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
     markerLayer=L.layerGroup().addTo(map);
     compareLayer=L.layerGroup().addTo(map);
     map.on("zoomend",()=>renderMarkers());
+    $('[data-role="show-all-gi"]').onchange=e=>{state.showAllGI=e.target.checked;renderMarkers()};
+    mapEl.onclick=e=>{const button=e.target.closest('[data-cluster-project]');if(button){e.stopPropagation();map.closePopup();selectProject(button.dataset.clusterProject)}};
     root.querySelectorAll('[data-view-toggle]').forEach(button=>{button.onclick=()=>{
       const key=button.dataset.viewToggle,hidden=root.classList.toggle('hide-'+key);
       button.setAttribute('aria-expanded',String(!hidden));
@@ -910,9 +927,9 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 })(window);
 </script>
 
-<script src="gi-map-language.js?v=20261002-map-lang1"></script>
-<script src="gi-map-v4-live.js?v=20261002-map-lang1"></script>
-<script src="gi-map-location-ui.js?v=20261002-map-lang1"></script>
+<script src="gi-map-language.js?v=20261002-map-density1"></script>
+<script src="gi-map-v4-live.js?v=20261002-map-density1"></script>
+<script src="gi-map-location-ui.js?v=20261002-map-density1"></script>
 
 <!--
 =========================================================

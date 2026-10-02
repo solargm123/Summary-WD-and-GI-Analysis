@@ -2,6 +2,7 @@
 'use strict';
 const root=document.getElementById('gi-map-module');let lang='th',queued=false;
 const pairs=[
+['แสดงค่า GI ทั้งหมด','Show all GI values'],['โครงการในกลุ่ม','Projects in this group'],
 ['แผนที่ค่าแสง','Global Irradiance Map'],['ภาพรวมประสิทธิภาพโซลาร์ประเทศไทย','Thailand Solar Performance View'],
 ['← กลับ Global Irradiance Analysis','← Back to Global Irradiance Analysis'],
 ['ค้นหาและกรองข้อมูล','Search & filters'],['ค้นหาชื่อโครงการ...','Search project name...'],['ค้นหาโครงการ','Search projects'],
@@ -34,7 +35,7 @@ function translate(value){const trimmed=value.trim(),pair=dictionary.get(trimmed
  const count=out.match(/^(\d+) (projects|โครงการ)$/);if(count)out=count[1]+' '+(lang==='en'?'projects':'โครงการ');return out;
 }
 function apply(){queued=false;const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let node;
- while((node=walker.nextNode())){if(node.parentElement.closest('script,style,[data-map-language],.gimap-marker-label b,.gimap-peer b,.gimap-location-row b,.gimap-detail h3,.gimap-hover-card h4'))continue;const value=translate(node.nodeValue);if(value!==node.nodeValue)node.nodeValue=value}
+ while((node=walker.nextNode())){if(node.parentElement.closest('script,style,[data-map-language],.gimap-marker-label b,.gimap-peer b,.gimap-location-row b,.gimap-detail h3,.gimap-hover-card h4,[data-cluster-project] span'))continue;const value=translate(node.nodeValue);if(value!==node.nodeValue)node.nodeValue=value}
  root.querySelectorAll('input[placeholder]').forEach(input=>{const value=translate(input.placeholder);if(value!==input.placeholder)input.placeholder=value});
  document.documentElement.lang=lang;const label=lang==='th'?'TH / EN':'EN / TH';if(button.textContent!==label)button.textContent=label;button.setAttribute('aria-label',lang==='th'?'เปลี่ยนเป็นภาษาอังกฤษ':'Switch to Thai');
 }

@@ -1,22 +1,24 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert/strict'),{JSDOM}=require('jsdom');
 const html=fs.readFileSync('map-release/gi-map-v4.html','utf8'),dom=new JSDOM(html,{runScripts:'outside-only',url:'https://example.test/map'}),w=dom.window,ctx=dom.getInternalVMContext(),layers=[];
-let zoom=9;
+let zoom=9,pixelSpread=false;
 w.requestAnimationFrame=callback=>callback();
-const map={invalidateSize(){return this},setView(){return this},on(){return this},getZoom(){return zoom},fitBounds(){},flyTo(){},panTo(){},latLngToLayerPoint(){return {x:500,y:300}},layerPointToLatLng(x){return x},remove(){}};
-const shape=()=>({on(){return this},bindTooltip(){return this},addTo(layer){layer.items?.push(this);return this}});
+const map={invalidateSize(){return this},setView(){return this},on(){return this},closePopup(){},getZoom(){return zoom},fitBounds(){},flyTo(){},panTo(){},latLngToLayerPoint(coords){return {x:pixelSpread?coords[0]*100000:500,y:300}},layerPointToLatLng(x){return x},remove(){}};
+const shape=()=>({bindPopup(html){this.popup=html;return this},openPopup(){return this},on(){return this},bindTooltip(){return this},addTo(layer){layer.items?.push(this);return this}});
 w.L={map:()=>map,control:{zoom:shape},tileLayer:shape,layerGroup:()=>{const layer={items:[],addTo(){return this},clearLayers(){this.items=[]}};layers.push(layer);return layer},latLngBounds:x=>x,divIcon:options=>({options}),marker:(coords,options)=>Object.assign(shape(),{coords,options}),circle:shape,circleMarker:shape,polyline:shape};
 for(const m of html.matchAll(/<script>([\s\S]*?)<\/script>/g))vm.runInContext(m[1],ctx);
 for(const path of ['gi-map-v4-live.js','gi-map-location-ui.js'])vm.runInContext(fs.readFileSync('map-release/'+path,'utf8'),ctx);
 const project=(id,lat)=>({projectId:id,projectName:'Plant & '+id,latitude:lat,longitude:lat==null?null:100,province:'ชลบุรี',capacity:100,irradiance:{2023:{'03':5},2026:{'09':4}},meta:{dates:{'2026-09-01':4},points:lat==null?[]:[{lat,lng:100},{lat:lat+.001,lng:100.001}],expected:[]}});
 const payload={projects:[project('a',13),project('b',13.01),project('c',13.02),project('missing',null)],period:'2026-09',label:'LIVE DATA',canEdit:true,locationNote:'DB',unlocated:1};
 w.dispatchEvent(new w.MessageEvent('message',{source:w,origin:'https://example.test',data:{type:'gi-map-data',payload}}));
-assert.equal(w.GIMap.getState().dataCount,4);assert.deepEqual([...w.GIMap.getState().availableYears],[2026,2023]);assert.equal(layers[0].items.filter(x=>x.coords).length,3);assert.ok(layers[0].items.some(x=>x.options?.icon.options.html.includes('4.000')));assert.ok(layers[0].items.filter(x=>x.coords).some(x=>x.options.icon.options.iconAnchor[0]<10));
+const allGI=w.document.querySelector('[data-role="show-all-gi"]');allGI.checked=true;allGI.dispatchEvent(new w.Event('change'));
+assert.equal(w.GIMap.getState().dataCount,4);assert.deepEqual([...w.GIMap.getState().availableYears],[2026,2023]);assert.equal(layers[0].items.filter(x=>x.coords).length,3);assert.ok(layers[0].items.some(x=>x.options?.icon.options.html.includes('4.000')));assert.ok(layers[0].items.filter(x=>x.coords).every(x=>x.options.icon.options.iconAnchor[0]===10));
 assert.ok(w.GIMap.selectProject('a'));assert.ok(layers[0].items.length>3);
 w.document.querySelector('[data-action="locations"]').click();assert.ok(w.document.querySelector('.gimap-location-backdrop').classList.contains('show'));assert.ok(w.document.querySelector('[data-list]').textContent.includes('missing'));
 assert.equal(w.GIMapLocationUI.parse('13,100\n14,101').length,2);assert.throws(()=>w.GIMapLocationUI.parse('13,100\n13,100'));assert.throws(()=>w.GIMapLocationUI.parse('91,100'));
 w.document.querySelector('[data-missing]').checked=false;w.document.querySelector('[data-missing]').dispatchEvent(new w.Event('change',{bubbles:true}));assert.equal(w.document.querySelectorAll('[data-edit]').length,4);
-zoom=6;w.GIMap.refresh();const clusters=layers[0].items.filter(x=>x.coords);assert.equal(clusters.length,1);assert.ok(clusters[0].options.icon.options.html.includes('>3</div>'));assert.ok(!clusters[0].options.icon.options.html.includes('4.000'));
-zoom=8;w.GIMap.refresh();assert.ok(layers[0].items.some(x=>x.options?.icon.options.html.includes('4.000')));
+w.document.querySelector('[data-action="clear-selection"]').click();allGI.checked=false;allGI.dispatchEvent(new w.Event('change'));zoom=6;w.GIMap.refresh();const clusters=layers[0].items.filter(x=>x.coords);assert.equal(clusters.length,1);assert.ok(clusters[0].options.icon.options.html.includes('<b>3</b>'));assert.ok(!clusters[0].options.icon.options.html.includes('4.000'));
+zoom=12;w.GIMap.refresh();assert.equal(layers[0].items.filter(x=>x.coords).length,1);assert.ok(layers[0].items.find(x=>x.coords).popup.includes('data-cluster-project'));pixelSpread=true;w.GIMap.refresh();assert.equal(layers[0].items.filter(x=>x.coords).length,3);pixelSpread=false;
+zoom=8;allGI.checked=true;allGI.dispatchEvent(new w.Event('change'));w.GIMap.refresh();assert.ok(layers[0].items.some(x=>x.options?.icon.options.html.includes('4.000')));
 for(const key of ['sidebar','topbar','timeline']){const button=w.document.querySelector('[data-view-toggle="'+key+'"]');button.click();assert.ok(w.document.querySelector('#gi-map-module').classList.contains('hide-'+key));assert.equal(button.getAttribute('aria-expanded'),'false');button.click();assert.ok(!w.document.querySelector('#gi-map-module').classList.contains('hide-'+key));}
 const limited=project('only-september',13.05);limited.irradiance={2026:{'09':0,'08':null}};
 w.dispatchEvent(new w.MessageEvent('message',{source:w,origin:'https://example.test',data:{type:'gi-map-data',payload:{...payload,projects:[limited],period:'2026-09'}}}));
@@ -25,4 +27,4 @@ w.GIMap.setMonth(8);assert.equal(layers[0].items.filter(x=>x.coords).length,0);a
 vm.runInContext(fs.readFileSync('map-release/gi-map-language.js','utf8'),ctx);
 w.GIMapLanguage.set('en');assert.equal(w.document.querySelector('.gimap-timeline-title').textContent,'Monthly Irradiance Timeline');assert.equal(w.document.querySelector('[data-month="8"]').textContent,'Sep');assert.ok(w.document.querySelector('[data-view-toggle="sidebar"]').textContent.includes('filters'));
 w.GIMapLanguage.set('th');assert.equal(w.document.querySelector('.gimap-timeline-title').textContent,'ค่าแสงรายเดือน');assert.equal(w.document.querySelector('[data-month="8"]').textContent,'ก.ย.');
-w.GIMapLanguage.destroy();dom.window.close();console.log('PASS: complete project/year lists, no 0/0 phantom marker, numeric labels, collision offset, sublocations and location editor.');
+w.GIMapLanguage.destroy();dom.window.close();console.log('PASS: complete project/year lists, no 0/0 phantom marker, numeric labels, density clusters at close zoom, separated points, cluster project list, sublocations, periods, language and location editor.');
