@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20261002-combined-note"></script>
+    <script src="cloud-core.js?v=20261002-safe-priority1"></script>
     <style> 
         html, body, body *:not(i), button, input, select, option, textarea, table, th, td, code {
             font-family: 'Bai Jamjuree', Tahoma, Arial, sans-serif !important;
@@ -2350,14 +2350,25 @@ body.wd-theme-switching *::after{
             grid.innerHTML = '';
 
             const includedDays = typeof WDPeriod !== 'undefined' ? WDPeriod.dayList(plant) : null;
-            const daysLimit = includedDays ? currentDaysInMonth : Number(plant.customDaysInMonth) || currentDaysInMonth;
+            const daysLimit = currentDaysInMonth;
+            const selectedMonth=document.getElementById('monthSelect').value;
+            const [year,month]=selectedMonth.split('-').map(Number);
+            const weekdays=currentLanguage==='th'?['จ','อ','พ','พฤ','ศ','ส','อา']:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+            weekdays.forEach(label=>{const node=document.createElement('span');node.className='text-center text-xs font-bold text-slate-500 dark:text-slate-400';node.textContent=label;grid.appendChild(node)});
+            const offset=(new Date(year,month-1,1).getDay()+6)%7;
+            for(let i=0;i<offset;i++){const node=document.createElement('span');node.setAttribute('aria-hidden','true');grid.appendChild(node)}
             for (let d = 1; d <= daysLimit; d++) {
-                if (includedDays && !includedDays.includes(d)) continue;
+                const available=includedDays?includedDays.includes(d):d<=(Number(plant.customDaysInMonth)||currentDaysInMonth);
                 const isSelected = plant.lossDaysArray.includes(d);
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = `py-1.5 rounded text-xs font-mono font-semibold transition border ${isSelected ? 'bg-amber-500 text-white border-amber-600 shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'}`;
                 btn.innerText = d;
+                btn.dataset.lossDay=String(d);
+                btn.disabled=!available;
+                btn.setAttribute('aria-pressed',String(isSelected));
+                btn.setAttribute('aria-label',selectedMonth+'-'+String(d).padStart(2,'0'));
+                if(!available){btn.className='py-1.5 rounded text-xs font-semibold border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 text-slate-400 cursor-not-allowed';btn.title=currentLanguage==='th'?'วันนี้ไม่อยู่ในวันที่ใช้คำนวณ':'Outside selected calculation dates'}
                 btn.onclick = () => {
                     togglePlantLossDay(id, d);
                     openLossModal(id);
@@ -2803,8 +2814,8 @@ body.wd-theme-switching *::after{
 
         syncTableScrollbars();
     </script>
-    <script src="working-day-summary.js?v=20261002-combined-note"></script>
-    <script src="working-day-period.js?v=20261002-combined-note"></script>
+    <script src="working-day-summary.js?v=20261002-safe-priority1"></script>
+    <script src="working-day-period.js?v=20261002-safe-priority1"></script>
     <script>
       const workingDayCloudAdapter={
         presenceContext:()=>WDReview.presenceContext(),
@@ -2824,7 +2835,7 @@ body.wd-theme-switching *::after{
           return {
             baseData:{records:rawRecordsByFile,detectedMonths:[...detectedMonths]},
             // Keep legacy period entries for synchronization; only versioned entries affect calculations.
-            userState:{selectedMonth,lossFactor:'0.9',sunHoursTarget:document.getElementById('sunHoursTarget').value,sunHoursMode:sunMode,sunHoursCustom:document.getElementById('inputSunHoursCustom').value,monthLossStateVersion:restoredMonthLossStateVersion,overrides},
+            userState:{selectedMonth,visibleProjects:plantData.filter(p=>p.visible!==false).map(p=>p.name.toLowerCase()),lossFactor:'0.9',sunHoursTarget:document.getElementById('sunHoursTarget').value,sunHoursMode:sunMode,sunHoursCustom:document.getElementById('inputSunHoursCustom').value,monthLossStateVersion:restoredMonthLossStateVersion,overrides},
             periodKey:selectedMonth,
             sourceFiles:[...new Set(rawRecordsByFile.map(record=>record.fileName).filter(Boolean))]
           };
@@ -2862,13 +2873,14 @@ body.wd-theme-switching *::after{
             if(saved){
               if(saved.cap!=null)plant.cap=saved.cap;
               if(saved.note!=null)plant.note=saved.note;
-              if(saved.visible!=null)plant.visible=saved.visible;
+              // Visibility is personal; legacy shared visibility must not hide another user's plants.
               if(saved.calculationMethod&&!Object.prototype.hasOwnProperty.call(mktEstimateByProject,key)&&!methodOverridesByMonth[selected]?.[key]){
                 methodOverridesByMonth[selected]=methodOverridesByMonth[selected]||{};
                 methodOverridesByMonth[selected][key]=saved.calculationMethod;
                 plant.calculationMethod=saved.calculationMethod;plant.methodSource='manual';
               }
             }
+            plant.visible=!Array.isArray(state.visibleProjects)||state.visibleProjects.includes(plant.name.toLowerCase());
             plant.mktEstimate=mktEstimateByProject[key]||'';
             const manual=methodOverridesByMonth[selected]?.[key];
             if(manual){plant.calculationMethod=manual;plant.methodSource='manual'}
@@ -2991,3 +3003,4 @@ body.wd-theme-switching *::after{
 <script src="solar-controls.js?v=20261001-3"></script>
 </body>
 </html>
+
