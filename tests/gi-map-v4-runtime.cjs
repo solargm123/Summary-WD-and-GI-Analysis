@@ -1,0 +1,16 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert/strict'),{JSDOM}=require('jsdom');
+const html=fs.readFileSync('map-release/gi-map-v4.html','utf8'),dom=new JSDOM(html,{runScripts:'outside-only',url:'https://example.test/map'}),w=dom.window,ctx=dom.getInternalVMContext(),layers=[];
+const map={setView(){return this},on(){return this},getZoom(){return 6},fitBounds(){},flyTo(){},panTo(){},latLngToLayerPoint(){return {x:500,y:300}},layerPointToLatLng(x){return x},remove(){}};
+const shape=()=>({on(){return this},bindTooltip(){return this},addTo(layer){layer.items?.push(this);return this}});
+w.L={map:()=>map,control:{zoom:shape},tileLayer:shape,layerGroup:()=>{const layer={items:[],addTo(){return this},clearLayers(){this.items=[]}};layers.push(layer);return layer},latLngBounds:x=>x,divIcon:options=>({options}),marker:(coords,options)=>Object.assign(shape(),{coords,options}),circle:shape,circleMarker:shape,polyline:shape};
+for(const m of html.matchAll(/<script>([\s\S]*?)<\/script>/g))vm.runInContext(m[1],ctx);
+for(const path of ['gi-map-v4-live.js','gi-map-location-ui.js'])vm.runInContext(fs.readFileSync('map-release/'+path,'utf8'),ctx);
+const project=(id,lat)=>({projectId:id,projectName:'Plant & '+id,latitude:lat,longitude:lat==null?null:100,province:'ชลบุรี',capacity:100,irradiance:{2023:{'03':5},2026:{'09':4}},meta:{dates:{'2026-09-01':4},points:lat==null?[]:[{lat,lng:100},{lat:lat+.001,lng:100.001}],expected:[]}});
+const payload={projects:[project('a',13),project('b',13.01),project('c',13.02),project('missing',null)],period:'2026-09',label:'LIVE DATA',canEdit:true,locationNote:'DB',unlocated:1};
+w.dispatchEvent(new w.MessageEvent('message',{source:w,origin:'https://example.test',data:{type:'gi-map-data',payload}}));
+assert.equal(w.GIMap.getState().dataCount,4);assert.deepEqual([...w.GIMap.getState().availableYears],[2026,2023]);assert.equal(layers[0].items.filter(x=>x.coords).length,3);assert.ok(layers[0].items.some(x=>x.options?.icon.options.html.includes('4.000')));assert.ok(layers[0].items.filter(x=>x.coords).some(x=>x.options.icon.options.iconAnchor[0]<10));
+assert.ok(w.GIMap.selectProject('a'));assert.ok(layers[0].items.length>3);
+w.document.querySelector('[data-action="locations"]').click();assert.ok(w.document.querySelector('.gimap-location-backdrop').classList.contains('show'));assert.ok(w.document.querySelector('[data-list]').textContent.includes('missing'));
+assert.equal(w.GIMapLocationUI.parse('13,100\n14,101').length,2);assert.throws(()=>w.GIMapLocationUI.parse('13,100\n13,100'));assert.throws(()=>w.GIMapLocationUI.parse('91,100'));
+w.document.querySelector('[data-missing]').checked=false;w.document.querySelector('[data-missing]').dispatchEvent(new w.Event('change',{bubbles:true}));assert.equal(w.document.querySelectorAll('[data-edit]').length,4);
+dom.window.close();console.log('PASS: complete project/year lists, no 0/0 phantom marker, numeric labels, collision offset, sublocations and location editor.');
