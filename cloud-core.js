@@ -3,7 +3,7 @@
   const CONFIG={
     url:'https://lncoukvtjsgpeyhotukh.supabase.co',
     key:'sb_publishable_pkp8EP-vx61lX7IdF8BDVw_JxgQU0tS',
-    siteRoot:'https://solargm123.github.io/Summary-WD-and-GI-Analysis/'
+    siteRoot:new URL('./',document.baseURI).href
   };
   const deferredSharedFields=new Map();
   let presenceFlushTimer=null,presenceLastSent=0,presenceQueuedForce=false;
@@ -695,4 +695,5 @@ function analysisUrl(project){const page=project.analysis_type==='working_day'?'
   async function openCentralAnalysis(type){const project=await ensureCentralProject(type);if(!project.dataset_id){const {data:dataset,error}=await getClient().from('shared_datasets').select('id').eq('workspace_id',(currentMembership||await membership()).workspace_id).order('updated_at',{ascending:false}).limit(1).maybeSingle();if(error)throw error;if(dataset){const attached=await getClient().rpc('attach_dataset_to_project',{p_project_id:project.id,p_dataset_id:dataset.id});if(attached.error)throw attached.error}}location.href=analysisUrl(project)}
   global.SolarCloud={pendingSharedPaths:()=>pendingPatches().map(p=>p.path),deferredSharedPaths:()=>[...deferredSharedFields.values()].map(x=>x.path),refreshPresence:()=>updatePresence(true),collaborationActor:()=>presenceSession?{userId:presenceSession.userId,name:presenceSession.name}:null,isSharedValueSaved:(path,value)=>JSON.stringify(valueAtPath(lastSharedState,path))===JSON.stringify(value),CONFIG,dialog,notice,confirmDialog,setLanguage,getLanguage,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,closeHistory,datasets,useDataset,resolveConflict,downloadLocalDraft,reloadLatest,back:backToCenter,roleCanEdit,roleCanAdmin,centralDatasetStatus,databaseStorageStatus,loadCentralPeriod,loadCentralPrRange,loadCentralPrSummary,loadPrProjectRecords,loadCentralFullData,showPresence,useLatestConflict,keepMyConflict,prepareCentralUpload,commitCentralUpload,prepareCentralBatchUpload,commitCentralBatchUpload,uploadCentralDataset,openCentralAnalysis};
 })(window);
+
 
