@@ -39,7 +39,7 @@ addEventListener('message',e=>{
  GIMap.setData(projects,{label:payload.label});
  if(previous?.year){GIMap.setYear(previous.year);GIMap.setMonth(previous.month+1)}else if(payload.period){GIMap.setYear(+payload.period.slice(0,4));GIMap.setMonth(+payload.period.slice(5,7))}
  const badge=document.querySelector('[data-role="data-badge"]');badge.title=payload.locationNote+' · '+payload.unlocated+' projects without mapped coordinates';
- GIMap.fit();window.dispatchEvent(new CustomEvent("gi-map-payload",{detail:payload}));
+ GIMap.fit();parent.postMessage({type:'gi-map-loaded'},location.origin);window.dispatchEvent(new CustomEvent("gi-map-payload",{detail:payload}));
 });
 document.querySelector('[data-action="return-gi"]').addEventListener('click',()=>parent.postMessage({type:'gi-map-back'},location.origin));
 window.addEventListener('load',()=>{if(parent!==window)parent.postMessage({type:'gi-map-ready'},location.origin);else document.querySelector('[data-role="data-badge"]').textContent='Open through Map overview'});

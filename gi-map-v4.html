@@ -561,9 +561,10 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
   }
 
   function populateFilters(){
+    $$('[data-role="region-chips"] .gimap-chip').forEach(b=>{b.textContent=(b.dataset.region||'ทั้งหมด')+' ('+data.filter(p=>gi(p)!==null&&(!b.dataset.region||p.region===b.dataset.region)).length+')'});
     const prov=[...new Set(data.filter(p=>!state.region||p.region===state.region).map(p=>p.province).filter(Boolean))].sort();
     const provEl=$('[data-role="province"]');
-    provEl.innerHTML='<option value="">ทุกจังหวัด</option>'+prov.map(v=>`<option value="${esc(v)}" ${v===state.province?"selected":""}>${esc(v)}</option>`).join("");
+    provEl.innerHTML='<option value="">ทุกจังหวัด</option>'+prov.map(v=>`<option value="${esc(v)}" ${v===state.province?"selected":""}>${esc(v)} (${data.filter(p=>gi(p)!==null&&p.province===v&&(!state.region||p.region===state.region)).length})</option>`).join("");
 
     const plist=data.filter(p=>gi(p)!==null&&(!state.region||p.region===state.region)&&(!state.province||p.province===state.province));
     const projEl=$('[data-role="project"]');
@@ -975,11 +976,11 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 })(window);
 </script>
 
-<script src="gi-map-label-layout.js?v=20261002-map-picker1"></script>
-<script src="gi-map-language.js?v=20261002-map-picker1"></script>
-<script src="gi-map-v4-live.js?v=20261002-map-picker1"></script>
-<script src="gi-map-filter-picker.js?v=20261002-map-picker1"></script>
-<script src="gi-map-location-ui.js?v=20261002-map-picker1"></script>
+<script src="gi-map-label-layout.js?v=20261002-map-region1"></script>
+<script src="gi-map-language.js?v=20261002-map-region1"></script>
+<script src="gi-map-v4-live.js?v=20261002-map-region1"></script>
+<script src="gi-map-filter-picker.js?v=20261002-map-region1"></script>
+<script src="gi-map-location-ui.js?v=20261002-map-region1"></script>
 
 <!--
 =========================================================
