@@ -6,6 +6,7 @@
     siteRoot:'https://solargm123.github.io/Summary-WD-and-GI-Analysis/'
   };
   const deferredSharedFields=new Map();
+  let presenceFlushTimer=null,presenceLastSent=0,presenceQueuedForce=false;
   let localUserId=null,workspaceChannel=null,workspaceConnected=false,projectConnected=false,presenceHeartbeat=null,presenceListenersInstalled=false,remotePending=false,remoteWho='';
   let client=null,currentProject=null,currentMembership=null,adapter=null,saveTimer=null,dirty=false,saving=false,conflict=false,channel=null,presenceUsers=[],presenceSession=null,lastPresenceArea='',lastSharedState={},pendingFieldConflict=null,remoteSyncTimer=null;
   const $=id=>document.getElementById(id);
@@ -327,11 +328,15 @@ function analysisUrl(project){const page=project.analysis_type==='working_day'?'
     const context=adapter?.presenceContext?.()||null;
     const signature=context?JSON.stringify([area,context]):area;
     if(!force&&signature===lastPresenceArea)return;
+    if(!projectConnected&&!workspaceConnected)return;
+    const remaining=20000-(Date.now()-presenceLastSent);
+    if(remaining>0){presenceQueuedForce=presenceQueuedForce||force;if(!presenceFlushTimer)presenceFlushTimer=setTimeout(()=>{presenceFlushTimer=null;const queuedForce=presenceQueuedForce;presenceQueuedForce=false;updatePresence(queuedForce)},remaining);return}
+    clearTimeout(presenceFlushTimer);presenceFlushTimer=null;presenceQueuedForce=false;presenceLastSent=Date.now();
     lastPresenceArea=signature;presenceSession.area=area;presenceSession.lastSeen=new Date().toISOString();
     if(adapter?.presenceContext)presenceSession.workingDay=context;
     const publicSession={...presenceSession};delete publicSession.email;
     const results=await Promise.allSettled([projectConnected?channel.track(publicSession):Promise.resolve(),workspaceConnected?workspaceChannel.track(publicSession):Promise.resolve()]);
-    if(results.some(r=>r.status==='rejected'))console.warn('Presence update failed');
+    if(results.some(r=>r.status==='rejected'||r.value==='error'||r.value==='timed out'))console.warn('Presence update failed');
     renderPresence();
   }
   function editingUiOpen(){
@@ -357,7 +362,7 @@ function analysisUrl(project){const page=project.analysis_type==='working_day'?'
     remoteSyncTimer=setTimeout(()=>refreshRemoteState((remoteWho||'ผู้ใช้อื่น')+' อัปเดตข้อมูลแล้ว').catch(console.error),500);
   }
   async function subscribe(){
-    clearInterval(presenceHeartbeat);projectConnected=false;workspaceConnected=false;
+    clearInterval(presenceHeartbeat);clearTimeout(presenceFlushTimer);presenceFlushTimer=null;presenceQueuedForce=false;projectConnected=false;workspaceConnected=false;
     if(channel)await getClient().removeChannel(channel);
     if(workspaceChannel)await getClient().removeChannel(workspaceChannel);
     const s=await session(),user=s?.user;
@@ -390,7 +395,7 @@ function analysisUrl(project){const page=project.analysis_type==='working_day'?'
       document.addEventListener('focusout',()=>{if(remotePending)scheduleRemoteRefresh(remoteWho)},true);
       global.addEventListener('focus',()=>{updatePresence(true);if(remotePending)scheduleRemoteRefresh(remoteWho)});
       document.addEventListener('visibilitychange',()=>{updatePresence(true);if(!document.hidden&&remotePending)scheduleRemoteRefresh(remoteWho)});
-      global.addEventListener('beforeunload',()=>{clearInterval(presenceHeartbeat);try{channel?.untrack();workspaceChannel?.untrack()}catch{}},{once:true});
+      global.addEventListener('beforeunload',()=>{clearInterval(presenceHeartbeat);clearTimeout(presenceFlushTimer);try{channel?.untrack();workspaceChannel?.untrack()}catch{}},{once:true});
     }
   }
   const CENTRAL_CACHE_DB='fusion-central-cache-v2',CENTRAL_CACHE_STORE='payloads';
