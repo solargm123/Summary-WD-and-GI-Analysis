@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20261002-review-note-loss"></script>
+    <script src="cloud-core.js?v=20261002-combined-note"></script>
     <style> 
         html, body, body *:not(i), button, input, select, option, textarea, table, th, td, code {
             font-family: 'Bai Jamjuree', Tahoma, Arial, sans-serif !important;
@@ -1501,7 +1501,9 @@ body.wd-theme-switching *::after{
                 <h3 id="noteModalTitle" class="text-sm font-bold text-amber-700 dark:text-amber-400"></h3>
                 <button onclick="closeNoteModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white"><i class="fa-solid fa-xmark"></i></button>
             </div>
+            <label id="noteProjectLabel" for="noteTextarea" class="block text-sm font-bold"></label>
             <textarea id="noteTextarea" rows="6" class="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 rounded-lg p-3" placeholder="บันทึกหมายเหตุของโครงการ..."></textarea>
+            <div id="notePeriodSection" hidden class="rounded-lg border border-slate-200 dark:border-slate-700 p-3 space-y-2"><strong id="notePeriodLabel" class="text-sm"></strong><p id="notePeriodReason" class="text-sm whitespace-pre-wrap break-words max-h-36 overflow-auto"></p><button id="notePeriodEdit" type="button" onclick="const id=currentNotePlantId;closeNoteModal();WDPeriod.open(id)" class="text-sm font-bold text-blue-700 dark:text-blue-300"></button></div>
             <div class="flex justify-end gap-2"><button onclick="clearProjectNote()" class="border border-red-200 text-red-600 px-4 py-2 rounded-lg">ล้าง Note</button><button onclick="saveProjectNote()" class="bg-amber-500 text-white px-4 py-2 rounded-lg">บันทึก</button></div>
         </div>
     </div>
@@ -1772,6 +1774,13 @@ body.wd-theme-switching *::after{
             currentNotePlantId = id;
             document.getElementById('noteModalTitle').textContent = `${currentLanguage === 'th' ? 'หมายเหตุ' : 'Note'} – ${plant.name}`;
             document.getElementById('noteTextarea').value = WDPeriod.note(plant);
+            const th=currentLanguage==='th',reason=WDPeriod.scope(plant)?.reason?.trim()||'';
+            document.getElementById('noteProjectLabel').textContent=th?'โน้ตโครงการ':'Project note';
+            document.getElementById('notePeriodSection').hidden=!reason;
+            document.getElementById('notePeriodLabel').textContent=(th?'เหตุผลการเลือกวัน — ':'Date selection reason — ')+document.getElementById('monthSelect').value;
+            document.getElementById('notePeriodReason').textContent=reason;
+            document.getElementById('notePeriodEdit').textContent=th?'แก้ไขในปฏิทิน':'Edit in calendar';
+            document.getElementById('notePeriodEdit').hidden=!SolarCloud.roleCanEdit();
             document.getElementById('noteModal').classList.remove('hidden');
         }
 
@@ -2665,7 +2674,7 @@ body.wd-theme-switching *::after{
                                 <option value="m2" ${item.calculationMethod === 'm2' ? 'selected' : ''}>${currentLanguage === 'th' ? 'วิธีที่ 2' : 'Method 2'}</option>
                                 <option value="other" ${item.calculationMethod === 'other' ? 'selected' : ''}>${currentLanguage === 'th' ? 'อื่นๆ' : 'Other'}</option>
                             </select><small class="text-[9px] ${item.methodSource==='auto'?'text-violet-500':'text-slate-400'}">${item.methodSource==='auto'?'Auto from MKT':'Manual'}</small></div>
-                            <button type="button" onclick="openNoteModal(${item.id})" class="wd-note-button" data-has-note="${!!WDPeriod.note(item).trim()}" title="${escapeHtml(WDPeriod.note(item)||t('note'))}" aria-label="${currentLanguage==='th'?'หมายเหตุ':'Note'}"><i class="fa-solid fa-note-sticky" aria-hidden="true"></i></button>
+                            <button type="button" onclick="openNoteModal(${item.id})" class="wd-note-button" data-has-note="${!!WDPeriod.displayNote(item).trim()}" title="${escapeHtml(WDPeriod.displayNote(item)||t('note'))}" aria-label="${currentLanguage==='th'?'หมายเหตุ':'Note'}"><i class="fa-solid fa-note-sticky" aria-hidden="true"></i></button>
                         </div>
                     </td>
                     </tr>`});
@@ -2794,8 +2803,8 @@ body.wd-theme-switching *::after{
 
         syncTableScrollbars();
     </script>
-    <script src="working-day-summary.js?v=20261002-review-note-loss"></script>
-    <script src="working-day-period.js?v=20261002-review-note-loss"></script>
+    <script src="working-day-summary.js?v=20261002-combined-note"></script>
+    <script src="working-day-period.js?v=20261002-combined-note"></script>
     <script>
       const workingDayCloudAdapter={
         presenceContext:()=>WDReview.presenceContext(),

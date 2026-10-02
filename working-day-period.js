@@ -44,6 +44,7 @@ const WDPeriod = (() => {
   function sunHours(p,context,original){const days=p.__wdScopeDays||dayList(p),loss=new Set(p.lossDaysArray);let sum=0,non=0,n=0;for(const day of days){const d=p.dailyMap[day];if(!d)continue;const value=Number(d.specEnergy);const v=Number.isFinite(value)&&d.specEnergy!=null?value:p.cap>0?Number(d.pv)/p.cap:0;sum+=v||0;if(!loss.has(day)){non+=v||0;n++}}const monthlyAvgSH=days.length?sum/days.length:context.customVal,nonLossAvgSH=n?non/n:context.customVal,chosen=context.mode==='monthlyAvg'?monthlyAvgSH:context.mode==='nonLossAvg'?nonLossAvgSH:context.customVal;return {chosenSH:chosen>0?chosen:context.customVal,monthlyAvgSH,nonLossAvgSH,specificEnergyTotal:sum}}
   const firstNote=p=>scope(p)?.firstProductionNote||'';
   const note=p=>[p.note||'',firstNote(p)].filter(Boolean).join('\n');
+  const displayNote=p=>{const reason=scope(p)?.reason?.trim();return [note(p),reason?(currentLanguage==='th'?'เหตุผลการเลือกวัน: ':'Date selection reason: ')+reason:''].filter(Boolean).join('\n');};
   function addFirstNotes(){if(!historyReady||!SolarCloud.roleCanEdit())return;let changed=false;for(const p of plantData){const d=detect(p),known=starts[normalize(p.name)];if(d.history||!d.first||!dateValid(known)||known.slice(0,7)!==month())continue;const s=scope(p)||{version:1,confirmed:false};if(s.firstProductionNote!==undefined)continue;const day=productive(p)[0];if(!day)continue;const formatted=String(day).padStart(2,'0')+'-'+month().slice(5)+'-'+month().slice(0,4);s.firstProductionNote='พบข้อมูลการผลิตครั้งแรกวันที่ '+formatted;scopes[key(p)]=JSON.stringify(s);changed=true}if(changed)SolarCloud.scheduleSave('working_day_first_production_note')}
   async function metadata(force=false){
     if(metadataPromise&&!force)return metadataPromise;
@@ -109,5 +110,5 @@ const WDPeriod = (() => {
   function capture(){return {...scopes}}
   function syncSaved(state,sent){for(const [k,v] of Object.entries(state.overrides||{}))if(k.startsWith('@wdscope:')&&scopes[k]===sent.overrides?.[k])scopes[k]=v;calculateAndRender()}
   install();
-  return {pvState,productive,note,firstNote,addFirstNotes,methodMenu,scope,dayList,detect,button,manualHtml,hasDailyScope,metrics,sunHours,open,openManual:(id,selectOther=false)=>open(id,'manual',selectOther),close,restore,capture,syncSaved,metadata,sourceIssues};
+  return {pvState,productive,note,displayNote,firstNote,addFirstNotes,methodMenu,scope,dayList,detect,button,manualHtml,hasDailyScope,metrics,sunHours,open,openManual:(id,selectOther=false)=>open(id,'manual',selectOther),close,restore,capture,syncSaved,metadata,sourceIssues};
 })();
