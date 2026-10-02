@@ -233,6 +233,7 @@ function analysisUrl(project){const page=project.analysis_type==='working_day'?'
     }));
   }
   function showFieldConflict(){
+    stopHistoryRefresh();
     if(!pendingFieldConflict)return;
     const box=$('solarCloudModalBox');box.querySelector('h3').textContent='มีการแก้ไขช่องเดียวกัน';
     $('solarCloudModal').classList.add('open');
@@ -509,6 +510,7 @@ function analysisUrl(project){const page=project.analysis_type==='working_day'?'
     try{await persistFieldPatches(pending.patches,pending.reason,true,pending.serverVersion)}catch(error){setStatus('บันทึกไม่สำเร็จ','error');notice('บันทึกไม่สำเร็จ',error.message,'danger')}finally{saving=false}
   }
   function resolveConflict(){
+    stopHistoryRefresh();
     if(!currentProject)return;
     if(pendingFieldConflict){showFieldConflict();return}
     $('solarCloudModalBox').querySelector('h3').textContent='จัดการข้อมูลที่แก้ไขพร้อมกัน';
@@ -521,7 +523,8 @@ function analysisUrl(project){const page=project.analysis_type==='working_day'?'
     return `<div style="margin-top:7px;padding:7px 9px;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0"><b>${esc(label)}</b><div style="margin-top:3px"><span style="color:#64748b">${esc(before)}</span> <span aria-hidden="true">→</span> <strong>${esc(after)}</strong></div></div>`;
   }
   let historyTimer=null,historyRequest=0,historyBusy=false;
-  function closeHistory(){clearTimeout(historyTimer);historyTimer=null;historyRequest++;historyBusy=false;$('solarCloudModal')?.classList.remove('open')}
+  function stopHistoryRefresh(){clearTimeout(historyTimer);historyTimer=null;historyRequest++;historyBusy=false}
+  function closeHistory(){stopHistoryRefresh();$('solarCloudModal')?.classList.remove('open')}
   function scheduleHistoryRefresh(){historyTimer=setTimeout(()=>{if(!$('solarCloudModal')?.classList.contains('open'))return;if(document.hidden)scheduleHistoryRefresh();else history(true)},60000)}
   async function history(refresh=false){
     if(!currentProject||historyBusy)return;
@@ -541,7 +544,7 @@ function analysisUrl(project){const page=project.analysis_type==='working_day'?'
     finally{if(request===historyRequest){historyBusy=false;if($('solarCloudModal').classList.contains('open'))scheduleHistoryRefresh()}}
   }
   async function datasets(){
-    clearTimeout(historyTimer);historyRequest++;historyBusy=false;
+    stopHistoryRefresh();
     $('solarCloudModalBox').querySelector('h3').textContent='Shared Data';$('solarCloudModal').classList.add('open');$('solarCloudLogs').textContent='Loading...';
     try{const rows=await listDatasets();$('solarCloudLogs').innerHTML=rows.map(ds=>`<div class="log"><b>${esc(ds.name)}</b><div>${esc((ds.source_files||[]).join(', '))}</div><time>${new Date(ds.updated_at).toLocaleString()}</time>${roleCanEdit()?`<button onclick="SolarCloud.useDataset('${ds.id}')">ใช้กับงานนี้</button>`:''}</div>`).join('')||'<div>ยังไม่มี Shared Data — อัปโหลด Excel ในหน้าวิเคราะห์หนึ่งครั้งเพื่อสร้าง</div>'}catch(error){$('solarCloudLogs').textContent=error.message}
   }
