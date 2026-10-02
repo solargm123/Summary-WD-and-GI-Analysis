@@ -2,6 +2,13 @@
 'use strict';
 const root=document.getElementById('gi-map-module');let lang='th',queued=false;
 const pairs=[
+["วิธีเปรียบเทียบทำงานอย่างไร?","How does comparison work?"],
+["— ใช้ค่ากลาง ลดผลกระทบจากค่าแสงที่สูงหรือต่ำผิดปกติ เหมาะเป็นค่าเริ่มต้น เช่น 3, 4, 8 → 4","— Uses the middle value and limits the influence of unusually high or low readings. Recommended default. Example: 3, 4, 8 → 4"],
+["— รวมค่าแสงแล้วหารจำนวนจุด ทุกจุดมีน้ำหนักเท่ากัน แต่ไวต่อค่าผิดปกติ เช่น 3, 4, 8 → 5","— Adds readings and divides by the number of sites. Equal weight per site, but sensitive to outliers. Example: 3, 4, 8 → 5"],
+["เลือกจุดในรัศมีที่กำหนด พิกัดซ้ำรวมเป็นจุดเดียว และไม่นับพิกัดเดียวกับโครงการที่เลือก ต้องมีข้อมูลวันเดียวกันครบจำนวนจุดขั้นต่ำ","Uses sites within the selected radius. Duplicate coordinates count as one site; the selected site is excluded. The minimum site count must have readings on the same day."],
+["ความต่าง (%) = (GI โครงการ ÷ GI อ้างอิง − 1) × 100 ใช้เฉพาะวันที่เปรียบเทียบได้ หากข้อมูลไม่พอจะแสดง “เปรียบเทียบไม่ได้” ไม่ใช่ “ผิดปกติ”","Difference (%) = (project GI ÷ reference GI − 1) × 100, using comparable days only. Insufficient data means “No Comparison”, not “Abnormal”."],
+["ค่า GI บนหมุดใช้ Average ตามตาราง ส่วนสถานะเทียบพื้นที่ใกล้เคียงใช้ข้อมูลเฉพาะวันที่เปรียบเทียบได้ จึงอาจใช้จำนวนวันต่างกัน","Marker GI follows the table Average. Nearby status uses comparable days only, so the day counts may differ."],
+["Median ลดผลจากค่าผิดปกติ · Mean ให้น้ำหนักทุกจุดเท่ากัน","Median limits outlier influence · Mean gives equal weight to each site"],
 ['แสดงค่า GI ทั้งหมด','Show all GI values'],['โครงการในกลุ่ม','Projects in this group'],
 ['แผนที่ค่าแสง','Global Irradiance Map'],['ภาพรวมประสิทธิภาพโซลาร์ประเทศไทย','Thailand Solar Performance View'],
 ['← กลับ Global Irradiance Analysis','← Back to Global Irradiance Analysis'],

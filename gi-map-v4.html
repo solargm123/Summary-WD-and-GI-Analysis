@@ -226,6 +226,9 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 <style>
 #gi-map-module .leaflet-tooltip-pane{z-index:1100}
 #gi-map-module .leaflet-tooltip.gimap-tooltip-shifted:before{display:none}
+#gi-map-module .gimap-method-help{margin-top:10px;padding:9px 11px;background:#edf3f8;border:1px solid #dbe5ed;border-radius:12px;font-size:11px;line-height:1.65;color:#425969}
+#gi-map-module .gimap-method-help summary{cursor:pointer;font-weight:700;color:#243e52}
+#gi-map-module .gimap-method-help p{margin:9px 0 0}
 #gi-map-module .gimap-marker-label{width:150px;max-width:150px}
 #gi-map-module .gimap-marker-label.compact{width:112px}
 #gi-map-module .gimap-marker-label.tiny{width:86px}
@@ -275,6 +278,13 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
         <div class="gimap-rule-summary">
           <div class="gimap-rule-line"><span>Radius</span><b data-role="summary-radius">20 km</b></div>
           <div class="gimap-rule-line"><span>Method</span><b data-role="summary-method">Median</b></div>
+          <details class="gimap-method-help"><summary>วิธีเปรียบเทียบทำงานอย่างไร?</summary>
+            <p><b>Median</b> — ใช้ค่ากลาง ลดผลกระทบจากค่าแสงที่สูงหรือต่ำผิดปกติ เหมาะเป็นค่าเริ่มต้น เช่น 3, 4, 8 → 4</p>
+            <p><b>Mean</b> — รวมค่าแสงแล้วหารจำนวนจุด ทุกจุดมีน้ำหนักเท่ากัน แต่ไวต่อค่าผิดปกติ เช่น 3, 4, 8 → 5</p>
+            <p>เลือกจุดในรัศมีที่กำหนด พิกัดซ้ำรวมเป็นจุดเดียว และไม่นับพิกัดเดียวกับโครงการที่เลือก ต้องมีข้อมูลวันเดียวกันครบจำนวนจุดขั้นต่ำ</p>
+            <p>ความต่าง (%) = (GI โครงการ ÷ GI อ้างอิง − 1) × 100 ใช้เฉพาะวันที่เปรียบเทียบได้ หากข้อมูลไม่พอจะแสดง “เปรียบเทียบไม่ได้” ไม่ใช่ “ผิดปกติ”</p>
+            <p>ค่า GI บนหมุดใช้ Average ตามตาราง ส่วนสถานะเทียบพื้นที่ใกล้เคียงใช้ข้อมูลเฉพาะวันที่เปรียบเทียบได้ จึงอาจใช้จำนวนวันต่างกัน</p>
+          </details>
           <div class="gimap-rule-line"><span>Minimum Nearby</span><b data-role="summary-minpeers">2 projects</b></div>
         </div>
         <div class="gimap-rule-actions">
@@ -370,6 +380,7 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
         <div><label>Abnormal Below (%)</label><input data-role="set-abnormal" type="number" min="-100" max="100" step="0.5"/></div>
         <div style="grid-column:1/-1">
           <label>Comparison Method</label>
+          <p style="font-size:11px;color:var(--muted);margin:6px 0">Median ลดผลจากค่าผิดปกติ · Mean ให้น้ำหนักทุกจุดเท่ากัน</p>
           <select data-role="set-method">
             <option value="median">Median — ลดผลจาก Outlier</option>
             <option value="mean">Mean — ค่าเฉลี่ยทั่วไป</option>
@@ -977,11 +988,11 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 })(window);
 </script>
 
-<script src="gi-map-label-layout.js?v=20261002-map-nearby1"></script>
-<script src="gi-map-language.js?v=20261002-map-nearby1"></script>
-<script src="gi-map-v4-live.js?v=20261002-map-nearby1"></script>
-<script src="gi-map-filter-picker.js?v=20261002-map-nearby1"></script>
-<script src="gi-map-location-ui.js?v=20261002-map-nearby1"></script>
+<script src="gi-map-label-layout.js?v=20261003-map-method1"></script>
+<script src="gi-map-language.js?v=20261003-map-method1"></script>
+<script src="gi-map-v4-live.js?v=20261003-map-method1"></script>
+<script src="gi-map-filter-picker.js?v=20261003-map-method1"></script>
+<script src="gi-map-location-ui.js?v=20261003-map-method1"></script>
 
 <!--
 =========================================================
