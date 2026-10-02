@@ -302,6 +302,15 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
           <div class="gimap-rule-line"><span><i class="gimap-dot" style="background:var(--red)"></i>Abnormal</span><b data-role="legend-abnormal">&lt; -10%</b></div>
           <div class="gimap-rule-line"><span><i class="gimap-dot" style="background:var(--gray)"></i>No Comparison</span><b>&lt; minimum nearby</b></div>
         </div>
+        <details class="gimap-method-help"><summary>เกณฑ์สถานะหมายถึงอะไร?</summary>
+          <p>เปรียบเทียบค่าแสงกับโครงการใกล้เคียง ไม่ใช่ช่วง Normal range ที่ใช้คัดวันในตาราง</p>
+          <p><b style="color:var(--green)">ปกติ (สีเขียว)</b>: <span>ความต่าง</span> &gt; <b data-role="help-normal"></b></p>
+          <p><b style="color:var(--orange)">เฝ้าระวัง (สีส้ม)</b>: <b data-role="help-watch-min"></b> ≤ <span>ความต่าง</span> ≤ <b data-role="help-watch-max"></b></p>
+          <p><b style="color:var(--red)">ผิดปกติ (สีแดง)</b>: <span>ความต่าง</span> &lt; <b data-role="help-abnormal"></b></p>
+          <p>ค่าติดลบหมายถึงแสงต่ำกว่าค่าอ้างอิง ค่าบวกหมายถึงสูงกว่า ระบบนี้แจ้งเตือนด้านค่าต่ำเท่านั้น ค่าสูงยังต้องตรวจความสมเหตุสมผลของเซนเซอร์</p>
+          <p>ตัวอย่าง: ค่าอ้างอิง 4 และ GI โครงการ 3.6 จะต่าง −10% แล้วใช้เกณฑ์ด้านบนตัดสินสถานะ</p>
+          <p>สีเทาหมายถึงข้อมูลไม่พอสำหรับเปรียบเทียบ ไม่ได้แปลว่าค่าแสงผิดปกติ เกณฑ์สีเปลี่ยนตามค่าที่กำหนดในตั้งค่า</p>
+        </details>
       </section>
     </aside>
 
@@ -586,9 +595,10 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
     $('[data-role="summary-radius"]').textContent=`${state.rules.radius} km`;
     $('[data-role="summary-method"]').textContent=state.rules.method==="median"?"Median":"Mean";
     $('[data-role="summary-minpeers"]').textContent=`${state.rules.minPeers} projects`;
-    $('[data-role="legend-normal"]').textContent=`≥ ${state.rules.normal}%`;
-    $('[data-role="legend-watch"]').textContent=`${state.rules.abnormal}% ถึง < ${state.rules.normal}%`;
+    $('[data-role="legend-normal"]').textContent=`> ${state.rules.normal}%`;
+    $('[data-role="legend-watch"]').textContent=`${state.rules.abnormal}% ≤ Δ ≤ ${state.rules.normal}%`;
     $('[data-role="legend-abnormal"]').textContent=`< ${state.rules.abnormal}%`;
+    for(const [role,value] of [['help-normal',state.rules.normal],['help-watch-min',state.rules.abnormal],['help-watch-max',state.rules.normal],['help-abnormal',state.rules.abnormal]])$('[data-role="'+role+'"]').textContent=value+'%';
   }
 
   function monthComplete(m){
@@ -988,11 +998,11 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 })(window);
 </script>
 
-<script src="gi-map-label-layout.js?v=20261003-map-method1"></script>
-<script src="gi-map-language.js?v=20261003-map-method1"></script>
-<script src="gi-map-v4-live.js?v=20261003-map-method1"></script>
-<script src="gi-map-filter-picker.js?v=20261003-map-method1"></script>
-<script src="gi-map-location-ui.js?v=20261003-map-method1"></script>
+<script src="gi-map-label-layout.js?v=20261003-map-threshold1"></script>
+<script src="gi-map-language.js?v=20261003-map-threshold1"></script>
+<script src="gi-map-v4-live.js?v=20261003-map-threshold1"></script>
+<script src="gi-map-filter-picker.js?v=20261003-map-threshold1"></script>
+<script src="gi-map-location-ui.js?v=20261003-map-threshold1"></script>
 
 <!--
 =========================================================

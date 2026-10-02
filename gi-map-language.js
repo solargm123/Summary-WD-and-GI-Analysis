@@ -2,6 +2,14 @@
 'use strict';
 const root=document.getElementById('gi-map-module');let lang='th',queued=false;
 const pairs=[
+["เกณฑ์สถานะหมายถึงอะไร?","What do the status thresholds mean?"],
+["เปรียบเทียบค่าแสงกับโครงการใกล้เคียง ไม่ใช่ช่วง Normal range ที่ใช้คัดวันในตาราง","Compares GI against nearby projects, not the Normal range used to select valid table days."],
+["ปกติ (สีเขียว)","Normal (green)"],
+["เฝ้าระวัง (สีส้ม)","Watch (orange)"],
+["ผิดปกติ (สีแดง)","Abnormal (red)"],
+["ค่าติดลบหมายถึงแสงต่ำกว่าค่าอ้างอิง ค่าบวกหมายถึงสูงกว่า ระบบนี้แจ้งเตือนด้านค่าต่ำเท่านั้น ค่าสูงยังต้องตรวจความสมเหตุสมผลของเซนเซอร์","Negative means GI is below the reference; positive means above. These statuses flag low GI only. High readings still require a sensor plausibility check."],
+["ตัวอย่าง: ค่าอ้างอิง 4 และ GI โครงการ 3.6 จะต่าง −10% แล้วใช้เกณฑ์ด้านบนตัดสินสถานะ","Example: reference GI 4 and project GI 3.6 give −10%. Apply the thresholds above to determine the status."],
+["สีเทาหมายถึงข้อมูลไม่พอสำหรับเปรียบเทียบ ไม่ได้แปลว่าค่าแสงผิดปกติ เกณฑ์สีเปลี่ยนตามค่าที่กำหนดในตั้งค่า","Grey means insufficient comparison data, not abnormal irradiance. Colour thresholds follow the current settings."],
 ["วิธีเปรียบเทียบทำงานอย่างไร?","How does comparison work?"],
 ["— ใช้ค่ากลาง ลดผลกระทบจากค่าแสงที่สูงหรือต่ำผิดปกติ เหมาะเป็นค่าเริ่มต้น เช่น 3, 4, 8 → 4","— Uses the middle value and limits the influence of unusually high or low readings. Recommended default. Example: 3, 4, 8 → 4"],
 ["— รวมค่าแสงแล้วหารจำนวนจุด ทุกจุดมีน้ำหนักเท่ากัน แต่ไวต่อค่าผิดปกติ เช่น 3, 4, 8 → 5","— Adds readings and divides by the number of sites. Equal weight per site, but sensitive to outliers. Example: 3, 4, 8 → 5"],
