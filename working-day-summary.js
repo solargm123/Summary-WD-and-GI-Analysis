@@ -1,7 +1,7 @@
 /* Working Day presentation and collaboration only; metrics come from the existing calculator. */
 const WDReview = (() => {
   let activeTab = 'details', reviewFilter = 'all', reviews = {}, users = [], connected = false, editing = null;
-  const editApproved = new Set(), editPending = new Set();
+  const editApproved = new Set(), editPending = new Set(), savedValidation=new Map();
   const $ = id => document.getElementById(id);
   const text = (th, en) => currentLanguage === 'th' ? th : en;
   const month = () => $('monthSelect').value;
@@ -29,6 +29,25 @@ const WDReview = (() => {
     return JSON.stringify(Object.keys(plant.dailyMap||{}).sort((a,b)=>Number(a)-Number(b)).map(day=>[day,plant.dailyMap[day]]));
   }
   function currentFingerprint(plant) { return digest(fingerprint(plant)+'|'+sourceSnapshot(plant)); }
+  const numeric=value=>value==null||value===''||!Number.isFinite(Number(value))?null:Number(value);
+  function calculationSnapshot(plant){
+    const context=getCalculationContext(),m=calculatePlantMetrics(plant,context),days=WDPeriod.dayList(plant),included=new Set(days),scope=WDPeriod.scope(plant)||{};
+    return JSON.stringify({version:2,context:[context.mode,numeric(context.customVal),numeric(context.lossFactor),context.targetMethod],cap:numeric(plant.cap),method:plant.calculationMethod,note:String(plant.note||'').trim(),mkt:String(plant.mktEstimate||''),days,lossDays:[...plant.lossDaysArray].filter(d=>included.has(d)).sort((a,b)=>a-b),daily:days.map(day=>{const row=plant.dailyMap[day];return [day,numeric(row.pv),numeric(row.specEnergy),row.lossAvailable===false?null:numeric(row.loss)]}),manual:[numeric(scope.manualDays),String(scope.manualReason||'').trim()],reason:String(scope.reason||'').trim(),results:[m.valid,m.manualValid,numeric(m.method1Days),numeric(m.method2Days),numeric(m.shM1),numeric(m.shM2),numeric(m.monthlyLossEnergy)]});
+  }
+  const canonicalFingerprint=plant=>digest(calculationSnapshot(plant)).replace('h1:','h2:');
+  function matchesReview(plant,value){return !!value?.done&&!value.again&&(value.calculationFingerprint?value.calculationFingerprint===canonicalFingerprint(plant):value.fingerprint===(value.fingerprint?.startsWith('h1:')?currentFingerprint(plant):fingerprint(plant)))}
+  function affectsCalculation(plant,paths){
+    const key=projectStableKey(plant),name=plant.name.toLowerCase();
+    return paths.some(path=>path[0]==='overrides'?(path[1]===name||path[1]==='@period:'+month()+':'+key||path[1]==='@method:'+month()+':'+key||path[1]==='@mkt:'+key||path[1]==='@wdscope:'+month()+':'+key):['lossFactor','sunHoursTarget','sunHoursMode','sunHoursCustom'].includes(path[0]));
+  }
+  const pendingCalculation=plant=>affectsCalculation(plant,pendingPathScope||SolarCloud.pendingSharedPaths?.()||[]);
+  const deferredCalculation=plant=>affectsCalculation(plant,deferredPathScope||SolarCloud.deferredSharedPaths?.()||[]);
+  function markSavedBaseline(){return withReviewScope(()=>{for(const plant of plantData){if(!pendingCalculation(plant)&&!deferredCalculation(plant))savedValidation.set(reviewKey(plant),{review:reviews[reviewKey(plant)],valid:matchesReview(plant,review(plant))})}})}
+  function upgradeValidReviews(){
+    if(!SolarCloud.roleCanEdit())return;let changed=false;
+    withReviewScope(()=>{for(const plant of plantData){const value=review(plant);if(!value||value.calculationFingerprint||pendingCalculation(plant)||deferredCalculation(plant)||!matchesReview(plant,value))continue;reviews[reviewKey(plant)]=JSON.stringify({...value,calculationFingerprint:canonicalFingerprint(plant)});changed=true}});
+    if(changed)SolarCloud.scheduleSave('working_day_review_comparison_upgrade');
+  }
   function review(plant) {
     try { return JSON.parse(reviews[reviewKey(plant)] || 'null'); } catch { return null; }
   }
@@ -38,26 +57,26 @@ const WDReview = (() => {
     return reviewScope.get(plant);
   }
   function reviewedUncached(plant) {
-    const value = review(plant);
-    if (value?.done !== true || value.again) return false;
-    // Existing full-snapshot reviews remain valid until the next review action.
-    return value.fingerprint === (value.fingerprint?.startsWith('h1:') ? currentFingerprint(plant) : fingerprint(plant));
+    const value=review(plant);if(!value?.done||value.again)return false;
+    const baseline=savedValidation.get(reviewKey(plant));
+    if((pendingCalculation(plant)||deferredCalculation(plant))&&baseline?.review===reviews[reviewKey(plant)])return baseline.valid;
+    return matchesReview(plant,value);
   }
   function editors(plant) {
     const seen = new Set();
     return users.filter(user => {
       const context = user.workingDay;
       if (!context || context.month !== month() || context.projectKey !== projectStableKey(plant) ||
-          Date.now() - Date.parse(user.lastSeen) > 90000 || !Number.isFinite(Date.parse(user.lastSeen))) return false;
+          Date.now() - Date.parse(user.lastSeen) > 150000 || !Number.isFinite(Date.parse(user.lastSeen))) return false;
       if (seen.has(user.userId)) return false;
       seen.add(user.userId);return true;
     });
   }
   function statusHtml(plant) {
-    const value = review(plant), done = reviewed(plant), active = editors(plant);
+    const value = review(plant), done = reviewed(plant), active = editors(plant), pending=pendingCalculation(plant)||deferredCalculation(plant);
     const saved = SolarCloud.isSharedValueSaved(['overrides', reviewKey(plant)], reviews[reviewKey(plant)]);
-    const label = done && !saved ? text('ตรวจแล้ว — รอบันทึก','Reviewed — pending save') : done ? text('ตรวจแล้ว', 'Reviewed') : value?.done ? text('ข้อมูลเปลี่ยน — ตรวจอีกครั้ง', 'Changed — review again') : text('ยังไม่ระบุว่าตรวจแล้ว', 'Not marked reviewed');
-    let html = `<span class="wd-status ${done&&saved?'wd-status-done':''}">${label}</span>`;
+    const label = deferredCalculation(plant)?text('มีข้อมูลใหม่ — รออัปเดตหลังแก้ไข','New data — update after editing'):pending?text('กำลังแก้ไข — ยังไม่บันทึก','Editing — not saved'):done && !saved ? text('ตรวจแล้ว — รอบันทึก','Reviewed — pending save') : done ? text('ตรวจแล้ว', 'Reviewed') : value?.done ? text('ข้อมูลเปลี่ยน — ตรวจอีกครั้ง', 'Changed — review again') : text('ยังไม่ระบุว่าตรวจแล้ว', 'Not marked reviewed');
+    let html = `<span class="wd-status ${done&&saved&&!pending?'wd-status-done':''}">${label}</span>`;
     if (value?.done) {
       const at = new Date(value.at), date = Number.isFinite(at.getTime()) ? at.toLocaleString(currentLanguage==='th'?'th-TH':'en-GB') : '';
       html += `<span>${escapeHtml(value.by || '')} · ${escapeHtml(date)}${saved?'': ' · '+text('รอบันทึก','Pending save')}</span>`;
@@ -70,13 +89,13 @@ const WDReview = (() => {
   function reviewState(plant) { return reviewed(plant) ? 'done' : review(plant)?.done ? 'changed' : 'new'; }
   function reviewIcon(plant) { return reviewState(plant)==='done' ? 'fa-rotate-left' : reviewState(plant)==='changed' ? 'fa-rotate' : 'fa-circle-check'; }
   function reviewButtonHtml(plant) {
-    const state=reviewState(plant),label=state==='done'?text('ตรวจแล้ว','Reviewed'):state==='changed'?text('ตรวจอีกครั้ง','Review again'):text('ยังไม่ตรวจ','Not reviewed');
-    return `<button type="button" role="checkbox" class="wd-review-button wd-review-check" data-wd-review="${plant.id}" data-review-state="${state}" aria-checked="${state==='done'?'true':state==='changed'?'mixed':'false'}" aria-label="${label}" title="${label}" onclick="WDReview.toggleReview(${plant.id})" ${SolarCloud.roleCanEdit()?'':'disabled'}><i class="fa-solid ${state==='done'?'fa-check':state==='changed'?'fa-rotate-right':''}" aria-hidden="true"></i></button>`;
+    const pending=pendingCalculation(plant)||deferredCalculation(plant),state=pending?'pending':reviewState(plant),label=deferredCalculation(plant)?text('มีข้อมูลใหม่ — รออัปเดตหลังแก้ไข','New data — update after editing'):pending?text('กำลังแก้ไข — ยังไม่บันทึก','Editing — not saved'):state==='done'?text('ตรวจแล้ว','Reviewed'):state==='changed'?text('ตรวจอีกครั้ง','Review again'):text('ยังไม่ตรวจ','Not reviewed');
+    return `<button type="button" role="checkbox" class="wd-review-button wd-review-check" data-wd-review="${plant.id}" data-review-state="${state}" aria-checked="${state==='done'?'true':state==='changed'||pending?'mixed':'false'}" aria-label="${label}" title="${label}" onclick="WDReview.toggleReview(${plant.id})" ${SolarCloud.roleCanEdit()?'':'disabled'}><i class="fa-solid ${state==='done'?'fa-check':pending?'fa-pen':state==='changed'?'fa-rotate-right':''}" aria-hidden="true"></i></button>`;
   }
   function detailBadge(plant) {return reviewButtonHtml(plant)}
   // Ask before the first edit to a reviewed project in this page session; the choice is not stored.
   function guardReviewedEdit(event) {
-    const control=event.target.closest('#tableBody input[type="number"],#tableBody select,#tableBody .wd-mkt-trigger,#tableBody button[onclick^="openLossModal"],#tableBody button[onclick^="openNoteModal"],#wdSummaryPanel button[onclick^="openNoteModal"],#sunHoursTarget,#inputSunHoursCustom,input[name="sunHoursMode"]');
+    const control=event.target.closest('#tableBody input[type="number"],#tableBody select,#tableBody .wd-mkt-trigger,#tableBody .wd-method-trigger,#tableBody button[onclick^="openLossModal"],#tableBody button[onclick^="openNoteModal"],#wdSummaryPanel button[onclick^="openNoteModal"],#sunHoursTarget,#inputSunHoursCustom,input[name="sunHoursMode"]');
     if (!control || (event.type==='beforeinput' && !control.matches('input[type="number"]')) ||
         (event.type==='keydown' && ['Tab','Shift','Control','Alt','Meta','Escape'].includes(event.key))) return;
     const row=control.closest('[data-wd-plant]'),plant=row&&findPlant(row.dataset.wdPlant);
@@ -108,7 +127,7 @@ const WDReview = (() => {
     const metrics = calculatePlantMetrics(plant);
     if (!(plant.calculationMethod==='other'?metrics.manualValid:metrics.valid)) { SolarCloud.notice(text('ยังตรวจเสร็จไม่ได้','Cannot mark reviewed'),metrics.periodError||text('กรุณาตรวจค่าคำนวณที่ไม่ถูกต้องก่อน','Please correct invalid calculation inputs first'));return; }
     const state=reviewState(plant);
-    reviews[reviewKey(plant)] = JSON.stringify({done:true,again:state==='done',by:actor.name,userId:actor.userId,at:new Date().toISOString(),fingerprint:currentFingerprint(plant)});
+    reviews[reviewKey(plant)] = JSON.stringify({done:true,again:state==='done',by:actor.name,userId:actor.userId,at:new Date().toISOString(),fingerprint:currentFingerprint(plant),calculationFingerprint:canonicalFingerprint(plant)});
     editApproved.delete(reviewKey(plant));
     editApproved.delete('@global:'+month());
     SolarCloud.scheduleSave('working_day_review');
@@ -135,6 +154,7 @@ const WDReview = (() => {
     Object.entries(state.overrides || {}).forEach(([key, value]) => {
       if (key.startsWith('@review:') && reviews[key] === sent.overrides?.[key]) reviews[key] = value;
     });
+    markSavedBaseline();
     if (activeTab==='summary') calculateAndRender(); else refreshStatuses();
   }
   function beginEdit(id) {
@@ -147,7 +167,7 @@ const WDReview = (() => {
   function endEdit() { if (editing) { editing=null;SolarCloud.refreshPresence(); } }
   function presenceContext() {
     if (!editing || document.hidden || editing.month !== month() || Date.now()-editing.lastActivity > 90000) return null;
-    return {projectKey:editing.projectKey,month:editing.month};
+    return {projectKey:editing.projectKey,projectName:plantData.find(p=>projectStableKey(p)===editing.projectKey)?.name||'',month:editing.month};
   }
   function onPresence(next, online) { users=next;connected=online;refreshStatuses(); }
   function setTab(tab) {
@@ -158,10 +178,10 @@ const WDReview = (() => {
   ['click','keydown','beforeinput','change'].forEach(type=>document.addEventListener(type,guardReviewedEdit,true));
   function setReviewFilter(value) { reviewFilter=['all','done','new','changed'].includes(value)?value:'all';calculateAndRender(); }
   function clearSearch() { $('searchInput').value='';$('projectPopupSearch').value='';calculateAndRender(); }
-  let reviewScope=null;
+  let reviewScope=null,pendingPathScope=null,deferredPathScope=null;
   function withReviewScope(fn){
-    const previous=reviewScope;reviewScope=new Map();
-    try{return fn()}finally{reviewScope=previous}
+    const previous=reviewScope,previousPaths=pendingPathScope,previousDeferred=deferredPathScope;reviewScope=new Map();pendingPathScope=SolarCloud.pendingSharedPaths?.()||[];deferredPathScope=SolarCloud.deferredSharedPaths?.()||[];
+    try{return fn()}finally{reviewScope=previous;pendingPathScope=previousPaths;deferredPathScope=previousDeferred}
   }
   function render(filtered,context){return withReviewScope(()=>renderScoped(filtered,context))}
   function renderScoped(filtered, context) {
@@ -211,8 +231,9 @@ const WDReview = (() => {
     else if(editing&&event.target.closest('#lossModal,#noteModal'))editing.lastActivity=Date.now();
   });
   document.addEventListener('visibilitychange',()=>{if(document.hidden)endEdit()});
-  setInterval(()=>{if(editing){if(!presenceContext())endEdit();else SolarCloud.refreshPresence()}refreshStatuses()},30000);
-  function filterPlants(plants){return reviewFilter==='all'?plants:plants.filter(p=>reviewState(p)===reviewFilter)}
-  return {filterPlants,isSummary:()=>activeTab==='summary',render,setTab,setReviewFilter,clearSearch,statusHtml,detailBadge,reviewLabel,toggleReview,refreshStatuses,beginEdit,endEdit,presenceContext,onPresence,onSaved,
+  setInterval(()=>{if(editing&&!presenceContext())endEdit();refreshStatuses()},60000);
+  function filterPlants(plants){return withReviewScope(()=>reviewFilter==='all'?plants:plants.filter(p=>reviewState(p)===reviewFilter))}
+  return {upgradeValidReviews,editAllowed:p=>editApproved.has(reviewKey(p)),markSavedBaseline,calculationSnapshot,canonicalFingerprint,pendingCalculation,filterPlants,isSummary:()=>activeTab==='summary',render,setTab,setReviewFilter,clearSearch,statusHtml,detailBadge,reviewLabel,toggleReview,refreshStatuses,beginEdit,endEdit,presenceContext,onPresence,onSaved,
     isReviewed:reviewed,captureReviews:()=>({...reviews}),restoreReviews:overrides=>{reviews=Object.fromEntries(Object.entries(overrides).filter(([key])=>key.startsWith('@review:')))}};
 })();
+

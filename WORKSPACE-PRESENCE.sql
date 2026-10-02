@@ -1,0 +1,2 @@
+create policy solar_workspace_presence_read on realtime.messages for select to authenticated using (extension='presence' and exists(select 1 from public.workspace_members m where m.user_id=(select auth.uid()) and (select realtime.topic())='workspace-online:'||m.workspace_id::text));
+create policy solar_workspace_presence_write on realtime.messages for insert to authenticated with check (extension='presence' and exists(select 1 from public.workspace_members m where m.user_id=(select auth.uid()) and (select realtime.topic())='workspace-online:'||m.workspace_id::text));

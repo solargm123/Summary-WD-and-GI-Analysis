@@ -5,7 +5,8 @@
     key:'sb_publishable_pkp8EP-vx61lX7IdF8BDVw_JxgQU0tS',
     siteRoot:'https://solargm123.github.io/Summary-WD-and-GI-Analysis/'
   };
-  let localUserId=null;
+  const deferredSharedFields=new Map();
+  let localUserId=null,workspaceChannel=null,workspaceConnected=false,projectConnected=false,presenceHeartbeat=null,presenceListenersInstalled=false,remotePending=false,remoteWho='';
   let client=null,currentProject=null,currentMembership=null,adapter=null,saveTimer=null,dirty=false,saving=false,conflict=false,channel=null,presenceUsers=[],presenceSession=null,lastPresenceArea='',lastSharedState={},pendingFieldConflict=null,remoteSyncTimer=null;
   const $=id=>document.getElementById(id);
   const indexUrl=()=>CONFIG.siteRoot;
@@ -217,7 +218,7 @@ function analysisUrl(project){const page=project.analysis_type==='working_day'?'
   }
   const pathId=path=>(path||[]).join('\u001f');
   function pathsOverlap(a,b){const aa=a||[],bb=b||[],n=Math.min(aa.length,bb.length);for(let i=0;i<n;i++)if(aa[i]!==bb[i])return false;return true}
-  function pendingPatches(){if(!adapter||!currentProject)return[];return fieldPatches(lastSharedState,sharedState(adapter.captureViewState?.()||adapter.capture().userState||{}))}
+  function pendingPatches(){if(!adapter||!currentProject)return[];return fieldPatches(lastSharedState,sharedState(adapter.captureViewState?.()||adapter.capture().userState||{})).filter(p=>!deferredSharedFields.has(pathId(p.path))||JSON.stringify(p.delete?undefined:p.value)!==JSON.stringify(deferredSharedFields.get(pathId(p.path)).oldValue))}
   function friendlyPath(path){
     const labels={overrides:'ข้อมูลแก้ไข',lossFactor:'Loss Factor',sunHoursTarget:'Sun Hours เป้าหมาย',sunHoursMode:'วิธี Sun Hours',sunHoursCustom:'Sun Hours กำหนดเอง',minIrr:'GI ต่ำสุด',maxIrr:'GI สูงสุด',settings:'เงื่อนไข PR',guarantees:'PR Guarantee',dailyNotes:'Note รายวัน',monthlyNotes:'Note รายเดือน',projectNotes:'Note โครงการ',capacity:'Capacity',cap:'Capacity',customDaysInMonth:'Days in Month',lossDaysArray:'วันที่เกิด Loss',province:'จังหวัด',visible:'การแสดงโครงการ',method:'วิธีคำนวณ',mktEstimate:'MKT Estimate',note:'Note',dates:'วันที่'};
     return (path||[]).map(x=>labels[x]||x).join(' › ');
@@ -246,7 +247,7 @@ function analysisUrl(project){const page=project.analysis_type==='working_day'?'
     lastSharedState=sharedState(currentProject?.user_state||{});
   }
   async function persistFieldPatches(patches,reason='manual',force=false,clientVersion=null){
-    const payload=adapter.capturePeriodKey?.()||adapter.capture();
+    const payload=adapter.capturePeriodKey?.()||adapter.capture(),sentState=cloneJson(adapter.captureViewState?.()||adapter.capture().userState||{}),knownBefore=cloneJson(lastSharedState);
     const changes=historyChanges(patches);
     const {data,error}=await getClient().rpc('save_analysis_field_patches',{
       p_project_id:currentProject.id,
@@ -261,24 +262,32 @@ function analysisUrl(project){const page=project.analysis_type==='working_day'?'
       pendingFieldConflict={patches,reason,serverVersion:data.serverVersion,conflicts:data.conflicts||[]};
       setConflictState(true);setStatus('แก้ไขช่องเดียวกัน — กรุณาเลือกข้อมูล','conflict');showFieldConflict();return false;
     }
-    setProjectFromRpc(data);pendingFieldConflict=null;dirty=false;setConflictState(false);setStatus('บันทึกแล้ว','ok');
-    adapter?.onSaved?.(cloneJson(lastSharedState),payload.userState||{});
+    setProjectFromRpc(data);
+    const current=sharedState(adapter.captureViewState?.()||adapter.capture().userState||{});
+    for(const change of fieldPatches(knownBefore,lastSharedState)){if(patches.some(p=>pathsOverlap(p.path,change.path)))continue;const key=pathId(change.path);deferredSharedFields.set(key,{path:change.path,oldValue:valueAtPath(knownBefore,change.path)})}
+    for(const [key,value] of deferredSharedFields)if(JSON.stringify(valueAtPath(current,value.path))===JSON.stringify(valueAtPath(lastSharedState,value.path)))deferredSharedFields.delete(key);
+    if(deferredSharedFields.size)remotePending=true;
+    pendingFieldConflict=null;dirty=false;setConflictState(false);setStatus('บันทึกแล้ว','ok');
+    dirty=pendingPatches().length>0;
+    adapter?.onSaved?.(cloneJson(lastSharedState),sentState);
     if(channel)channel.send({type:'broadcast',event:'project_saved',payload:{userId:presenceSession?.userId||'',name:presenceSession?.name||'ผู้ใช้อื่น',version:currentProject.version,paths:patches.map(p=>p.path),at:new Date().toISOString()}}).catch(()=>{});
     return true;
   }
   function scheduleSave(reason='edit'){if(!currentProject)return;saveLocalViewState();if(!roleCanEdit()||!pendingPatches().length)return;dirty=true;setStatus('มีการเปลี่ยนแปลง','busy');clearTimeout(saveTimer);saveTimer=setTimeout(()=>save(reason),1500)}
   async function save(reason='manual'){
     if(!roleCanEdit()||!currentProject||!adapter||saving)return;
-    saving=true;setStatus('กำลังบันทึก...','busy');
+    saving=true;let completed=false;setStatus('กำลังบันทึก...','busy');
     try{
       const patches=pendingPatches();
       if(!patches.length){dirty=false;setConflictState(false);setStatus('ไม่มีข้อมูลใหม่ต้องบันทึก','ok');return}
+      const deferredConflicts=patches.filter(p=>deferredSharedFields.has(pathId(p.path)));
+      if(deferredConflicts.length){pendingFieldConflict={patches,reason,serverVersion:currentProject.version,conflicts:deferredConflicts.map(p=>({path:p.path,serverValue:valueAtPath(lastSharedState,p.path),yourValue:p.delete?undefined:p.value}))};setConflictState(true);setStatus('มีข้อมูลใหม่ในช่องที่กำลังแก้ — กรุณาเลือกค่าที่ต้องการ','conflict');showFieldConflict();return}
       if(patches.length>1000)throw new Error('มีการแก้ไขมากกว่า 1,000 ช่อง กรุณาบันทึกเป็นช่วงย่อย');
-      await persistFieldPatches(patches,reason,false);
+      completed=await persistFieldPatches(patches,reason,false);
     }catch(error){
       const raw=error.message||String(error),friendly=/permission_denied|42501/i.test(raw)?'บัญชีนี้ยังไม่มีสิทธิ์ Editor ใน Workspace':/project_locked_completed/i.test(raw)?'งานนี้ถูกล็อกเป็น Completed':/statement timeout/i.test(raw)?'ฐานข้อมูลใช้เวลานานเกินกำหนด กรุณาลองอีกครั้ง':raw;
       setStatus('บันทึกไม่สำเร็จ: '+friendly,'error');if(reason==='manual')notice('บันทึกไม่สำเร็จ',friendly,'danger');console.error('Field save failed:',error);
-    }finally{saving=false}
+    }finally{saving=false;if(completed&&pendingPatches().length){dirty=true;clearTimeout(saveTimer);saveTimer=setTimeout(()=>save('pending_edit'),1500)}else if(remotePending)scheduleRemoteRefresh(remoteWho)}
   }
   function installAutoSave(){
     global.addEventListener('beforeunload',event=>{if(dirty||conflict){event.preventDefault();event.returnValue=''}});
@@ -296,55 +305,69 @@ function analysisUrl(project){const page=project.analysis_type==='working_day'?'
     if(active?.id)return analysisPageLabel()+' / '+active.id.replace(/Tab$/,'');
     return analysisPageLabel();
   }
+  function rawPresence(){return [...Object.values(workspaceConnected?workspaceChannel?.presenceState()||{}:{}).flat(),...Object.values(projectConnected?channel?.presenceState()||{}:{}).flat()]}
   function flattenPresence(){
-    if(!channel)return [];
-    const state=channel.presenceState(),map=new Map();
-    Object.values(state||{}).flat().forEach(meta=>{
-      const key=meta.userId||meta.presence_ref;
-      const previous=map.get(key);
-      if(!previous||String(meta.onlineAt||'')>String(previous.onlineAt||''))map.set(key,meta);
-    });
+    const map=new Map();for(const meta of rawPresence()){const stamp=Date.parse(meta.lastSeen);if(!Number.isFinite(stamp)||Date.now()-stamp>150000)continue;const key=meta.userId||meta.presence_ref,previous=map.get(key);if(!previous||String(meta.lastSeen)>String(previous.lastSeen))map.set(key,meta)}
     return [...map.values()].sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'th'));
   }
   function renderPresence(){
-    presenceUsers=flattenPresence();
-    adapter?.onPresence?.(Object.values(channel?.presenceState()||{}).flat(),true);
-    const count=Math.max(1,presenceUsers.length),button=$('solarPresenceButton'),node=$('solarPresenceCount');
-    if(node)node.textContent=String(count);
-    if(button){button.dataset.count=String(count);button.title=count>1?'มี '+count+' คนกำลังเปิดงานนี้':'คุณกำลังเปิดงานนี้'}
+    presenceUsers=flattenPresence();adapter?.onPresence?.(rawPresence(),projectConnected||workspaceConnected);
+    const count=presenceUsers.length,button=$('solarPresenceButton'),node=$('solarPresenceCount'),live=workspaceConnected||projectConnected;
+    if(node)node.textContent=live?String(count):'—';
+    if(button){button.dataset.count=String(count);button.title=!live?'สถานะออนไลน์ยังไม่เชื่อมต่อ':workspaceConnected?'ออนไลน์ใน Workspace เดียวกัน':'เชื่อมต่อเฉพาะหน้านี้';button.dataset.connected=String(live)}
   }
   async function showPresence(){
-    const users=presenceUsers.length?presenceUsers:(presenceSession?[presenceSession]:[]);
-    const message=users.map(user=>'• '+(user.name||user.email||'ผู้ใช้งาน')+' — '+(user.role||'member')+'\n  '+(user.area||analysisPageLabel())).join('\n\n')||'ขณะนี้มีคุณกำลังเปิดงานนี้';
-    await notice('ผู้ใช้งานออนไลน์ ('+Math.max(1,users.length)+')',message,'success');
+    const live=workspaceConnected||projectConnected;
+    const message=!live?'สถานะออนไลน์ยังไม่เชื่อมต่อ กรุณาลองใหม่':presenceUsers.map(user=>'• '+(user.name||'ผู้ใช้งาน')+' — '+(user.role||'member')+'\n  '+(user.area||'Analysis')+(user.workingDay?' · '+user.workingDay.month+' · '+(user.workingDay.projectName||'กำลังแก้ไข'):'')).join('\n\n')||'ยังไม่มีสถานะผู้ใช้งานล่าสุด';
+    await notice('ผู้ใช้งานออนไลน์ ('+(live?presenceUsers.length:'—')+')',message,live?'success':'warning');
   }
   async function updatePresence(force=false){
-    if(!channel||!presenceSession)return;
+    if(!presenceSession||(!channel&&!workspaceChannel))return;
     const area=activePresenceArea();
     const context=adapter?.presenceContext?.()||null;
     const signature=context?JSON.stringify([area,context]):area;
     if(!force&&signature===lastPresenceArea)return;
     lastPresenceArea=signature;presenceSession.area=area;presenceSession.lastSeen=new Date().toISOString();
     if(adapter?.presenceContext)presenceSession.workingDay=context;
-    try{await channel.track(presenceSession)}catch{}
+    const publicSession={...presenceSession};delete publicSession.email;
+    const results=await Promise.allSettled([projectConnected?channel.track(publicSession):Promise.resolve(),workspaceConnected?workspaceChannel.track(publicSession):Promise.resolve()]);
+    if(results.some(r=>r.status==='rejected'))console.warn('Presence update failed');
+    renderPresence();
   }
-  async function refreshRemoteState(message='อัปเดตข้อมูลล่าสุดแล้ว'){
-    if(!currentProject||!adapter||saving)return;
-    const captured=adapter.capture();
-    const {data,error}=await getClient().from('analysis_projects').select('*').eq('id',currentProject.id).is('deleted_at',null).single();
-    if(error||!data||data.version<=currentProject.version)return;
-    const state=mergeRemoteWithLocal(data.user_state||{},captured.userState||{});
-    currentProject=data;lastSharedState=sharedState(data.user_state||{});
-    await adapter.restore(captured.baseData||{},state);dirty=false;setConflictState(false);setStatus(message,'ok');
+  function editingUiOpen(){
+    if(adapter?.isEditing?.())return true;
+    const active=document.activeElement;if(active?.matches('input:not([type=checkbox]):not([type=file]),textarea,select')&&!active.closest('#solarCloudDock,#solarCloudModal'))return true;
+    return [...document.querySelectorAll('.modal.open,#noteModal,#lossModal,#wdPeriodModal,#wdMethodMenu')].some(node=>!node.hidden&&!node.classList.contains('hidden')&&getComputedStyle(node).display!=='none');
+  }
+  function remoteUnsafe(){return saving||dirty||pendingPatches().length>0||editingUiOpen()||document.hidden}
+  async function refreshRemoteState(message='อัปเดตข้อมูลล่าสุดแล้ว',discardDraft=false){
+    if(!currentProject||!adapter)return;
+    if(!discardDraft&&remoteUnsafe()){remotePending=true;return}
+    const id=currentProject.id;
+    const {data,error}=await getClient().from('analysis_projects').select('*').eq('id',id).is('deleted_at',null).single();
+    if(error){remotePending=true;return}
+    if(currentProject.id!==id||(!discardDraft&&remoteUnsafe())){remotePending=true;return}
+    if(!data||(data.version<=currentProject.version&&!deferredSharedFields.size&&!discardDraft)){remotePending=false;return}
+    const captured=adapter.capture(),state=mergeRemoteWithLocal(data.user_state||{},captured.userState||{});
+    currentProject=data;lastSharedState=sharedState(data.user_state||{});deferredSharedFields.clear();remotePending=false;
+    await adapter.restore(captured.baseData||{},state);dirty=pendingPatches().length>0;setConflictState(false);setStatus(message,'ok');
   }
   function scheduleRemoteRefresh(who){
-    clearTimeout(remoteSyncTimer);remoteSyncTimer=setTimeout(()=>refreshRemoteState((who||'ผู้ใช้อื่น')+' อัปเดตข้อมูลแล้ว').catch(console.error),350);
+    remotePending=true;remoteWho=who||remoteWho;clearTimeout(remoteSyncTimer);
+    remoteSyncTimer=setTimeout(()=>refreshRemoteState((remoteWho||'ผู้ใช้อื่น')+' อัปเดตข้อมูลแล้ว').catch(console.error),500);
   }
   async function subscribe(){
+    clearInterval(presenceHeartbeat);projectConnected=false;workspaceConnected=false;
     if(channel)await getClient().removeChannel(channel);
+    if(workspaceChannel)await getClient().removeChannel(workspaceChannel);
     const s=await session(),user=s?.user;
     const name=user?.user_metadata?.display_name||user?.user_metadata?.full_name||user?.user_metadata?.name||user?.email||'ผู้ใช้งาน';
     presenceSession={userId:user?.id||crypto.randomUUID(),name,email:user?.email||'',role:currentMembership?.role||'member',area:analysisPageLabel(),onlineAt:new Date().toISOString(),lastSeen:new Date().toISOString()};
+    presenceSession.analysisProjectId=currentProject.id;
+    const tabId=crypto.randomUUID();
+    workspaceChannel=getClient().channel(`workspace-online:${currentMembership.workspace_id}`,{config:{private:true,presence:{key:tabId}}})
+      .on('presence',{event:'sync'},renderPresence).on('presence',{event:'join'},renderPresence).on('presence',{event:'leave'},renderPresence)
+      .subscribe(status=>{workspaceConnected=status==='SUBSCRIBED';if(workspaceConnected)updatePresence(true);renderPresence()});
     channel=getClient().channel(`project:${currentProject.id}`,{config:{presence:{key:presenceSession.userId},broadcast:{self:false}}})
       .on('presence',{event:'sync'},renderPresence)
       .on('presence',{event:'join'},renderPresence)
@@ -355,15 +378,20 @@ function analysisUrl(project){const page=project.analysis_type==='working_day'?'
         const local=pendingPatches(),same=local.some(a=>remotePaths.some(b=>pathsOverlap(a.path,b)));
         if(dirty&&same){setStatus(who+' แก้ไขช่องเดียวกับคุณ — กำลังตรวจสอบ','conflict');setConflictState(true);return}
         if(!dirty)scheduleRemoteRefresh(who);
-        else setStatus(who+' แก้ข้อมูลส่วนอื่น — ระบบจะรวมตอนบันทึก','busy');
+        else{remotePending=true;remoteWho=who;setStatus(who+' แก้ข้อมูลส่วนอื่น — ระบบจะรวมตอนบันทึก','busy')}
       })
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'analysis_projects',filter:`id=eq.${currentProject.id}`},payload=>{
-        if(payload.new.version>currentProject.version&&!saving&&!dirty)scheduleRemoteRefresh();
+        if(payload.new.version>currentProject.version)scheduleRemoteRefresh();
       })
-      .subscribe(status=>{if(status==='SUBSCRIBED')updatePresence(true);else adapter?.onPresence?.([],false)});
-    document.addEventListener('click',()=>setTimeout(()=>updatePresence(false),250),true);
-    global.addEventListener('focus',()=>updatePresence(true));
-    global.addEventListener('beforeunload',()=>{try{channel?.untrack()}catch{}},{once:true});
+      .subscribe(status=>{projectConnected=status==='SUBSCRIBED';if(projectConnected)updatePresence(true);renderPresence()});
+    presenceHeartbeat=setInterval(()=>{updatePresence(true);if(remotePending)scheduleRemoteRefresh(remoteWho)},60000);
+    if(!presenceListenersInstalled){presenceListenersInstalled=true;
+      document.addEventListener('click',()=>setTimeout(()=>{updatePresence(false);if(remotePending)scheduleRemoteRefresh(remoteWho)},250),true);
+      document.addEventListener('focusout',()=>{if(remotePending)scheduleRemoteRefresh(remoteWho)},true);
+      global.addEventListener('focus',()=>{updatePresence(true);if(remotePending)scheduleRemoteRefresh(remoteWho)});
+      document.addEventListener('visibilitychange',()=>{updatePresence(true);if(!document.hidden&&remotePending)scheduleRemoteRefresh(remoteWho)});
+      global.addEventListener('beforeunload',()=>{clearInterval(presenceHeartbeat);try{channel?.untrack();workspaceChannel?.untrack()}catch{}},{once:true});
+    }
   }
   const CENTRAL_CACHE_DB='fusion-central-cache-v2',CENTRAL_CACHE_STORE='payloads';
   function cacheDb(){return new Promise((resolve,reject)=>{const request=indexedDB.open(CENTRAL_CACHE_DB,1);request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains(CENTRAL_CACHE_STORE))request.result.createObjectStore(CENTRAL_CACHE_STORE)};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)})}
@@ -428,7 +456,7 @@ function analysisUrl(project){const page=project.analysis_type==='working_day'?'
         if(shared)await adapter.restore(shared,restoredUserState)
       }
       else if(currentProject.base_data&&Object.keys(currentProject.base_data).length)await adapter.restore(currentProject.base_data,mergeRemoteWithLocal(currentProject.user_state||{},loadLocalViewState()));
-      lastSharedState=sharedState(currentProject.user_state||{});applyViewerLock();installAutoSave();subscribe();setStatus(roleCanEdit()?'เชื่อมต่อแล้ว':currentProject.status==='completed'?'งานเสร็จแล้ว — โหมดดูอย่างเดียว':'โหมดดูอย่างเดียว','ok');
+      lastSharedState=sharedState(currentProject.user_state||{});adapter?.onSharedReady?.();applyViewerLock();installAutoSave();subscribe();setStatus(roleCanEdit()?'เชื่อมต่อแล้ว':currentProject.status==='completed'?'งานเสร็จแล้ว — โหมดดูอย่างเดียว':'โหมดดูอย่างเดียว','ok');
       document.title=`${currentProject.name} — ${document.title}`;
     }catch(error){console.error(error);loading.remove();await notice('ไม่สามารถเปิดงานได้',error.message,'danger');if(/Authentication|required|Project ID/.test(error.message))location.replace(indexUrl());return}
     loading.remove();
@@ -502,12 +530,12 @@ function analysisUrl(project){const page=project.analysis_type==='working_day'?'
     dirty=false;setConflictState(false);location.reload();
   }
   async function useLatestConflict(){
-    pendingFieldConflict=null;dirty=false;setConflictState(false);$('solarCloudModal')?.classList.remove('open');await refreshRemoteState('ใช้ข้อมูลล่าสุดแล้ว');
+    pendingFieldConflict=null;dirty=false;setConflictState(false);$('solarCloudModal')?.classList.remove('open');await refreshRemoteState('ใช้ข้อมูลล่าสุดแล้ว',true);
   }
   async function keepMyConflict(){
     if(!pendingFieldConflict||saving)return;
-    const pending=pendingFieldConflict;$('solarCloudModal')?.classList.remove('open');saving=true;setStatus('กำลังบันทึกค่าของคุณ...','busy');
-    try{await persistFieldPatches(pending.patches,pending.reason,true,pending.serverVersion)}catch(error){setStatus('บันทึกไม่สำเร็จ','error');notice('บันทึกไม่สำเร็จ',error.message,'danger')}finally{saving=false}
+    const pending=pendingFieldConflict;$('solarCloudModal')?.classList.remove('open');saving=true;let completed=false;setStatus('กำลังบันทึกค่าของคุณ...','busy');
+    try{completed=await persistFieldPatches(pending.patches,pending.reason,true,pending.serverVersion)}catch(error){setStatus('บันทึกไม่สำเร็จ','error');notice('บันทึกไม่สำเร็จ',error.message,'danger')}finally{saving=false;if(completed&&pendingPatches().length)scheduleSave('pending_edit');else if(remotePending)scheduleRemoteRefresh(remoteWho)}
   }
   function resolveConflict(){
     stopHistoryRefresh();
@@ -660,6 +688,6 @@ function analysisUrl(project){const page=project.analysis_type==='working_day'?'
     location.assign(indexUrl());
   }
   async function openCentralAnalysis(type){const project=await ensureCentralProject(type);if(!project.dataset_id){const {data:dataset,error}=await getClient().from('shared_datasets').select('id').eq('workspace_id',(currentMembership||await membership()).workspace_id).order('updated_at',{ascending:false}).limit(1).maybeSingle();if(error)throw error;if(dataset){const attached=await getClient().rpc('attach_dataset_to_project',{p_project_id:project.id,p_dataset_id:dataset.id});if(attached.error)throw attached.error}}location.href=analysisUrl(project)}
-  global.SolarCloud={refreshPresence:()=>updatePresence(true),collaborationActor:()=>presenceSession?{userId:presenceSession.userId,name:presenceSession.name}:null,isSharedValueSaved:(path,value)=>JSON.stringify(valueAtPath(lastSharedState,path))===JSON.stringify(value),CONFIG,dialog,notice,confirmDialog,setLanguage,getLanguage,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,closeHistory,datasets,useDataset,resolveConflict,downloadLocalDraft,reloadLatest,back:backToCenter,roleCanEdit,roleCanAdmin,centralDatasetStatus,databaseStorageStatus,loadCentralPeriod,loadCentralPrRange,loadCentralPrSummary,loadPrProjectRecords,loadCentralFullData,showPresence,useLatestConflict,keepMyConflict,prepareCentralUpload,commitCentralUpload,prepareCentralBatchUpload,commitCentralBatchUpload,uploadCentralDataset,openCentralAnalysis};
+  global.SolarCloud={pendingSharedPaths:()=>pendingPatches().map(p=>p.path),deferredSharedPaths:()=>[...deferredSharedFields.values()].map(x=>x.path),refreshPresence:()=>updatePresence(true),collaborationActor:()=>presenceSession?{userId:presenceSession.userId,name:presenceSession.name}:null,isSharedValueSaved:(path,value)=>JSON.stringify(valueAtPath(lastSharedState,path))===JSON.stringify(value),CONFIG,dialog,notice,confirmDialog,setLanguage,getLanguage,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,closeHistory,datasets,useDataset,resolveConflict,downloadLocalDraft,reloadLatest,back:backToCenter,roleCanEdit,roleCanAdmin,centralDatasetStatus,databaseStorageStatus,loadCentralPeriod,loadCentralPrRange,loadCentralPrSummary,loadPrProjectRecords,loadCentralFullData,showPresence,useLatestConflict,keepMyConflict,prepareCentralUpload,commitCentralUpload,prepareCentralBatchUpload,commitCentralBatchUpload,uploadCentralDataset,openCentralAnalysis};
 })(window);
 
