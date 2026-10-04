@@ -27,6 +27,20 @@ function compare(p,state,data){
  if(!days)return {eligible:false,reason:'insufficient',peers:available,nearbySites:groups.size,availableSites:available.length,comparisonDays:0,base:null,diff:null};
  return {eligible:true,reason:'ok',peers,base:reference/days,diff:(total/reference-1)*100};
 }
+function averageCompare(p,state,data){
+ const average=q=>{const v=q.irradiance?.[String(state.year)]?.[String(state.month+1).padStart(2,'0')];return value(v)?v:null};
+ if(!Number.isFinite(p.lat)||!Number.isFinite(p.lng))return {eligible:false,reason:'insufficient',peers:[],base:null,diff:null};
+ const own=average(p),groups=new Map();
+ if(own===null)return {eligible:false,reason:'no-data',peers:[],base:null,diff:null};
+ for(const q of data){if(!Number.isFinite(q.lat)||!Number.isFinite(q.lng)||key(q)===key(p))continue;const km=distance(p,q);if(km<.001||km>state.rules.radius)continue;const k=key(q);if(!groups.has(k))groups.set(k,[]);groups.get(k).push({project:q,distance:km})}
+ const peers=[...groups.values()].map(group=>{const available=group.filter(x=>average(x.project)!==null);if(!available.length)return null;return {project:available.length>1?{...available[0].project,name:available.map(x=>x.project.name).join(' / ')}:available[0].project,distance:Math.min(...available.map(x=>x.distance)),gi:median(available.map(x=>average(x.project)))};}).filter(Boolean).sort((a,b)=>a.distance-b.distance);
+ const info={peers,nearbySites:groups.size,availableSites:peers.length};
+ if(peers.length<state.rules.minPeers)return {...info,eligible:false,reason:'insufficient',base:null,diff:null};
+ const values=peers.map(x=>x.gi),base=state.rules.method==='mean'?values.reduce((sum,v)=>sum+v,0)/values.length:median(values);
+ if(!(base>0))return {...info,eligible:false,reason:'invalid-base',base:null,diff:null};
+ return {...info,eligible:true,reason:'ok',base,diff:(own/base-1)*100};
+}
+window.GIMapAverageCompare=averageCompare;
 const caches=new WeakMap();
 function cachedCompare(p,state,data){let cache=caches.get(data);if(!cache){cache=new Map();caches.set(data,cache)}const k=JSON.stringify([p.id,state.year,state.month,state.rules]);if(cache.has(k))return cache.get(k);if(cache.size>1000)cache.clear();const result=compare(p,state,data);cache.set(k,result);return result}
 window.GIMapLiveCompare=cachedCompare;

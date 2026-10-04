@@ -411,6 +411,7 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 </div>
 
 
+<style>#gi-map-module .gimap-average-table{margin-top:16px;border:1px solid var(--line);border-radius:12px;padding:10px;overflow:auto}#gi-map-module .gimap-average-table table{width:100%;border-collapse:collapse;font-size:11px}#gi-map-module .gimap-average-table th,#gi-map-module .gimap-average-table td{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}#gi-map-module .gimap-average-table td:last-child,#gi-map-module .gimap-average-table th:last-child{text-align:right;font-variant-numeric:tabular-nums}#gi-map-module .gimap-average-table p{font-size:10px;color:var(--muted);line-height:1.5}</style>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 /* =========================================================
@@ -653,6 +654,8 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 
   function detailHTML(p){
     const st=statusFor(p),n=st.analysis,v=gi(p);
+    const a=window.GIMapAverageCompare?.(p,state,data);
+    const averageTable=a?`<section class="gimap-average-table"><div class="gimap-peer-title">เปรียบเทียบจาก Average ตารางหลัก</div><p>ตารางนี้ใช้ Average ตามตารางหลัก ส่วนสถานะบนแผนที่ใช้วิธีเดิม</p><table><thead><tr><th>โครงการ</th><th>Average</th></tr></thead><tbody><tr><td>${esc(p.name)}</td><td>${fmtGI(v)}</td></tr>${a.peers.map(x=>`<tr><td>${esc(x.project.name)}</td><td>${x.gi.toFixed(3)}</td></tr>`).join('')}</tbody><tfoot><tr><th>ค่าอ้างอิง</th><td>${a.base===null?'—':a.base.toFixed(3)}</td></tr><tr><th>ความคลาดเคลื่อนจาก Average</th><td>${fmtDiff(a.diff)}</td></tr><tr><th>ความคลาดเคลื่อนเดิม</th><td>${fmtDiff(n.diff)}</td></tr></tfoot></table>${!a.eligible?'<p>ข้อมูลไม่เพียงพอ หรือค่าอ้างอิงเป็นศูนย์</p>':''}</section>`:'';
     let bar='<i style="left:50%;width:0;background:'+st.color+'"></i>';
     if(n.diff!==null){
       const d=Math.max(-20,Math.min(20,n.diff));
@@ -680,7 +683,7 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
       <div class="gimap-diverge">${bar}</div>
       <div class="gimap-scale"><span>-20%</span><span>0%</span><span>+20%</span></div>
       <div class="gimap-peer-title">PROJECTS USED FOR COMPARISON · ${n.peers.length}</div>
-      <div class="gimap-peer-list">${peers}</div><p>GI เป็นค่าร่วมทั้งโครงการ</p><button class="gimap-btn" data-location-project="${p.id}">ดู / แก้ไขพิกัด (${p.meta?.points?.length||0} จุด)</button>`;
+      <div class="gimap-peer-list">${peers}</div>${averageTable}<p>GI เป็นค่าร่วมทั้งโครงการ</p><button class="gimap-btn" data-location-project="${p.id}">ดู / แก้ไขพิกัด (${p.meta?.points?.length||0} จุด)</button>`;
   }
 
   function renderDetail(){
@@ -998,11 +1001,11 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 })(window);
 </script>
 
-<script src="gi-map-label-layout.js?v=20261003-map-threshold1"></script>
-<script src="gi-map-language.js?v=20261003-map-threshold1"></script>
-<script src="gi-map-v4-live.js?v=20261003-map-threshold1"></script>
-<script src="gi-map-filter-picker.js?v=20261003-map-threshold1"></script>
-<script src="gi-map-location-ui.js?v=20261003-map-threshold1"></script>
+<script src="gi-map-label-layout.js?v=20261004-map-average-table1"></script>
+<script src="gi-map-language.js?v=20261004-map-average-table1"></script>
+<script src="gi-map-v4-live.js?v=20261004-map-average-table1"></script>
+<script src="gi-map-filter-picker.js?v=20261004-map-average-table1"></script>
+<script src="gi-map-location-ui.js?v=20261004-map-average-table1"></script>
 
 <!--
 =========================================================

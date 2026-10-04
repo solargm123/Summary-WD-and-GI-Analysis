@@ -2,6 +2,10 @@
 'use strict';
 const root=document.getElementById('gi-map-module');let lang='th',queued=false;
 const pairs=[
+['เปรียบเทียบจาก Average ตารางหลัก','Comparison using table Average'],
+['ตารางนี้ใช้ Average ตามตารางหลัก ส่วนสถานะบนแผนที่ใช้วิธีเดิม','This table uses the main table Average. Map statuses retain the original method.'],
+['ค่าอ้างอิง','Reference'],['ความคลาดเคลื่อนจาก Average','Difference from Average'],['ความคลาดเคลื่อนเดิม','Original difference'],
+['ข้อมูลไม่เพียงพอ หรือค่าอ้างอิงเป็นศูนย์','Insufficient data or zero reference'],
 ["เกณฑ์สถานะหมายถึงอะไร?","What do the status thresholds mean?"],
 ["เปรียบเทียบค่าแสงกับโครงการใกล้เคียง ไม่ใช่ช่วง Normal range ที่ใช้คัดวันในตาราง","Compares GI against nearby projects, not the Normal range used to select valid table days."],
 ["ปกติ (สีเขียว)","Normal (green)"],
@@ -62,3 +66,4 @@ const observer=new MutationObserver(()=>{if(!queued){queued=true;requestAnimatio
 addEventListener('pagehide',()=>observer.disconnect(),{once:true});
 window.GIMapLanguage={destroy:()=>observer.disconnect(),set(value){lang=value==='en'?'en':'th';apply()},get:()=>lang};
 })();
+

@@ -16,4 +16,10 @@ assert.equal(w.GIMapLiveCompare(target,state,[target,p('b',13.01,5),p('c',13.01,
 assert.equal(w.GIMapLiveCompare(p('missing',13,null),state,peers).reason,'no-data');
 assert.ok(main.includes('GIMapLauncher.open(this)'));assert.ok(!main.includes('<div id="mapTab"'));
 assert.ok(html.includes('data-action="return-gi"'));
+target.irradiance={'2026':{'09':4}};peers.forEach(q=>q.irradiance={'2026':{'09':5}});
+const average=w.GIMapAverageCompare(target,state,[target,...peers]);assert.equal(average.eligible,true);assert.ok(Math.abs(average.diff+20)<1e-8);
+peers.forEach(q=>q.meta.dates['2026-09-01']=10);
+assert.ok(Math.abs(w.GIMapAverageCompare(target,state,[target,...peers]).diff+20)<1e-8);
+assert.ok(html.includes('ความคลาดเคลื่อนเดิม'));assert.ok(html.includes('ความคลาดเคลื่อนจาก Average'));
 dom.window.close();console.log('PASS: original CSS preserved, no demo bootstrap, syntax, real-data same-day comparison, peer/site checks, missing GI, navigation wiring.');
+
