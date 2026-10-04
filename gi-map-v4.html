@@ -278,11 +278,11 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
         <div class="gimap-rule-summary">
           <div class="gimap-rule-line"><span>Radius</span><b data-role="summary-radius">20 km</b></div>
           <div class="gimap-rule-line"><span>Method</span><b data-role="summary-method">Median</b></div>
-          <details class="gimap-method-help"><summary>วิธีเปรียบเทียบทำงานอย่างไร?</summary>
+          <div class="gimap-rule-note" data-role="reference-summary" hidden></div><details class="gimap-method-help"><summary>วิธีเปรียบเทียบทำงานอย่างไร?</summary><p>โครงการอ้างอิง: ใช้ Average ของ B เทียบทุกโครงการในรัศมีของ B ไม่ใช้จำนวนจุดขั้นต่ำ</p>
             <p><b>Median</b> — ใช้ค่ากลาง ลดผลกระทบจากค่าแสงที่สูงหรือต่ำผิดปกติ เหมาะเป็นค่าเริ่มต้น เช่น 3, 4, 8 → 4</p>
             <p><b>Mean</b> — รวมค่าแสงแล้วหารจำนวนจุด ทุกจุดมีน้ำหนักเท่ากัน แต่ไวต่อค่าผิดปกติ เช่น 3, 4, 8 → 5</p>
             <p>เลือกจุดในรัศมีที่กำหนด พิกัดซ้ำรวมเป็นจุดเดียว และไม่นับพิกัดเดียวกับโครงการที่เลือก ต้องมี Average ในเดือนที่เลือกครบจำนวนจุดขั้นต่ำ</p>
-            <p>ค่าจริง = Average ของโครงการที่ตรวจ · ค่าประมาณการ = ค่าจาก Median หรือ Mean ของจุดใกล้เคียง</p><p>ความต่าง (%) = |GI โครงการ − GI อ้างอิง| ÷ GI โครงการ × 100 ใช้ Average ของเดือนที่เลือก หากข้อมูลไม่พอจะแสดง “เปรียบเทียบไม่ได้” ไม่ใช่ “ผิดปกติ”</p>
+            <p>ค่าจริง = Average ของโครงการที่ตรวจ · ค่าประมาณการ = ค่าจากวิธีเปรียบเทียบที่เลือก (Median / Mean / โครงการอ้างอิง)</p><p>ความต่าง (%) = |GI โครงการ − GI อ้างอิง| ÷ GI โครงการ × 100 ใช้ Average ของเดือนที่เลือก หากข้อมูลไม่พอจะแสดง “เปรียบเทียบไม่ได้” ไม่ใช่ “ผิดปกติ”</p>
             <p>ค่า GI บนหมุดใช้ Average ตามตาราง สถานะเทียบพื้นที่ใกล้เคียงใช้ Average เดียวกัน วันที่ผ่านเกณฑ์อาจต่างกันในแต่ละโครงการ</p>
           </details>
           <div class="gimap-rule-line"><span>Minimum Nearby</span><b data-role="summary-minpeers">2 projects</b></div>
@@ -393,10 +393,12 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
           <select data-role="set-method">
             <option value="median">Median — ลดผลจาก Outlier</option>
             <option value="mean">Mean — ค่าเฉลี่ยทั่วไป</option>
+            <option value="reference">โครงการอ้างอิง — เทียบทุกโครงการในรัศมี</option>
           </select>
         </div>
       </div>
 
+      <div data-role="reference-controls" hidden><label>เลือกโครงการอ้างอิง</label><input type="text" data-role="reference-search" placeholder="ค้นหาโครงการอ้างอิง"><select data-role="set-reference"></select><p style="font-size:12px;line-height:1.5">เลือก B ครั้งเดียว เทียบทุกโครงการในรัศมีของ B ไม่ใช้จำนวนจุดขั้นต่ำ และไม่เปลี่ยน B อัตโนมัติเมื่อข้อมูลหาย</p></div>
       <div class="gimap-validation" data-role="validation"></div>
 
       <div class="gimap-settings-footer">
@@ -570,6 +572,7 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 
   function statusFor(p){
     const n=nearby(p);
+    if(n.reason==="reference")return {key:"reference",name:"โครงการอ้างอิง",color:"#367bf5",analysis:n};
     if(!n.eligible)return {key:"none",name:n.reason==="no-data"?"No Data":"No Comparison",color:"#98a3ab",analysis:n};
     if(n.diff>state.rules.abnormal+1e-8)return {key:"abnormal",name:"Abnormal",color:"#df5361",analysis:n};
     if(n.diff>state.rules.normal+1e-8)return {key:"watch",name:"Watch",color:"#f39a35",analysis:n};
@@ -609,8 +612,11 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 
   function updateRuleSummary(){
     $('[data-role="summary-radius"]').textContent=`${state.rules.radius} km`;
-    $('[data-role="summary-method"]').textContent=state.rules.method==="median"?"Median":"Mean";
-    $('[data-role="summary-minpeers"]').textContent=`${state.rules.minPeers} projects`;
+    $('[data-role="summary-method"]').textContent=state.rules.method==="reference"?"โครงการอ้างอิง":state.rules.method==="median"?"Median":"Mean";
+    $('[data-role="summary-minpeers"]').textContent=state.rules.method==='reference'?'1 โครงการอ้างอิง':`${state.rules.minPeers} projects`;
+    const ref=data.find(p=>p.id===state.rules.referenceId);
+    const referenceSummary=$('[data-role="reference-summary"]');referenceSummary.hidden=state.rules.method!=='reference';referenceSummary.textContent=state.rules.method==='reference'?(ref&&gi(ref)!==null?'โครงการอ้างอิง: '+ref.name+' · GI '+fmtGI(gi(ref)):'โครงการอ้างอิงไม่มีข้อมูลหรือพิกัดในช่วงที่เลือก กรุณาเลือกใหม่ในตั้งค่า'):'';
+    $('[data-role="summary-method"]').title=state.rules.method==='reference'?(ref?ref.name:'ยังไม่ได้เลือกโครงการอ้างอิง'):'';
     $('[data-role="legend-normal"]').textContent=`≤ ${state.rules.normal}%`;
     $('[data-role="legend-watch"]').textContent=`> ${state.rules.normal}% ถึง ${state.rules.abnormal}%`;
     $('[data-role="legend-abnormal"]').textContent=`> ${state.rules.abnormal}%`;
@@ -660,20 +666,21 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
       <h4>${esc(p.name)}</h4>
       <p>${p.province||"-"} · ${p.region||"-"} · ${p.capacity.toLocaleString()} kWp</p>
       <div class="gimap-hover-row"><span>GI</span><b>${fmtGI(gi(p))}</b></div>
-      <div class="gimap-hover-row"><span>${state.rules.method==="median"?"Nearby Median":"Nearby Mean"}</span><b>${n.base===null?"—":n.base.toFixed(2)}</b></div>
+      <div class="gimap-hover-row"><span>${state.rules.method==="reference"?"GI โครงการอ้างอิง":state.rules.method==="median"?"Nearby Median":"Nearby Mean"}</span><b>${n.base===null?"—":n.base.toFixed(2)}</b></div>
       <div class="gimap-hover-row"><span>Difference</span><b style="color:${st.color}">${fmtDiff(n.diff)} <span>${n.direction||""}</span></b></div>
       <div class="gimap-hover-row"><span>Nearby</span><b>${n.peers.length}</b></div>
-      <div class="gimap-hover-note">${st.key==="none"?(n.reason==="no-data"?"ไม่มี GI สำหรับช่วงเวลานี้":`ต้องมีอย่างน้อย ${state.rules.minPeers} โครงการในรัศมี ${state.rules.radius} km`):`${st.name} · Confidence ${confidence(n.peers.length)}`}</div>
+      <div class="gimap-hover-note">${n.reason==="outside-radius"?"อยู่นอกรัศมีของโครงการอ้างอิง":n.reason==="reference-unavailable"?"โครงการอ้างอิงไม่มีข้อมูลในช่วงที่เลือก":n.reason==="reference"?"โครงการนี้เป็นค่าอ้างอิง":st.key==="none"?(n.reason==="no-data"?"ไม่มี GI สำหรับช่วงเวลานี้":`ต้องมีอย่างน้อย ${state.rules.minPeers} โครงการในรัศมี ${state.rules.radius} km`):`${st.name} · Confidence ${confidence(n.peers.length)}`}</div>
     </div>`;
   }
 
   function detailHTML(p){
     const st=statusFor(p),n=st.analysis,v=gi(p);
     const a=window.GIMapAverageCompare?.(p,state,data);
-    const old=window.GIMapLegacyCompare?.(p,state,data);
-    const averageTable=`<details><summary>คู่มืออ่านค่าแสงและสถานะ</summary><p>Average คือผลรวมค่าแสงของวันที่ผ่านเกณฑ์ในตารางหลัก หารด้วยจำนวนวันที่ผ่านเกณฑ์ ไม่ใช่ผลรวมค่าแสงทั้งเดือน วันนอกช่วง Normal range จะนับเมื่อยืนยันค่ารายวันแล้ว การตรวจแล้วรายเดือนไม่ได้ปลด Alarm รายวัน</p><p>ค่าอ้างอิงนำ Average ของจุดใกล้เคียงในรัศมีที่ตั้งไว้มาหา Median หรือ Mean พิกัดซ้ำรวมเป็นหนึ่งจุด และใช้ Median ของ Average ภายในจุดนั้น ต้องมีจุดครบขั้นต่ำ วันที่นำมาเฉลี่ยอาจต่างกันในแต่ละโครงการ</p><p>ค่าจริง = Average ของโครงการที่ตรวจ · ค่าประมาณการ = ค่าจาก Median หรือ Mean ของจุดใกล้เคียง</p><p>ความต่าง (%) = |Average โครงการ − ค่าอ้างอิง| ÷ Average โครงการ × 100 เช่น 3.6 เทียบ 4 ได้ 11.11% ต่ำกว่า และ 4.4 เทียบ 4 ได้ 9.09% สูงกว่า</p><p>เกณฑ์เริ่มต้น: ไม่เกิน 5% สีเขียว, มากกว่า 5% ถึง 10% สีส้ม, มากกว่า 10% สีแดง หากข้อมูลไม่พอหรือค่าโครงการเป็นศูนย์จะแสดงสีเทา เกณฑ์เปลี่ยนได้ในตั้งค่า สีนี้เป็นการเทียบพื้นที่ใกล้เคียง ไม่ใช่เกณฑ์คำนวณ PR</p><p>วิธีใช้งาน: เลือกปีและเดือน → เลือกโครงการ → ดู Average และความต่าง → ดูค่าเดิมข้าง Average เพื่อเทียบข้อมูลก่อนคัดวัน ทั้งสองคอลัมน์ใช้สมการค่าสัมบูรณ์เดียวกัน การแก้ค่าแสงและยืนยันรายวันในตารางหลักมีผลต่อ Average</p></details>`;
+    const old=state.rules.method==='reference'?null:window.GIMapLegacyCompare?.(p,state,data);
+    const averageTable=`<details><summary>คู่มืออ่านค่าแสงและสถานะ</summary><p>Average คือผลรวมค่าแสงของวันที่ผ่านเกณฑ์ในตารางหลัก หารด้วยจำนวนวันที่ผ่านเกณฑ์ ไม่ใช่ผลรวมค่าแสงทั้งเดือน วันนอกช่วง Normal range จะนับเมื่อยืนยันค่ารายวันแล้ว การตรวจแล้วรายเดือนไม่ได้ปลด Alarm รายวัน</p><p>ค่าอ้างอิงนำ Average ของจุดใกล้เคียงในรัศมีที่ตั้งไว้มาหา Median หรือ Mean พิกัดซ้ำรวมเป็นหนึ่งจุด และใช้ Median ของ Average ภายในจุดนั้น ต้องมีจุดครบขั้นต่ำ วันที่นำมาเฉลี่ยอาจต่างกันในแต่ละโครงการ</p><p>ค่าจริง = Average ของโครงการที่ตรวจ · ค่าประมาณการ = ค่าจากวิธีเปรียบเทียบที่เลือก (Median / Mean / โครงการอ้างอิง)</p><p>ความต่าง (%) = |Average โครงการ − ค่าอ้างอิง| ÷ Average โครงการ × 100 เช่น 3.6 เทียบ 4 ได้ 11.11% ต่ำกว่า และ 4.4 เทียบ 4 ได้ 9.09% สูงกว่า</p><p>เกณฑ์เริ่มต้น: ไม่เกิน 5% สีเขียว, มากกว่า 5% ถึง 10% สีส้ม, มากกว่า 10% สีแดง หากข้อมูลไม่พอหรือค่าโครงการเป็นศูนย์จะแสดงสีเทา เกณฑ์เปลี่ยนได้ในตั้งค่า สีนี้เป็นการเทียบพื้นที่ใกล้เคียง ไม่ใช่เกณฑ์คำนวณ PR</p><p>วิธีใช้งาน: เลือกปีและเดือน → เลือกโครงการ → ดู Average และความต่าง → ดูค่าเดิมข้าง Average เพื่อเทียบข้อมูลก่อนคัดวัน ทั้งสองคอลัมน์ใช้สมการค่าสัมบูรณ์เดียวกัน การแก้ค่าแสงและยืนยันรายวันในตารางหลักมีผลต่อ Average</p></details>`;
     const bar=`<i style="left:0;width:${n.diff===null?0:Math.min(100,n.diff/Math.max(state.rules.abnormal,1)*100)}%;background:${st.color}"></i>`;
-    const comparisonNote=!n.eligible&&n.peers.length?`<div class="gimap-empty-peer">${n.peers.length<state.rules.minPeers?'มีข้อมูล GI ใกล้เคียง '+n.peers.length+' จุด ต้องมีอย่างน้อย '+state.rules.minPeers+' จุด':'ค่าโครงการเป็นศูนย์ จึงคำนวณความต่างไม่ได้'} · รายการด้านล่างแสดงค่าเฉลี่ยรายเดือน</div>`:'';
+    const referenceNotice=state.rules.method==='reference'?`<p>${n.reason==='outside-radius'?'อยู่นอกรัศมีของโครงการอ้างอิง':n.reason==='reference-unavailable'?'โครงการอ้างอิงไม่มีข้อมูลหรือพิกัดในช่วงที่เลือก กรุณาเลือกใหม่ในตั้งค่า':n.reason==='reference'?'โครงการนี้เป็นค่าอ้างอิง ไม่ประเมินเทียบกับตัวเอง':'เทียบกับโครงการอ้างอิงที่เลือก'} · ${esc(data.find(q=>q.id===state.rules.referenceId)?.name||'—')}</p>`:'';
+    const comparisonNote=!n.eligible&&n.peers.length&&state.rules.method!=="reference"?`<div class="gimap-empty-peer">${n.peers.length<state.rules.minPeers?'มีข้อมูล GI ใกล้เคียง '+n.peers.length+' จุด ต้องมีอย่างน้อย '+state.rules.minPeers+' จุด':'ค่าโครงการเป็นศูนย์ จึงคำนวณความต่างไม่ได้'} · รายการด้านล่างแสดงค่าเฉลี่ยรายเดือน</div>`:'';
     const colorFor=d=>d===null?'#98a3ab':d>state.rules.abnormal+1e-8?'#df5361':d>state.rules.normal+1e-8?'#f39a35':'#25a66a';
     const cell=(v,base)=>{const d=window.GIMapPercentage(v,base);return `<td><strong>${v===null?'—':v.toFixed(3)}</strong><small>${fmtDiff(d)} <span>${d===null?'':v>base?'สูงกว่า':v<base?'ต่ำกว่า':'เท่ากัน'}</span></small><i class="gimap-value-bar" style="background:${colorFor(d)}"></i></td>`};
     const peers=n.peers.length?comparisonNote+`<div class="gimap-peer-table-wrap"><table class="gimap-peer-table"><thead><tr><th>โครงการ</th><th>ระยะทาง</th><th>Average</th><th>ค่าเดิม</th></tr></thead><tbody>${n.peers.map(x=>{const legacy=old?.eligible?old.peers.find(y=>y.project.id===x.project.id):null;return `<tr><td>${esc(x.project.name)}</td><td>${x.distance.toFixed(1)} km</td>${cell(x.gi,n.base)}${cell(legacy?.gi??null,old?.base)}</tr>`}).join('')}</tbody></table></div><p>Average: ค่าเฉลี่ยตามตารางหลัก · ค่าเดิม: ค่าแสงเฉพาะวันที่เทียบกันได้</p><p>แถบสีเทียบกับค่าอ้างอิงของแต่ละวิธี ไม่ใช่สถานะส่วนตัวของจุดใกล้เคียง</p><p><span>ค่าอ้างอิง Average</span>: ${n.base===null?'—':n.base.toFixed(3)} · <span>ค่าอ้างอิงเดิม</span>: ${old?.base==null?'—':old.base.toFixed(3)}</p>`:'<div class="gimap-empty-peer">ไม่มีข้อมูลจุดเปรียบเทียบในเดือนที่เลือก</div>';
@@ -688,14 +695,14 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
       </div>
       <div class="gimap-detail-grid">
         <div class="gimap-kv"><small>Project GI</small><strong>${fmtGI(v)}</strong></div>
-        <div class="gimap-kv"><small>${state.rules.method==="median"?"Nearby Median":"Nearby Mean"}</small><strong>${n.base===null?"—":n.base.toFixed(2)}</strong></div>
+        <div class="gimap-kv"><small>${state.rules.method==="reference"?"GI โครงการอ้างอิง":state.rules.method==="median"?"Nearby Median":"Nearby Mean"}</small><strong>${n.base===null?"—":n.base.toFixed(2)}</strong></div>
         <div class="gimap-kv"><small>Difference</small><strong style="color:${st.color}">${fmtDiff(n.diff)} <span>${n.direction||""}</span></strong></div>
         <div class="gimap-kv"><small>Capacity</small><strong>${p.capacity.toLocaleString()} kWp</strong></div>
       </div>
       <div class="gimap-diverge">${bar}</div>
       <div class="gimap-scale"><span>0%</span><span>${state.rules.normal}%</span><span>${state.rules.abnormal}%</span></div>
       <div class="gimap-peer-title">PROJECTS USED FOR COMPARISON · ${n.peers.length}</div>
-      <div class="gimap-peer-list">${peers}</div>${averageTable}<p>GI เป็นค่าร่วมทั้งโครงการ</p><button class="gimap-btn" data-location-project="${p.id}">ดู / แก้ไขพิกัด (${p.meta?.points?.length||0} จุด)</button>`;
+      <div class="gimap-peer-list">${peers}</div>${referenceNotice}${averageTable}<p>GI เป็นค่าร่วมทั้งโครงการ</p><button class="gimap-btn" data-location-project="${p.id}">ดู / แก้ไขพิกัด (${p.meta?.points?.length||0} จุด)</button>`;
   }
 
   function renderDetail(){
@@ -710,6 +717,12 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
   function renderComparison(){
     if(!map||!compareLayer)return;
     compareLayer.clearLayers();
+    if(state.rules.method==='reference'){
+      const ref=data.find(q=>q.id===state.rules.referenceId);
+      if(ref&&validProject(ref))L.circle([ref.lat,ref.lng],{radius:state.rules.radius*1000,color:'#367bf5',weight:2,fillColor:'#367bf5',fillOpacity:.055,dashArray:'6 7'}).addTo(compareLayer);
+      if(state.selectedId!=null){const selected=data.find(q=>q.id===state.selectedId);if(selected&&ref&&validProject(selected)&&validProject(ref)&&nearby(selected).eligible)L.polyline([[selected.lat,selected.lng],[ref.lat,ref.lng]],{color:'#367bf5',weight:1,opacity:.5}).addTo(compareLayer)}
+      return;
+    }
     if(state.selectedId==null)return;
     const p=data.find(x=>x.id===String(state.selectedId));
     if(!p||!validProject(p))return;
@@ -855,12 +868,20 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
     render(true);
   }
 
+  function referenceOptions(){
+    const select=$('[data-role="set-reference"]'),selected=select.value||state.rules.referenceId||'',term=$('[data-role="reference-search"]').value.trim().toLowerCase();
+    const list=data.filter(p=>validProject(p)&&gi(p)!==null&&(!term||p.name.toLowerCase().includes(term)));
+    select.innerHTML='<option value="">เลือกโครงการอ้างอิง</option>'+list.map(p=>`<option value="${esc(p.id)}">${esc(p.name)} · ${fmtGI(gi(p))}</option>`).join('');select.value=selected;
+    $('[data-role="reference-controls"]').hidden=$('[data-role="set-method"]').value!=='reference';
+    $('[data-role="set-minpeers"]').disabled=$('[data-role="set-method"]').value==='reference';
+  }
   function openSettings(){
     $('[data-role="set-radius"]').value=state.rules.radius;
     $('[data-role="set-minpeers"]').value=state.rules.minPeers;
     $('[data-role="set-normal"]').value=state.rules.normal;
     $('[data-role="set-abnormal"]').value=state.rules.abnormal;
     $('[data-role="set-method"]').value=state.rules.method;
+    $('[data-role="reference-search"]').value='';$('[data-role="set-reference"]').value='';referenceOptions();
     $('[data-role="validation"]').classList.remove("show");
     $('[data-role="settings-backdrop"]').classList.add("show");
   }
@@ -871,12 +892,14 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
     if(bound)return; bound=true;
 
     root.addEventListener("input",e=>{
+      if(e.target.matches('[data-role="reference-search"]')){referenceOptions();return;}
       if(e.target.matches('[data-role="search"]')){
         state.search=e.target.value;state.selectedId=null;render(false);
       }
     });
 
     root.addEventListener("change",e=>{
+      if(e.target.matches('[data-role="set-method"]')){referenceOptions();return;}
       if(e.target.matches('[data-role="province"]')){
         state.province=e.target.value;state.project="";state.selectedId=null;render(true);
       }else if(e.target.matches('[data-role="project"]')){
@@ -915,7 +938,7 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
         $('[data-role="set-minpeers"]').value=3;
         $('[data-role="set-normal"]').value=5;
         $('[data-role="set-abnormal"]').value=10;
-        $('[data-role="set-method"]').value="median";
+        $('[data-role="set-method"]').value="median";referenceOptions();
       }
       if(action==="apply-settings"){
         const next={
@@ -923,13 +946,14 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
           minPeers:Number($('[data-role="set-minpeers"]').value),
           normal:Number($('[data-role="set-normal"]').value),
           abnormal:Number($('[data-role="set-abnormal"]').value),
-          method:$('[data-role="set-method"]').value
+          method:$('[data-role="set-method"]').value,referenceId:$('[data-role="set-reference"]').value
         };
         let err="";
         if(!Number.isFinite(next.radius)||next.radius<1||next.radius>200)err="Radius ต้องอยู่ระหว่าง 1–200 km";
         else if(!Number.isInteger(next.minPeers)||next.minPeers<1||next.minPeers>20)err="Minimum Nearby ต้องเป็นจำนวนเต็ม 1–20";
         else if(!Number.isFinite(next.normal)||!Number.isFinite(next.abnormal))err="Threshold ต้องเป็นตัวเลข";
         else if(next.normal<0||next.abnormal<=next.normal)err="ขอบเขตสูงต้องมากกว่าขอบเขตต่ำ และขอบเขตต่ำต้องไม่ติดลบ";
+        if(!err&&next.method==='reference'&&!data.some(p=>p.id===next.referenceId&&validProject(p)&&gi(p)!==null))err='กรุณาเลือกโครงการอ้างอิงที่มีข้อมูลและพิกัด';
         const box=$('[data-role="validation"]');
         if(err){box.textContent=err;box.classList.add("show");return}
         state.rules=next;closeSettings();render(false);
@@ -1013,11 +1037,11 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 })(window);
 </script>
 
-<script src="gi-map-label-layout.js?v=20261004-map-actual-base1"></script>
-<script src="gi-map-language.js?v=20261004-map-actual-base1"></script>
-<script src="gi-map-v4-live.js?v=20261004-map-actual-base1"></script>
-<script src="gi-map-filter-picker.js?v=20261004-map-actual-base1"></script>
-<script src="gi-map-location-ui.js?v=20261004-map-actual-base1"></script>
+<script src="gi-map-label-layout.js?v=20261004-map-reference1"></script>
+<script src="gi-map-language.js?v=20261004-map-reference1"></script>
+<script src="gi-map-v4-live.js?v=20261004-map-reference1"></script>
+<script src="gi-map-filter-picker.js?v=20261004-map-reference1"></script>
+<script src="gi-map-location-ui.js?v=20261004-map-reference1"></script>
 
 <!--
 =========================================================

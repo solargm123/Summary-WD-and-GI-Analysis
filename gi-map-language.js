@@ -2,7 +2,22 @@
 'use strict';
 const root=document.getElementById('gi-map-module');let lang='th',queued=false;
 const pairs=[
-['ค่าจริง = Average ของโครงการที่ตรวจ · ค่าประมาณการ = ค่าจาก Median หรือ Mean ของจุดใกล้เคียง','Actual = selected project Average · Estimate = nearby Median or Mean'],
+['โครงการอ้างอิง: ใช้ Average ของ B เทียบทุกโครงการในรัศมีของ B ไม่ใช้จำนวนจุดขั้นต่ำ','Reference project: uses B’s Average for all projects within B’s radius. Minimum nearby count does not apply.'],
+["โครงการอ้างอิง", "Reference project"],
+["GI โครงการอ้างอิง", "Reference project GI"],
+["1 โครงการอ้างอิง", "1 reference project"],
+["โครงการอ้างอิง — เทียบทุกโครงการในรัศมี", "Reference project — compare all projects within its radius"],
+["เลือกโครงการอ้างอิง", "Select reference project"],
+["ค้นหาโครงการอ้างอิง", "Search reference project"],
+["อยู่นอกรัศมีของโครงการอ้างอิง", "Outside the reference project radius"],
+["โครงการอ้างอิงไม่มีข้อมูลหรือพิกัดในช่วงที่เลือก กรุณาเลือกใหม่ในตั้งค่า", "Reference project has no data or coordinates for this period. Select another in settings."],
+["โครงการอ้างอิงไม่มีข้อมูลในช่วงที่เลือก", "Reference project has no data for this period"],
+["โครงการนี้เป็นค่าอ้างอิง", "This project is the reference"],
+["โครงการนี้เป็นค่าอ้างอิง ไม่ประเมินเทียบกับตัวเอง", "This project is the reference; it is not evaluated against itself"],
+["เทียบกับโครงการอ้างอิงที่เลือก", "Compared with the selected reference project"],
+["กรุณาเลือกโครงการอ้างอิงที่มีข้อมูลและพิกัด", "Select a reference project with data and coordinates"],
+["เลือก B ครั้งเดียว เทียบทุกโครงการในรัศมีของ B ไม่ใช้จำนวนจุดขั้นต่ำ และไม่เปลี่ยน B อัตโนมัติเมื่อข้อมูลหาย", "Select B once to compare all projects within B’s radius. Minimum nearby count does not apply. B is never replaced automatically when data is missing."],
+['ค่าจริง = Average ของโครงการที่ตรวจ · ค่าประมาณการ = ค่าจากวิธีเปรียบเทียบที่เลือก (Median / Mean / โครงการอ้างอิง)','Actual = selected project Average · Estimate = selected comparison method (Median / Mean / Reference project)'],
 ['ค่าอ้างอิง Average','Average reference'],['ค่าอ้างอิงเดิม','Original GI reference'],
 ["ขอบเขตต่ำ (%)", "Lower boundary (%)"],
 ["ขอบเขตสูง (%)", "Upper boundary (%)"],
@@ -79,7 +94,7 @@ thMonths.forEach((m,i)=>{dictionary.set(m,[m,enMonths[i]]);dictionary.set(enMont
 const fullTH=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'],fullEN=['January','February','March','April','May','June','July','August','September','October','November','December'];
 function translate(value){const trimmed=value.trim(),pair=dictionary.get(trimmed);if(pair)return value.replace(trimmed,pair[lang==='en'?1:0]);
  const counted=trimmed.match(/^(.*?) (\(\d+\))$/);if(counted){const pair=dictionary.get(counted[1]);if(pair)return (lang==='en'?pair[1]:pair[0])+' '+counted[2];}
- let out=value;fullTH.forEach((m,i)=>{out=out.replace(lang==='en'?m:fullEN[i],lang==='en'?fullEN[i]:m)});
+ let out=value;out=out.replace(lang==='en'?'โครงการอ้างอิง: ':'Reference project: ',lang==='en'?'Reference project: ':'โครงการอ้างอิง: ');fullTH.forEach((m,i)=>{out=out.replace(lang==='en'?m:fullEN[i],lang==='en'?fullEN[i]:m)});
  const count=out.match(/^(\d+) (projects|โครงการ)$/);if(count)out=count[1]+' '+(lang==='en'?'projects':'โครงการ');return out;
 }
 function apply(){queued=false;const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let node;

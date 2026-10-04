@@ -33,6 +33,17 @@ function averageCompare(p,state,data){
  const average=q=>{const v=q.irradiance?.[String(state.year)]?.[String(state.month+1).padStart(2,'0')];return value(v)?v:null};
  if(!Number.isFinite(p.lat)||!Number.isFinite(p.lng))return {eligible:false,reason:'insufficient',peers:[],base:null,diff:null};
  const own=average(p),groups=new Map();
+ if(state.rules.method==='reference'){
+  const ref=data.find(q=>q.id===state.rules.referenceId),base=ref?average(ref):null;
+  if(!ref||!Number.isFinite(ref.lat)||!Number.isFinite(ref.lng)||base===null)return {eligible:false,reason:'reference-unavailable',peers:[],base:null,diff:null};
+  if(p.id===ref.id)return {eligible:false,reason:'reference',peers:[],base,diff:null};
+  const km=distance(p,ref);
+  if(km>state.rules.radius)return {eligible:false,reason:'outside-radius',peers:[],base:null,diff:null};
+  const peers=[{project:ref,distance:km,gi:base}];
+  if(!(own>0))return {eligible:false,reason:own===null?'no-data':'invalid-actual',peers,base,diff:null};
+  return {eligible:true,reason:'ok',peers,base,diff:percentage(own,base),direction:own>base?'สูงกว่า':own<base?'ต่ำกว่า':'เท่ากัน'};
+ }
+
  if(own===null)return {eligible:false,reason:'no-data',peers:[],base:null,diff:null};
  for(const q of data){if(!Number.isFinite(q.lat)||!Number.isFinite(q.lng)||key(q)===key(p))continue;const km=distance(p,q);if(km<.001||km>state.rules.radius)continue;const k=key(q);if(!groups.has(k))groups.set(k,[]);groups.get(k).push({project:q,distance:km})}
  const peers=[...groups.values()].map(group=>{const available=group.filter(x=>average(x.project)!==null);if(!available.length)return null;return {project:available.length>1?{...available[0].project,name:available.map(x=>x.project.name).join(' / ')}:available[0].project,distance:Math.min(...available.map(x=>x.distance)),gi:median(available.map(x=>average(x.project)))};}).filter(Boolean).sort((a,b)=>a.distance-b.distance);
