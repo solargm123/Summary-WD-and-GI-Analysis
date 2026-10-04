@@ -674,7 +674,13 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
   }
 
   function detailHTML(p){
-    const st=statusFor(p),n=st.analysis,v=gi(p);
+    const st=statusFor(p),n={...st.analysis},v=gi(p);
+    if(state.rules.method==='reference'&&p.id===state.rules.referenceId){
+      n.peers=data.filter(q=>q.id!==p.id).map(q=>{
+        const comparison=window.GIMapAverageCompare?.(q,state,data);
+        return comparison?.eligible?{project:q,distance:comparison.peers[0].distance,gi:gi(q)}:null;
+      }).filter(Boolean).sort((a,b)=>a.distance-b.distance);
+    }
     const a=window.GIMapAverageCompare?.(p,state,data);
     const old=state.rules.method==='reference'?null:window.GIMapLegacyCompare?.(p,state,data);
     const averageTable=`<details><summary>คู่มืออ่านค่าแสงและสถานะ</summary><p>Average คือผลรวมค่าแสงของวันที่ผ่านเกณฑ์ในตารางหลัก หารด้วยจำนวนวันที่ผ่านเกณฑ์ ไม่ใช่ผลรวมค่าแสงทั้งเดือน วันนอกช่วง Normal range จะนับเมื่อยืนยันค่ารายวันแล้ว การตรวจแล้วรายเดือนไม่ได้ปลด Alarm รายวัน</p><p>ค่าอ้างอิงนำ Average ของจุดใกล้เคียงในรัศมีที่ตั้งไว้มาหา Median หรือ Mean พิกัดซ้ำรวมเป็นหนึ่งจุด และใช้ Median ของ Average ภายในจุดนั้น ต้องมีจุดครบขั้นต่ำ วันที่นำมาเฉลี่ยอาจต่างกันในแต่ละโครงการ</p><p>ค่าจริง = Average ของโครงการที่ตรวจ · ค่าประมาณการ = ค่าจากวิธีเปรียบเทียบที่เลือก (Median / Mean / โครงการอ้างอิง)</p><p>ความต่าง (%) = |Average โครงการ − ค่าอ้างอิง| ÷ Average โครงการ × 100 เช่น 3.6 เทียบ 4 ได้ 11.11% ต่ำกว่า และ 4.4 เทียบ 4 ได้ 9.09% สูงกว่า</p><p>เกณฑ์เริ่มต้น: ไม่เกิน 5% สีเขียว, มากกว่า 5% ถึง 10% สีส้ม, มากกว่า 10% สีแดง หากข้อมูลไม่พอหรือค่าโครงการเป็นศูนย์จะแสดงสีเทา เกณฑ์เปลี่ยนได้ในตั้งค่า สีนี้เป็นการเทียบพื้นที่ใกล้เคียง ไม่ใช่เกณฑ์คำนวณ PR</p><p>วิธีใช้งาน: เลือกปีและเดือน → เลือกโครงการ → ดู Average และความต่าง → ดูค่าเดิมข้าง Average เพื่อเทียบข้อมูลก่อนคัดวัน ทั้งสองคอลัมน์ใช้สมการค่าสัมบูรณ์เดียวกัน การแก้ค่าแสงและยืนยันรายวันในตารางหลักมีผลต่อ Average</p></details>`;
@@ -956,7 +962,12 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
         if(!err&&next.method==='reference'&&!data.some(p=>p.id===next.referenceId&&validProject(p)&&gi(p)!==null))err='กรุณาเลือกโครงการอ้างอิงที่มีข้อมูลและพิกัด';
         const box=$('[data-role="validation"]');
         if(err){box.textContent=err;box.classList.add("show");return}
-        state.rules=next;closeSettings();render(false);
+        state.rules=next;closeSettings();
+        if(next.method==='reference'){
+          selectProject(next.referenceId);
+          const reference=data.find(p=>p.id===next.referenceId);
+          if(map&&reference)map.flyTo([reference.lat,reference.lng],Math.max(map.getZoom(),11),{duration:.35});
+        }else render(false);
         if(typeof options.onRulesChange==="function")options.onRulesChange({...state.rules},getState());
       }
     });
@@ -1037,11 +1048,11 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 })(window);
 </script>
 
-<script src="gi-map-label-layout.js?v=20261004-map-reference1"></script>
-<script src="gi-map-language.js?v=20261004-map-reference1"></script>
-<script src="gi-map-v4-live.js?v=20261004-map-reference1"></script>
-<script src="gi-map-filter-picker.js?v=20261004-map-reference1"></script>
-<script src="gi-map-location-ui.js?v=20261004-map-reference1"></script>
+<script src="gi-map-label-layout.js?v=20261004-map-reference-focus1"></script>
+<script src="gi-map-language.js?v=20261004-map-reference-focus1"></script>
+<script src="gi-map-v4-live.js?v=20261004-map-reference-focus1"></script>
+<script src="gi-map-filter-picker.js?v=20261004-map-reference-focus1"></script>
+<script src="gi-map-location-ui.js?v=20261004-map-reference-focus1"></script>
 
 <!--
 =========================================================
