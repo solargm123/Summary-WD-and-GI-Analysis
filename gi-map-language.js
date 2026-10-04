@@ -2,6 +2,7 @@
 'use strict';
 const root=document.getElementById('gi-map-module');let lang='th',queued=false;
 const pairs=[
+['ระดับความต่าง','Difference level'],['ทิศทางความต่าง','Difference direction'],['เขียว','Green'],['ส้ม','Orange'],['แดง','Red'],['ข้อมูลไม่พอ','Insufficient data'],['สูงกว่าค่าอ้างอิง','Higher than reference'],['ต่ำกว่าค่าอ้างอิง','Lower than reference'],['กรองจาก Average · เรียงความต่างมากไปน้อย','Filter by Average · Largest difference first'],['ไม่มีโครงการตรงกับตัวกรอง','No projects match these filters'],
 ['โครงการอ้างอิง: ใช้ Average ของ B เทียบทุกโครงการในรัศมีของ B ไม่ใช้จำนวนจุดขั้นต่ำ','Reference project: uses B’s Average for all projects within B’s radius. Minimum nearby count does not apply.'],
 ["โครงการอ้างอิง", "Reference project"],
 ["GI โครงการอ้างอิง", "Reference project GI"],

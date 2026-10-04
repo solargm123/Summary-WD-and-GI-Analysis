@@ -427,6 +427,10 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 #gi-map-module .gimap-marker-label:not(.tiny):not(.compact) span{font-size:16px}
 #gi-map-module .gimap-density-cluster b{font-size:17px}
 #gi-map-module .gimap-hover-row{flex-wrap:wrap;gap:4px 10px;line-height:1.5}
+#gi-map-module .gimap-peer-filters{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+#gi-map-module .gimap-peer-filters label{flex:1;min-width:120px;font-size:11px;font-weight:700}
+#gi-map-module .gimap-peer-filters select{display:block;width:100%;margin-top:4px;padding:6px 8px;border:1px solid #ccd6dd;border-radius:8px;background:#fff;color:#273843;font:600 12px 'Bai Jamjuree',sans-serif}
+#gi-map-module [hidden]{display:none!important}
 #gi-map-module .gimap-hover-card h4{overflow-wrap:anywhere;line-height:1.4}
 </style>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -673,6 +677,13 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
     </div>`;
   }
 
+  const peerFilter={level:'all',direction:'all'};
+  function filterPeerRows(){
+    const rows=$$('[data-peer-level]');let shown=0;
+    rows.forEach(row=>{row.hidden=!(peerFilter.level==='all'||row.dataset.peerLevel===peerFilter.level)||!(peerFilter.direction==='all'||row.dataset.peerDirection===peerFilter.direction);if(!row.hidden)shown++});
+    const count=$('[data-role="peer-count"]');if(count)count.textContent=shown+' / '+rows.length;
+    const empty=$('[data-role="peer-filter-empty"]');if(empty)empty.hidden=shown>0||rows.length===0;
+  }
   function detailHTML(p){
     const st=statusFor(p),n={...st.analysis},v=gi(p);
     if(state.rules.method==='reference'&&p.id===state.rules.referenceId){
@@ -689,7 +700,7 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
     const comparisonNote=!n.eligible&&n.peers.length&&state.rules.method!=="reference"?`<div class="gimap-empty-peer">${n.peers.length<state.rules.minPeers?'มีข้อมูล GI ใกล้เคียง '+n.peers.length+' จุด ต้องมีอย่างน้อย '+state.rules.minPeers+' จุด':'ค่าโครงการเป็นศูนย์ จึงคำนวณความต่างไม่ได้'} · รายการด้านล่างแสดงค่าเฉลี่ยรายเดือน</div>`:'';
     const colorFor=d=>d===null?'#98a3ab':d>state.rules.abnormal+1e-8?'#df5361':d>state.rules.normal+1e-8?'#f39a35':'#25a66a';
     const cell=(v,base)=>{const d=window.GIMapPercentage(v,base);return `<td><strong>${v===null?'—':v.toFixed(3)}</strong><small>${fmtDiff(d)} <span>${d===null?'':v>base?'สูงกว่า':v<base?'ต่ำกว่า':'เท่ากัน'}</span></small><i class="gimap-value-bar" style="background:${colorFor(d)}"></i></td>`};
-    const peers=n.peers.length?comparisonNote+`<div class="gimap-peer-table-wrap"><table class="gimap-peer-table"><thead><tr><th>โครงการ</th><th>ระยะทาง</th><th>Average</th><th>ค่าเดิม</th></tr></thead><tbody>${n.peers.map(x=>{const legacy=old?.eligible?old.peers.find(y=>y.project.id===x.project.id):null;return `<tr><td>${esc(x.project.name)}</td><td>${x.distance.toFixed(1)} km</td>${cell(x.gi,n.base)}${cell(legacy?.gi??null,old?.base)}</tr>`}).join('')}</tbody></table></div><p>Average: ค่าเฉลี่ยตามตารางหลัก · ค่าเดิม: ค่าแสงเฉพาะวันที่เทียบกันได้</p><p>แถบสีเทียบกับค่าอ้างอิงของแต่ละวิธี ไม่ใช่สถานะส่วนตัวของจุดใกล้เคียง</p><p><span>ค่าอ้างอิง Average</span>: ${n.base===null?'—':n.base.toFixed(3)} · <span>ค่าอ้างอิงเดิม</span>: ${old?.base==null?'—':old.base.toFixed(3)}</p>`:'<div class="gimap-empty-peer">ไม่มีข้อมูลจุดเปรียบเทียบในเดือนที่เลือก</div>';
+    const peers=n.peers.length?comparisonNote+`<div class="gimap-peer-table-wrap"><table class="gimap-peer-table"><thead><tr><th>โครงการ</th><th>ระยะทาง</th><th>Average</th><th>ค่าเดิม</th></tr></thead><tbody>${[...n.peers].sort((a,b)=>(window.GIMapPercentage(b.gi,n.base)??-1)-(window.GIMapPercentage(a.gi,n.base)??-1)).map(x=>{const difference=window.GIMapPercentage(x.gi,n.base),level=difference===null?'none':difference>state.rules.abnormal+1e-8?'abnormal':difference>state.rules.normal+1e-8?'watch':'normal',direction=difference===null?'none':x.gi>n.base?'higher':x.gi<n.base?'lower':'equal';const legacy=old?.eligible?old.peers.find(y=>y.project.id===x.project.id):null;return `<tr data-peer-level="${level}" data-peer-direction="${direction}"><td>${esc(x.project.name)}</td><td>${x.distance.toFixed(1)} km</td>${cell(x.gi,n.base)}${cell(legacy?.gi??null,old?.base)}</tr>`}).join('')}</tbody></table></div><p>Average: ค่าเฉลี่ยตามตารางหลัก · ค่าเดิม: ค่าแสงเฉพาะวันที่เทียบกันได้</p><p>แถบสีเทียบกับค่าอ้างอิงของแต่ละวิธี ไม่ใช่สถานะส่วนตัวของจุดใกล้เคียง</p><p><span>ค่าอ้างอิง Average</span>: ${n.base===null?'—':n.base.toFixed(3)} · <span>ค่าอ้างอิงเดิม</span>: ${old?.base==null?'—':old.base.toFixed(3)}</p>`:'<div class="gimap-empty-peer">ไม่มีข้อมูลจุดเปรียบเทียบในเดือนที่เลือก</div>';
 
 
     return `<div class="gimap-kicker">PROJECT DETAIL</div>
@@ -707,7 +718,8 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
       </div>
       <div class="gimap-diverge">${bar}</div>
       <div class="gimap-scale"><span>0%</span><span>${state.rules.normal}%</span><span>${state.rules.abnormal}%</span></div>
-      <div class="gimap-peer-title">PROJECTS USED FOR COMPARISON · ${n.peers.length}</div>
+      <div class="gimap-peer-title">PROJECTS USED FOR COMPARISON · <span data-role="peer-count">${n.peers.length} / ${n.peers.length}</span></div>
+      <div class="gimap-peer-filters"><label><span>ระดับความต่าง</span><select data-role="peer-level"><option value="all">ทั้งหมด</option><option value="normal">เขียว</option><option value="watch">ส้ม</option><option value="abnormal">แดง</option><option value="none">ข้อมูลไม่พอ</option></select></label><label><span>ทิศทางความต่าง</span><select data-role="peer-direction"><option value="all">ทั้งหมด</option><option value="higher">สูงกว่าค่าอ้างอิง</option><option value="lower">ต่ำกว่าค่าอ้างอิง</option></select></label></div><p>กรองจาก Average · เรียงความต่างมากไปน้อย</p><div data-role="peer-filter-empty" class="gimap-empty-peer" hidden>ไม่มีโครงการตรงกับตัวกรอง</div>
       <div class="gimap-peer-list">${peers}</div>${referenceNotice}${averageTable}<p>GI เป็นค่าร่วมทั้งโครงการ</p><button class="gimap-btn" data-location-project="${p.id}">ดู / แก้ไขพิกัด (${p.meta?.points?.length||0} จุด)</button>`;
   }
 
@@ -717,6 +729,9 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
     const p=data.find(x=>x.id===String(state.selectedId));
     if(!p){state.selectedId=null;panel.classList.remove("show");return}
     $('[data-role="detail-body"]').innerHTML=detailHTML(p);
+    $('[data-role="peer-level"]').value=peerFilter.level;
+    $('[data-role="peer-direction"]').value=peerFilter.direction;
+    filterPeerRows();
     panel.classList.add("show");
   }
 
@@ -905,6 +920,9 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
     });
 
     root.addEventListener("change",e=>{
+      if(e.target.matches('[data-role="peer-level"],[data-role="peer-direction"]')){
+        peerFilter[e.target.dataset.role==='peer-level'?'level':'direction']=e.target.value;filterPeerRows();return;
+      }
       if(e.target.matches('[data-role="set-method"]')){referenceOptions();return;}
       if(e.target.matches('[data-role="province"]')){
         state.province=e.target.value;state.project="";state.selectedId=null;render(true);
@@ -1048,11 +1066,11 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 })(window);
 </script>
 
-<script src="gi-map-label-layout.js?v=20261004-map-reference-focus1"></script>
-<script src="gi-map-language.js?v=20261004-map-reference-focus1"></script>
-<script src="gi-map-v4-live.js?v=20261004-map-reference-focus1"></script>
-<script src="gi-map-filter-picker.js?v=20261004-map-reference-focus1"></script>
-<script src="gi-map-location-ui.js?v=20261004-map-reference-focus1"></script>
+<script src="gi-map-label-layout.js?v=20261004-map-peer-filter1"></script>
+<script src="gi-map-language.js?v=20261004-map-peer-filter1"></script>
+<script src="gi-map-v4-live.js?v=20261004-map-peer-filter1"></script>
+<script src="gi-map-filter-picker.js?v=20261004-map-peer-filter1"></script>
+<script src="gi-map-location-ui.js?v=20261004-map-peer-filter1"></script>
 
 <!--
 =========================================================
