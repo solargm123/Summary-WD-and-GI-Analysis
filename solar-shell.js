@@ -5,11 +5,11 @@ if(window.top!==window.self){location.replace(new URL(center+location.search+loc
 const key='solar-shell-route-v1',allowed=new Set([center,'working-day-analysis.html','global-irradiance-analysis.html','pr-report.html','pr-report-r4.html','solar-spare-parts.html','inverter-analysis.html','OM_Alarm_Log_V4_7_ClosureWorkflow_TrackingUX.html']);
 function safeRoute(value){try{const u=new URL(value,base),raw=u.pathname.split('/').pop(),file=raw.endsWith('.html')?raw:raw+'.html';if(u.origin!==base.origin||!allowed.has(file))return null;return file+u.search+u.hash;}catch{return null;}}
 let saved=null;try{saved=safeRoute(sessionStorage.getItem(key));}catch{}
-const frame=document.getElementById('solarWorkspaceFrame'),loading=document.getElementById('solarShellLoading');
+const frame=document.getElementById('solarWorkspaceFrame');
 const initial=location.hash?center+location.search+location.hash:saved||center;
 frame.src=new URL(initial,base).href;
 history.replaceState({solarShell:true},'',base.pathname);
-function sync(){try{const u=new URL(frame.contentWindow.location.href);if(u.origin!==base.origin)return;let route=safeRoute(u.href);if(!route&&['','index.html'].includes(u.pathname.split('/').pop()))route=center;if(route){sessionStorage.setItem(key,route);document.title=frame.contentDocument.title||'Solar system Analysis Center';}if(frame.contentWindow.SolarCloud)frame.contentWindow.SolarCloud.CONFIG.siteRoot=base.href;loading.hidden=true;}catch{loading.textContent='เปิด Workspace ไม่สำเร็จ กรุณารีเฟรช / Unable to open workspace';}}
+function sync(){try{const u=new URL(frame.contentWindow.location.href);if(u.origin!==base.origin)return;let route=safeRoute(u.href);if(!route&&['','index.html'].includes(u.pathname.split('/').pop()))route=center;if(route){sessionStorage.setItem(key,route);document.title=frame.contentDocument.title||'Solar system Analysis Center';}if(frame.contentWindow.SolarCloud)frame.contentWindow.SolarCloud.CONFIG.siteRoot=base.href;}catch{}}
 frame.addEventListener('load',sync);
 window.addEventListener('pagehide',sync);
 })();
