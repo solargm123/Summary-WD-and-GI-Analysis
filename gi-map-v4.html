@@ -282,7 +282,7 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
             <p><b>Median</b> — ใช้ค่ากลาง ลดผลกระทบจากค่าแสงที่สูงหรือต่ำผิดปกติ เหมาะเป็นค่าเริ่มต้น เช่น 3, 4, 8 → 4</p>
             <p><b>Mean</b> — รวมค่าแสงแล้วหารจำนวนจุด ทุกจุดมีน้ำหนักเท่ากัน แต่ไวต่อค่าผิดปกติ เช่น 3, 4, 8 → 5</p>
             <p>เลือกจุดในรัศมีที่กำหนด พิกัดซ้ำรวมเป็นจุดเดียว และไม่นับพิกัดเดียวกับโครงการที่เลือก ต้องมี Average ในเดือนที่เลือกครบจำนวนจุดขั้นต่ำ</p>
-            <p>ความต่าง (%) = |GI โครงการ − GI อ้างอิง| ÷ GI อ้างอิง × 100 ใช้ Average ของเดือนที่เลือก หากข้อมูลไม่พอจะแสดง “เปรียบเทียบไม่ได้” ไม่ใช่ “ผิดปกติ”</p>
+            <p>ค่าจริง = Average ของโครงการที่ตรวจ · ค่าประมาณการ = ค่าจาก Median หรือ Mean ของจุดใกล้เคียง</p><p>ความต่าง (%) = |GI โครงการ − GI อ้างอิง| ÷ GI โครงการ × 100 ใช้ Average ของเดือนที่เลือก หากข้อมูลไม่พอจะแสดง “เปรียบเทียบไม่ได้” ไม่ใช่ “ผิดปกติ”</p>
             <p>ค่า GI บนหมุดใช้ Average ตามตาราง สถานะเทียบพื้นที่ใกล้เคียงใช้ Average เดียวกัน วันที่ผ่านเกณฑ์อาจต่างกันในแต่ละโครงการ</p>
           </details>
           <div class="gimap-rule-line"><span>Minimum Nearby</span><b data-role="summary-minpeers">2 projects</b></div>
@@ -308,7 +308,7 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
           <p><b style="color:var(--orange)">เฝ้าระวัง (สีส้ม)</b>: <b data-role="help-watch-min"></b> &lt; <span>ความต่าง</span> ≤ <b data-role="help-watch-max"></b></p>
           <p><b style="color:var(--red)">ผิดปกติ (สีแดง)</b>: <span>ความต่าง</span> &gt; <b data-role="help-abnormal"></b></p>
           <p>เปอร์เซ็นต์ไม่มีเครื่องหมายบวกลบ ใช้คำว่า สูงกว่า / ต่ำกว่า / เท่ากัน เพื่อบอกทิศทาง ตรวจทั้งค่าแสงสูงและต่ำ</p>
-          <p>ตัวอย่าง: ค่าอ้างอิง 4 และ GI โครงการ 3.6 หรือ 4.4 จะต่าง 10% เท่ากัน</p>
+          <p>ตัวอย่าง: ค่าอ้างอิง 4 และ GI โครงการ 3.6 จะต่าง 11.11% ต่ำกว่า</p>
           <p>สีเทาหมายถึงข้อมูลไม่พอสำหรับเปรียบเทียบ ไม่ได้แปลว่าค่าแสงผิดปกติ เกณฑ์สีเปลี่ยนตามค่าที่กำหนดในตั้งค่า</p>
         </details>
       </section>
@@ -412,6 +412,21 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 
 
 <style>#gi-map-module .gimap-peer-table-wrap{overflow:auto}#gi-map-module .gimap-peer-table{width:100%;border-collapse:collapse;font-size:11px}#gi-map-module .gimap-peer-table td,#gi-map-module .gimap-peer-table th{padding:9px 5px;border-bottom:1px solid var(--line);text-align:left}#gi-map-module .gimap-peer-table td:nth-child(n+3){min-width:74px}#gi-map-module .gimap-peer-table strong{font-size:16px}#gi-map-module .gimap-peer-table small{display:block;font-weight:600;font-size:10px}#gi-map-module .gimap-value-bar{display:block;height:5px;border-radius:6px;margin-top:5px}#gi-map-module .gimap-peer-table td:last-child{background:#98a3ab0c}#gi-map-module .gimap-diverge::after{display:none}#gi-map-module .gimap-average-table{margin-top:16px;border:1px solid var(--line);border-radius:12px;padding:10px;overflow:auto}#gi-map-module .gimap-average-table summary{cursor:pointer;font-size:12px;font-weight:700;padding:10px 0}#gi-map-module .gimap-average-table table{width:100%;border-collapse:collapse;font-size:11px}#gi-map-module .gimap-average-table th,#gi-map-module .gimap-average-table td{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}#gi-map-module .gimap-average-table td:last-child,#gi-map-module .gimap-average-table th:last-child{text-align:right;font-variant-numeric:tabular-nums}#gi-map-module .gimap-average-table p{font-size:12px;color:var(--muted);line-height:1.5}</style>
+<style>
+#gi-map-module .gimap-brand h1{font-size:clamp(14px,1vw,16px);line-height:1.3;overflow-wrap:anywhere}
+#gi-map-module .gimap-metric strong{font-size:clamp(16px,1.25vw,18px);line-height:1.2}
+#gi-map-module .gimap-detail h3{font-size:14px;line-height:1.4;overflow-wrap:anywhere}
+#gi-map-module .gimap-detail p,#gi-map-module .gimap-method-help p{font-size:12px;line-height:1.6;margin:8px 0;overflow-wrap:anywhere}
+#gi-map-module .gimap-detail summary,#gi-map-module .gimap-method-help summary{font-size:12px;font-weight:700;line-height:1.5;cursor:pointer;margin-top:10px}
+#gi-map-module .gimap-peer-title{font-size:11px;line-height:1.5;letter-spacing:.02em}
+#gi-map-module .gimap-peer-table strong{font-size:14px;line-height:1.4}
+#gi-map-module .gimap-peer-table td:first-child{max-width:130px;overflow-wrap:anywhere;line-height:1.5}
+#gi-map-module .gimap-kv strong{font-size:13px;line-height:1.4;white-space:normal;overflow-wrap:anywhere}
+#gi-map-module .gimap-marker-label:not(.tiny):not(.compact) span{font-size:16px}
+#gi-map-module .gimap-density-cluster b{font-size:17px}
+#gi-map-module .gimap-hover-row{flex-wrap:wrap;gap:4px 10px;line-height:1.5}
+#gi-map-module .gimap-hover-card h4{overflow-wrap:anywhere;line-height:1.4}
+</style>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 /* =========================================================
@@ -549,7 +564,7 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 
     const vals=peers.map(x=>x.gi);
     const base=state.rules.method==="median"?median(vals):vals.reduce((s,v)=>s+v,0)/vals.length;
-    const diff=base===0?null:Math.abs(targetGI-base)/base*100;
+    const diff=targetGI===0?null:Math.abs(targetGI-base)/targetGI*100;
     return {eligible:diff!==null,reason:diff===null?"invalid-base":"ok",peers,base,diff,direction:targetGI>base?"สูงกว่า":targetGI<base?"ต่ำกว่า":"เท่ากัน"};
   }
 
@@ -656,11 +671,11 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
     const st=statusFor(p),n=st.analysis,v=gi(p);
     const a=window.GIMapAverageCompare?.(p,state,data);
     const old=window.GIMapLegacyCompare?.(p,state,data);
-    const averageTable=`<details><summary>คู่มืออ่านค่าแสงและสถานะ</summary><p>Average คือผลรวมค่าแสงของวันที่ผ่านเกณฑ์ในตารางหลัก หารด้วยจำนวนวันที่ผ่านเกณฑ์ ไม่ใช่ผลรวมค่าแสงทั้งเดือน วันนอกช่วง Normal range จะนับเมื่อยืนยันค่ารายวันแล้ว การตรวจแล้วรายเดือนไม่ได้ปลด Alarm รายวัน</p><p>ค่าอ้างอิงนำ Average ของจุดใกล้เคียงในรัศมีที่ตั้งไว้มาหา Median หรือ Mean พิกัดซ้ำรวมเป็นหนึ่งจุด และใช้ Median ของ Average ภายในจุดนั้น ต้องมีจุดครบขั้นต่ำ วันที่นำมาเฉลี่ยอาจต่างกันในแต่ละโครงการ</p><p>ความต่าง (%) = |Average โครงการ − ค่าอ้างอิง| ÷ ค่าอ้างอิง × 100 เช่น 3.6 เทียบ 4 ได้ 10% ต่ำกว่า และ 4.4 เทียบ 4 ได้ 10% สูงกว่า</p><p>เกณฑ์เริ่มต้น: ไม่เกิน 5% สีเขียว, มากกว่า 5% ถึง 10% สีส้ม, มากกว่า 10% สีแดง หากข้อมูลไม่พอหรือค่าอ้างอิงเป็นศูนย์จะแสดงสีเทา เกณฑ์เปลี่ยนได้ในตั้งค่า สีนี้เป็นการเทียบพื้นที่ใกล้เคียง ไม่ใช่เกณฑ์คำนวณ PR</p><p>วิธีใช้งาน: เลือกปีและเดือน → เลือกโครงการ → ดู Average และความต่าง → ดูค่าเดิมข้าง Average เพื่อเทียบข้อมูลก่อนคัดวัน ทั้งสองคอลัมน์ใช้สมการค่าสัมบูรณ์เดียวกัน การแก้ค่าแสงและยืนยันรายวันในตารางหลักมีผลต่อ Average</p></details>`;
+    const averageTable=`<details><summary>คู่มืออ่านค่าแสงและสถานะ</summary><p>Average คือผลรวมค่าแสงของวันที่ผ่านเกณฑ์ในตารางหลัก หารด้วยจำนวนวันที่ผ่านเกณฑ์ ไม่ใช่ผลรวมค่าแสงทั้งเดือน วันนอกช่วง Normal range จะนับเมื่อยืนยันค่ารายวันแล้ว การตรวจแล้วรายเดือนไม่ได้ปลด Alarm รายวัน</p><p>ค่าอ้างอิงนำ Average ของจุดใกล้เคียงในรัศมีที่ตั้งไว้มาหา Median หรือ Mean พิกัดซ้ำรวมเป็นหนึ่งจุด และใช้ Median ของ Average ภายในจุดนั้น ต้องมีจุดครบขั้นต่ำ วันที่นำมาเฉลี่ยอาจต่างกันในแต่ละโครงการ</p><p>ค่าจริง = Average ของโครงการที่ตรวจ · ค่าประมาณการ = ค่าจาก Median หรือ Mean ของจุดใกล้เคียง</p><p>ความต่าง (%) = |Average โครงการ − ค่าอ้างอิง| ÷ Average โครงการ × 100 เช่น 3.6 เทียบ 4 ได้ 11.11% ต่ำกว่า และ 4.4 เทียบ 4 ได้ 9.09% สูงกว่า</p><p>เกณฑ์เริ่มต้น: ไม่เกิน 5% สีเขียว, มากกว่า 5% ถึง 10% สีส้ม, มากกว่า 10% สีแดง หากข้อมูลไม่พอหรือค่าโครงการเป็นศูนย์จะแสดงสีเทา เกณฑ์เปลี่ยนได้ในตั้งค่า สีนี้เป็นการเทียบพื้นที่ใกล้เคียง ไม่ใช่เกณฑ์คำนวณ PR</p><p>วิธีใช้งาน: เลือกปีและเดือน → เลือกโครงการ → ดู Average และความต่าง → ดูค่าเดิมข้าง Average เพื่อเทียบข้อมูลก่อนคัดวัน ทั้งสองคอลัมน์ใช้สมการค่าสัมบูรณ์เดียวกัน การแก้ค่าแสงและยืนยันรายวันในตารางหลักมีผลต่อ Average</p></details>`;
     const bar=`<i style="left:0;width:${n.diff===null?0:Math.min(100,n.diff/Math.max(state.rules.abnormal,1)*100)}%;background:${st.color}"></i>`;
-    const comparisonNote=!n.eligible&&n.peers.length?`<div class="gimap-empty-peer">${n.peers.length<state.rules.minPeers?'มีข้อมูล GI ใกล้เคียง '+n.peers.length+' จุด ต้องมีอย่างน้อย '+state.rules.minPeers+' จุด':'ค่าอ้างอิงเป็นศูนย์ จึงคำนวณความต่างไม่ได้'} · รายการด้านล่างแสดงค่าเฉลี่ยรายเดือน</div>`:'';
+    const comparisonNote=!n.eligible&&n.peers.length?`<div class="gimap-empty-peer">${n.peers.length<state.rules.minPeers?'มีข้อมูล GI ใกล้เคียง '+n.peers.length+' จุด ต้องมีอย่างน้อย '+state.rules.minPeers+' จุด':'ค่าโครงการเป็นศูนย์ จึงคำนวณความต่างไม่ได้'} · รายการด้านล่างแสดงค่าเฉลี่ยรายเดือน</div>`:'';
     const colorFor=d=>d===null?'#98a3ab':d>state.rules.abnormal+1e-8?'#df5361':d>state.rules.normal+1e-8?'#f39a35':'#25a66a';
-    const cell=(v,base)=>{const d=v===null||!(base>0)?null:Math.abs(v-base)/base*100;return `<td><strong>${v===null?'—':v.toFixed(3)}</strong><small>${fmtDiff(d)} <span>${d===null?'':v>base?'สูงกว่า':v<base?'ต่ำกว่า':'เท่ากัน'}</span></small><i class="gimap-value-bar" style="background:${colorFor(d)}"></i></td>`};
+    const cell=(v,base)=>{const d=window.GIMapPercentage(v,base);return `<td><strong>${v===null?'—':v.toFixed(3)}</strong><small>${fmtDiff(d)} <span>${d===null?'':v>base?'สูงกว่า':v<base?'ต่ำกว่า':'เท่ากัน'}</span></small><i class="gimap-value-bar" style="background:${colorFor(d)}"></i></td>`};
     const peers=n.peers.length?comparisonNote+`<div class="gimap-peer-table-wrap"><table class="gimap-peer-table"><thead><tr><th>โครงการ</th><th>ระยะทาง</th><th>Average</th><th>ค่าเดิม</th></tr></thead><tbody>${n.peers.map(x=>{const legacy=old?.eligible?old.peers.find(y=>y.project.id===x.project.id):null;return `<tr><td>${esc(x.project.name)}</td><td>${x.distance.toFixed(1)} km</td>${cell(x.gi,n.base)}${cell(legacy?.gi??null,old?.base)}</tr>`}).join('')}</tbody></table></div><p>Average: ค่าเฉลี่ยตามตารางหลัก · ค่าเดิม: ค่าแสงเฉพาะวันที่เทียบกันได้</p><p>แถบสีเทียบกับค่าอ้างอิงของแต่ละวิธี ไม่ใช่สถานะส่วนตัวของจุดใกล้เคียง</p><p><span>ค่าอ้างอิง Average</span>: ${n.base===null?'—':n.base.toFixed(3)} · <span>ค่าอ้างอิงเดิม</span>: ${old?.base==null?'—':old.base.toFixed(3)}</p>`:'<div class="gimap-empty-peer">ไม่มีข้อมูลจุดเปรียบเทียบในเดือนที่เลือก</div>';
 
 
@@ -998,11 +1013,11 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 })(window);
 </script>
 
-<script src="gi-map-label-layout.js?v=20261004-map-absolute1"></script>
-<script src="gi-map-language.js?v=20261004-map-absolute1"></script>
-<script src="gi-map-v4-live.js?v=20261004-map-absolute1"></script>
-<script src="gi-map-filter-picker.js?v=20261004-map-absolute1"></script>
-<script src="gi-map-location-ui.js?v=20261004-map-absolute1"></script>
+<script src="gi-map-label-layout.js?v=20261004-map-actual-base1"></script>
+<script src="gi-map-language.js?v=20261004-map-actual-base1"></script>
+<script src="gi-map-v4-live.js?v=20261004-map-actual-base1"></script>
+<script src="gi-map-filter-picker.js?v=20261004-map-actual-base1"></script>
+<script src="gi-map-location-ui.js?v=20261004-map-actual-base1"></script>
 
 <!--
 =========================================================

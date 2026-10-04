@@ -43,7 +43,7 @@ let picker=w.document.querySelector('.gimap-picker-overlay');assert.ok(picker);c
 w.document.querySelector('[data-picker="province"]').click();picker=w.document.querySelector('.gimap-picker-overlay');picker.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert.equal(w.document.querySelector('.gimap-picker-overlay'),null);assert.equal(w.document.querySelector('[data-role="project"]').value,'only-september');
 
 w.document.querySelector('[data-action=clear-filters]').click();
-for(const [value,expected] of [[4.2,'Normal'],[3.8,'Normal'],[4.4,'Watch'],[3.6,'Watch'],[4.4004,'Abnormal'],[3.5996,'Abnormal']]){
+for(const [value,expected] of [[4/1.05,'Normal'],[4/.95,'Normal'],[4/1.1,'Watch'],[4/.9,'Watch'],[4/1.1001,'Abnormal'],[4/.8999,'Abnormal']]){
  const t=candidate('boundary',13);t.irradiance['2026']['09']=value;
  w.GIMap.setData([t,candidate('x',13.01),candidate('y',13.02),candidate('z',13.03)]);w.GIMap.setYear(2026);w.GIMap.setMonth(9);w.GIMap.selectProject('boundary');w.GIMapLanguage.set('en');
  assert.equal(w.document.querySelector('.gimap-status-pill').textContent.trim(),expected);
@@ -51,6 +51,6 @@ for(const [value,expected] of [[4.2,'Normal'],[3.8,'Normal'],[4.4,'Watch'],[3.6,
 }
 assert.throws(()=>w.GIMap.setRules({normal:10,abnormal:5}));assert.throws(()=>w.GIMap.setRules({normal:-1,abnormal:10}));
 w.GIMap.setRules({normal:2,abnormal:4});assert.equal(w.document.querySelector('.gimap-status-pill').textContent.trim(),'Abnormal');
-w.GIMapLanguage.set('en');assert.ok(w.document.querySelector('.gimap-detail').textContent.includes('Lower'));assert.ok(w.document.querySelector('.gimap-detail').textContent.includes('Original GI'));
+w.GIMapLanguage.set('en');assert.ok(w.document.querySelector('.gimap-detail').textContent.includes('Higher'));assert.ok(w.document.querySelector('.gimap-detail').textContent.includes('Original GI'));
 w.GIMapLanguage.destroy();dom.window.close();console.log('PASS: complete project/year lists, no 0/0 phantom marker, numeric labels, density clusters at close zoom, separated points, cluster project list, sublocations, periods, language and location editor.');
 

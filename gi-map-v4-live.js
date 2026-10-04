@@ -10,6 +10,8 @@ const regionLists={
 };
 const median=a=>{a=[...a].sort((x,y)=>x-y);return a.length%2?a[(a.length-1)/2]:(a[a.length/2-1]+a[a.length/2])/2};
 const value=v=>typeof v==='number'&&Number.isFinite(v)&&v>=0;
+const percentage=(actual,estimate)=>Number.isFinite(actual)&&actual>0&&Number.isFinite(estimate)&&estimate>=0?Math.abs(actual-estimate)/actual*100:null;
+window.GIMapPercentage=percentage;
 const key=p=>p.lat.toFixed(6)+','+p.lng.toFixed(6);
 const pointDistance=(a,b)=>{const r=x=>x*Math.PI/180,h=Math.sin(r(b.lat-a.lat)/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(r(b.lng-a.lng)/2)**2;return 6371*2*Math.asin(Math.sqrt(Math.min(1,h)))};
 const points=p=>p.meta?.points?.length?p.meta.points:[{lat:p.lat,lng:p.lng}];
@@ -22,10 +24,10 @@ function compare(p,state,data){
  for(const q of data){if(!Number.isFinite(q.lat)||!Number.isFinite(q.lng)||key(q)===key(p))continue;const km=distance(p,q);if(km<.001||km>state.rules.radius)continue;const k=key(q);if(!groups.has(k))groups.set(k,[]);groups.get(k).push({project:q,distance:km})}
  const available=[...groups.values()].map(group=>{const entries=group.map(x=>({...x,readings:Object.entries(x.project.meta?.dates||{}).filter(([d,v])=>d.startsWith(month+'-')&&value(v))})).filter(x=>x.readings.length);if(!entries.length)return null;const rep=entries[0],readings=rep.readings.map(([,v])=>v);return {project:rep.project,distance:Math.min(...group.map(x=>x.distance)),gi:readings.reduce((s,v)=>s+v,0)/readings.length,comparisonUsed:false};}).filter(Boolean).sort((a,b)=>a.distance-b.distance);
  let total=0,reference=0,days=0;const used=new Map();
- for(const [day,v] of Object.entries(own)){if(!day.startsWith(month+'-')||!value(v))continue;const readings=[];for(const [k,group] of groups){const valid=group.filter(x=>value(x.project.meta?.dates?.[day]));if(valid.length)readings.push({k,group:valid,gi:median(valid.map(x=>x.project.meta.dates[day]))})}if(readings.length<state.rules.minPeers)continue;const vals=readings.map(x=>x.gi),base=state.rules.method==='mean'?vals.reduce((s,v)=>s+v,0)/vals.length:median(vals);if(!(base>0))continue;total+=v;reference+=base;days++;for(const x of readings){const rep=x.group[0];let u=used.get(x.k);if(!u){u={project:rep.project,distance:rep.distance,total:0,count:0};used.set(x.k,u)}u.total+=x.gi;u.count++}}
+ for(const [day,v] of Object.entries(own)){if(!day.startsWith(month+'-')||!value(v))continue;const readings=[];for(const [k,group] of groups){const valid=group.filter(x=>value(x.project.meta?.dates?.[day]));if(valid.length)readings.push({k,group:valid,gi:median(valid.map(x=>x.project.meta.dates[day]))})}if(readings.length<state.rules.minPeers)continue;const vals=readings.map(x=>x.gi),base=state.rules.method==='mean'?vals.reduce((s,v)=>s+v,0)/vals.length:median(vals);if(!value(base))continue;total+=v;reference+=base;days++;for(const x of readings){const rep=x.group[0];let u=used.get(x.k);if(!u){u={project:rep.project,distance:rep.distance,total:0,count:0};used.set(x.k,u)}u.total+=x.gi;u.count++}}
  const peers=[...used.values()].map(x=>({project:x.project,distance:x.distance,gi:x.total/x.count})).sort((a,b)=>a.distance-b.distance);
  if(!days)return {eligible:false,reason:'insufficient',peers:available,nearbySites:groups.size,availableSites:available.length,comparisonDays:0,base:null,diff:null};
- return {eligible:true,reason:'ok',peers,base:reference/days,diff:Math.abs(total-reference)/reference*100,direction:total>reference?'สูงกว่า':total<reference?'ต่ำกว่า':'เท่ากัน'};
+ return {eligible:total>0,reason:total>0?'ok':'invalid-actual',peers,base:reference/days,diff:percentage(total,reference),direction:total>reference?'สูงกว่า':total<reference?'ต่ำกว่า':'เท่ากัน'};
 }
 function averageCompare(p,state,data){
  const average=q=>{const v=q.irradiance?.[String(state.year)]?.[String(state.month+1).padStart(2,'0')];return value(v)?v:null};
@@ -37,8 +39,8 @@ function averageCompare(p,state,data){
  const info={peers,nearbySites:groups.size,availableSites:peers.length};
  if(peers.length<state.rules.minPeers)return {...info,eligible:false,reason:'insufficient',base:null,diff:null};
  const values=peers.map(x=>x.gi),base=state.rules.method==='mean'?values.reduce((sum,v)=>sum+v,0)/values.length:median(values);
- if(!(base>0))return {...info,eligible:false,reason:'invalid-base',base:null,diff:null};
- return {...info,eligible:true,reason:'ok',base,diff:Math.abs(own-base)/base*100,direction:own>base?'สูงกว่า':own<base?'ต่ำกว่า':'เท่ากัน'};
+ if(!(own>0))return {...info,eligible:false,reason:'invalid-actual',base,diff:null};
+ return {...info,eligible:true,reason:'ok',base,diff:percentage(own,base),direction:own>base?'สูงกว่า':own<base?'ต่ำกว่า':'เท่ากัน'};
 }
 window.GIMapAverageCompare=averageCompare;
 const caches=new WeakMap();
