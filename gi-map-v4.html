@@ -281,9 +281,9 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
           <details class="gimap-method-help"><summary>วิธีเปรียบเทียบทำงานอย่างไร?</summary>
             <p><b>Median</b> — ใช้ค่ากลาง ลดผลกระทบจากค่าแสงที่สูงหรือต่ำผิดปกติ เหมาะเป็นค่าเริ่มต้น เช่น 3, 4, 8 → 4</p>
             <p><b>Mean</b> — รวมค่าแสงแล้วหารจำนวนจุด ทุกจุดมีน้ำหนักเท่ากัน แต่ไวต่อค่าผิดปกติ เช่น 3, 4, 8 → 5</p>
-            <p>เลือกจุดในรัศมีที่กำหนด พิกัดซ้ำรวมเป็นจุดเดียว และไม่นับพิกัดเดียวกับโครงการที่เลือก ต้องมีข้อมูลวันเดียวกันครบจำนวนจุดขั้นต่ำ</p>
-            <p>ความต่าง (%) = (GI โครงการ ÷ GI อ้างอิง − 1) × 100 ใช้เฉพาะวันที่เปรียบเทียบได้ หากข้อมูลไม่พอจะแสดง “เปรียบเทียบไม่ได้” ไม่ใช่ “ผิดปกติ”</p>
-            <p>ค่า GI บนหมุดใช้ Average ตามตาราง ส่วนสถานะเทียบพื้นที่ใกล้เคียงใช้ข้อมูลเฉพาะวันที่เปรียบเทียบได้ จึงอาจใช้จำนวนวันต่างกัน</p>
+            <p>เลือกจุดในรัศมีที่กำหนด พิกัดซ้ำรวมเป็นจุดเดียว และไม่นับพิกัดเดียวกับโครงการที่เลือก ต้องมี Average ในเดือนที่เลือกครบจำนวนจุดขั้นต่ำ</p>
+            <p>ความต่าง (%) = (GI โครงการ ÷ GI อ้างอิง − 1) × 100 ใช้ Average ของเดือนที่เลือก หากข้อมูลไม่พอจะแสดง “เปรียบเทียบไม่ได้” ไม่ใช่ “ผิดปกติ”</p>
+            <p>ค่า GI บนหมุดใช้ Average ตามตาราง สถานะเทียบพื้นที่ใกล้เคียงใช้ Average เดียวกัน วันที่ผ่านเกณฑ์อาจต่างกันในแต่ละโครงการ</p>
           </details>
           <div class="gimap-rule-line"><span>Minimum Nearby</span><b data-role="summary-minpeers">2 projects</b></div>
         </div>
@@ -411,7 +411,7 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 </div>
 
 
-<style>#gi-map-module .gimap-average-table{margin-top:16px;border:1px solid var(--line);border-radius:12px;padding:10px;overflow:auto}#gi-map-module .gimap-average-table table{width:100%;border-collapse:collapse;font-size:11px}#gi-map-module .gimap-average-table th,#gi-map-module .gimap-average-table td{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}#gi-map-module .gimap-average-table td:last-child,#gi-map-module .gimap-average-table th:last-child{text-align:right;font-variant-numeric:tabular-nums}#gi-map-module .gimap-average-table p{font-size:10px;color:var(--muted);line-height:1.5}</style>
+<style>#gi-map-module .gimap-average-table{margin-top:16px;border:1px solid var(--line);border-radius:12px;padding:10px;overflow:auto}#gi-map-module .gimap-average-table summary{cursor:pointer;font-size:12px;font-weight:700;padding:10px 0}#gi-map-module .gimap-average-table table{width:100%;border-collapse:collapse;font-size:11px}#gi-map-module .gimap-average-table th,#gi-map-module .gimap-average-table td{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}#gi-map-module .gimap-average-table td:last-child,#gi-map-module .gimap-average-table th:last-child{text-align:right;font-variant-numeric:tabular-nums}#gi-map-module .gimap-average-table p{font-size:12px;color:var(--muted);line-height:1.5}</style>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 /* =========================================================
@@ -655,7 +655,8 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
   function detailHTML(p){
     const st=statusFor(p),n=st.analysis,v=gi(p);
     const a=window.GIMapAverageCompare?.(p,state,data);
-    const averageTable=a?`<section class="gimap-average-table"><div class="gimap-peer-title">เปรียบเทียบจาก Average ตารางหลัก</div><p>ตารางนี้ใช้ Average ตามตารางหลัก ส่วนสถานะบนแผนที่ใช้วิธีเดิม</p><table><thead><tr><th>โครงการ</th><th>Average</th></tr></thead><tbody><tr><td>${esc(p.name)}</td><td>${fmtGI(v)}</td></tr>${a.peers.map(x=>`<tr><td>${esc(x.project.name)}</td><td>${x.gi.toFixed(3)}</td></tr>`).join('')}</tbody><tfoot><tr><th>ค่าอ้างอิง</th><td>${a.base===null?'—':a.base.toFixed(3)}</td></tr><tr><th>ความคลาดเคลื่อนจาก Average</th><td>${fmtDiff(a.diff)}</td></tr><tr><th>ความคลาดเคลื่อนเดิม</th><td>${fmtDiff(n.diff)}</td></tr></tfoot></table>${!a.eligible?'<p>ข้อมูลไม่เพียงพอ หรือค่าอ้างอิงเป็นศูนย์</p>':''}</section>`:'';
+    const old=window.GIMapLegacyCompare?.(p,state,data);
+    const averageTable=a?`<section class="gimap-average-table"><div class="gimap-peer-title">ค่าแสงเฉลี่ยรายวันของเดือน (Average)</div><p>ใช้ค่า Average จากตารางหลัก ค่านี้ใช้คำนวณความต่างและสีสถานะบนแผนที่</p><table><thead><tr><th>โครงการ</th><th>Average (kWh/m²/วัน)</th></tr></thead><tbody><tr><td>${esc(p.name)}</td><td>${fmtGI(v)}</td></tr>${a.peers.map(x=>`<tr><td>${esc(x.project.name)}</td><td>${x.gi.toFixed(3)}</td></tr>`).join('')}</tbody><tfoot><tr><th>ค่าอ้างอิงจากจุดใกล้เคียง</th><td>${a.base===null?'—':a.base.toFixed(3)}</td></tr><tr><th>ความต่างจากจุดใกล้เคียง</th><td>${fmtDiff(a.diff)}</td></tr></tfoot></table>${!a.eligible?'<p>ข้อมูลไม่เพียงพอ หรือค่าอ้างอิงเป็นศูนย์</p>':''}<details><summary>ดูค่าเดิม (วิธีเทียบวันเดียวกัน)</summary><p>คำนวณจากค่าแสงรายวัน เฉพาะวันที่มีข้อมูลตรงกันครบจำนวนจุดขั้นต่ำ คำนวณตามข้อมูลปัจจุบันเพื่อเทียบวิธีเดิม ไม่ใช่ประวัติที่บันทึกไว้ และไม่ใช้กำหนดสีสถานะ</p><div class="gimap-kv"><small>ความต่างตามวิธีเดิม</small><strong>${fmtDiff(old?.diff??null)}</strong></div></details><details><summary>คู่มืออ่านค่าแสงและสถานะ</summary><p>Average คือผลรวมค่าแสงของวันที่ผ่านเกณฑ์ในตารางหลัก หารด้วยจำนวนวันที่ผ่านเกณฑ์ ไม่ใช่ผลรวมค่าแสงทั้งเดือน วันนอกช่วง Normal range จะนับเมื่อยืนยันค่ารายวันแล้ว การตรวจแล้วรายเดือนไม่ได้ปลด Alarm รายวัน</p><p>ค่าอ้างอิงนำ Average ของจุดใกล้เคียงในรัศมีที่ตั้งไว้มาหา Median หรือ Mean พิกัดซ้ำรวมเป็นหนึ่งจุด และใช้ Median ของ Average ภายในจุดนั้น ต้องมีจุดครบขั้นต่ำ วันที่นำมาเฉลี่ยอาจต่างกันในแต่ละโครงการ</p><p>ความต่าง (%) = (Average โครงการ ÷ ค่าอ้างอิง − 1) × 100 เช่น Average 3.6 และค่าอ้างอิง 4 จะได้ −10% ค่าลบหมายถึงแสงต่ำกว่า ค่าบวกหมายถึงสูงกว่า</p><p>เกณฑ์เริ่มต้น: มากกว่า −10% สีเขียว, −20% ถึง −10% สีส้ม, ต่ำกว่า −20% สีแดง หากข้อมูลไม่พอหรือค่าอ้างอิงเป็นศูนย์จะแสดงสีเทา เกณฑ์เปลี่ยนได้ในตั้งค่า สีนี้เป็นการเทียบพื้นที่ใกล้เคียง ไม่ใช่เกณฑ์คำนวณ PR</p><p>วิธีใช้งาน: เลือกปีและเดือน → เลือกโครงการ → ดู Average และความต่าง → หากต้องการเทียบวิธีเก่า เปิด “ดูค่าเดิม” การแก้ค่าแสงและยืนยันรายวันในตารางหลักมีผลต่อ Average</p></details></section>`:'';
     let bar='<i style="left:50%;width:0;background:'+st.color+'"></i>';
     if(n.diff!==null){
       const d=Math.max(-20,Math.min(20,n.diff));
@@ -663,7 +664,7 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
         ? `<i style="left:${50+(d/20)*50}%;width:${-(d/20)*50}%;background:${st.color}"></i>`
         : `<i style="left:50%;width:${(d/20)*50}%;background:${st.color}"></i>`;
     }
-    const comparisonNote=!n.eligible&&n.peers.length?`<div class="gimap-empty-peer">${n.peers.length<state.rules.minPeers?'มีข้อมูล GI ใกล้เคียง '+n.peers.length+' จุด ต้องมีอย่างน้อย '+state.rules.minPeers+' จุด':'มีโครงการใกล้เคียง แต่ข้อมูลวันเดียวกันไม่เพียงพอสำหรับเปรียบเทียบ'} · รายการด้านล่างแสดงค่าเฉลี่ยรายเดือน</div>`:'';
+    const comparisonNote=!n.eligible&&n.peers.length?`<div class="gimap-empty-peer">${n.peers.length<state.rules.minPeers?'มีข้อมูล GI ใกล้เคียง '+n.peers.length+' จุด ต้องมีอย่างน้อย '+state.rules.minPeers+' จุด':'ค่าอ้างอิงเป็นศูนย์ จึงคำนวณความต่างไม่ได้'} · รายการด้านล่างแสดงค่าเฉลี่ยรายเดือน</div>`:'';
     const peers=n.peers.length?comparisonNote+n.peers.map(x=>`<div class="gimap-peer"><b>${esc(x.project.name)}</b><span>${x.distance.toFixed(1)} km</span><span>${x.gi.toFixed(2)}</span></div>`).join("")
       : `<div class="gimap-empty-peer">${n.nearbySites>0?'มีโครงการใกล้เคียง '+n.nearbySites+' จุด แต่ไม่มีข้อมูล GI ในเดือนที่เลือก':'ไม่พบจุดเปรียบเทียบอื่นในรัศมี '+state.rules.radius+' km (ไม่นับโครงการที่ใช้พิกัดเดียวกัน)'}</div>`;
 
@@ -1001,11 +1002,11 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 })(window);
 </script>
 
-<script src="gi-map-label-layout.js?v=20261004-map-average-table1"></script>
-<script src="gi-map-language.js?v=20261004-map-average-table1"></script>
-<script src="gi-map-v4-live.js?v=20261004-map-average-table1"></script>
-<script src="gi-map-filter-picker.js?v=20261004-map-average-table1"></script>
-<script src="gi-map-location-ui.js?v=20261004-map-average-table1"></script>
+<script src="gi-map-label-layout.js?v=20261004-map-average-guide1"></script>
+<script src="gi-map-language.js?v=20261004-map-average-guide1"></script>
+<script src="gi-map-v4-live.js?v=20261004-map-average-guide1"></script>
+<script src="gi-map-filter-picker.js?v=20261004-map-average-guide1"></script>
+<script src="gi-map-location-ui.js?v=20261004-map-average-guide1"></script>
 
 <!--
 =========================================================

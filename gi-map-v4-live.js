@@ -42,8 +42,9 @@ function averageCompare(p,state,data){
 }
 window.GIMapAverageCompare=averageCompare;
 const caches=new WeakMap();
-function cachedCompare(p,state,data){let cache=caches.get(data);if(!cache){cache=new Map();caches.set(data,cache)}const k=JSON.stringify([p.id,state.year,state.month,state.rules]);if(cache.has(k))return cache.get(k);if(cache.size>1000)cache.clear();const result=compare(p,state,data);cache.set(k,result);return result}
+function cachedCompare(p,state,data){let cache=caches.get(data);if(!cache){cache=new Map();caches.set(data,cache)}const k=JSON.stringify([p.id,state.year,state.month,state.rules]);if(cache.has(k))return cache.get(k);if(cache.size>1000)cache.clear();const result=averageCompare(p,state,data);cache.set(k,result);return result}
 window.GIMapLiveCompare=cachedCompare;
+window.GIMapLegacyCompare=compare;
 let initialized=false;
 addEventListener('message',e=>{
  if(e.source!==parent||e.origin!==location.origin||!['gi-map-data','gi-map-location-result'].includes(e.data?.type))return;

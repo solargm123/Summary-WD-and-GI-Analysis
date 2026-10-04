@@ -14,10 +14,10 @@ w.dispatchEvent(new w.MessageEvent('message',{source:w,origin:'https://example.t
 const canvas=w.document.querySelector('[data-role="map"]');canvas.getBoundingClientRect=()=>({left:100,top:100,right:1100,bottom:700,width:1000,height:600});
 const tip=w.document.createElement('div');tip.getBoundingClientRect=()=>({left:1000,top:-50,right:1250,bottom:200,width:250,height:250});
 mapEvents.tooltipopen({tooltip:{getElement:()=>tip}});assert.equal(tip.style.marginTop,'162px');assert.equal(tip.style.marginLeft,'-162px');assert.ok(tip.classList.contains('gimap-tooltip-shifted'));
-const candidate=(id,lat,day='2026-09-01')=>({id,name:id,lat,lng:100,meta:{points:[{lat,lng:100}],dates:{[day]:4}}});
+const candidate=(id,lat,day='2026-09-01')=>({id,name:id,lat,lng:100,irradiance:{'2026':{'09':4}},meta:{points:[{lat,lng:100}],dates:{[day]:4}}});
 const rules={year:2026,month:8,rules:{radius:20,minPeers:3,method:'median'}};
 let result=w.GIMapLiveCompare(candidate('target',13),rules,[candidate('one',13.01),candidate('two',13.02)]);assert.equal(result.eligible,false);assert.equal(result.peers.length,2);assert.equal(result.availableSites,2);
-result=w.GIMapLiveCompare(candidate('target',13),rules,[candidate('one',13.01,'2026-09-02'),candidate('two',13.02,'2026-09-02'),candidate('three',13.03,'2026-09-02')]);assert.equal(result.eligible,false);assert.equal(result.peers.length,3);
+result=w.GIMapLiveCompare(candidate('target',13),rules,[candidate('one',13.01,'2026-09-02'),candidate('two',13.02,'2026-09-02'),candidate('three',13.03,'2026-09-02')]);assert.equal(result.eligible,true);assert.equal(result.peers.length,3);
 result=w.GIMapLiveCompare(candidate('target',13),rules,[candidate('one',13.01),candidate('two',13.02),candidate('three',13.03)]);assert.equal(result.eligible,true);assert.equal(result.diff,0);
 const allGI=w.document.querySelector('[data-role="show-all-gi"]');allGI.checked=true;allGI.dispatchEvent(new w.Event('change'));
 assert.equal(w.GIMap.getState().dataCount,4);assert.deepEqual([...w.GIMap.getState().availableYears],[2026,2023]);assert.equal(layers[0].items.filter(x=>x.coords).length,3);assert.ok(layers[0].items.some(x=>x.options?.icon.options.html.includes('4.000')));assert.equal(new Set(layers[0].items.filter(x=>x.coords).map(x=>x.options.icon.options.iconAnchor.join(','))).size,3);
@@ -42,3 +42,4 @@ w.document.querySelector('[data-picker="project"]').click();
 let picker=w.document.querySelector('.gimap-picker-overlay');assert.ok(picker);const input=picker.querySelector('input');input.value='only-september';input.dispatchEvent(new w.Event('input'));assert.equal(picker.querySelectorAll('[role="option"]').length,1);picker.querySelector('[role="option"]').click();assert.equal(w.document.querySelector('[data-role="project"]').value,'only-september');assert.equal(w.document.querySelector('.gimap-picker-overlay'),null);
 w.document.querySelector('[data-picker="province"]').click();picker=w.document.querySelector('.gimap-picker-overlay');picker.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert.equal(w.document.querySelector('.gimap-picker-overlay'),null);assert.equal(w.document.querySelector('[data-role="project"]').value,'only-september');
 w.GIMapLanguage.destroy();dom.window.close();console.log('PASS: complete project/year lists, no 0/0 phantom marker, numeric labels, density clusters at close zoom, separated points, cluster project list, sublocations, periods, language and location editor.');
+
