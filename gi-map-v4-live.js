@@ -25,7 +25,7 @@ function compare(p,state,data){
  for(const [day,v] of Object.entries(own)){if(!day.startsWith(month+'-')||!value(v))continue;const readings=[];for(const [k,group] of groups){const valid=group.filter(x=>value(x.project.meta?.dates?.[day]));if(valid.length)readings.push({k,group:valid,gi:median(valid.map(x=>x.project.meta.dates[day]))})}if(readings.length<state.rules.minPeers)continue;const vals=readings.map(x=>x.gi),base=state.rules.method==='mean'?vals.reduce((s,v)=>s+v,0)/vals.length:median(vals);if(!(base>0))continue;total+=v;reference+=base;days++;for(const x of readings){const rep=x.group[0];let u=used.get(x.k);if(!u){u={project:rep.project,distance:rep.distance,total:0,count:0};used.set(x.k,u)}u.total+=x.gi;u.count++}}
  const peers=[...used.values()].map(x=>({project:x.project,distance:x.distance,gi:x.total/x.count})).sort((a,b)=>a.distance-b.distance);
  if(!days)return {eligible:false,reason:'insufficient',peers:available,nearbySites:groups.size,availableSites:available.length,comparisonDays:0,base:null,diff:null};
- return {eligible:true,reason:'ok',peers,base:reference/days,diff:(total/reference-1)*100};
+ return {eligible:true,reason:'ok',peers,base:reference/days,diff:Math.abs(total-reference)/reference*100,direction:total>reference?'สูงกว่า':total<reference?'ต่ำกว่า':'เท่ากัน'};
 }
 function averageCompare(p,state,data){
  const average=q=>{const v=q.irradiance?.[String(state.year)]?.[String(state.month+1).padStart(2,'0')];return value(v)?v:null};
@@ -38,7 +38,7 @@ function averageCompare(p,state,data){
  if(peers.length<state.rules.minPeers)return {...info,eligible:false,reason:'insufficient',base:null,diff:null};
  const values=peers.map(x=>x.gi),base=state.rules.method==='mean'?values.reduce((sum,v)=>sum+v,0)/values.length:median(values);
  if(!(base>0))return {...info,eligible:false,reason:'invalid-base',base:null,diff:null};
- return {...info,eligible:true,reason:'ok',base,diff:(own/base-1)*100};
+ return {...info,eligible:true,reason:'ok',base,diff:Math.abs(own-base)/base*100,direction:own>base?'สูงกว่า':own<base?'ต่ำกว่า':'เท่ากัน'};
 }
 window.GIMapAverageCompare=averageCompare;
 const caches=new WeakMap();
@@ -50,7 +50,7 @@ addEventListener('message',e=>{
  if(e.source!==parent||e.origin!==location.origin||!['gi-map-data','gi-map-location-result'].includes(e.data?.type))return;
  if(e.data.error)return;const previous=initialized?GIMap.getState():null;
  const payload=e.data.payload;if(!payload||!Array.isArray(payload.projects))return;
- if(!initialized){GIMap.init({rootId:'gi-map-module',dataLabel:payload.label,compare:cachedCompare,tileUrl:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',tileAttribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'});GIMap.setRules({radius:20,minPeers:3,normal:-10,abnormal:-20,method:'median'});initialized=true}
+ if(!initialized){GIMap.init({rootId:'gi-map-module',dataLabel:payload.label,compare:cachedCompare,tileUrl:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',tileAttribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'});GIMap.setRules({radius:20,minPeers:3,normal:5,abnormal:10,method:'median'});initialized=true}
  const projects=payload.projects.map(p=>({...p,projectId:encodeURIComponent(p.projectId),region:p.region||Object.entries(regionLists).find(([,s])=>s.split(' ').includes(p.province.replace(/^จังหวัด\s*/,'')))?.[0]||''}));
  GIMap.setData(projects,{label:payload.label});
  if(previous?.year){GIMap.setYear(previous.year);GIMap.setMonth(previous.month+1)}else if(payload.period){GIMap.setYear(+payload.period.slice(0,4));GIMap.setMonth(+payload.period.slice(5,7))}

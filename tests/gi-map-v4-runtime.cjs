@@ -21,7 +21,7 @@ result=w.GIMapLiveCompare(candidate('target',13),rules,[candidate('one',13.01,'2
 result=w.GIMapLiveCompare(candidate('target',13),rules,[candidate('one',13.01),candidate('two',13.02),candidate('three',13.03)]);assert.equal(result.eligible,true);assert.equal(result.diff,0);
 const allGI=w.document.querySelector('[data-role="show-all-gi"]');allGI.checked=true;allGI.dispatchEvent(new w.Event('change'));
 assert.equal(w.GIMap.getState().dataCount,4);assert.deepEqual([...w.GIMap.getState().availableYears],[2026,2023]);assert.equal(layers[0].items.filter(x=>x.coords).length,3);assert.ok(layers[0].items.some(x=>x.options?.icon.options.html.includes('4.000')));assert.equal(new Set(layers[0].items.filter(x=>x.coords).map(x=>x.options.icon.options.iconAnchor.join(','))).size,3);
-w.GIMap.setRules({normal:-8,abnormal:-15});assert.equal(w.document.querySelector('[data-role="help-normal"]').textContent,'-8%');assert.equal(w.document.querySelector('[data-role="help-abnormal"]').textContent,'-15%');assert.equal(w.document.querySelector('[data-role="legend-normal"]').textContent,'> -8%');w.GIMap.setRules({normal:-10,abnormal:-20});assert.ok(w.GIMap.selectProject('a'));assert.ok(layers[0].items.length>3);
+w.GIMap.setRules({normal:8,abnormal:15});assert.equal(w.document.querySelector('[data-role="help-normal"]').textContent,'8%');assert.equal(w.document.querySelector('[data-role="help-abnormal"]').textContent,'15%');assert.equal(w.document.querySelector('[data-role="legend-normal"]').textContent,'≤ 8%');w.GIMap.setRules({normal:5,abnormal:10});assert.ok(w.GIMap.selectProject('a'));assert.ok(layers[0].items.length>3);
 w.document.querySelector('[data-action="locations"]').click();assert.ok(w.document.querySelector('.gimap-location-backdrop').classList.contains('show'));assert.ok(w.document.querySelector('[data-list]').textContent.includes('missing'));
 assert.equal(w.GIMapLocationUI.parse('13,100\n14,101').length,2);assert.throws(()=>w.GIMapLocationUI.parse('13,100\n13,100'));assert.throws(()=>w.GIMapLocationUI.parse('91,100'));
 w.document.querySelector('[data-missing]').checked=false;w.document.querySelector('[data-missing]').dispatchEvent(new w.Event('change',{bubbles:true}));assert.equal(w.document.querySelectorAll('[data-edit]').length,4);
@@ -41,5 +41,16 @@ vm.runInContext(fs.readFileSync('map-release/gi-map-filter-picker.js','utf8'),ct
 w.document.querySelector('[data-picker="project"]').click();
 let picker=w.document.querySelector('.gimap-picker-overlay');assert.ok(picker);const input=picker.querySelector('input');input.value='only-september';input.dispatchEvent(new w.Event('input'));assert.equal(picker.querySelectorAll('[role="option"]').length,1);picker.querySelector('[role="option"]').click();assert.equal(w.document.querySelector('[data-role="project"]').value,'only-september');assert.equal(w.document.querySelector('.gimap-picker-overlay'),null);
 w.document.querySelector('[data-picker="province"]').click();picker=w.document.querySelector('.gimap-picker-overlay');picker.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert.equal(w.document.querySelector('.gimap-picker-overlay'),null);assert.equal(w.document.querySelector('[data-role="project"]').value,'only-september');
+
+w.document.querySelector('[data-action=clear-filters]').click();
+for(const [value,expected] of [[4.2,'Normal'],[3.8,'Normal'],[4.4,'Watch'],[3.6,'Watch'],[4.4004,'Abnormal'],[3.5996,'Abnormal']]){
+ const t=candidate('boundary',13);t.irradiance['2026']['09']=value;
+ w.GIMap.setData([t,candidate('x',13.01),candidate('y',13.02),candidate('z',13.03)]);w.GIMap.setYear(2026);w.GIMap.setMonth(9);w.GIMap.selectProject('boundary');w.GIMapLanguage.set('en');
+ assert.equal(w.document.querySelector('.gimap-status-pill').textContent.trim(),expected);
+ assert.ok(w.document.querySelector('.gimap-peer-table'));assert.equal(w.document.querySelectorAll('.gimap-value-bar').length,6);
+}
+assert.throws(()=>w.GIMap.setRules({normal:10,abnormal:5}));assert.throws(()=>w.GIMap.setRules({normal:-1,abnormal:10}));
+w.GIMap.setRules({normal:2,abnormal:4});assert.equal(w.document.querySelector('.gimap-status-pill').textContent.trim(),'Abnormal');
+w.GIMapLanguage.set('en');assert.ok(w.document.querySelector('.gimap-detail').textContent.includes('Lower'));assert.ok(w.document.querySelector('.gimap-detail').textContent.includes('Original GI'));
 w.GIMapLanguage.destroy();dom.window.close();console.log('PASS: complete project/year lists, no 0/0 phantom marker, numeric labels, density clusters at close zoom, separated points, cluster project list, sublocations, periods, language and location editor.');
 
