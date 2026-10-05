@@ -427,6 +427,11 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 #gi-map-module .gimap-marker-label:not(.tiny):not(.compact) span{font-size:16px}
 #gi-map-module .gimap-density-cluster b{font-size:17px}
 #gi-map-module .gimap-hover-row{flex-wrap:wrap;gap:4px 10px;line-height:1.5}
+#gi-map-module .gimap-formula-btn{border:1px solid #c8d6e2;border-radius:5px;padding:0 4px;font:700 10px 'Bai Jamjuree',sans-serif;background:#edf4fb;color:#35668d;cursor:pointer;line-height:18px}
+#gi-map-module .gimap-calculation{width:min(540px,calc(100% - 32px));max-height:85vh;overflow:auto;border:1px solid #cbd8e2;border-radius:16px;padding:18px;background:#fff;color:#243746;font:600 12px 'Bai Jamjuree',sans-serif}
+#gi-map-module .gimap-calculation::backdrop{background:#14253566}
+#gi-map-module .gimap-calculation h2{font-size:15px;margin:0}#gi-map-module .gimap-calculation h3{font-size:13px;overflow-wrap:anywhere}
+#gi-map-module .gimap-equation{padding:10px;background:#f0f5fa;border-radius:8px;overflow-wrap:anywhere;line-height:1.7}
 #gi-map-module .gimap-peer-filters{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 #gi-map-module .gimap-peer-filters label{flex:1;min-width:120px;font-size:11px;font-weight:700}
 #gi-map-module .gimap-peer-filters select{display:block;width:100%;margin-top:4px;padding:6px 8px;border:1px solid #ccd6dd;border-radius:8px;background:#fff;color:#273843;font:600 12px 'Bai Jamjuree',sans-serif}
@@ -677,6 +682,18 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
     </div>`;
   }
 
+  function openCalculation(){
+    const p=data.find(q=>q.id===String(state.selectedId));if(!p)return;
+    const result=nearby(p),actual=gi(p),values=result.peers.map(q=>q.gi).sort((a,b)=>a-b),count=values.length;
+    const show=v=>v==null?'—':Number(v).toFixed(6);
+    let equation='';
+    if(state.rules.method==='reference')equation='Reference = Average B = '+show(result.base);
+    else if(state.rules.method==='mean')equation=count?'Mean = ('+values.map(show).join(' + ')+') ÷ '+count+' = '+show(values.reduce((a,b)=>a+b,0)/count):'Mean = —';
+    else equation=count?'Median: '+values.map(show).join(', ')+' → '+(count%2?show(values[(count-1)/2]):'('+show(values[count/2-1])+' + '+show(values[count/2])+') ÷ 2 = '+show((values[count/2-1]+values[count/2])/2)):'Median = —';
+    const dialog=document.createElement('dialog');dialog.className='gimap-calculation';dialog.setAttribute('aria-labelledby','gimapCalculationTitle');
+    dialog.innerHTML=`<div class="gimap-settings-head"><h2 id="gimapCalculationTitle">${esc('ดูการคำนวณ')}</h2><button type="button" class="gimap-close" data-calculation-close aria-label="Close">×</button></div><h3>${esc(p.name)}</h3><p>${state.year} / ${String(state.month+1).padStart(2,'0')} · ${state.rules.radius} km</p><p>ค่าจริง = Average ของโครงการที่ตรวจ</p><strong>${show(actual)} kWh/m²</strong><p>${state.rules.method==='reference'?'ใช้ Average ของโครงการอ้างอิง B':'ไม่รวมโครงการที่กำลังตรวจ · พิกัดซ้ำรวมเป็นหนึ่งจุดโดยใช้ Median ภายในจุด'}</p><div class="gimap-peer-table-wrap"><table class="gimap-peer-table"><thead><tr><th>โครงการ</th><th>ระยะทาง</th><th>Average</th></tr></thead><tbody>${result.peers.map(q=>`<tr><td>${esc(q.project.name)}</td><td>${q.distance.toFixed(2)} km</td><td>${show(q.gi)}</td></tr>`).join('')}</tbody></table></div><p>${state.rules.method==='reference'?'1 โครงการอ้างอิง':count+' / '+state.rules.minPeers+' · '+ 'จำนวนจุด / ขั้นต่ำ'}</p><div class="gimap-equation">${esc(equation)}</div><p>ค่าเกณฑ์ที่ระบบใช้</p><strong>${show(result.base)} kWh/m²</strong>${result.base===null?'<p>ข้อมูลไม่พอ จึงยังไม่ใช้ผลคำนวณเป็นเกณฑ์</p>':''}<div class="gimap-equation">Difference (%) = |Average − Reference| ÷ Average × 100<br>${result.diff===null?'—':'|'+show(actual)+' − '+show(result.base)+'| ÷ '+show(actual)+' × 100 = '+show(result.diff)+'% · '+esc(result.direction||'')}</div><p>ตัวเลขแสดง 6 ตำแหน่ง · คำนวณด้วยค่าจริงก่อนปัดเศษ</p><p>ตัวกรองตารางไม่เปลี่ยนสมาชิกที่ใช้คำนวณ</p>`;
+    root.append(dialog);dialog.querySelector('[data-calculation-close]').onclick=()=>dialog.close();dialog.addEventListener('close',()=>dialog.remove(),{once:true});dialog.showModal();
+  }
   const peerFilter={level:'all',direction:'all'};
   function filterPeerRows(){
     const rows=$$('[data-peer-level]');let shown=0;
@@ -716,7 +733,7 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
       </div>
       <div class="gimap-detail-grid">
         <div class="gimap-kv"><small>Project GI</small><strong>${fmtGI(v)}</strong></div>
-        <div class="gimap-kv"><small>${state.rules.method==="reference"?"GI โครงการอ้างอิง":state.rules.method==="median"?"Nearby Median":"Nearby Mean"}</small><strong>${n.base===null?"—":n.base.toFixed(2)}</strong></div>
+        <div class="gimap-kv"><small>${state.rules.method==="reference"?"GI โครงการอ้างอิง":state.rules.method==="median"?"Nearby Median":"Nearby Mean"} <button type="button" class="gimap-formula-btn" data-action="show-calculation" title="ดูการคำนวณ" aria-label="ดูการคำนวณ">ƒx</button></small><strong>${n.base===null?"—":n.base.toFixed(2)}</strong></div>
         <div class="gimap-kv"><small>Difference</small><strong style="color:${st.color}">${fmtDiff(n.diff)} <span>${n.direction||""}</span></strong></div>
         <div class="gimap-kv"><small>Capacity</small><strong>${p.capacity.toLocaleString()} kWp</strong></div>
       </div>
@@ -956,6 +973,7 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
       const action=e.target.closest("[data-action]")?.dataset.action;
       if(!action)return;
 
+      if(action==="show-calculation")openCalculation();
       if(action==="open-settings")openSettings();
       if(action==="clear-selection"){state.selectedId=null;render(false)}
       if(action==="close-detail"){state.selectedId=null;render(false)}
@@ -1070,11 +1088,11 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 })(window);
 </script>
 
-<script src="gi-map-label-layout.js?v=20261004-map-peer-sort1"></script>
-<script src="gi-map-language.js?v=20261004-map-peer-sort1"></script>
-<script src="gi-map-v4-live.js?v=20261004-map-peer-sort1"></script>
-<script src="gi-map-filter-picker.js?v=20261004-map-peer-sort1"></script>
-<script src="gi-map-location-ui.js?v=20261004-map-peer-sort1"></script>
+<script src="gi-map-label-layout.js?v=20261005-map-formula-view1"></script>
+<script src="gi-map-language.js?v=20261005-map-formula-view1"></script>
+<script src="gi-map-v4-live.js?v=20261005-map-formula-view1"></script>
+<script src="gi-map-filter-picker.js?v=20261005-map-formula-view1"></script>
+<script src="gi-map-location-ui.js?v=20261005-map-formula-view1"></script>
 
 <!--
 =========================================================
