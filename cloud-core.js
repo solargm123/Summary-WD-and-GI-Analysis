@@ -72,7 +72,7 @@
     const {data,error}=await getClient().rpc('create_analysis_project',{p_workspace:m.workspace_id,p_analysis_type:type,p_name:(name||fallback).trim()});
     if(error)throw error;return data.id;
   }
-function analysisUrl(project){const page=project.analysis_type==='working_day'?'working-day-analysis.html':project.analysis_type==='global_irradiance'?'global-irradiance-analysis.html':'pr-report-r4.html';const version=project.analysis_type==='global_irradiance'?'20261001-trend-clean':project.analysis_type==='pr_report'?'20260930-pr-edit-note8':'20261002-review-note-loss';return `${page}?v=${version}&project=${encodeURIComponent(project.id)}`}
+function analysisUrl(project){const page=project.analysis_type==='working_day'?'working-day-analysis.html':project.analysis_type==='global_irradiance'?'global-irradiance-analysis.html':'pr-report-r4.html';const version=project.analysis_type==='global_irradiance'?'20261005-desktop110-1':project.analysis_type==='pr_report'?'20261005-pr110-workflow1':'20261005-desktop110-1';return `${page}?v=${version}&project=${encodeURIComponent(project.id)}`}
   async function signIn(email,password){const {data,error}=await getClient().auth.signInWithPassword({email,password});if(error)throw error;return data}
   async function signOut(){await getClient().auth.signOut();location.replace(indexUrl())}
   async function loadProject(id){
@@ -695,5 +695,6 @@ function analysisUrl(project){const page=project.analysis_type==='working_day'?'
   async function openCentralAnalysis(type){const project=await ensureCentralProject(type);if(!project.dataset_id){const {data:dataset,error}=await getClient().from('shared_datasets').select('id').eq('workspace_id',(currentMembership||await membership()).workspace_id).order('updated_at',{ascending:false}).limit(1).maybeSingle();if(error)throw error;if(dataset){const attached=await getClient().rpc('attach_dataset_to_project',{p_project_id:project.id,p_dataset_id:dataset.id});if(attached.error)throw attached.error}}location.href=analysisUrl(project)}
   global.SolarCloud={pendingSharedPaths:()=>pendingPatches().map(p=>p.path),deferredSharedPaths:()=>[...deferredSharedFields.values()].map(x=>x.path),refreshPresence:()=>updatePresence(true),collaborationActor:()=>presenceSession?{userId:presenceSession.userId,name:presenceSession.name}:null,isSharedValueSaved:(path,value)=>JSON.stringify(valueAtPath(lastSharedState,path))===JSON.stringify(value),CONFIG,dialog,notice,confirmDialog,setLanguage,getLanguage,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,closeHistory,datasets,useDataset,resolveConflict,downloadLocalDraft,reloadLatest,back:backToCenter,roleCanEdit,roleCanAdmin,centralDatasetStatus,databaseStorageStatus,loadCentralPeriod,loadCentralPrRange,loadCentralPrSummary,loadPrProjectRecords,loadCentralFullData,showPresence,useLatestConflict,keepMyConflict,prepareCentralUpload,commitCentralUpload,prepareCentralBatchUpload,commitCentralBatchUpload,uploadCentralDataset,openCentralAnalysis};
 })(window);
+
 
 
