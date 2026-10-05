@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20261005-pr110-workflow1"></script>
+    <script src="cloud-core.js?v=20261005-pr-gi-theory1"></script>
 
     <script src="gi-average.js?v=20261005-map-formula-view1"></script>
     <script src="gi-review.js?v=20260930-gi-province3"></script>
@@ -1507,7 +1507,10 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
       document.getElementById('uploadStatus').innerText=`Loaded ${datesSet.size} central day(s) from Center`;
     }
   };
-  SolarCloud.initAnalysis('global_irradiance',globalIrradianceCloudAdapter);
+
+    async function openPrGiTarget(){const query=new URLSearchParams(location.search),token=query.get('prReturn'),month=query.get('focusMonth'),plant=query.get('focusPlant');if(!token)return;let saved;try{saved=JSON.parse(sessionStorage.getItem(`solar.prGiReturn.${token}`)||'null')}catch{return}if(!saved||Date.now()-saved.createdAt>7200000)return;const button=document.createElement('button');button.id='returnPrCalculation';button.className='btn';button.textContent=giLanguage()==='en'?'Back to PR · current view':'กลับ PR · สถานะเดิม';button.style.cssText='position:fixed;bottom:18px;right:24px;z-index:9000;background:var(--card-bg,#fff);color:var(--text-color,#1e293b);border:1px solid #64748b;border-radius:10px;padding:10px 14px;font-family:inherit;font-weight:700;box-shadow:0 4px 14px #0002';button.onclick=async()=>{button.disabled=true;try{if(SolarCloud.pendingSharedPaths().length){await SolarCloud.saveNow();if(SolarCloud.pendingSharedPaths().length)throw new Error('ยังบันทึก GI ไม่สำเร็จ กรุณาบันทึกหรือจัดการค่าที่ขัดแย้งก่อน')}const target=new URL(saved.url,location.href);if(target.origin!==location.origin||!target.pathname.endsWith('/pr-report-r4.html'))throw new Error('Invalid PR return destination');target.searchParams.set('prReturn',token);location.href=target.href}catch(error){SolarCloud.notice('กลับ PR ไม่สำเร็จ',error.message,'danger');button.disabled=false}};document.body.appendChild(button);if(/^\d{4}-\d{2}$/.test(month||'')&&month!==loadedIrrMonth)await SolarCloud.loadCentralPeriod(month);activeStatusFilter='ALL';activeReviewFilter='ALL';activeProvinceFilter='ALL';if(allPlantsSet.has(plant))selectedPlants=new Set([plant]);else SolarCloud.notice('ไม่พบโครงการใน GI',plant||'','danger');[['yearFilter',month?.slice(0,4)],['monthFilter',month?.slice(5,7)]].forEach(([id,value])=>{if(value)[...document.getElementById(id).options].forEach(o=>o.selected=o.value===value)});[...document.getElementById('dayFilter').options].forEach(o=>o.selected=true);syncStatusFilterButtons();renderPlantList();renderTableAndMetrics()}
+
+  SolarCloud.initAnalysis('global_irradiance',globalIrradianceCloudAdapter).then(openPrGiTarget).catch(error=>SolarCloud.notice('เปิด GI ไม่สำเร็จ',error.message,'danger'));
 </script>
 <script src="unified-ui.js?v=20261001-scoped"></script>
 <script src="solar-controls.js?v=20261001-3"></script>
