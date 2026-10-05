@@ -1,42 +1,33 @@
-# Inverter compact adapter test v1
+# Inverter compact storage preview
 
-Experimental data adapter; no production HTML changes or database migration.
+A separate preview adds explicit database Save/Open actions to the existing report implementation. The production Inverter Report remains unchanged, including its UI, formulas, legacy workspace format and Excel export.
 
-QA using Inverter_Analysis_Workspace_2026-10-04(1).iaw:
-- 346,182 daily rows, 562 project-device pairs, 1,323 source names.
-- Every restored field identical, including null, zero and source provenance.
-- PV Yield/grid-duration totals identical across 12,498 device-month groups.
-- BIGINT values serialized as strings; decimals beyond supported scales rejected, never rounded.
+## Database behavior
 
-PostgreSQL temporary-table size experiment: 1,001 actual evenly sampled rows replicated to 346,182 rows; heap 31,940,608 bytes, unique index 7,798,784 bytes, total 39,763,968 bytes. Transaction rolled back. Estimated final additional storage 40–50 MB; metadata, RLS design and indexing remain to be finalized. This is not a full actual-data PostgreSQL import.
+Daily records use normalized device/source dictionaries and scaled BIGINT metrics. Project links reuse unique exact/normalized central-name matches; unresolved names remain distinct. Device-level metrics never overwrite central plant totals.
 
-Remaining before production: resolve 3 project aliases with user; confirm device identity across replacement/renaming; design workspace RLS, import conflict handling and provenance; full database roundtrip; integrate adapter; actual UI graph/XLSX/.iaw regression checks. Existing formulas and raw project totals must remain unchanged. The standalone monthly sum check here is data fidelity validation, not the complete production monthly report algorithm.
+All Inverter tables enforce RLS. The batch import RPC uses SECURITY INVOKER. Members can read, Admin/Editor can add, Viewer cannot write, and unrelated users cannot access records. Notes/settings/imported-monthly snapshots are private per user and use revision checks for concurrent saves. Authenticated clients have no daily UPDATE/DELETE grant.
 
-Run: node verify.cjs /path/to/decoded-daily-fixture.json
-Fixture is intentionally not committed to GitHub.
+Imports skip identical records and reject conflicting metrics instead of overwriting. Successful earlier batches remain safely retryable. Per-device advisory locks serialize collisions; original positions are retained for an initial complete import and later records append within devices. Metadata is saved after raw batches succeed.
 
-## Browser integration preview
+Batch processing uses set-based conflict checks and inserts. Read policies evaluate permitted membership/device sets. Dictionaries are paginated; daily reads use keyset pagination. The existing Main Center session is reused on the same origin, without a service-role key. Upload is never automatic.
 
-Current preview: inverter-analysis-compact-test.html (repository root) (standalone, embedded libraries).
-Open the original .iaw using Open Workspace. New sidebar controls Compact Test Save/Open write/read .iactest files. Standard report import, .iaw saving and Excel exports remain original. No Supabase data writes or central-project auto-mapping.
+## QA status
 
-Compact preview uses 25,000-row batches with event-loop yields, preserving all metadata and imported monthly records separately. This is an adapter compatibility test, not a finished database connection. The .iactest archive measured 7,496,504 bytes, larger than the original 6,493,824-byte .iaw; keep the original .iaw for compressed backups. Estimated PostgreSQL storage savings come from normalized tables/scaled integers, not this test archive.
+Signed-in browser Save completed. After refreshing to an empty page, Open from DB restored the complete imported dataset and rendered daily and monthly reports. Canonical raw-field checksums matched the source file, including metric values and provenance. Duplicate-import checks added no extra rows. Permission checks passed for Viewer and unrelated users.
 
-Runtime QA via JSDOM: actual production reader, monthly analysis, monthly table, note/settings persistence, legacy .iaw writer/reader and actual presentation Excel writer. Excel independently read with openpyxl: 532 inverter-month rows and 126 project summaries for September 2026, including all 4 Yong Thai Rubber inverters. Desktop Excel and real-browser visual/interaction QA remain pending.
+Transaction tests cover zero/null values, duplicate inputs, conflicting metrics and record order. Original report regression checks cover monthly calculations, daily graphs, notes/settings, legacy workspace save/open and spreadsheet export. Generated workbooks were independently parsed. Company data, filenames, project names, measurements and fixtures are intentionally excluded from this repository documentation.
 
-Integration test: node --max-old-space-size=4096 integration-qa.cjs /path/to/original.iaw
-The runner requires jsdom (or JSDOM_PATH). INVERTER_PREVIEW_HTML can override the preview HTML path. No data fixtures are committed.
+## Limitations
 
-Additional QA passed: original daily SVG output identical before/after compact reload for Yong Thai Rubber September 2026; every raw field identical after legacy .iaw save/reopen. No runtime errors.
+Full Save/Open currently transfers the entire workspace and can be slow for large datasets. Keep the original workspace backup. The experimental compact ZIP is a compatibility test; use the original format for backups. Database normalization, rather than the experimental ZIP format, is the storage strategy.
 
-## Supabase connector v1
+Resolve unmapped names before manual linking. Linked projects cannot be deleted through cascading deletion. Device replacement/renaming identity requires an explicit future policy. Desktop spreadsheet visual verification is separate from parser validation.
 
-Installed in Solar project: inverter_devices, inverter_sources, inverter_daily, inverter_user_workspaces; all RLS enabled. New import RPC is SECURITY INVOKER. No existing WD/GI/PR tables changed and no real file data imported during setup.
+## Local QA
 
-Online preview controls: Connect Solar DB -> Save to DB -> Open from DB. Uses existing Main Center session on the same origin; never uses a service-role key. No automatic upload. Viewer can read; Admin/Editor can add. Central project IDs are reused only for unique exact/normalized-name matches; unresolved names remain distinct and unmapped. Raw daily metrics are shared within a workspace; notes/settings/imported-monthly snapshot is private per user and bounded to 2 MB. A concurrent save from the same account is detected with revision comparison.
+`node verify.cjs /path/to/decoded-daily-fixture.json`
 
-Imports are bounded to 500 rows, skipping identical records. Differing metrics reject the affected batch instead of overwriting. Previously successful batches remain and a retry skips their identical rows. Metadata is saved after all raw batches succeed. Keep the .iaw backup until complete. Device/source reads use pagination; daily uses keyset pagination. Original input order is retained for the initial full-workspace import. New records append after existing records within their device; duplicate imports retain existing record order. Device ordering is deterministic when independent partial uploads have overlapping positions.
+`node --max-old-space-size=4096 integration-qa.cjs /path/to/original-workspace`
 
-SQL QA passed insert, duplicate skip, conflicting-value rejection, Viewer read/write restrictions, private metadata isolation, unrelated-user isolation and record-order preservation, all transaction tests rolled back. No inverter-specific security advisor findings. Client mock QA passed 1,101-row batching/pagination, restored original order, zero/null, metadata and concurrent-session conflict. Full existing 346,182-row HTML integration QA still passed after adding DB controls. Actual signed-in browser REST save/open remains to be tested by the user; actual production-data bulk import has not occurred. No claim of full database roundtrip for the uploaded file yet.
-
-Existing functions and formulas stay unchanged. Default .iaw writer is retained because the experimental compact archive is larger. DB storage estimate remains preliminary until actual import.
+The HTML runner requires jsdom (or JSDOM_PATH); INVERTER_PREVIEW_HTML can override the HTML path. User fixtures and generated reports must not be committed.
