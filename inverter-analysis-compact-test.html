@@ -1803,7 +1803,7 @@ async function invDockInitialize(){
  if(!invRememberReady&&inverterCurrentScope()&&!inverterStartupRunning){
   await invRestoreRememberedView();invPreferenceBaseline=JSON.stringify(invPreferenceSnapshot());invRememberReady=true;invDockState(tr('Connected','เชื่อมต่อแล้ว'));
  }
- inverterRefreshRoles();if(invDockChannel)return;
+ inverterRefreshRoles();if(invRememberReady&&!invPreferenceDirty&&!invPreferenceSaving)invDockState(tr('Connected','เชื่อมต่อแล้ว'));if(invDockChannel)return;
  invDockSession={userId:session.user.id,name:session.user.user_metadata?.display_name||session.user.email||'User',role:member.role,area:'Inverter Report',lastSeen:new Date().toISOString()};
  invDockChannel=SolarCloud.getClient().channel('workspace-online:'+member.workspace_id,{config:{private:true,presence:{key:crypto.randomUUID()}}});
  invDockChannel.on('presence',{event:'sync'},invDockPresence).on('presence',{event:'join'},invDockPresence).on('presence',{event:'leave'},invDockPresence).subscribe(async status=>{
