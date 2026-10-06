@@ -1434,6 +1434,26 @@ async function inverterAutoInitialize(){
 
 window.addEventListener('pagehide',()=>clearTimeout(inverterAutoTimer));
 
+// Main DB opens latest month; report filters own subsequent reads.
+for(const id of ['inverterDbConnect','inverterDbLoad','inverterDbPeriod','inverterDbMonth','inverterDbProject'])$(id).style.display='none';
+let inverterStartupRunning=false;
+async function inverterStartup(){
+ if(inverterStartupRunning||location.protocol==='file:')return;
+ inverterStartupRunning=true;inverterAutoBusy(true);
+ $('inverterDbStatus').textContent=tr('Loading latest month…','กำลังโหลดเดือนล่าสุด…');
+ try{
+  $('inverterDbPeriod').value='latest';
+  await $('inverterDbConnect').onclick();
+  if(!inverterCurrentScope())throw Error($('inverterDbStatus').textContent||tr('Unable to load data','โหลดข้อมูลไม่สำเร็จ'));
+  $('inverterDbConnect').style.display='none';
+ }catch(e){
+  $('inverterDbStatus').textContent=e.message;
+  $('inverterDbConnect').textContent=tr('Retry connection','เชื่อมต่ออีกครั้ง');
+  $('inverterDbConnect').style.display='';
+ }finally{inverterStartupRunning=false;inverterAutoBusy(false);}
+}
+window.addEventListener('load',()=>setTimeout(()=>{if(!inverterDb&&!state.daily.length)inverterStartup();},0),{once:true});
+
 </script>
 </body>
 </html>
