@@ -180,9 +180,13 @@ const WDReview = (() => {
   function clearSearch() { $('searchInput').value='';$('projectPopupSearch').value='';calculateAndRender(); }
   let reviewScope=null,pendingPathScope=null,deferredPathScope=null;
   function withReviewScope(fn){
+    if(reviewScope)return fn(); // Reuse validation only within the current render; never across edits.
     const previous=reviewScope,previousPaths=pendingPathScope,previousDeferred=deferredPathScope;reviewScope=new Map();pendingPathScope=SolarCloud.pendingSharedPaths?.()||[];deferredPathScope=SolarCloud.deferredSharedPaths?.()||[];
     try{return fn()}finally{reviewScope=previous;pendingPathScope=previousPaths;deferredPathScope=previousDeferred}
   }
+  let summaryShellHtml=null;
+  const renderedHtml=new WeakMap();
+  function setHtml(node,html){if(renderedHtml.get(node)!==html){node.innerHTML=html;renderedHtml.set(node,html)}}
   function render(filtered,context){return withReviewScope(()=>renderScoped(filtered,context))}
   function renderScoped(filtered, context) {
     const summary = activeTab === 'summary';
@@ -205,7 +209,7 @@ const WDReview = (() => {
     const baseCounts={all:filtered.length,done:0,new:0,changed:0};
     filtered.forEach(p=>baseCounts[reviewState(p)]++);
     const options=[['all',text('ทั้งหมด','All')],['done',text('ตรวจแล้ว','Reviewed')],['new',text('ยังไม่ตรวจ','Not reviewed')],['changed',text('ต้องตรวจซ้ำ','Review again')]];
-    $('wdReviewFilterToolbar').innerHTML=`<label for="wdReviewFilter">${text('สถานะตรวจ','Review')}</label><select id="wdReviewFilter" onchange="WDReview.setReviewFilter(this.value)">${options.map(([v,l])=>`<option value="${v}" ${reviewFilter===v?'selected':''}>${l} (${baseCounts[v]})</option>`).join('')}</select>`;
+    if(!summary)setHtml($('wdReviewFilterToolbar'),`<label for="wdReviewFilter">${text('สถานะตรวจ','Review')}</label><select id="wdReviewFilter" onchange="WDReview.setReviewFilter(this.value)">${options.map(([v,l])=>`<option value="${v}" ${reviewFilter===v?'selected':''}>${l} (${baseCounts[v]})</option>`).join('')}</select>`);
     if (!summary) return;
     const sourceLabel = method => (context.targetMethod==='m1'&&method===2)||(context.targetMethod==='m2'&&method===1)
       ? text('ค่ากำหนดเอง','Custom value')
@@ -215,13 +219,17 @@ const WDReview = (() => {
     const summaryPlants=reviewFilter==='all'?filtered:filtered.filter(plant=>reviewState(plant)===reviewFilter);
     const rows=summaryPlants.map(plant=>{
       const m=calculatePlantMetrics(plant,context);
-      return `<tr data-wd-plant="${plant.id}"><th scope="row">${escapeHtml(plant.name)} <button type="button" onclick="openNoteModal(${plant.id})" class="wd-note-button" data-has-note="${!!WDPeriod.displayNote(plant).trim()}" title="${escapeHtml(WDPeriod.displayNote(plant)||text('หมายเหตุ','Note'))}" aria-label="${text('หมายเหตุ','Note')}"><i class="fa-solid fa-note-sticky" aria-hidden="true"></i></button>${plant.calculationMethod==='other'&&m.manualValid?`<small>${text('อื่น ๆ','Other')}: ${number(m.manualDays)} ${text('วัน','days')}</small>`:''}</th><td>${m.valid?number(m.shM1):'—'}</td><td class="wd-result ${plant.calculationMethod==='m1'?'wd-selected-m1':''}">${m.valid?number(m.method1Days):'—'}</td><td>${m.valid?number(m.shM2):'—'}</td><td class="wd-result ${plant.calculationMethod==='m2'?'wd-selected-m2':''}">${m.valid?number(m.method2Days):'—'}</td><td><small class="wd-project-status" data-wd-status="${plant.id}">${statusHtml(plant)}</small>${reviewButtonHtml(plant)}</td></tr>`;
-    }).join('');
+      return {id:plant.id,html:`<tr data-wd-plant="${plant.id}"><th scope="row">${escapeHtml(plant.name)} <button type="button" onclick="openNoteModal(${plant.id})" class="wd-note-button" data-has-note="${!!WDPeriod.displayNote(plant).trim()}" title="${escapeHtml(WDPeriod.displayNote(plant)||text('หมายเหตุ','Note'))}" aria-label="${text('หมายเหตุ','Note')}"><i class="fa-solid fa-note-sticky" aria-hidden="true"></i></button>${plant.calculationMethod==='other'&&m.manualValid?`<small>${text('อื่น ๆ','Other')}: ${number(m.manualDays)} ${text('วัน','days')}</small>`:''}</th><td>${m.valid?number(m.shM1):'—'}</td><td class="wd-result ${plant.calculationMethod==='m1'?'wd-selected-m1':''}">${m.valid?number(m.method1Days):'—'}</td><td>${m.valid?number(m.shM2):'—'}</td><td class="wd-result ${plant.calculationMethod==='m2'?'wd-selected-m2':''}">${m.valid?number(m.method2Days):'—'}</td><td><small class="wd-project-status" data-wd-status="${plant.id}">${statusHtml(plant)}</small>${reviewButtonHtml(plant)}</td></tr>`};
+    });
     const choices=[['all',text('ทั้งหมด','All')],['done',text('ตรวจแล้ว','Reviewed')],['new',text('ยังไม่ตรวจ','Not reviewed')],['changed',text('ต้องตรวจซ้ำ','Review again')]];
-    $('wdReviewFilterToolbar').innerHTML=`<label for="wdReviewFilter">${text('สถานะตรวจ','Review')}</label><select id="wdReviewFilter" onchange="WDReview.setReviewFilter(this.value)">${choices.map(([value,label])=>`<option value="${value}" ${reviewFilter===value?'selected':''}>${label} (${reviewCounts[value]})</option>`).join('')}</select>`;
+    setHtml($('wdReviewFilterToolbar'),`<label for="wdReviewFilter">${text('สถานะตรวจ','Review')}</label><select id="wdReviewFilter" onchange="WDReview.setReviewFilter(this.value)">${choices.map(([value,label])=>`<option value="${value}" ${reviewFilter===value?'selected':''}>${label} (${reviewCounts[value]})</option>`).join('')}</select>`);
     const previousScroll=$('wdSummaryPanel').querySelector('.wd-summary-scroll');
     const scrollPosition=previousScroll?{top:previousScroll.scrollTop,left:previousScroll.scrollLeft}:null;
-    $('wdSummaryPanel').innerHTML=`<div class="wd-summary-scroll"><table><caption class="sr-only">${text('ข้อมูลเดือนที่เลือกคำนวณด้วยพารามิเตอร์ปัจจุบัน','Selected month calculated with current parameters')}</caption><colgroup><col class="wd-col-project"><col class="wd-col-metric"><col class="wd-col-metric"><col class="wd-col-metric"><col class="wd-col-metric"><col class="wd-col-status"></colgroup><thead><tr><th rowspan="2" scope="col">${text('โครงการ','Project')}</th><th colspan="2" scope="colgroup">${text('วิธี 1','Method 1')}<small>${escapeHtml(sourceLabel(1))}</small></th><th colspan="2" scope="colgroup">${text('วิธี 2','Method 2')}<small>${escapeHtml(sourceLabel(2))}</small></th><th rowspan="2" scope="col">${text('สถานะงานเดือนนี้','Review status for this month')}</th></tr><tr><th>Sun Hours</th><th>${text('วันทำงาน','Working days')}</th><th>Sun Hours</th><th>${text('วันทำงาน','Working days')}</th></tr></thead><tbody>${rows||`<tr><td colspan="6">${text('ไม่มีข้อมูลตรงกับเดือนและตัวกรองที่เลือก','No data for the selected month and filters')}</td></tr>`}</tbody></table></div>`;
+    const shellHtml=`<div class="wd-summary-scroll"><table><caption class="sr-only">${text('ข้อมูลเดือนที่เลือกคำนวณด้วยพารามิเตอร์ปัจจุบัน','Selected month calculated with current parameters')}</caption><colgroup><col class="wd-col-project"><col class="wd-col-metric"><col class="wd-col-metric"><col class="wd-col-metric"><col class="wd-col-metric"><col class="wd-col-status"></colgroup><thead><tr><th rowspan="2" scope="col">${text('โครงการ','Project')}</th><th colspan="2" scope="colgroup">${text('วิธี 1','Method 1')}<small>${escapeHtml(sourceLabel(1))}</small></th><th colspan="2" scope="colgroup">${text('วิธี 2','Method 2')}<small>${escapeHtml(sourceLabel(2))}</small></th><th rowspan="2" scope="col">${text('สถานะงานเดือนนี้','Review status for this month')}</th></tr><tr><th>Sun Hours</th><th>${text('วันทำงาน','Working days')}</th><th>Sun Hours</th><th>${text('วันทำงาน','Working days')}</th></tr></thead><tbody></tbody></table></div>`;
+    if(summaryShellHtml!==shellHtml||!$('wdSummaryPanel').querySelector('tbody')){$('wdSummaryPanel').innerHTML=shellHtml;summaryShellHtml=shellHtml;}
+    const body=$('wdSummaryPanel').querySelector('tbody');
+    if(rows.length)reconcileWDRows(body,rows);
+    else setHtml(body,`<tr><td colspan="6">${text('ไม่มีข้อมูลตรงกับเดือนและตัวกรองที่เลือก','No data for the selected month and filters')}</td></tr>`);
     if(scrollPosition){const currentScroll=$('wdSummaryPanel').querySelector('.wd-summary-scroll');currentScroll.scrollTop=scrollPosition.top;currentScroll.scrollLeft=scrollPosition.left;}
   }
   document.addEventListener('focusin',event=>{
@@ -236,7 +244,7 @@ const WDReview = (() => {
   document.addEventListener('visibilitychange',()=>{if(document.hidden)endEdit()});
   setInterval(()=>{if(editing&&!presenceContext())endEdit();refreshStatuses()},60000);
   function filterPlants(plants){return withReviewScope(()=>reviewFilter==='all'?plants:plants.filter(p=>reviewState(p)===reviewFilter))}
-  return {upgradeValidReviews,editAllowed:p=>editApproved.has(reviewKey(p)),markSavedBaseline,calculationSnapshot,canonicalFingerprint,pendingCalculation,filterPlants,isSummary:()=>activeTab==='summary',render,setTab,setReviewFilter,clearSearch,statusHtml,detailBadge,reviewLabel,toggleReview,refreshStatuses,beginEdit,endEdit,presenceContext,onPresence,onSaved,
+  return {withScope:withReviewScope,upgradeValidReviews,editAllowed:p=>editApproved.has(reviewKey(p)),markSavedBaseline,calculationSnapshot,canonicalFingerprint,pendingCalculation,filterPlants,isSummary:()=>activeTab==='summary',render,setTab,setReviewFilter,clearSearch,statusHtml,detailBadge,reviewLabel,toggleReview,refreshStatuses,beginEdit,endEdit,presenceContext,onPresence,onSaved,
     isReviewed:reviewed,captureReviews:()=>({...reviews}),restoreReviews:overrides=>{reviews=Object.fromEntries(Object.entries(overrides).filter(([key])=>key.startsWith('@review:')))}};
 })();
 

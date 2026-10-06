@@ -2570,7 +2570,7 @@ body.wd-theme-switching *::after{
 
         function calculateAndRender() {
             wdMetricScope=new Map();
-            try { return calculateAndRenderScoped(); }
+            try { return typeof WDReview!=='undefined' ? WDReview.withScope(calculateAndRenderScoped) : calculateAndRenderScoped(); }
             finally { wdMetricScope=null; }
         }
         const wdRowHtml=new WeakMap();
@@ -2646,7 +2646,8 @@ body.wd-theme-switching *::after{
                 }
 
                 if(!showDetails)return;
-                const displayLossDays=item.lossDaysArray.filter(day=>WDPeriod.dayList(item).includes(day));
+                const includedLossDates=new Set(WDPeriod.dayList(item));
+                const displayLossDays=item.lossDaysArray.filter(day=>includedLossDates.has(day));
                 const lossDatesTooltip=(currentLanguage==='th'?'วันที่เกิด Loss Due: ':'Loss Due dates: ')+(displayLossDays.length?displayLossDays.join(', '):t('noLoss'));
 
                 renderedRows.push({id:item.id,html:`
@@ -2818,7 +2819,7 @@ body.wd-theme-switching *::after{
 
         syncTableScrollbars();
     </script>
-    <script src="working-day-summary.js?v=20261005-review-scroll1"></script>
+    <script src="working-day-summary.js?v=20261006-wd-perf2"></script>
     <script src="working-day-period.js?v=20261002-collaboration2"></script>
     <script>
       const workingDayCloudAdapter={
@@ -3005,10 +3006,11 @@ body.wd-theme-switching *::after{
 })();
 </script>
 
-<script src="unified-ui.js?v=20261001-scoped"></script>
+<script src="unified-ui.js?v=20261006-wd-perf2"></script>
 <script src="solar-controls.js?v=20261001-3"></script>
 </body>
 </html>
+
 
 
 

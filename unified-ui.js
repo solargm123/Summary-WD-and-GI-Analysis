@@ -111,11 +111,13 @@
       if(queued||!changedRoots.size)return;queued=true;
       requestAnimationFrame(()=>{
         queued=false;const roots=[...changedRoots];changedRoots.clear();
-        roots.filter(node=>node.isConnected&&!roots.some(other=>other!==node&&other.contains(node))).forEach(node=>{translate(node);ensureIcons(node)});
+        const rootSet=new Set(roots);
+        roots.filter(node=>{if(!node.isConnected)return false;for(let parent=node.parentElement;parent;parent=parent.parentElement)if(rootSet.has(parent))return false;return true;}).forEach(node=>{translate(node);ensureIcons(node)});
       });
     }).observe(document.body,{childList:true,subtree:true});
   }
   window.FusionUI={setLanguage(v){language=v==='en'?'en':'th';localStorage.setItem('fusionLanguage',language);translate();ensureIcons()},setTheme,getLanguage:()=>language,getTheme:()=>theme};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount);else mount();
 })();
+
 
