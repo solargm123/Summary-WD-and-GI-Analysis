@@ -9,7 +9,8 @@ const frame=document.getElementById('solarWorkspaceFrame');
 const initial=location.hash?center+location.search+location.hash:saved||center;
 frame.src=new URL(initial,base).href;
 history.replaceState({solarShell:true},'',base.pathname);
-function sync(){try{const u=new URL(frame.contentWindow.location.href);if(u.origin!==base.origin)return;let route=safeRoute(u.href);if(!route&&['','index.html'].includes(u.pathname.split('/').pop()))route=center;if(route){sessionStorage.setItem(key,route);document.title=frame.contentDocument.title||'Solar system Analysis Center';}if(frame.contentWindow.SolarCloud)frame.contentWindow.SolarCloud.CONFIG.siteRoot=base.href;}catch{}}
+function sync(){try{const u=new URL(frame.contentWindow.location.href);if(u.origin!==base.origin)return;let route=safeRoute(u.href);if(!route&&['','index.html'].includes(u.pathname.split('/').pop()))route=center;if(route){sessionStorage.setItem(key,route);document.title=frame.contentDocument.title||'Solar system Analysis Center';}if(frame.contentWindow.SolarCloud)frame.contentWindow.SolarCloud.CONFIG.siteRoot=new URL(center,base).href;}catch{}}
 frame.addEventListener('load',sync);
 window.addEventListener('pagehide',sync);
 })();
+
