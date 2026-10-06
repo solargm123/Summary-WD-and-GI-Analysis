@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20261006-loader-rollback1"></script>
+    <script src="cloud-core.js?v=20261006-ui-polish1"></script>
 
     <script src="gi-average.js?v=20261005-map-formula-view1"></script>
     <script src="gi-review.js?v=20260930-gi-province3"></script>
@@ -380,6 +380,7 @@ body{zoom:1.1;min-height:calc(100vh / 1.1)}
 #trendTab .trend-summary th:nth-child(6),#trendTab .trend-summary th:nth-child(7),#trendTab .trend-summary th:nth-child(8){width:11.333%}
 #trendTab .trend-summary th:nth-child(1),#trendTab .trend-summary td:nth-child(1){text-align:center;padding-left:4px;padding-right:4px}
 </style>
+<style id="gi-popup-polish">.gi-popup-close{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;flex:0 0 32px;padding:0;border:1px solid var(--card-border);border-radius:9px;background:var(--input-bg);color:var(--text-main);cursor:pointer}.gi-popup-close:hover{background:var(--hover-bg);color:var(--accent-blue)}.gi-popup-close>i{display:none!important}.gi-combined-options{display:grid;gap:10px}.gi-combined-options .btn-filter-status{justify-content:space-between;width:100%}.gi-combined-options select{width:100%;padding:10px;font:600 13px 'Bai Jamjuree',sans-serif}.gi-combined-options p{font-size:12px;color:var(--text-muted);margin:0}</style>
 </head>
 <body class="solar-gi">
 
@@ -441,12 +442,7 @@ body{zoom:1.1;min-height:calc(100vh / 1.1)}
             </div>
 
             <div class="status-filter-bar">
-                <span data-solar-th="กรองตามสถานะ:" data-solar-en="Filter by status:" style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">กรองตามสถานะ:</span>
-                <button class="btn-filter-status active" id="btnFilterAll" onclick="setStatusFilter('ALL')">ทุกโครงการ <span class="badge-count badge-all" id="countAll">0</span></button>
-                <button class="btn-filter-status" id="btnFilterNormal" onclick="setStatusFilter('NORMAL')"><i class="fa-solid fa-circle-check" style="color: var(--accent-green)"></i> ปกติ <span class="badge-count badge-normal" id="countNormal">0</span></button>
-                <button class="btn-filter-status" id="btnFilterAbnormal" onclick="setStatusFilter('ABNORMAL')"><i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-yellow)"></i> ผิดปกติ <span class="badge-count badge-abnormal" id="countAbnormal">0</span></button>
-                <button class="btn-filter-status" id="btnFilterNotFound" onclick="setStatusFilter('NOT_FOUND')"><i class="fa-solid fa-circle-question" style="color: var(--accent-red)"></i> ไม่พบข้อมูล <span class="badge-count badge-notfound" id="countNotFound">0</span></button>
-                <select id="giReviewFilter" class="gi-review-filter" aria-label="Monthly review status" onchange="activeReviewFilter=this.value;renderTableAndMetrics()"><option value="ALL">สถานะตรวจ · ทั้งหมด</option><option value="reviewed">ตรวจแล้ว</option><option value="unreviewed">ยังไม่ตรวจ</option><option value="recheck">ต้องตรวจซ้ำ</option></select>
+                <button type="button" id="giCombinedFilterButton" class="btn btn-secondary" onclick="openGiCombinedFilter()"><i class="fa-solid fa-filter" aria-hidden="true"></i><span id="giCombinedFilterLabel">สถานะและการตรวจ</span></button>
                 <div class="gi-toolbar">
                     <div class="threshold-box">
                         <label for="minIrr">ช่วงค่าปกติ:</label>
@@ -454,7 +450,7 @@ body{zoom:1.1;min-height:calc(100vh / 1.1)}
                         <span>-</span>
                         <input type="number" id="maxIrr" value="7.0" min="0" step="0.1" onchange="validateThresholds(); checkFileAndRun(renderTableAndMetrics)">
                     </div>
-                    <button class="btn btn-secondary" onclick="checkFileAndRun(openFilterModal)"><i class="fa-solid fa-filter"></i> ตัวกรอง</button>
+                    <button class="btn btn-secondary" onclick="checkFileAndRun(openFilterModal)"><i class="fa-solid fa-calendar-days"></i> <span data-solar-th="โครงการและช่วงเวลา" data-solar-en="Plant and Date">Plant and Date</span></button>
                     <button class="btn btn-edit" id="toggleEditBtn" onclick="checkFileAndRun(toggleEditMode)"><i class="fa-solid fa-pen-to-square"></i> แก้ไขค่า Irradiation</button>
                     <div class="province-filter-wrap">
                         <span data-solar-th="จังหวัด:" data-solar-en="Province:" style="font-size:.78rem;color:var(--text-muted);font-weight:600;">จังหวัด:</span>
@@ -575,12 +571,20 @@ body{zoom:1.1;min-height:calc(100vh / 1.1)}
     </div>
 </div>
 
+<div class="modal-overlay" id="giCombinedFilterModal" onclick="if(event.target===this)closeGiCombinedFilter()"><div class="modal-content" style="max-width:480px"><div class="modal-header"><h3 data-solar-th="สถานะข้อมูลและการตรวจ" data-solar-en="Data status and review">สถานะข้อมูลและการตรวจ</h3><button type="button" class="gi-popup-close" onclick="closeGiCombinedFilter()" aria-label="ปิด / Close"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div><div class="modal-body gi-combined-options">                <span data-solar-th="กรองตามสถานะ:" data-solar-en="Filter by status:" style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">กรองตามสถานะ:</span>
+                <button class="btn-filter-status active" id="btnFilterAll" onclick="setStatusFilter('ALL')">ทุกโครงการ <span class="badge-count badge-all" id="countAll">0</span></button>
+                <button class="btn-filter-status" id="btnFilterNormal" onclick="setStatusFilter('NORMAL')"><i class="fa-solid fa-circle-check" style="color: var(--accent-green)"></i> ปกติ <span class="badge-count badge-normal" id="countNormal">0</span></button>
+                <button class="btn-filter-status" id="btnFilterAbnormal" onclick="setStatusFilter('ABNORMAL')"><i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-yellow)"></i> ผิดปกติ <span class="badge-count badge-abnormal" id="countAbnormal">0</span></button>
+                <button class="btn-filter-status" id="btnFilterNotFound" onclick="setStatusFilter('NOT_FOUND')"><i class="fa-solid fa-circle-question" style="color: var(--accent-red)"></i> ไม่พบข้อมูล <span class="badge-count badge-notfound" id="countNotFound">0</span></button>
+                <select id="giReviewFilter" class="gi-review-filter" aria-label="Monthly review status" onchange="activeReviewFilter=this.value;renderTableAndMetrics();syncGiCombinedLabel()"><option value="ALL">สถานะตรวจ · ทั้งหมด</option><option value="reviewed">ตรวจแล้ว</option><option value="unreviewed">ยังไม่ตรวจ</option><option value="recheck">ต้องตรวจซ้ำ</option></select>
+<p id="giCombinedReviewHint"></p></div><div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="resetGiCombinedFilter()" data-solar-th="ล้างตัวกรอง" data-solar-en="Reset filters">ล้างตัวกรอง</button><button type="button" class="btn" onclick="closeGiCombinedFilter()" data-solar-th="เสร็จสิ้น" data-solar-en="Done">เสร็จสิ้น</button></div></div></div>
+
 <!-- Modal Filter -->
 <div class="modal-overlay" id="filterModal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3><i class="fa-solid fa-sliders"></i> Filter Plants & Dates</h3>
-            <button class="btn btn-secondary" onclick="closeFilterModal()">✕</button>
+            <h3><i class="fa-solid fa-sliders"></i> <span data-solar-th="โครงการและช่วงเวลา" data-solar-en="Plant and Date">Plant and Date</span></h3>
+            <button type="button" class="gi-popup-close" onclick="closeFilterModal()" aria-label="ปิด / Close"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
         </div>
         <div class="modal-body">
             <div>
@@ -630,7 +634,7 @@ body{zoom:1.1;min-height:calc(100vh / 1.1)}
     <div class="modal-content">
         <div class="modal-header">
             <h3 class="province-modal-heading"><i class="fa-solid fa-location-dot province-pin" aria-hidden="true"></i><span id="provinceModalTitle">เลือกจังหวัด / Select province</span></h3>
-            <button class="btn btn-secondary" onclick="closeProvincePopup()">✕</button>
+            <button type="button" class="gi-popup-close" onclick="closeProvincePopup()" aria-label="ปิด / Close"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
         </div>
         <input id="provinceSearch" class="province-search" type="search" placeholder="ค้นหาจังหวัด / Search province" oninput="renderProvinceOptions()">
         <div id="provinceOptionList" class="province-option-list"></div>
@@ -789,10 +793,20 @@ body{zoom:1.1;min-height:calc(100vh / 1.1)}
         renderTableAndMetrics();
     }
 
+    function syncGiCombinedLabel(){
+        const status={ALL:giText('ทั้งหมด','All projects'),NORMAL:giText('ปกติ','Normal'),ABNORMAL:giText('ผิดปกติ','Abnormal'),NOT_FOUND:giText('ไม่พบข้อมูล','Not found')};
+        const review={ALL:giText('ตรวจ · ทั้งหมด','Review · All'),reviewed:giText('ตรวจแล้ว','Reviewed'),unreviewed:giText('ยังไม่ตรวจ','Unreviewed'),recheck:giText('ต้องตรวจซ้ำ','Needs recheck')};
+        document.getElementById('giCombinedFilterLabel').textContent=status[activeStatusFilter]+' · '+review[activeReviewFilter];
+        document.getElementById('giCombinedReviewHint').textContent=document.getElementById('giReviewFilter').disabled?giText('เลือกหนึ่งเดือนเพื่อใช้ตัวกรองสถานะตรวจ','Select one month to filter review status'):'';
+    }
+    function openGiCombinedFilter(){syncGiReviewLabels();syncStatusFilterButtons();syncGiCombinedLabel();document.getElementById('giCombinedFilterModal').style.display='flex';}
+    function closeGiCombinedFilter(){document.getElementById('giCombinedFilterModal').style.display='none';}
+    function resetGiCombinedFilter(){activeStatusFilter='ALL';activeReviewFilter='ALL';syncStatusFilterButtons();syncGiReviewLabels();renderTableAndMetrics();syncGiCombinedLabel();}
+    document.addEventListener('keydown',event=>{if(event.key==='Escape')closeGiCombinedFilter()});
     function syncStatusFilterButtons() {
         document.querySelectorAll('.btn-filter-status').forEach(btn => btn.classList.remove('active'));
         const ids = {ALL:'btnFilterAll', NORMAL:'btnFilterNormal', ABNORMAL:'btnFilterAbnormal', NOT_FOUND:'btnFilterNotFound'};
-        document.getElementById(ids[activeStatusFilter] || ids.ALL).classList.add('active');
+        document.getElementById(ids[activeStatusFilter] || ids.ALL).classList.add('active');syncGiCombinedLabel();
     }
 
     function setStatusFilter(status) {
@@ -1114,7 +1128,7 @@ body{zoom:1.1;min-height:calc(100vh / 1.1)}
     function monthlyReviewStatus(plant,month){if(!month)return 'unreviewed';const entry=giReviewByPlant[plant]?.months?.[month],status=GiReview.monthStatus(entry,plantMonthSnapshot(plant,month));if(status==='recheck')entry.needsRecheck=true;return status}
     function syncGiReviewLabels(){
         const labels=[giText('สถานะตรวจ · ทั้งหมด','Review · All'),giText('ตรวจแล้ว','Reviewed'),giText('ยังไม่ตรวจ','Unreviewed'),giText('ต้องตรวจซ้ำ','Needs recheck')];
-        const select=document.getElementById('giReviewFilter');const singleMonth=reviewMonth(getFilteredDates());select.disabled=!singleMonth;select.title=singleMonth?'':giText('เลือกหนึ่งเดือนเพื่อกรองสถานะตรวจ','Select one month to filter reviews');if(!singleMonth)activeReviewFilter='ALL';Array.from(select.options).forEach((option,i)=>option.textContent=labels[i]);select.value=activeReviewFilter;
+        const select=document.getElementById('giReviewFilter');const singleMonth=reviewMonth(getFilteredDates());select.disabled=!singleMonth;select.title=singleMonth?'':giText('เลือกหนึ่งเดือนเพื่อกรองสถานะตรวจ','Select one month to filter reviews');if(!singleMonth)activeReviewFilter='ALL';Array.from(select.options).forEach((option,i)=>option.textContent=labels[i]);select.value=activeReviewFilter;syncGiCombinedLabel();
     }
     async function confirmGiDay(plant,date){
         if(!SolarCloud.roleCanEdit())return;
@@ -1152,6 +1166,7 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
     function renderTableAndMetrics() {
         window.GiMap?.render();
         if (!isFileUploaded) return;
+        syncGiReviewLabels();
 
         const dateList = getFilteredDates();
         const pageKey=JSON.stringify([dateList,[...selectedPlants].sort(),activeProvinceFilter,activeStatusFilter,activeReviewFilter]);
@@ -1562,6 +1577,7 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
 <script src="gi-map-launcher.js?v=20261006-loader-rollback1"></script>
 </body>
 </html>
+
 
 
 
