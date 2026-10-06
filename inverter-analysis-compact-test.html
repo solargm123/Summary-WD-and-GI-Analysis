@@ -165,7 +165,7 @@ body.dark .inv-month-good,[data-theme=dark] .inv-month-good{color:#86efac!import
 #inverterBatchTargets{max-height:320px;overflow:auto;display:grid;gap:6px}.inv-batch-choice{display:flex;align-items:center;gap:9px;padding:10px;border:1px solid var(--line);border-radius:9px;font-size:13px}
 @media(max-width:900px){.inv-monthly-table thead{display:none}.inv-monthly-table,.inv-monthly-table tbody,.inv-monthly-table tr{display:block}.inv-monthly-table tr{border-bottom:2px solid var(--line);display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.inv-monthly-table td{display:flex;flex-direction:column;border:0;min-width:0}.inv-monthly-table td:before{content:attr(data-label);font-size:11px;color:var(--muted)}.inv-monthly-table td[colspan]{grid-column:1/-1}}
 </style>
-<style>#inverterPreferenceActions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}#inverterCCSaved{font-size:11px;color:var(--muted)}#mainCenterBack{white-space:nowrap}</style>
+<style>#inverterPreferenceActions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}#inverterPreferenceActions [hidden]{display:none!important}#inverterCCSaved{font-size:11px;color:var(--muted)}#mainCenterBack{white-space:nowrap}</style>
 </head>
 <body>
 <div class="shell" id="appShell">
@@ -1695,4 +1695,3 @@ async function inverterBuildMatrixWorkbook(records){
 </script>
 </body>
 </html>
-
