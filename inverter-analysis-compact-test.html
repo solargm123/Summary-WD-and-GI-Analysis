@@ -1179,7 +1179,7 @@ window.InverterCompactPreview={pack:compactPreviewEnvelope,restore:compactPrevie
    const devices=await pages('inverter_devices','id,source_project_name,device_name,project_id',q=>q.eq('workspace_id',workspace));
    const projects=await pages('central_projects','id,standard_name,capacity_kwp',q=>q.eq('workspace_id',workspace));
    const groups=new Map();for(const d of devices)if(!d.project_id){if(!groups.has(d.source_project_name))groups.set(d.source_project_name,{name:d.source_project_name,count:0});groups.get(d.source_project_name).count++;}
-   return {pending:[...groups.values()].sort((a,b)=>a.name.localeCompare(b.name)),projects:projects.sort((a,b)=>a.standard_name.localeCompare(b.standard_name))};
+   return {devices,pending:[...groups.values()].sort((a,b)=>a.name.localeCompare(b.name)),projects:projects.sort((a,b)=>a.standard_name.localeCompare(b.standard_name))};
   }
   async function match(name,projectId){
    await user();
@@ -1193,6 +1193,37 @@ window.InverterCompactPreview={pack:compactPreviewEnvelope,restore:compactPrevie
  }
  global.InverterDatabase={create};
 })(typeof window==='undefined'?globalThis:window);
+
+// Display central names without rewriting source keys, notes or calculations.
+let inverterCentralNames=new Map(),inverterCentralPattern=null;
+function inverterSetCentralNames(data){
+ const projects=new Map(data.projects.map(p=>[p.id,p.standard_name]));
+ inverterCentralNames=new Map(data.devices.filter(d=>d.project_id&&projects.has(d.project_id)).map(d=>[d.source_project_name,projects.get(d.project_id)]).filter(([a,b])=>a!==b));
+ const names=[...inverterCentralNames.keys()].sort((a,b)=>b.length-a.length);
+ inverterCentralPattern=names.length?new RegExp(names.map(n=>n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'g'):null;
+ inverterRefreshCentralDisplay();
+}
+function inverterRefreshCentralDisplay(){
+ if(!inverterCentralPattern)return;
+ const walk=document.createTreeWalker(document.querySelector('.app')||document.body,NodeFilter.SHOW_TEXT);
+ let node;while((node=walk.nextNode())){
+  const parent=node.parentElement;if(!parent||parent.closest('script,style,input,textarea,[contenteditable],#inverterMatchDialog'))continue;
+  const source=node.nodeValue,shown=source.replace(inverterCentralPattern,name=>inverterCentralNames.get(name));
+  if(source===shown)continue;
+  // Option values are the original source project keys used by report filters.
+  if(parent.tagName==='OPTION'&&!parent.hasAttribute('value'))parent.setAttribute('value',parent.value);
+  parent.title='ชื่อจากไฟล์: '+source;node.nodeValue=shown;
+ }
+}
+let inverterCentralFrame=0;
+const inverterCentralObserver=new MutationObserver(()=>{
+ if(inverterCentralFrame||!inverterCentralPattern)return;
+ inverterCentralFrame=requestAnimationFrame(()=>{inverterCentralFrame=0;inverterRefreshCentralDisplay();});
+});
+inverterCentralObserver.observe(document.body,{childList:true,subtree:true});
+function inverterStopCentralDisplay(){inverterCentralObserver.disconnect();if(inverterCentralFrame)cancelAnimationFrame(inverterCentralFrame);inverterCentralFrame=0;}
+window.addEventListener('pagehide',inverterStopCentralDisplay);
+window.addEventListener('pageshow',()=>{inverterCentralObserver.observe(document.body,{childList:true,subtree:true});inverterRefreshCentralDisplay();});
 
 // Preview-only connection. No automatic data upload or replacement on page load.
 let inverterDb=null,inverterDbRole=null,inverterDbBusy=false;
@@ -1239,7 +1270,7 @@ async function inverterDbRun(action){
 
 let inverterMatchingData=null;
 async function inverterRefreshMatching(){
- inverterMatchingData=await inverterDb.matching();
+ inverterMatchingData=await inverterDb.matching();inverterSetCentralNames(inverterMatchingData);
  $('inverterDbMatch').textContent='รอจับคู่ '+inverterMatchingData.pending.length+' ชื่อ';$('inverterDbMatch').disabled=false;
  return inverterMatchingData;
 }
