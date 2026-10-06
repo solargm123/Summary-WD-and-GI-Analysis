@@ -622,7 +622,7 @@ function renderDataQuality(){
 }
 ['qualityScope','qualityProject','qualityIssue'].forEach(id=>{let e=$(id);if(e)e.onchange=renderDataQuality});if($('qualitySearch'))$('qualitySearch').oninput=renderDataQuality;
 
-function renderAll(){recalcDaily();renderOverview();if(ui.page==='daily')renderDaily();if(ui.page==='monthly')renderMonthly();if(ui.page==='thresholds')renderThresholds();if(ui.page==='dataquality')renderDataQuality();if(ui.page==='comments')renderLogs();syncSettingsUI();applyLanguage();initSummaryCollapseControls();syncSummaryCollapseControls();initMonthlyPanelCollapse();syncMonthlyPanelCollapse()}
+function renderAll(options={}){if(!options.dailyReady)recalcDaily();renderOverview();if(ui.page==='daily')renderDaily();if(ui.page==='monthly')renderMonthly();if(ui.page==='thresholds')renderThresholds();if(ui.page==='dataquality')renderDataQuality();if(ui.page==='comments')renderLogs();syncSettingsUI();applyLanguage();initSummaryCollapseControls();syncSummaryCollapseControls();initMonthlyPanelCollapse();syncMonthlyPanelCollapse()}
 
 // ---------- Fast local XLSX reader ----------
 const FastXLSX={
@@ -1107,9 +1107,9 @@ async function compactPreviewRestore(envelope){
  for(const chunk of envelope.chunks){const decoded=InverterCompact.unpackDaily(chunk);for(const r of decoded)daily.push(r);await browserYield(0);}
  return compactPreviewRestoreRows(envelope.metadata,daily);
 }
-async function compactPreviewRestoreRows(metadata,daily){
+async function compactPreviewRestoreRows(metadata,daily,onProgress){
  if(!metadata||!Array.isArray(metadata.monthly)||!Array.isArray(daily))throw Error('Invalid workspace data');
- state={...metadata,daily};clearDailyUiState();clearMonthlyUiState();await recalcDailyQueued();setupDailySelection(true);renderAll();
+ state={...metadata,daily};clearDailyUiState();clearMonthlyUiState();await recalcDailyQueued(onProgress);setupDailySelection(true);renderAll({dailyReady:true});
  return daily.length;
 }
 async function saveCompactPreview(){
@@ -1264,12 +1264,12 @@ async function inverterDbRun(action){
    $('inverterDbStatus').textContent=`Added ${result.added.toLocaleString()} · unchanged ${result.skipped.toLocaleString()}`;
   }else if(action==='load'){
    if(state.daily.length&&!await SolarCloud.confirmDialog('เปิดข้อมูลจากฐานข้อมูล','แทนที่ข้อมูลในหน้าทดลองนี้ กรุณาบันทึก .iaw หากยังมีข้อมูลที่ไม่ได้บันทึก',{confirmText:'เปิดข้อมูล'}))return;
-   const loaded=await db.load(count=>$('inverterDbStatus').textContent=`Loading ${count.toLocaleString()} rows`);
+   const started=performance.now();const loaded=await db.load(count=>$('inverterDbStatus').textContent=`Loading ${count.toLocaleString()} rows · ${((performance.now()-started)/1000).toFixed(1)} s`);const loadedAt=performance.now();
    if(!loaded.daily.length)throw Error('ยังไม่มีข้อมูลอินเวอร์เตอร์ในฐานข้อมูล เปิด .iaw แล้วบันทึกจากหน้าทดลองก่อน');
    const metadata=loaded.metadata||{...state,monthly:[]};delete metadata.daily;
    $('inverterDbStatus').textContent='Preparing report · กำลังจัดเตรียมรายงาน';await browserYield(0);
-   await compactPreviewRestoreRows(metadata,loaded.daily);
-   $('inverterDbStatus').textContent=`Loaded ${loaded.daily.length.toLocaleString()}`;await inverterRefreshMatching();
+   await compactPreviewRestoreRows(metadata,loaded.daily,(pct,phase)=>$('inverterDbStatus').textContent=`Preparing report ${Math.round(pct)}% · ${((performance.now()-loadedAt)/1000).toFixed(1)} s · ${phase}`);
+   $('inverterDbStatus').textContent=`Loaded ${loaded.daily.length.toLocaleString()} · DB ${((loadedAt-started)/1000).toFixed(1)} s · Report ${((performance.now()-loadedAt)/1000).toFixed(1)} s`;await inverterRefreshMatching();
   }
  }catch(e){$('inverterDbStatus').textContent='Error · '+e.message;alert(e.message+'\nหากบันทึกหยุดระหว่างทาง รายการที่สำเร็จแล้วจะยังอยู่และนำเข้าซ้ำได้โดยไม่เพิ่มซ้ำ');}
  finally{inverterDbBusy=false;$('inverterDbConnect').disabled=false;$('inverterDbSave').disabled=!inverterDb||!['admin','editor'].includes(inverterDbRole);$('inverterDbLoad').disabled=!inverterDb;}
