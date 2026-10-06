@@ -897,7 +897,7 @@ async function buildReviewExportData(include={daily:true,monthly:true,quality:tr
  return{projectSummary,inverterSummary,dailyAlarm,monthlyAll,monthlyRecords,quality,thresholds,importSummary:[...importGroups.values()],comments,events,monthlyNotes,scope,scopedDailyRows,scopedMonthlyRows,scopedSourceFiles:scopedSources.size}
 }
 
-async function exportReviewExcel(){
+async function exportReviewExcel(){if(typeof inverterAutoRunning!=='undefined'&&inverterAutoRunning){toast('กรุณารอโหลดข้อมูลให้เสร็จก่อนส่งออก / Wait for loading to finish');return;}
  if(typeof JSZip==='undefined')throw new Error('JSZip unavailable');let btn=$('confirmReviewExport');btn.disabled=true;let include=reviewIncludeConfig(),mode=include.mode,scope=reviewScopeConfig();try{if(include.daily&&!include.monthly&&!state.daily.length)throw new Error(tr('No Daily data available','ไม่มีข้อมูล Daily'));if(include.monthly&&!include.daily&&!hasMonthlyData())throw new Error(tr('No Monthly data available','ไม่มีข้อมูล Monthly'));if(include.daily&&include.monthly&&!state.daily.length&&!hasMonthlyData())throw new Error(tr('No Daily or Monthly data available','ไม่มีข้อมูล Daily หรือ Monthly'));setReviewExportProgress(2,tr('Preparing Professional Review Excel…','กำลังเตรียม Professional Review Excel…'));let simple=$('reviewReportStyle')?.value==='simple';if(simple&&mode!=='monthly')throw new Error(tr('Easy report supports Monthly only. Select Monthly.','รายงานอ่านง่ายรองรับรายเดือน กรุณาเลือก Monthly'));let d=await buildReviewExportData(include,scope);setReviewExportProgress(30,tr('Building formatted Review sheets…','กำลังสร้างชีต Review แบบจัดรูปแบบ…'));
  let generated=new Date().toLocaleString(currentLang()==='th'?'th-TH':'en-GB',{year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'}),meta={scope:reviewScopeLabel(scope),period:reviewPeriodLabel(scope),generated,dataMode:reviewDataModeLabel(mode)};
  let infoRows=[['Report','Inverter Analysis Review Excel'],['Version',state.schemaVersion],['Exported At',new Date().toISOString()],['Report Type',reviewDataModeLabel(mode)],['Purpose','Review / reporting only - full Raw source is not included'],['Export Scope',reviewScopeLabel(scope)],['Project',scope.mode==='all'||scope.project==='all'?'All':scope.project],['Period',reviewPeriodLabel(scope)],['Export Year Filter',scope.exportYear||'all'],['Export Month Filter',scope.exportMonth||'all'],['Selected Inverters',scope.mode==='devices'?[...scope.devices].join(', '):'All in scope'],['Alarm Only',scope.alarmOnly?'YES':'NO'],['Scoped Daily Rows',include.daily?d.scopedDailyRows:0],['Scoped Monthly Rows',include.monthly?d.scopedMonthlyRows:0],['Scoped Source Files',d.scopedSourceFiles],['Projects',d.projectSummary.length],['Inverters',d.inverterSummary.length],['Daily Alarm Records',include.daily?d.dailyAlarm.length:0],['Monthly Review Records',include.monthly?d.monthlyAll.length:0],['Data Quality Issues',d.quality.length],['Comments',d.comments.length],['Device Events',d.events.length],['Monthly Notes',include.monthly?d.monthlyNotes.length:0],['Default Daily Alarm (%)',include.daily?state.settings.defaultThreshold:'N/A'],['Daily Good (%)',include.daily?state.settings.goodThreshold:'N/A'],['Daily Critical (%)',include.daily?state.settings.criticalThreshold:'N/A'],['Monthly Reference Method',include.monthly?state.settings.monthlyRefMethod:'N/A'],['Monthly Data Source',include.monthly?(monthlySourceMode()==='derived'?'Derived from Daily':'Imported Monthly'):'N/A']].map(([key,value])=>({key,value}));
@@ -1108,9 +1108,9 @@ async function compactPreviewRestore(envelope){
  for(const chunk of envelope.chunks){const decoded=InverterCompact.unpackDaily(chunk);for(const r of decoded)daily.push(r);await browserYield(0);}
  return compactPreviewRestoreRows(envelope.metadata,daily);
 }
-async function compactPreviewRestoreRows(metadata,daily,onProgress){
+async function compactPreviewRestoreRows(metadata,daily,onProgress,options={}){
  if(!metadata||!Array.isArray(metadata.monthly)||!Array.isArray(daily))throw Error('Invalid workspace data');
- state={...metadata,daily};clearDailyUiState();clearMonthlyUiState();await recalcDailyQueued(onProgress);setupDailySelection(true);renderAll({dailyReady:true});
+ state={...metadata,daily};if(!options.preserveUi){clearDailyUiState();clearMonthlyUiState();}await recalcDailyQueued(onProgress);if(!options.deferRender){setupDailySelection(true);renderAll({dailyReady:true});}
  return daily.length;
 }
 async function saveCompactPreview(){if(!inverterRequireFullWorkspace())return;
@@ -1209,6 +1209,12 @@ window.InverterCompactPreview={pack:compactPreviewEnvelope,restore:compactPrevie
    }
    return {scope,cached:false,daily:rows,metadata:metadata?.metadata||null,unmatched:devices.filter(d=>!d.project_id).map(d=>d.source_project_name).filter((v,i,a)=>a.indexOf(v)===i)};
   }
+  async function catalog(){
+   const uid=await user();const saved=await checked(client.from('inverter_user_workspaces').select('metadata').eq('workspace_id',workspace).eq('user_id',uid).maybeSingle());const dates=await Promise.all([true,false].map(ascending=>checked(client.from('inverter_daily').select('record_date,inverter_devices!inner(workspace_id)').eq('inverter_devices.workspace_id',workspace).order('record_date',{ascending}).limit(1))));
+   const first=dates[0][0]?.record_date?.slice(0,7),last=dates[1][0]?.record_date?.slice(0,7),months=[];
+   if(first&&last){let [y,m]=first.split('-').map(Number);for(let i=0;i<1200;i++){const p=String(y)+'-'+String(m).padStart(2,'0');if(p>last)break;months.push(p);if(++m>12){m=1;y++;}}}
+   return {months:[...new Set([...months,...(saved?.metadata?.monthly||[]).map(r=>r.period).filter(m=>/^\d{4}-(0[1-9]|1[0-2])$/.test(m))])].sort()};
+  }
   async function matching(){
    await user();
    const devices=await pages('inverter_devices','id,source_project_name,device_name,project_id',q=>q.eq('workspace_id',workspace));
@@ -1224,7 +1230,7 @@ window.InverterCompactPreview={pack:compactPreviewEnvelope,restore:compactPrevie
    if(!changed.length)throw Error('รายการถูกจับคู่แล้ว หรือบัญชีนี้ไม่มีสิทธิ์ กรุณาโหลดรายการใหม่');
    return {changed:changed.length};
   }
-  return {save,load,matching,match};
+  return {save,load,matching,match,catalog};
  }
  global.InverterDatabase={create};
 })(typeof window==='undefined'?globalThis:window);
@@ -1289,7 +1295,7 @@ async function inverterDbRun(action){
    const mode=$('inverterDbPeriod').value,month=$('inverterDbMonth').value,project=$('inverterDbProject').value||null;
    const started=performance.now();const loaded=await db.load(count=>$('inverterDbStatus').textContent=`Loading ${count.toLocaleString()} rows · ${((performance.now()-started)/1000).toFixed(1)} s`,{mode,month,project:mode==='all'?null:project,refresh:action==='refresh'});const loadedAt=performance.now();
    if(!loaded.daily.length)throw Error('ยังไม่มีข้อมูลอินเวอร์เตอร์ในฐานข้อมูล เปิด .iaw แล้วบันทึกจากหน้าทดลองก่อน');
-   const metadata=loaded.metadata||{...state,monthly:[]};delete metadata.daily;if(loaded.scope.mode!=='all')metadata.monthly=(metadata.monthly||[]).filter(r=>r.period===loaded.scope.month&&(!loaded.scope.project||r.project===loaded.scope.project));
+   const metadata=loaded.metadata||{...state,monthly:[]};if(inverterCurrentScope()){const {daily,monthly,...local}=state;Object.assign(metadata,local);}delete metadata.daily;if(loaded.scope.mode!=='all')metadata.monthly=(metadata.monthly||[]).filter(r=>r.period===loaded.scope.month&&(!loaded.scope.project||r.project===loaded.scope.project));
    inverterDbScope=loaded.scope;inverterDbScopeDaily=loaded.daily;$('inverterDbMonth').value=loaded.scope.month||month;inverterUpdateScope();
    $('inverterDbStatus').textContent='Preparing report · กำลังจัดเตรียมรายงาน';await browserYield(0);
    await compactPreviewRestoreRows(metadata,loaded.daily,(pct,phase)=>$('inverterDbStatus').textContent=`Preparing report ${Math.round(pct)}% · ${((performance.now()-loadedAt)/1000).toFixed(1)} s · ${phase}`);
@@ -1305,7 +1311,7 @@ async function inverterDbRun(action){
  document.querySelector('.topbar').after(panel);
  const scope=document.createElement('div');scope.id='inverterDbScopeLabel';scope.className='card-sub';scope.style.cssText='padding:6px 12px;font-size:13px;font-weight:600';panel.after(scope);
  $('inverterDbPeriod').onchange=()=>{$('inverterDbMonth').hidden=$('inverterDbPeriod').value!=='month';$('inverterDbProject').disabled=$('inverterDbPeriod').value==='all';};
- document.querySelector('#dailyViewMode').addEventListener('click',e=>{if(inverterCurrentScope()?.mode!=='all'&&inverterDbScope&&['yearly','lifetime'].includes(e.target.closest('[data-view]')?.dataset.view)){e.stopImmediatePropagation();alert('กรุณาเลือก All history แล้ว Open from DB ก่อนดู Yearly / Lifetime');}},true);
+ document.querySelector('#dailyViewMode').addEventListener('click',e=>{if(!(typeof inverterAutoEnabled==='function'&&inverterAutoEnabled())&&inverterCurrentScope()?.mode!=='all'&&inverterDbScope&&['yearly','lifetime'].includes(e.target.closest('[data-view]')?.dataset.view)){e.stopImmediatePropagation();alert('กรุณาเลือก All history แล้ว Open from DB ก่อนดู Yearly / Lifetime');}},true);
  $('inverterDbMatch').onclick=inverterOpenMatching;
  $('inverterDbConnect').onclick=()=>inverterDbRun('connect');$('inverterDbSave').onclick=()=>inverterDbRun('save');$('inverterDbLoad').onclick=()=>inverterDbRun('load');$('inverterDbRefresh').onclick=()=>inverterDbRun('refresh');
 }
@@ -1356,6 +1362,75 @@ function inverterUpdateScope(){const s=inverterDbScope;$('inverterDbScopeLabel')
 function inverterRequireFullWorkspace(){if(inverterCurrentScope()&&(inverterDbScope.mode!=='all'||inverterDbScope.project)){alert('กรุณาเลือก All history แล้ว Open from DB ก่อนบันทึก Workspace ทั้งหมด');return false;}return true;}
 
 function inverterCurrentScope(){if(inverterDbScopeDaily&&state.daily!==inverterDbScopeDaily){inverterDbScope=null;inverterDbScopeDaily=null;inverterUpdateScope();}return inverterDbScope;}
+</script>
+<script>
+// DB preview only: request-driven loading, one writer, latest selection wins.
+let inverterAutoCatalog=null,inverterAutoPending=null,inverterAutoVersion=0,inverterAutoRunning=false,inverterAutoTimer=null;
+function inverterAutoEnabled(){return !!(inverterDb&&inverterAutoCatalog&&inverterCurrentScope());}
+function inverterAutoBusy(busy){
+ for(const id of ['dailySvg','dailyDetailBody','monthlyProjectBody','monthlyDeviceBody']){
+  const node=$(id),host=node?.closest('.card');if(!host)continue;
+  host.classList.toggle('inverter-loading',busy);host.setAttribute('aria-busy',String(busy));
+  let cover=host.querySelector('.inverter-loading-cover');if(!cover){cover=document.createElement('div');cover.className='inverter-loading-cover';cover.setAttribute('role','status');cover.innerHTML='<span class="inverter-loading-ring"></span><b>กำลังโหลดข้อมูล / Loading data</b>';host.append(cover);}if(busy&&!cover.querySelector('.inverter-loading-ring'))cover.innerHTML='<span class="inverter-loading-ring"></span><b>กำลังโหลดข้อมูล / Loading data</b>';
+ }
+}
+function inverterAutoProjects(){
+ if(!inverterAutoEnabled())return;
+ const names=[...new Set(inverterMatchingData?.devices.map(d=>d.source_project_name)||[])].sort();
+ for(const id of ['dailyProject','monthlyProject']){const select=$(id),value=id==='dailyProject'?ui.dailyProject:select.value;for(const name of names)if(![...select.options].some(o=>o.value===name))select.add(new Option(inverterCentralNames.get(name)||name,name));select.value=value;}
+}
+function inverterAutoRequest(){
+ if(!inverterAutoEnabled())return;
+ const monthly=ui.page==='monthly',project=monthly?($('monthlyProject').value==='all'?null:$('monthlyProject').value):ui.dailyProject;
+ let months=monthly?[...ui.monthlySelectedPeriods]:ui.dailyView==='yearly'?inverterAutoCatalog.months.filter(m=>ui.selectedYears.has(m.slice(0,4))):[...ui.selectedMonths];
+ const all=!monthly&&ui.dailyView==='lifetime';if(!all&&!months.length)months=inverterAutoCatalog.months.slice(-1);
+ const version=++inverterAutoVersion;inverterAutoPending={version,monthly,project,months:[...new Set(months)].sort(),all,view:ui.dailyView,years:[...ui.selectedYears],devices:[...ui.selectedDevices]};
+ inverterAutoBusy(true);clearTimeout(inverterAutoTimer);inverterAutoTimer=setTimeout(inverterAutoDrain,180);
+}
+async function inverterAutoDrain(){
+ if(inverterAutoRunning||inverterDbBusy){clearTimeout(inverterAutoTimer);inverterAutoTimer=setTimeout(inverterAutoDrain,180);return;}
+ inverterAutoRunning=true;inverterDbBusy=true;inverterAutoBusy(true);let failed=false;
+ try{while(inverterAutoPending){
+  const request=inverterAutoPending;inverterAutoPending=null;const started=performance.now(),parts=[];
+  const scopes=request.all?[{mode:'all',project:request.project}]:request.months.map(month=>({mode:'month',month,project:request.project}));
+  for(const scope of scopes){const data=await inverterDb.load(count=>$('inverterDbStatus').textContent=`Loading ${count.toLocaleString()} · ${((performance.now()-started)/1000).toFixed(1)} s`,scope);parts.push(data);if(request.version!==inverterAutoVersion)break;}
+  if(request.version!==inverterAutoVersion)continue;
+  const daily=parts.flatMap(p=>p.daily),saved=parts[0]?.metadata||{},local=state;
+  const metadata={...saved,...local,monthly:(saved.monthly||[]).filter(r=>(request.all||request.months.includes(r.period))&&(!request.project||r.project===request.project))};delete metadata.daily;
+  inverterDbScope={mode:request.all?'all':request.months.length===1?'month':'periods',month:request.all?null:request.months.join(', '),project:request.project};inverterDbScopeDaily=daily;
+  await compactPreviewRestoreRows(metadata,daily,pct=>$('inverterDbStatus').textContent=`Preparing report ${Math.round(pct)}%`,{preserveUi:true,deferRender:true});
+  if(request.version!==inverterAutoVersion)continue;
+  ui.dailyView=request.view;ui.selectedYears=new Set(request.years);ui.selectedMonths=new Set(request.months);ui.monthlySelectedPeriods=new Set(request.months);
+  if(!request.monthly){ui.dailyProject=request.project||'';setupDailySelection(false);ui.selectedDevices=new Set(request.devices.filter(d=>dailyDevices(ui.dailyProject).includes(d)));if(!ui.selectedDevices.size)ui.selectedDevices=new Set(dailyDevices(ui.dailyProject));renderDaily();ui.dailyProject=request.project||'';}
+  else{$('monthlyProject').value=request.project||'all';renderMonthly();}
+  renderAll({dailyReady:true});inverterAutoProjects();inverterUpdateScope();$('inverterDbSave').disabled=!['admin','editor'].includes(inverterDbRole)||!!inverterDbScope.project||inverterDbScope.mode!=='all';$('inverterDbStatus').textContent=`Loaded ${daily.length.toLocaleString()} · ${((performance.now()-started)/1000).toFixed(1)} s${daily.length?'':' · ไม่มีข้อมูลในช่วงที่เลือก / No data in selected scope'}`;
+ }}catch(e){failed=true;for(const host of document.querySelectorAll('.inverter-loading')){host.setAttribute('aria-busy','false');host.querySelector('.inverter-loading-cover').textContent='โหลดไม่สำเร็จ · เลือกตัวกรองอีกครั้ง / Load failed; select filters again';}$('inverterDbStatus').textContent='Error · '+e.message;toast(e.message);}
+ finally{inverterAutoRunning=false;inverterDbBusy=false;if(inverterAutoPending){inverterAutoTimer=setTimeout(inverterAutoDrain,0);}else if(!failed)inverterAutoBusy(false);}
+}
+async function inverterAutoInitialize(){
+ if(!inverterDb)return;inverterAutoCatalog=await inverterDb.catalog();inverterAutoProjects();
+}
+{
+ const style=document.createElement('style');style.textContent='.inverter-loading{position:relative}.inverter-loading-cover{display:none}.inverter-loading>.inverter-loading-cover{display:flex;position:absolute;inset:0;z-index:12;align-items:center;justify-content:center;gap:10px;background:var(--surface);opacity:.94;border-radius:inherit;font-size:13px;color:var(--text)}.inverter-loading-ring{width:22px;height:22px;border:3px solid var(--line);border-top-color:var(--blue);border-radius:50%;animation:inverter-spin .8s linear infinite}@keyframes inverter-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.inverter-loading-ring{animation:none}}';document.head.append(style);
+ for(const name of ['renderDaily','renderMonthly','renderDailyPickers']){const original=window[name];window[name]=function(...args){const result=original(...args);inverterAutoProjects();return result;};}
+ const originalMonths=dailySelectableMonths,originalYears=dailySelectableYears,originalMonthly=monthlySelectablePeriods;
+ dailySelectableMonths=function(project){return inverterAutoEnabled()?[...inverterAutoCatalog.months]:originalMonths(project);};dailySelectableYears=function(project){return inverterAutoEnabled()?[...new Set(inverterAutoCatalog.months.map(m=>m.slice(0,4)))]:originalYears(project);};monthlySelectablePeriods=function(){return inverterAutoEnabled()?[...inverterAutoCatalog.months]:originalMonthly();};
+ const connect=$('inverterDbConnect').onclick;$('inverterDbConnect').onclick=async()=>{await connect();if(inverterDb){await inverterAutoInitialize();if(!inverterCurrentScope()){await inverterDbRun('load');}inverterAutoProjects();}};
+ const load=$('inverterDbLoad').onclick;$('inverterDbLoad').onclick=async()=>{await load();await inverterAutoInitialize();};
+ for(const id of ['periodDone','monthlyPeriodDone']){const original=$(id).onclick;$(id).onclick=()=>{if(!inverterAutoEnabled())return original();if(id==='periodDone'){if(ui.dailyView==='yearly')ui.selectedYears=new Set(ui.periodDraftYears);else ui.selectedMonths=new Set(ui.periodDraftMonths);$('periodPop').classList.remove('show');}else{if(!ui.monthlyPeriodDraft?.size)return toast(tr('Select at least 1 month','กรุณาเลือกอย่างน้อย 1 เดือน'));ui.monthlySelectedPeriods=new Set(ui.monthlyPeriodDraft);$('monthlyPeriodPop').classList.remove('show');}inverterAutoRequest();};}
+ for(const id of ['dailyProject','monthlyProject']){const original=$(id).onchange;$(id).onchange=e=>{if(!inverterAutoEnabled())return original(e);if(id==='dailyProject'){rememberDailyDeviceSelection();ui.dailyProject=e.target.value;ui.selectedDevices=new Set();}inverterAutoRequest();};}
+ for(const button of $$('#dailyViewMode button')){const original=button.onclick;button.onclick=()=>{if(!inverterAutoEnabled())return original();ui.dailyView=button.dataset.view;$$('#dailyViewMode button').forEach(b=>b.classList.toggle('active',b===button));$('periodPop').classList.remove('show');inverterAutoRequest();};}
+ const oldMonthlyQuick=applyMonthlyPeriodQuick;applyMonthlyPeriodQuick=function(action){if(!inverterAutoEnabled())return oldMonthlyQuick(action);const a=inverterAutoCatalog.months;let pick=action==='latest'?a.slice(-1):action==='last3'?a.slice(-3):action==='last6'?a.slice(-6):action==='latestYear'?a.filter(m=>m.startsWith(a.at(-1)?.slice(0,4))):a;ui.monthlyPeriodDraft=new Set(pick);renderMonthlyPeriodPicker();};
+ $('monthlyProjectBody').addEventListener('click',e=>{if(!inverterAutoEnabled())return;const row=e.target.closest('tr[data-project]');if(!row)return;e.stopImmediatePropagation();$('monthlyProject').value=row.dataset.project;inverterAutoRequest();},true);
+ const oldDbRun=inverterDbRun;inverterDbRun=async function(action){if(['load','refresh'].includes(action))inverterAutoBusy(true);try{return await oldDbRun(action);}finally{if(!inverterAutoRunning)inverterAutoBusy(false);}};
+ const oldShowPage=showPage;showPage=function(page,options){oldShowPage(page,options);if(inverterAutoEnabled()&&['daily','monthly'].includes(ui.page))inverterAutoRequest();};
+ $('inverterDbMonth').addEventListener('change',()=>{if(inverterAutoEnabled()&&!inverterAutoRunning)inverterDbRun('load');});
+ $('inverterDbProject').addEventListener('change',()=>{if(inverterAutoEnabled()&&!inverterAutoRunning)inverterDbRun('load');});
+ $('inverterDbPeriod').addEventListener('change',()=>{if(inverterAutoEnabled()&&!inverterAutoRunning&&$('inverterDbPeriod').value!=='month')inverterDbRun('load');});
+}
+
+window.addEventListener('pagehide',()=>clearTimeout(inverterAutoTimer));
+
 </script>
 </body>
 </html>
