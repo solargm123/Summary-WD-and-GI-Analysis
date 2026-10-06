@@ -1748,10 +1748,12 @@ function invSchedulePreferences(){
 async function invFlushPreferences(){
  if(!invRememberReady||!invPreferenceDirty||!inverterDb||!['admin','editor'].includes(inverterDbRole))return;
  if(invPreferenceSaving||inverterDbBusy||inverterAutoRunning||inverterAutoPending){clearTimeout(invPreferenceTimer);invPreferenceTimer=setTimeout(invFlushPreferences,1000);return;}
- const snapshot=structuredClone(invPreferenceSnapshot()),serialized=JSON.stringify(snapshot);
+ const snapshot=structuredClone(invPreferenceSnapshot());let serialized=JSON.stringify(snapshot);
  if(serialized===invPreferenceBaseline){invPreferenceDirty=false;return;}
+ const changedKeys=invPreferenceKeys.filter(k=>JSON.stringify(snapshot[k])!==JSON.stringify(JSON.parse(invPreferenceBaseline||'{}')[k]));
+ snapshot.settings.invSaveHistory=[...(snapshot.settings.invSaveHistory||[]),{at:new Date().toISOString(),text:changedKeys.join(', ')}].slice(-50);serialized=JSON.stringify(snapshot);
  invPreferenceSaving=true;inverterDbBusy=true;invSaveStatus(tr('Saving…','กำลังบันทึก…'));
- try{await inverterDb.savePreferences(snapshot);invPreferenceBaseline=serialized;invPreferenceDirty=JSON.stringify(invPreferenceSnapshot())!==serialized;invSaveStatus(tr('Auto-saved','บันทึกอัตโนมัติแล้ว')+' · '+new Date().toLocaleTimeString());}
+ try{await inverterDb.savePreferences(snapshot);state.settings.invSaveHistory=snapshot.settings.invSaveHistory;invPreferenceBaseline=serialized;invPreferenceDirty=JSON.stringify(invPreferenceSnapshot())!==serialized;invSaveStatus(tr('Auto-saved','บันทึกอัตโนมัติแล้ว')+' · '+new Date().toLocaleTimeString());}
  catch(e){invPreferenceDirty=true;invSaveStatus(tr('Not saved: ','ยังไม่บันทึก: ')+e.message);}
  finally{invPreferenceSaving=false;inverterDbBusy=false;inverterRefreshRoles();}
  // Save edits made during a successful request; do not loop on conflicts/offline errors.
@@ -1783,6 +1785,55 @@ async function invRestoreRememberedView(){
  window.addEventListener('online',()=>{if(invPreferenceDirty)invSchedulePreferences();});
  window.addEventListener('pagehide',()=>{invRememberView();clearTimeout(invViewTimer);clearTimeout(invPreferenceTimer);});
  window.addEventListener('beforeunload',e=>{invRememberView();if(invPreferenceDirty||invPreferenceSaving){e.preventDefault();e.returnValue='';}});
+}
+
+</script>
+<script id="inverter-control-dock">
+// Inverter-only controls: personal preferences, view memory and workspace presence.
+let invDockChannel=null,invDockHeartbeat=null,invDockSession=null;
+function invDockState(text,kind='ready'){const el=$('invDockStatus');if(el){el.textContent=text;el.dataset.state=kind;el.title=text;} }
+function invDockPresence(){
+ const people=new Map();for(const a of Object.values(invDockChannel?.presenceState()||{}))for(const p of a)if(p.userId)people.set(p.userId,p);
+ const button=$('invDockOnline');if(button){button.textContent=people.size+' '+tr('online','ออนไลน์');button.onclick=()=>SolarCloud.notice(tr('Online users','ผู้ใช้งานออนไลน์'),[...people.values()].map(p=>(p.name||'User')+' · '+(p.area||'Analysis')).join('\n')||tr('Connecting…','กำลังเชื่อมต่อ…'));}
+}
+async function invDockInitialize(){
+ if(!inverterDb||!window.SolarCloud)return;
+ const session=await SolarCloud.session(),member=await SolarCloud.membership();if(!session?.user?.id)return;
+ invRememberKey='solar-inverter-view-v1:'+member.workspace_id+':'+session.user.id;
+ if(!invRememberReady&&inverterCurrentScope()&&!inverterStartupRunning){
+  await invRestoreRememberedView();invPreferenceBaseline=JSON.stringify(invPreferenceSnapshot());invRememberReady=true;invDockState(tr('Connected','เชื่อมต่อแล้ว'));
+ }
+ inverterRefreshRoles();if(invDockChannel)return;
+ invDockSession={userId:session.user.id,name:session.user.user_metadata?.display_name||session.user.email||'User',role:member.role,area:'Inverter Report',lastSeen:new Date().toISOString()};
+ invDockChannel=SolarCloud.getClient().channel('workspace-online:'+member.workspace_id,{config:{private:true,presence:{key:crypto.randomUUID()}}});
+ invDockChannel.on('presence',{event:'sync'},invDockPresence).on('presence',{event:'join'},invDockPresence).on('presence',{event:'leave'},invDockPresence).subscribe(async status=>{
+  if(status==='SUBSCRIBED'){await invDockChannel.track(invDockSession);invDockPresence();}
+  if(['CHANNEL_ERROR','TIMED_OUT'].includes(status))$('invDockOnline').textContent=tr('Online unavailable','ออนไลน์ไม่เชื่อมต่อ');
+ });
+ invDockHeartbeat=setInterval(()=>{if(document.hidden||!invDockChannel)return;invDockSession.lastSeen=new Date().toISOString();invDockChannel.track(invDockSession);},60000);
+}
+async function invDockLeave(reload){
+ invRememberView();invPreferenceDirty=invRememberReady&&JSON.stringify(invPreferenceSnapshot())!==invPreferenceBaseline;
+ if(invPreferenceDirty||invPreferenceSaving){await invFlushPreferences();if(invPreferenceDirty||invPreferenceSaving){await SolarCloud.notice(tr('Not saved','ยังบันทึกไม่สำเร็จ'),tr('Stay on this page and check the save status.','กรุณาอยู่หน้านี้และตรวจสอบสถานะบันทึก'));return;}}
+ if(reload)location.reload();else location.assign(new URL('solar-center.html',location.href).href);
+}
+async function invDockHistory(){
+ const history=state.settings.invSaveHistory||[];
+ await SolarCloud.notice(tr('My Inverter save history','ประวัติการบันทึก Inverter ของฉัน'),history.slice().reverse().map(h=>new Date(h.at).toLocaleString()+' · '+h.text).join('\n\n')||tr('No save history in this version yet.','ยังไม่มีประวัติการบันทึกของรุ่นนี้'));
+}
+{
+ const style=document.createElement('style');style.textContent='#invDock{grid-column:1/-1;display:flex;align-items:center;gap:7px;justify-self:end;max-width:100%;overflow-x:auto;padding:6px 8px;background:#102432;color:#e8f3f5;border:1px solid #426171;border-radius:11px;font-size:12px}#invDock button{flex-shrink:0;border:1px solid #ffffff25;border-radius:8px;background:#ffffff0c;color:inherit;padding:6px 9px;font-family:inherit;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer}#invDockStatus{white-space:nowrap;max-width:250px;overflow:hidden;text-overflow:ellipsis}#invDockStatus:before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;background:#34d399}#invDockStatus[data-state=busy]:before{background:#fbbf24}#invDockStatus[data-state=error]:before{background:#fb7185}';document.head.append(style);
+ const dock=document.createElement('div');dock.id='invDock';dock.innerHTML='<button id="invDockCenter">← Center</button><span id="invDockStatus" role="status">Connecting…</span><button id="invDockOnline">… online</button><button id="invDockHistory">↶ History</button><button id="invDockReload">↻ Reload</button><button id="invDockSave">Save</button>';
+ document.querySelector('.topbar').append(dock);$('mainCenterBack').style.display='none';$('inverterCCSave').style.display='none';$('inverterCCSaved').style.display='none';
+ $('invDockCenter').onclick=()=>invDockLeave(false);$('invDockReload').onclick=()=>invDockLeave(true);$('invDockHistory').onclick=invDockHistory;$('invDockSave').onclick=()=>inverterSavePreferences();
+ const oldStatus=invSaveStatus;invSaveStatus=function(text){oldStatus(text);invDockState(text,invPreferenceSaving?'busy':invPreferenceDirty?'error':'ready');};
+ const oldRoles=inverterRefreshRoles;inverterRefreshRoles=function(){oldRoles();$('invDockSave').disabled=!inverterDb||!['admin','editor'].includes(inverterDbRole)||invPreferenceSaving;};
+ const startup=inverterStartup;inverterStartup=async function(){try{await startup();await invDockInitialize();}catch(e){invDockState(e.message,'error');}};
+ // Capture handles controls that stop event bubbling; persistence runs after their handlers.
+ function change(){setTimeout(async()=>{try{if(!invRememberReady)await invDockInitialize();invRememberView();invSchedulePreferences();}catch(e){invDockState(e.message,'error');}},0);}
+ document.addEventListener('click',change,true);document.addEventListener('change',change,true);
+ window.addEventListener('pagehide',()=>{clearInterval(invDockHeartbeat);try{invDockChannel?.untrack();if(invDockChannel)SolarCloud.getClient().removeChannel(invDockChannel);}catch(e){}invDockChannel=null;});
+ const language=applyLanguage;applyLanguage=function(){language();for(const [id,en,th] of [['invDockCenter','← Center','← หน้าหลัก'],['invDockHistory','↶ History','↶ ประวัติ'],['invDockReload','↻ Reload','↻ โหลดใหม่'],['invDockSave','Save','บันทึก']])$(id).textContent=tr(en,th);};
 }
 
 </script>
