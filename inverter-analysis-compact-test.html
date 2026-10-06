@@ -851,7 +851,7 @@ function reviewConditionalXml(sheet,headers,first,last){if(last<first)return'';l
 async function reviewObjectSheetBlob(sh,meta,onProgress){let arr=sh.arr||[],cols=sh.cols||[],headers=cols.map(c=>c[0]),lastCol=colName(Math.max(0,headers.length-1)),headerRow=4,firstData=5,lastRow=Math.max(headerRow,headerRow+arr.length),title=sh.title||sh.name.replace(/_/g,' '),subtitle=`${meta.scope} · ${meta.period} · Records ${arr.length.toLocaleString()} · ${meta.generated}`;let parts=[`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:${lastCol}${lastRow}"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="4" topLeftCell="A5" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A5" sqref="A5"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/>${reviewColsXml(headers)}<sheetData>`,`<row r="1" ht="26" customHeight="1">${reviewStyledCellXml(title,0,1,1)}</row>`,`<row r="2" ht="30" customHeight="1">${reviewStyledCellXml(subtitle,0,2,2)}</row>`,`<row r="3"></row>`,`<row r="4" ht="30" customHeight="1">${headers.map((h,i)=>reviewStyledCellXml(h,i,4,3)).join('')}</row>`],chunk=[];for(let ai=0;ai<arr.length;ai++){let o=arr[ai],excelRow=ai+5,cells='';for(let ci=0;ci<cols.length;ci++){let spec=cols[ci][1],v=typeof spec==='function'?spec(o):o[spec],st=reviewCellStyle(sh.name,cols[ci][0],v,o);cells+=reviewStyledCellXml(v,ci,excelRow,st)}chunk.push(`<row r="${excelRow}">${cells}</row>`);if(chunk.length>=1500){parts.push(chunk.join(''));chunk=[];if(onProgress)onProgress(ai+1,arr.length);await browserYield(0)}}if(chunk.length)parts.push(chunk.join(''));parts.push(`</sheetData><autoFilter ref="A4:${lastCol}${lastRow}"/><mergeCells count="2"><mergeCell ref="A1:${lastCol}1"/><mergeCell ref="A2:${lastCol}2"/></mergeCells>${reviewConditionalXml(sh.name,headers,firstData,lastRow)}<pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0"/></worksheet>`);return new Blob(parts,{type:'application/xml'})}
 
 function setSaveProgress(pct,status,cls=''){let bar=$('saveWorkspaceProgress'),st=$('saveWorkspaceStatus');if(bar)bar.style.width=`${Math.max(0,Math.min(100,pct||0))}%`;if(st){st.textContent=status||'';st.className='save-status'+(cls?' '+cls:'')}}
-function openSaveWorkspaceModal(){let d=state.daily.length,m=state.monthly.length;$('saveDailyRows').textContent=d.toLocaleString();$('saveMonthlyRows').textContent=m.toLocaleString();$('saveCommentRows').textContent=state.comments.length.toLocaleString();$('saveEventRows').textContent=state.events.length.toLocaleString();let full=document.querySelector('input[name="saveWorkspaceMode"][value="full"]'),compressed=document.querySelector('input[name="saveWorkspaceMode"][value="compressed"]'),large=(d+m)>150000;if(compressed)compressed.checked=true;if(full)full.disabled=large;$('saveFullWarning').classList.toggle('hidden',!large);setSaveProgress(0,tr('Ready to save','พร้อมบันทึก'));$('confirmSaveWorkspace').disabled=false;$('saveWorkspaceModal').classList.add('show');applyLanguage()}
+function openSaveWorkspaceModal(){if(!inverterRequireFullWorkspace())return;let d=state.daily.length,m=state.monthly.length;$('saveDailyRows').textContent=d.toLocaleString();$('saveMonthlyRows').textContent=m.toLocaleString();$('saveCommentRows').textContent=state.comments.length.toLocaleString();$('saveEventRows').textContent=state.events.length.toLocaleString();let full=document.querySelector('input[name="saveWorkspaceMode"][value="full"]'),compressed=document.querySelector('input[name="saveWorkspaceMode"][value="compressed"]'),large=(d+m)>150000;if(compressed)compressed.checked=true;if(full)full.disabled=large;$('saveFullWarning').classList.toggle('hidden',!large);setSaveProgress(0,tr('Ready to save','พร้อมบันทึก'));$('confirmSaveWorkspace').disabled=false;$('saveWorkspaceModal').classList.add('show');applyLanguage()}
 function setReviewExportProgress(pct,status,cls=''){let bar=$('reviewExportProgress'),st=$('reviewExportStatus');if(bar)bar.style.width=`${Math.max(0,Math.min(100,pct||0))}%`;if(st){st.textContent=status||'';st.className='save-status'+(cls?' '+cls:'')}}
 function reviewDataMode(){return document.querySelector('input[name="reviewDataMode"]:checked')?.value||'both'}
 function reviewDataModeLabel(mode=reviewDataMode()){return mode==='daily'?tr('Daily','รายวัน'):mode==='monthly'?tr('Monthly','รายเดือน'):tr('Daily + Monthly','Daily + Monthly')}
@@ -901,6 +901,7 @@ async function exportReviewExcel(){
  if(typeof JSZip==='undefined')throw new Error('JSZip unavailable');let btn=$('confirmReviewExport');btn.disabled=true;let include=reviewIncludeConfig(),mode=include.mode,scope=reviewScopeConfig();try{if(include.daily&&!include.monthly&&!state.daily.length)throw new Error(tr('No Daily data available','ไม่มีข้อมูล Daily'));if(include.monthly&&!include.daily&&!hasMonthlyData())throw new Error(tr('No Monthly data available','ไม่มีข้อมูล Monthly'));if(include.daily&&include.monthly&&!state.daily.length&&!hasMonthlyData())throw new Error(tr('No Daily or Monthly data available','ไม่มีข้อมูล Daily หรือ Monthly'));setReviewExportProgress(2,tr('Preparing Professional Review Excel…','กำลังเตรียม Professional Review Excel…'));let simple=$('reviewReportStyle')?.value==='simple';if(simple&&mode!=='monthly')throw new Error(tr('Easy report supports Monthly only. Select Monthly.','รายงานอ่านง่ายรองรับรายเดือน กรุณาเลือก Monthly'));let d=await buildReviewExportData(include,scope);setReviewExportProgress(30,tr('Building formatted Review sheets…','กำลังสร้างชีต Review แบบจัดรูปแบบ…'));
  let generated=new Date().toLocaleString(currentLang()==='th'?'th-TH':'en-GB',{year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'}),meta={scope:reviewScopeLabel(scope),period:reviewPeriodLabel(scope),generated,dataMode:reviewDataModeLabel(mode)};
  let infoRows=[['Report','Inverter Analysis Review Excel'],['Version',state.schemaVersion],['Exported At',new Date().toISOString()],['Report Type',reviewDataModeLabel(mode)],['Purpose','Review / reporting only - full Raw source is not included'],['Export Scope',reviewScopeLabel(scope)],['Project',scope.mode==='all'||scope.project==='all'?'All':scope.project],['Period',reviewPeriodLabel(scope)],['Export Year Filter',scope.exportYear||'all'],['Export Month Filter',scope.exportMonth||'all'],['Selected Inverters',scope.mode==='devices'?[...scope.devices].join(', '):'All in scope'],['Alarm Only',scope.alarmOnly?'YES':'NO'],['Scoped Daily Rows',include.daily?d.scopedDailyRows:0],['Scoped Monthly Rows',include.monthly?d.scopedMonthlyRows:0],['Scoped Source Files',d.scopedSourceFiles],['Projects',d.projectSummary.length],['Inverters',d.inverterSummary.length],['Daily Alarm Records',include.daily?d.dailyAlarm.length:0],['Monthly Review Records',include.monthly?d.monthlyAll.length:0],['Data Quality Issues',d.quality.length],['Comments',d.comments.length],['Device Events',d.events.length],['Monthly Notes',include.monthly?d.monthlyNotes.length:0],['Default Daily Alarm (%)',include.daily?state.settings.defaultThreshold:'N/A'],['Daily Good (%)',include.daily?state.settings.goodThreshold:'N/A'],['Daily Critical (%)',include.daily?state.settings.criticalThreshold:'N/A'],['Monthly Reference Method',include.monthly?state.settings.monthlyRefMethod:'N/A'],['Monthly Data Source',include.monthly?(monthlySourceMode()==='derived'?'Derived from Daily':'Imported Monthly'):'N/A']].map(([key,value])=>({key,value}));
+ if(inverterCurrentScope()&&inverterDbScope.mode!=='all'){meta.period='Loaded month '+inverterDbScope.month;meta.scope+=' · Loaded DB scope only';infoRows.find(r=>r.key==='Period').value=meta.period;infoRows.push({key:'Loaded DB Scope',value:inverterDbScope.month+' · '+(inverterDbScope.project||'All projects')+' · Not full history'});}
  let projectCols=[['Project','project'],['Inverters','inverters']],inverterCols=[['Project','project'],['Device','device']];
  if(include.daily){projectCols.push(['Daily Records','dailyRecords'],['Daily From','firstDate'],['Daily To','lastDate'],['Alarm Records','alarmRecords'],['Alarm Rate (%)','alarmRate'],['No Data','noData'],['Worst Unit (%)','worstUnit'],['Average Unit (%)','avgUnit']);inverterCols.push(['Daily Records','dailyRecords'],['From','firstDate'],['To','lastDate'],['Alarm Records','alarmRecords'],['Alarm Rate (%)','alarmRate'],['No Data','noData'],['Worst Unit (%)','worstUnit'],['Average Unit (%)','avgUnit'],['Latest Unit (%)','lastUnit'],['Latest Status','lastStatus'],['Average Specific','avgSpecific'],['Excluded Reference',x=>x.excluded?'YES':''])}
  if(include.monthly){projectCols.push(['Monthly Records','monthlyRecords'],['Latest Monthly Period','latestMonthlyPeriod'],['Latest Avg Availability (%)','latestMonthlyAvailability'],['Latest Lost Hours','latestMonthlyLostHours'],['Monthly Review Records','monthlyReview']);inverterCols.push(['Monthly Records','monthlyRecords'],['Latest Monthly Period','latestMonthlyPeriod'],['Latest Availability (%)','latestMonthlyAvailability'],['Latest Lost Hours','latestMonthlyLostHours'],['Latest Monthly Status','latestMonthlyStatus'])}
@@ -961,7 +962,7 @@ function dayFromCode(v){if(!Number.isFinite(Number(v)))return'';return new Date(
 function periodCode(s){let m=String(s||'').match(/^(\d{4})-(\d{2})$/);return m?Number(m[1])*12+(Number(m[2])-1):null}
 function periodFromCode(v){v=Number(v);if(!Number.isFinite(v))return'';let y=Math.floor(v/12),m=v%12+1;return`${y}-${String(m).padStart(2,'0')}`}
 function dictId(map,arr,v){v=String(v??'');if(map.has(v))return map.get(v);let id=arr.length;arr.push(v);map.set(v,id);return id}
-async function saveCompressedWorkspace(options={}){
+async function saveCompressedWorkspace(options={}){if(!inverterRequireFullWorkspace())return;
  if(typeof JSZip==='undefined')throw new Error('JSZip unavailable');let prefix=options.prefix||'Inverter_Analysis_Workspace',quiet=!!options.quiet,zip=new JSZip(),projects=[],devices=[],sources=[],pm=new Map(),dm=new Map(),sm=new Map(),chunkSize=50000,total=state.daily.length+state.monthly.length,done=0,dailyChunks=[],monthlyChunks=[];
  if(!quiet)setSaveProgress(2,tr('Preparing ultra-compressed workspace…','กำลังเตรียม Ultra Compressed Workspace…'));await browserYield(0);
  const val=v=>v==null||v===''?'':String(v);
@@ -1112,7 +1113,7 @@ async function compactPreviewRestoreRows(metadata,daily,onProgress){
  state={...metadata,daily};clearDailyUiState();clearMonthlyUiState();await recalcDailyQueued(onProgress);setupDailySelection(true);renderAll({dailyReady:true});
  return daily.length;
 }
-async function saveCompactPreview(){
+async function saveCompactPreview(){if(!inverterRequireFullWorkspace())return;
  const button=$('compactPreviewSave');button.disabled=true;
  try{const envelope=await compactPreviewEnvelope();const zip=new JSZip();zip.file('compact.json',JSON.stringify(envelope));const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Inverter_Compact_Test_'+new Date().toISOString().slice(0,10)+'.iactest';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);toast(tr('Compact test file saved; keep the original .iaw backup.','บันทึกไฟล์ทดลองแล้ว กรุณาเก็บไฟล์ .iaw เดิมไว้ด้วย'));}
  catch(e){alert(e.message);}finally{button.disabled=false;}
@@ -1135,10 +1136,12 @@ window.InverterCompactPreview={pack:compactPreviewEnvelope,restore:compactPrevie
  'use strict';
  function create(client,workspace,codec){
   const tick=()=>new Promise(r=>setTimeout(r,0));
+  const recent=new Map();let cachedRows=0;
   async function checked(request){const r=await request;if(r.error)throw r.error;return r.data;}
   async function pages(table,select,configure){let rows=[];for(let offset=0;;offset+=1000){let q=client.from(table).select(select).order('id').range(offset,offset+999);q=configure(q);const part=await checked(q);rows.push(...part);if(part.length<1000)return rows;await tick();}}
   async function user(){const {data,error}=await client.auth.getUser();if(error)throw error;if(!data.user)throw Error('Please sign in to Main Center first');return data.user.id;}
   async function save(state,onProgress=()=>{}){
+   recent.clear();cachedRows=0;
    const uid=await user();const prior=await checked(client.from('inverter_user_workspaces').select('revision').eq('workspace_id',workspace).eq('user_id',uid).maybeSingle());
    let added=0,skipped=0;
    for(let offset=0;offset<state.daily.length;offset+=500){
@@ -1152,21 +1155,34 @@ window.InverterCompactPreview={pack:compactPreviewEnvelope,restore:compactPrevie
    else await checked(client.from('inverter_user_workspaces').insert({workspace_id:workspace,user_id:uid,metadata}));
    return {added,skipped};
   }
-  async function load(onProgress=()=>{}){
+  async function load(onProgress=()=>{},options={mode:'all'}){
    const uid=await user();
    const devices=await pages('inverter_devices','id,source_project_name,device_name,project_id',q=>q.eq('workspace_id',workspace));
    const sources=await pages('inverter_sources','id,name',q=>q.eq('workspace_id',workspace));
    const metadata=await checked(client.from('inverter_user_workspaces').select('metadata').eq('workspace_id',workspace).eq('user_id',uid).maybeSingle());
+   const mode=options.mode||'all';if(!['all','latest','month'].includes(mode))throw Error('Invalid load scope');
+   let month=options.month||null;
+   if(mode==='latest'){
+    let q=client.from('inverter_daily').select('record_date,inverter_devices!inner(workspace_id)').eq('inverter_devices.workspace_id',workspace).order('record_date',{ascending:false}).limit(1);
+    if(options.project)q=q.in('device_id',devices.filter(d=>d.source_project_name===options.project).map(d=>d.id));
+    const latest=await checked(q);month=latest[0]?.record_date?.slice(0,7)||null;
+   }
+   if(mode!=='all'&&(!month||!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)))throw Error('ไม่พบเดือนที่มีข้อมูล / Select a valid month');
+   const project=options.project||null,selectedDevices=project?devices.filter(d=>d.source_project_name===project):devices;
+   const scope={mode:mode==='all'?'all':'month',month:mode==='all'?null:month,project};
+   const key=JSON.stringify([uid,scope]),hit=options.refresh?null:recent.get(key);
+   if(hit){recent.delete(key);recent.set(key,hit);onProgress(hit.length);return {daily:structuredClone(hit),metadata:metadata?.metadata||null,scope,cached:true};}
    const dm=new Map(devices.map(d=>[d.id,d])),sm=new Map(sources.map(s=>[s.id,s.name]));
    const rows=[];let stopped=false;
    // Four disjoint device ranges: bounded parallel requests, full history retained.
-   const width=Math.max(1,Math.ceil(devices.length/4));
-   const groups=[];for(let i=0;i<devices.length;i+=width)groups.push(devices.slice(i,i+width));
+   const width=Math.max(1,Math.ceil(selectedDevices.length/4));
+   const groups=[];for(let i=0;i<selectedDevices.length;i+=width)groups.push(selectedDevices.slice(i,i+width));
    const results=await Promise.allSettled(groups.map(async group=>{
    let last=null;
    try{for(;;){
     if(stopped)return;
     let q=client.from('inverter_daily').select('device_id,record_date,capacity_milli,pv_centi,total_centi,specific_milli,peak_milli,duration_milli,source_id,source_row,record_order,inverter_devices!inner(workspace_id)').eq('inverter_devices.workspace_id',workspace).gte('device_id',group[0].id).lte('device_id',group.at(-1).id).order('device_id').order('record_date').limit(1000);
+    if(mode!=='all'){const [year,m]=month.split('-').map(Number),end=new Date(Date.UTC(year,m,0)).toISOString().slice(0,10);q=q.gte('record_date',month+'-01').lte('record_date',end);}
     if(last)q=q.or(`device_id.gt.${last.device_id},and(device_id.eq.${last.device_id},record_date.gt.${last.record_date})`);
     const part=await checked(q);if(!part.length)break;
     const batchDevices=[],batchSources=[],di=new Map(),si=new Map();
@@ -1186,7 +1202,12 @@ window.InverterCompactPreview={pack:compactPreviewEnvelope,restore:compactPrevie
    // Original order matters for last-known capacity and first tie-breaking device.
    // Order retained by .iaw writer is date/project insertion order; DB device IDs are stable.
    rows.sort((a,b)=>a._recordOrder-b._recordOrder||a.date.localeCompare(b.date)||a.project.localeCompare(b.project)||a.device.localeCompare(b.device));for(const r of rows)delete r._recordOrder;
-   return {daily:rows,metadata:metadata?.metadata||null,unmatched:devices.filter(d=>!d.project_id).map(d=>d.source_project_name).filter((v,i,a)=>a.indexOf(v)===i)};
+   if(mode!=='all'&&rows.length<=50000){
+    if(recent.has(key)){cachedRows-=recent.get(key).length;recent.delete(key);}
+    while(recent.size&&(recent.size>=3||cachedRows+rows.length>50000)){const oldest=recent.keys().next().value;cachedRows-=recent.get(oldest).length;recent.delete(oldest);}
+    recent.set(key,structuredClone(rows));cachedRows+=rows.length;
+   }
+   return {scope,cached:false,daily:rows,metadata:metadata?.metadata||null,unmatched:devices.filter(d=>!d.project_id).map(d=>d.source_project_name).filter((v,i,a)=>a.indexOf(v)===i)};
   }
   async function matching(){
    await user();
@@ -1240,7 +1261,7 @@ window.addEventListener('pagehide',inverterStopCentralDisplay);
 window.addEventListener('pageshow',()=>{inverterCentralObserver.observe(document.body,{childList:true,subtree:true});inverterRefreshCentralDisplay();});
 
 // Preview-only connection. No automatic data upload or replacement on page load.
-let inverterDb=null,inverterDbRole=null,inverterDbBusy=false;
+let inverterDb=null,inverterDbRole=null,inverterDbBusy=false,inverterDbScope=null,inverterDbScopeDaily=null;
 async function inverterLoadScript(src){return new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=()=>reject(Error('Cannot load '+src));document.head.append(s);});}
 async function inverterConnectDb(){
  if(location.protocol==='file:')throw Error('เปิดหน้าทดลองออนไลน์เพื่อใช้การเข้าสู่ระบบเดิม / Open the online preview to use Main Center sign-in.');
@@ -1249,42 +1270,50 @@ async function inverterConnectDb(){
  const session=await SolarCloud.session();if(!session)throw Error('กรุณาเข้าสู่ระบบที่ Main Center ก่อน แล้วเปิดหน้าทดลองอีกครั้ง');
  const membership=await SolarCloud.membership();inverterDbRole=membership.role;inverterDb=InverterDatabase.create(SolarCloud.getClient(),membership.workspace_id,InverterCompact);
  $('inverterDbStatus').textContent='Connected · '+membership.role;
- $('inverterDbSave').disabled=!['admin','editor'].includes(membership.role);$('inverterDbLoad').disabled=false;await inverterRefreshMatching();
+ $('inverterDbSave').disabled=!['admin','editor'].includes(membership.role);$('inverterDbLoad').disabled=false;$('inverterDbRefresh').disabled=false;await inverterRefreshMatching();
  return inverterDb;
 }
 async function inverterDbRun(action){
- if(inverterDbBusy)return;inverterDbBusy=true;const buttons=['inverterDbConnect','inverterDbSave','inverterDbLoad'].map($);buttons.forEach(b=>b.disabled=true);
+ if(inverterDbBusy)return;inverterDbBusy=true;const buttons=['inverterDbConnect','inverterDbSave','inverterDbLoad','inverterDbRefresh'].map($);buttons.forEach(b=>b.disabled=true);
  try{
   const db=inverterDb||await inverterConnectDb();
   if(action==='save'){
+   if(inverterCurrentScope()&&(inverterDbScope.mode!=='all'||inverterDbScope.project))throw Error('กรุณาโหลดทั้งหมดก่อน Save to DB เพื่อไม่ให้พื้นที่ทำงานย้อนหลังขาดข้อมูล');
    if(!state.daily.length)throw Error('กรุณาเปิดไฟล์ .iaw หรือ Import Report ก่อน');
    if(!['admin','editor'].includes(inverterDbRole))throw Error('บัญชีนี้อ่านได้อย่างเดียว');
    if(!await SolarCloud.confirmDialog('บันทึกข้อมูลอินเวอร์เตอร์','เพิ่มเฉพาะรายการใหม่ ข้อมูลซ้ำจะข้าม หากค่าต่างกันจะหยุด ไม่แก้ข้อมูล WD/GI/PR กรุณาเก็บ .iaw สำรองไว้ด้วย',{confirmText:'บันทึก'}))return;
    const result=await db.save(state,(done,total)=>$('inverterDbStatus').textContent=`Saving ${done.toLocaleString()}/${total.toLocaleString()}`);
    $('inverterDbStatus').textContent=`Added ${result.added.toLocaleString()} · unchanged ${result.skipped.toLocaleString()}`;
-  }else if(action==='load'){
+  }else if(action==='load'||action==='refresh'){
    if(state.daily.length&&!await SolarCloud.confirmDialog('เปิดข้อมูลจากฐานข้อมูล','แทนที่ข้อมูลในหน้าทดลองนี้ กรุณาบันทึก .iaw หากยังมีข้อมูลที่ไม่ได้บันทึก',{confirmText:'เปิดข้อมูล'}))return;
-   const started=performance.now();const loaded=await db.load(count=>$('inverterDbStatus').textContent=`Loading ${count.toLocaleString()} rows · ${((performance.now()-started)/1000).toFixed(1)} s`);const loadedAt=performance.now();
+   const mode=$('inverterDbPeriod').value,month=$('inverterDbMonth').value,project=$('inverterDbProject').value||null;
+   const started=performance.now();const loaded=await db.load(count=>$('inverterDbStatus').textContent=`Loading ${count.toLocaleString()} rows · ${((performance.now()-started)/1000).toFixed(1)} s`,{mode,month,project:mode==='all'?null:project,refresh:action==='refresh'});const loadedAt=performance.now();
    if(!loaded.daily.length)throw Error('ยังไม่มีข้อมูลอินเวอร์เตอร์ในฐานข้อมูล เปิด .iaw แล้วบันทึกจากหน้าทดลองก่อน');
-   const metadata=loaded.metadata||{...state,monthly:[]};delete metadata.daily;
+   const metadata=loaded.metadata||{...state,monthly:[]};delete metadata.daily;if(loaded.scope.mode!=='all')metadata.monthly=(metadata.monthly||[]).filter(r=>r.period===loaded.scope.month&&(!loaded.scope.project||r.project===loaded.scope.project));
+   inverterDbScope=loaded.scope;inverterDbScopeDaily=loaded.daily;$('inverterDbMonth').value=loaded.scope.month||month;inverterUpdateScope();
    $('inverterDbStatus').textContent='Preparing report · กำลังจัดเตรียมรายงาน';await browserYield(0);
    await compactPreviewRestoreRows(metadata,loaded.daily,(pct,phase)=>$('inverterDbStatus').textContent=`Preparing report ${Math.round(pct)}% · ${((performance.now()-loadedAt)/1000).toFixed(1)} s · ${phase}`);
-   $('inverterDbStatus').textContent=`Loaded ${loaded.daily.length.toLocaleString()} · DB ${((loadedAt-started)/1000).toFixed(1)} s · Report ${((performance.now()-loadedAt)/1000).toFixed(1)} s`;await inverterRefreshMatching();
+   inverterDbScopeDaily=state.daily;
+   $('inverterDbStatus').textContent=`Loaded ${loaded.daily.length.toLocaleString()}${loaded.cached?' · Cache':''} · DB ${((loadedAt-started)/1000).toFixed(1)} s · Report ${((performance.now()-loadedAt)/1000).toFixed(1)} s`;await inverterRefreshMatching();
   }
  }catch(e){$('inverterDbStatus').textContent='Error · '+e.message;alert(e.message+'\nหากบันทึกหยุดระหว่างทาง รายการที่สำเร็จแล้วจะยังอยู่และนำเข้าซ้ำได้โดยไม่เพิ่มซ้ำ');}
- finally{inverterDbBusy=false;$('inverterDbConnect').disabled=false;$('inverterDbSave').disabled=!inverterDb||!['admin','editor'].includes(inverterDbRole);$('inverterDbLoad').disabled=!inverterDb;}
+ finally{inverterDbBusy=false;$('inverterDbConnect').disabled=false;$('inverterDbSave').disabled=!inverterDb||!['admin','editor'].includes(inverterDbRole)||!!(inverterDbScope&&(inverterDbScope.mode!=='all'||inverterDbScope.project));$('inverterDbLoad').disabled=!inverterDb;$('inverterDbRefresh').disabled=!inverterDb;}
 }
 {
  const panel=document.createElement('div');panel.className='card-sub';panel.style.cssText='padding:8px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap';
- panel.innerHTML='<button type="button" class="btn small" id="inverterDbConnect">Connect Solar DB</button><button type="button" class="btn small" id="inverterDbSave" disabled>Save to DB</button><button type="button" class="btn small" id="inverterDbLoad" disabled>Open from DB</button><button type="button" class="btn small" id="inverterDbMatch" disabled>รอจับคู่</button><span id="inverterDbStatus">ยังไม่เชื่อมต่อ · ไม่อัปโหลดอัตโนมัติ</span>';
+ panel.innerHTML='<button type="button" class="btn small" id="inverterDbConnect">Connect Solar DB</button><button type="button" class="btn small" id="inverterDbSave" disabled>Save to DB</button><select id="inverterDbPeriod" aria-label="ช่วงข้อมูล DB" style="width:auto"><option value="latest">เดือนล่าสุด / Latest month</option><option value="month">เลือกเดือน / Choose month</option><option value="all">ทั้งหมด / All history</option></select><input id="inverterDbMonth" type="month" aria-label="เดือนที่จะโหลด" hidden style="width:150px"><select id="inverterDbProject" aria-label="โครงการที่จะโหลด" style="max-width:220px"><option value="">ทุกโครงการ / All projects</option></select><button type="button" class="btn small" id="inverterDbLoad" disabled>Open from DB</button><button type="button" class="btn small" id="inverterDbRefresh" disabled>Refresh DB</button><button type="button" class="btn small" id="inverterDbMatch" disabled>รอจับคู่</button><span id="inverterDbStatus">ยังไม่เชื่อมต่อ · ไม่อัปโหลดอัตโนมัติ</span>';
  document.querySelector('.topbar').after(panel);
+ const scope=document.createElement('div');scope.id='inverterDbScopeLabel';scope.className='card-sub';scope.style.cssText='padding:6px 12px;font-size:13px;font-weight:600';panel.after(scope);
+ $('inverterDbPeriod').onchange=()=>{$('inverterDbMonth').hidden=$('inverterDbPeriod').value!=='month';$('inverterDbProject').disabled=$('inverterDbPeriod').value==='all';};
+ document.querySelector('#dailyViewMode').addEventListener('click',e=>{if(inverterCurrentScope()?.mode!=='all'&&inverterDbScope&&['yearly','lifetime'].includes(e.target.closest('[data-view]')?.dataset.view)){e.stopImmediatePropagation();alert('กรุณาเลือก All history แล้ว Open from DB ก่อนดู Yearly / Lifetime');}},true);
  $('inverterDbMatch').onclick=inverterOpenMatching;
- $('inverterDbConnect').onclick=()=>inverterDbRun('connect');$('inverterDbSave').onclick=()=>inverterDbRun('save');$('inverterDbLoad').onclick=()=>inverterDbRun('load');
+ $('inverterDbConnect').onclick=()=>inverterDbRun('connect');$('inverterDbSave').onclick=()=>inverterDbRun('save');$('inverterDbLoad').onclick=()=>inverterDbRun('load');$('inverterDbRefresh').onclick=()=>inverterDbRun('refresh');
 }
 
 let inverterMatchingData=null;
 async function inverterRefreshMatching(){
- inverterMatchingData=await inverterDb.matching();inverterSetCentralNames(inverterMatchingData);
+ inverterMatchingData=await inverterDb.matching();
+ const selected=$('inverterDbProject').value;const select=$('inverterDbProject');select.replaceChildren(new Option('ทุกโครงการ / All projects',''));const names=new Set();for(const d of inverterMatchingData.devices)if(!names.has(d.source_project_name)){names.add(d.source_project_name);const p=inverterMatchingData.projects.find(p=>p.id===d.project_id);select.add(new Option(p?.standard_name||d.source_project_name,d.source_project_name));}select.value=selected;inverterSetCentralNames(inverterMatchingData);
  $('inverterDbMatch').textContent='รอจับคู่ '+inverterMatchingData.pending.length+' ชื่อ';$('inverterDbMatch').disabled=false;
  return inverterMatchingData;
 }
@@ -1322,6 +1351,11 @@ async function inverterOpenMatching(){
   const close=document.createElement('button');close.type='button';close.className='btn small';close.textContent='ปิด';close.onclick=()=>dialog.close();dialog.append(close);dialog.showModal();
  }catch(e){alert(e.message);}finally{button.disabled=!inverterDb;}
 }
+
+function inverterUpdateScope(){const s=inverterDbScope;$('inverterDbScopeLabel').textContent=s?(s.mode==='all'?'ข้อมูลย้อนหลังทั้งหมด / All history loaded':`ข้อมูลที่โหลด: ${s.month} · ${s.project||'ทุกโครงการ / All projects'} · ตามข้อมูลที่มีใน DB ไม่ได้ยืนยันว่าครบเดือน / Loaded scope only, month completeness not guaranteed`):'';}
+function inverterRequireFullWorkspace(){if(inverterCurrentScope()&&(inverterDbScope.mode!=='all'||inverterDbScope.project)){alert('กรุณาเลือก All history แล้ว Open from DB ก่อนบันทึก Workspace ทั้งหมด');return false;}return true;}
+
+function inverterCurrentScope(){if(inverterDbScopeDaily&&state.daily!==inverterDbScopeDaily){inverterDbScope=null;inverterDbScopeDaily=null;inverterUpdateScope();}return inverterDbScope;}
 </script>
 </body>
 </html>
