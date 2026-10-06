@@ -234,7 +234,27 @@ html,body,#gi-map-module,#gi-map-module *,#gi-map-module *::before,#gi-map-modul
 #gi-map-module .gimap-marker-label.tiny{width:86px}
 #gi-map-module .gimap-marker-label.selected{transform:none}
 </style>
-</head>
+<style>
+/* PC viewport fit: keep the map fixed and scroll only its panels. */
+html,body{width:100%;height:100%;margin:0;overflow:hidden}
+body{height:100dvh!important}
+#gi-map-module{height:100%;min-height:0}
+#gi-map-module .gimap-app{min-height:0;grid-template-rows:minmax(0,1fr)}
+#gi-map-module .gimap-sidebar,#gi-map-module .gimap-main{min-height:0}
+#gi-map-module .gimap-sidebar{overscroll-behavior:contain}
+#gi-map-module .gimap-detail{overscroll-behavior:contain;scrollbar-width:thin}
+@media(min-width:901px) and (max-height:760px){
+ #gi-map-module .gimap-sidebar{padding:12px}
+ #gi-map-module .gimap-card{padding:10px;margin-bottom:8px}
+ #gi-map-module .gimap-brand{margin-bottom:10px}
+ #gi-map-module .gimap-topbar{top:10px;left:10px;right:10px;gap:6px}
+ #gi-map-module .gimap-timeline{bottom:10px;padding:9px 11px;border-radius:14px}
+ #gi-map-module .gimap-timeline-title{font-size:12px}
+ #gi-map-module .gimap-timeline-head{margin-bottom:5px}
+ #gi-map-module .gimap-month-btn{height:31px}
+ #gi-map-module .gimap-detail{top:88px;max-height:calc(100% - 205px);padding:12px}
+}
+</style>\n</head>
 
 <body style="margin:0;height:100vh">
 
