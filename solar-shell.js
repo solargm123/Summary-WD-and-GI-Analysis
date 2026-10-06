@@ -7,7 +7,7 @@ function safeRoute(value){try{const u=new URL(value,base),raw=u.pathname.split('
 let saved=null;try{saved=safeRoute(sessionStorage.getItem(key));}catch{}
 const frame=document.getElementById('solarWorkspaceFrame');
 const initial=location.hash?center+location.search+location.hash:saved||center;
-const entry=new URL(initial,base);if(entry.pathname.endsWith('inverter-analysis-compact-test.html'))entry.searchParams.set('v','20261006-inverter-picker4');frame.src=entry.href;
+const entry=new URL(initial,base);if(entry.pathname.endsWith('inverter-analysis-compact-test.html'))entry.searchParams.set('v','20261006-inverter-monthly5');frame.src=entry.href;
 history.replaceState({solarShell:true},'',base.pathname);
 function sync(){try{const u=new URL(frame.contentWindow.location.href);if(u.origin!==base.origin)return;let route=safeRoute(u.href);if(!route&&['','index.html'].includes(u.pathname.split('/').pop()))route=center;if(route){sessionStorage.setItem(key,route);document.title=frame.contentDocument.title||'Solar system Analysis Center';}if(frame.contentWindow.SolarCloud)frame.contentWindow.SolarCloud.CONFIG.siteRoot=new URL(center,base).href;}catch{}}
 frame.addEventListener('load',sync);
