@@ -339,6 +339,32 @@ body{zoom:1.1;min-height:calc(100vh / 1.1)}
 <link rel="icon" type="image/svg+xml" href="favicon.svg?v=20261002-field1">
 <link rel="icon" type="image/x-icon" sizes="16x16 32x32 48x48" href="favicon.ico?v=20261002-field1">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20261002-field1">
+<style id="giTrendPcFit20261006">
+/* Irradiation trend PC fit: scoped to the chart tab only. */
+#trendTab{width:100%;max-width:100%;min-width:0}
+#trendTab .trend-grid{grid-template-columns:minmax(0,1fr);min-width:0}
+#trendTab .trend-grid>.card{min-width:0;max-width:100%;box-sizing:border-box}
+#trendTab .trend-toolbar{justify-content:flex-start;gap:8px;align-items:flex-end}
+#trendTab .trend-toolbar>*{min-width:0;max-width:100%;box-sizing:border-box}
+#trendTab .trend-mode-picker{flex:1 1 135px}
+#trendTab .trend-popup-button{min-width:0;flex:1 1 180px;min-height:40px;padding:6px 10px}
+#trendTab .trend-toolbar .province-filter-wrap{min-width:0;flex:1 1 190px;max-width:100%}
+#trendTab .trend-toolbar .province-filter-select{min-width:0;width:100%;min-height:40px}
+#trendTab .trend-mode-picker select{min-width:0;width:100%;min-height:40px}
+#trendTab #closeTrendChartButton{margin-left:0;flex:0 0 auto}
+#trendTab .chart-container{width:100%;max-width:100%;min-width:0;height:clamp(260px,calc(100dvh / 1.1 - 310px),560px)}
+#trendTab .chart-container canvas{max-width:100%}
+#trendTab .gi-trend-legend{max-width:100%;max-height:100px;overflow-x:hidden;overflow-wrap:anywhere}
+#trendTab .gi-trend-legend button{max-width:100%;white-space:normal}
+#trendTab .trend-summary-scroll{overflow-x:hidden}
+#trendTab .trend-summary table{width:100%;min-width:0;table-layout:fixed}
+#trendTab .trend-summary th,#trendTab .trend-summary td{white-space:normal;overflow-wrap:anywhere;padding:7px 8px}
+#trendTab .trend-summary td:nth-child(2){min-width:0}
+@media(max-width:900px){
+ #trendTab .trend-toolbar{gap:6px}
+ #trendTab .chart-container{height:320px}
+}
+</style>
 </head>
 <body class="solar-gi">
 
