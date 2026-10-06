@@ -2,7 +2,7 @@
 'use strict';
 const base=new URL('./',document.baseURI),center='solar-center.html';
 if(window.top!==window.self){location.replace(new URL(center+location.search+location.hash,base).href);return;}
-const key='solar-shell-route-v1',allowed=new Set([center,'working-day-analysis.html','global-irradiance-analysis.html','pr-report.html','pr-report-r4.html','solar-spare-parts.html','inverter-analysis.html','OM_Alarm_Log_V4_7_ClosureWorkflow_TrackingUX.html']);
+const key='solar-shell-route-v1',allowed=new Set([center,'working-day-analysis.html','global-irradiance-analysis.html','pr-report.html','pr-report-r4.html','solar-spare-parts.html','inverter-analysis.html','inverter-analysis-compact-test.html','OM_Alarm_Log_V4_7_ClosureWorkflow_TrackingUX.html']);
 function safeRoute(value){try{const u=new URL(value,base),raw=u.pathname.split('/').pop(),file=raw.endsWith('.html')?raw:raw+'.html';if(u.origin!==base.origin||!allowed.has(file))return null;return file+u.search+u.hash;}catch{return null;}}
 let saved=null;try{saved=safeRoute(sessionStorage.getItem(key));}catch{}
 const frame=document.getElementById('solarWorkspaceFrame');
