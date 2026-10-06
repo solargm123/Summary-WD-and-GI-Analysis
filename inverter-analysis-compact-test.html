@@ -1727,6 +1727,63 @@ async function inverterBuildMatrixWorkbook(records){
  const previous=applyLanguage;applyLanguage=function(){previous();updateLabels();};updateLabels();
 })();
 </script>
+<script id="inverter-personal-autosave">
+// Personal view memory and debounced preference saves; never serialize raw report rows.
+let invRememberKey=null,invRememberReady=false,invPreferenceBaseline='',invPreferenceTimer=null,invViewTimer=null,invPreferenceSaving=false,invPreferenceDirty=false;
+const invPreferenceKeys=['thresholds','settings','monthlyNotes','comments','events','exclusions','projectAliases','manualMonthlyRef'];
+function invPreferenceSnapshot(){return Object.fromEntries(invPreferenceKeys.map(k=>[k,state[k]]));}
+function invSaveStatus(text){const el=$('inverterCCSaved');if(el){el.textContent=text;el.setAttribute('role','status');el.title=text;}}
+function invRememberView(){
+ if(!invRememberReady||!invRememberKey||inverterStartupRunning)return;
+ const controls={};for(const id of ['monthlyProject','monthlyStatus','monthlySource','dailyStatus'])if($(id))controls[id]=$(id).value;
+ const view={page:ui.page,dailyView:ui.dailyView,dailyProject:ui.dailyProject,months:[...ui.selectedMonths],years:[...ui.selectedYears],devices:[...ui.selectedDevices],hidden:[...ui.hiddenDevices],monthly:[...ui.monthlySelectedPeriods],workspaceCollapsed:ui.workspaceCollapsed,reviewCollapsed:ui.reviewCollapsed,controls,theme:document.documentElement.dataset.theme};
+ try{localStorage.setItem(invRememberKey,JSON.stringify(view));}catch(e){invSaveStatus(tr('View could not be remembered','ไม่สามารถจำตัวกรองได้'));}
+}
+function invSchedulePreferences(){
+ if(!invRememberReady||inverterStartupRunning||!['admin','editor'].includes(inverterDbRole))return;
+ const current=JSON.stringify(invPreferenceSnapshot());invPreferenceDirty=current!==invPreferenceBaseline;
+ if(!invPreferenceDirty)return;
+ invSaveStatus(tr('Waiting to save…','รอบันทึก…'));clearTimeout(invPreferenceTimer);invPreferenceTimer=setTimeout(invFlushPreferences,1000);
+}
+async function invFlushPreferences(){
+ if(!invRememberReady||!invPreferenceDirty||!inverterDb||!['admin','editor'].includes(inverterDbRole))return;
+ if(invPreferenceSaving||inverterDbBusy||inverterAutoRunning||inverterAutoPending){clearTimeout(invPreferenceTimer);invPreferenceTimer=setTimeout(invFlushPreferences,1000);return;}
+ const snapshot=structuredClone(invPreferenceSnapshot()),serialized=JSON.stringify(snapshot);
+ if(serialized===invPreferenceBaseline){invPreferenceDirty=false;return;}
+ invPreferenceSaving=true;inverterDbBusy=true;invSaveStatus(tr('Saving…','กำลังบันทึก…'));
+ try{await inverterDb.savePreferences(snapshot);invPreferenceBaseline=serialized;invPreferenceDirty=JSON.stringify(invPreferenceSnapshot())!==serialized;invSaveStatus(tr('Auto-saved','บันทึกอัตโนมัติแล้ว')+' · '+new Date().toLocaleTimeString());}
+ catch(e){invPreferenceDirty=true;invSaveStatus(tr('Not saved: ','ยังไม่บันทึก: ')+e.message);}
+ finally{invPreferenceSaving=false;inverterDbBusy=false;inverterRefreshRoles();}
+ // Save edits made during a successful request; do not loop on conflicts/offline errors.
+ if(invPreferenceBaseline===serialized&&invPreferenceDirty)invSchedulePreferences();
+}
+async function invRestoreRememberedView(){
+ let v;try{v=JSON.parse(localStorage.getItem(invRememberKey)||'null');}catch(e){return;}if(!v||typeof v!=='object')return;
+ const months=new Set(inverterAutoCatalog?.months||[]),projects=new Set(inverterMatchingData?.devices.map(d=>d.source_project_name)||[]);
+ const keepMonths=a=>Array.isArray(a)?a.filter(x=>months.has(x)):[];
+ if(['light','dark'].includes(v.theme))$(v.theme==='dark'?'darkBtn':'lightBtn').click();
+ if(projects.has(v.dailyProject))ui.dailyProject=v.dailyProject;
+ if(['daily','monthly','yearly','lifetime'].includes(v.dailyView))ui.dailyView=v.dailyView;
+ if(keepMonths(v.months).length)ui.selectedMonths=new Set(keepMonths(v.months));
+ if(keepMonths(v.monthly).length)ui.monthlySelectedPeriods=new Set(keepMonths(v.monthly));
+ const years=Array.isArray(v.years)?v.years.filter(y=>[...months].some(m=>m.startsWith(y+'-'))):[];if(years.length)ui.selectedYears=new Set(years);
+ ui.selectedDevices=new Set(Array.isArray(v.devices)?v.devices:[]);ui.hiddenDevices=new Set(Array.isArray(v.hidden)?v.hidden:[]);
+ ui.workspaceCollapsed=!!v.workspaceCollapsed;ui.reviewCollapsed=!!v.reviewCollapsed;
+ for(const [id,value] of Object.entries(v.controls||{})){const el=$(id);if(el&&[...el.options].some(o=>o.value===value))el.value=value;}
+ if(['daily','monthly','thresholds','comments','settings'].includes(v.page))showPage(v.page);else renderAll({dailyReady:true});
+ if(['daily','monthly'].includes(ui.page))inverterAutoRequest();
+}
+{
+ const startup=inverterStartup;inverterStartup=async function(){await startup();if(!inverterDb||!inverterCurrentScope()||invRememberReady)return;const session=await SolarCloud.session(),member=await SolarCloud.membership();if(!session?.user?.id)return;invRememberKey='solar-inverter-view-v1:'+member.workspace_id+':'+session.user.id;await invRestoreRememberedView();invPreferenceBaseline=JSON.stringify(invPreferenceSnapshot());invRememberReady=true;};
+ const manual=inverterSavePreferences;inverterSavePreferences=async function(){if(!invRememberReady)return manual();invPreferenceDirty=JSON.stringify(invPreferenceSnapshot())!==invPreferenceBaseline;await invFlushPreferences();};$('inverterCCSave').onclick=inverterSavePreferences;
+ function changed(){clearTimeout(invViewTimer);invViewTimer=setTimeout(()=>{invRememberView();invSchedulePreferences();},220);}
+ document.addEventListener('change',changed);document.addEventListener('click',changed);
+ window.addEventListener('online',()=>{if(invPreferenceDirty)invSchedulePreferences();});
+ window.addEventListener('pagehide',()=>{invRememberView();clearTimeout(invViewTimer);clearTimeout(invPreferenceTimer);});
+ window.addEventListener('beforeunload',e=>{invRememberView();if(invPreferenceDirty||invPreferenceSaving){e.preventDefault();e.returnValue='';}});
+}
+
+</script>
 </body>
 </html>
 
