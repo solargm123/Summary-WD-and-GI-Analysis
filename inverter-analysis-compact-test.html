@@ -188,6 +188,7 @@ body.dark .inv-month-good,[data-theme=dark] .inv-month-good{color:#86efac!import
 #page-monthly .control-card>.filters{grid-template-columns:minmax(240px,1fr) minmax(240px,1fr) 160px auto!important}
 @media(max-width:900px){#page-monthly .control-card>.filters{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 </style>
+<script>window.browserYield=function(ms=0){return new Promise(resolve=>setTimeout(resolve,ms));};</script>
 </head>
 <body>
 <div class="shell" id="appShell">
@@ -790,7 +791,7 @@ let importProjectSessionDecisions=new Map();
 let importKnownProjects=new Set();
 let importDuplicateDecision=null;
 let importIntegrityStats={duplicateFiles:0,similarProjects:0,mappedProjects:0,skippedProjects:0,aliasesApplied:0};
-const browserYield=(ms=0)=>new Promise(r=>setTimeout(r,ms));
+function browserYield(ms=0){return new Promise(resolve=>setTimeout(resolve,ms));}
 function resolvePendingProjectName(name){let cur=String(name||''),seen=new Set();while(cur&&pendingProjectRenames?.[cur]&&!seen.has(cur)){seen.add(cur);cur=String(pendingProjectRenames[cur]||cur)}return cur}
 function renameRowProjectForImport(r){let p=resolvePendingProjectName(r?.project);return p&&p!==r.project?{...r,project:p}:r}
 function syncMapProjectRenames(map,keyFn){if(!map||!pendingProjectRenames||!Object.keys(pendingProjectRenames).length)return;let rows=[...map.values()].map(renameRowProjectForImport);map.clear();for(const r of rows)map.set(keyFn(r),r)}
@@ -1497,7 +1498,7 @@ async function inverterAutoDrain(){
   else{$('monthlyProject').value=request.project||'all';}
   renderAll({dailyReady:true});ui.selectedMonths=new Set(request.months);ui.selectedYears=new Set(request.years);ui.monthlySelectedPeriods=new Set(request.months);if(!request.monthly)ui.dailyProject=request.project||'';inverterAutoProjects();if(request.monthly){$('monthlyProject').value=request.project||'all';$('monthlyPeriodLabel').textContent=monthlyPeriodSummary(ui.monthlySelectedPeriods,monthlySelectablePeriods());}else renderDailyPickers();inverterUpdateScope();inverterAutoFailed=false;$('inverterDbSave').disabled=!['admin','editor'].includes(inverterDbRole)||!!inverterDbScope.project||inverterDbScope.mode!=='all';$('inverterDbStatus').textContent=`Loaded ${daily.length.toLocaleString()} · ${((performance.now()-started)/1000).toFixed(1)} s${daily.length?'':' · ไม่มีข้อมูลในช่วงที่เลือก / No data in selected scope'}`;
  }}catch(e){failed=true;inverterAutoFailed=true;for(const host of document.querySelectorAll('.inverter-loading')){host.setAttribute('aria-busy','false');host.querySelector('.inverter-loading-cover').textContent='โหลดไม่สำเร็จ · เลือกตัวกรองอีกครั้ง / Load failed; select filters again';}$('inverterDbStatus').textContent='Error · '+e.message;toast(e.message);}
- finally{inverterAutoRunning=false;inverterDbBusy=false;if(inverterAutoPending){inverterAutoTimer=setTimeout(inverterAutoDrain,0);}else if(!failed)inverterAutoBusy(false);}
+ finally{inverterAutoRunning=false;inverterDbBusy=false;if(inverterAutoPending){inverterAutoTimer=setTimeout(inverterAutoDrain,0);}else inverterAutoBusy(false);}
 }
 async function inverterAutoInitialize(){
  if(!inverterDb)return;inverterAutoCatalog=await inverterDb.catalog();inverterAutoProjects();
