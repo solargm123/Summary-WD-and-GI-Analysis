@@ -255,6 +255,32 @@ body{height:100dvh!important}
  #gi-map-module .gimap-detail{top:88px;max-height:calc(100% - 205px);padding:12px}
 }
 </style>
+<style>
+/* Width fit: no horizontal page or sidebar scroll at PC display scales. */
+html,body{max-width:100%;overflow-x:hidden}
+#gi-map-module{width:100%;max-width:100%;min-width:0}
+#gi-map-module .gimap-app{width:100%;min-width:0;grid-template-columns:clamp(220px,22vw,310px) minmax(0,1fr)}
+#gi-map-module.hide-sidebar .gimap-app{grid-template-columns:minmax(0,1fr)}
+#gi-map-module .gimap-sidebar{min-width:0;overflow-x:hidden;overflow-wrap:anywhere}
+#gi-map-module .gimap-card,#gi-map-module .gimap-main{min-width:0;max-width:100%}
+#gi-map-module .gimap-metrics{grid-template-columns:repeat(5,minmax(0,1fr))}
+#gi-map-module .gimap-topbar>*{min-width:0}
+#gi-map-module .gimap-time-card{width:clamp(100px,12vw,150px);flex:0 1 150px}
+#gi-map-module .gimap-timeline-head{flex-wrap:wrap}
+#gi-map-module .gimap-timeline-tools{min-width:0;flex-wrap:wrap}
+#gi-map-module .gimap-month-grid{min-width:0;grid-template-columns:repeat(12,minmax(0,1fr))}
+#gi-map-module .gimap-rule-line{flex-wrap:wrap}
+#gi-map-module .gimap-rule-line b{white-space:normal}
+#gi-map-module .gimap-detail{overflow-x:hidden;overflow-wrap:anywhere}
+@media(max-width:1200px){
+ #gi-map-module .gimap-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:850px){
+ #gi-map-module .gimap-app{grid-template-columns:200px minmax(0,1fr)}
+ #gi-map-module .gimap-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #gi-map-module .gimap-month-grid{grid-template-columns:repeat(6,minmax(0,1fr))}
+}
+</style>
 </head>
 
 <body style="margin:0;height:100vh">
