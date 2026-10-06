@@ -1174,7 +1174,22 @@ window.InverterCompactPreview={pack:compactPreviewEnvelope,restore:compactPrevie
    rows.sort((a,b)=>a._recordOrder-b._recordOrder||a.date.localeCompare(b.date)||a.project.localeCompare(b.project)||a.device.localeCompare(b.device));for(const r of rows)delete r._recordOrder;
    return {daily:rows,metadata:metadata?.metadata||null,unmatched:devices.filter(d=>!d.project_id).map(d=>d.source_project_name).filter((v,i,a)=>a.indexOf(v)===i)};
   }
-  return {save,load};
+  async function matching(){
+   await user();
+   const devices=await pages('inverter_devices','id,source_project_name,device_name,project_id',q=>q.eq('workspace_id',workspace));
+   const projects=await pages('central_projects','id,standard_name,capacity_kwp',q=>q.eq('workspace_id',workspace));
+   const groups=new Map();for(const d of devices)if(!d.project_id){if(!groups.has(d.source_project_name))groups.set(d.source_project_name,{name:d.source_project_name,count:0});groups.get(d.source_project_name).count++;}
+   return {pending:[...groups.values()].sort((a,b)=>a.name.localeCompare(b.name)),projects:projects.sort((a,b)=>a.standard_name.localeCompare(b.standard_name))};
+  }
+  async function match(name,projectId){
+   await user();
+   const target=await checked(client.from('central_projects').select('id').eq('workspace_id',workspace).eq('id',projectId).maybeSingle());
+   if(!target)throw Error('ไม่พบโครงการในพื้นที่ทำงานนี้');
+   const changed=await checked(client.from('inverter_devices').update({project_id:projectId}).eq('workspace_id',workspace).eq('source_project_name',name).is('project_id',null).select('id'));
+   if(!changed.length)throw Error('รายการถูกจับคู่แล้ว หรือบัญชีนี้ไม่มีสิทธิ์ กรุณาโหลดรายการใหม่');
+   return {changed:changed.length};
+  }
+  return {save,load,matching,match};
  }
  global.InverterDatabase={create};
 })(typeof window==='undefined'?globalThis:window);
@@ -1189,7 +1204,7 @@ async function inverterConnectDb(){
  const session=await SolarCloud.session();if(!session)throw Error('กรุณาเข้าสู่ระบบที่ Main Center ก่อน แล้วเปิดหน้าทดลองอีกครั้ง');
  const membership=await SolarCloud.membership();inverterDbRole=membership.role;inverterDb=InverterDatabase.create(SolarCloud.getClient(),membership.workspace_id,InverterCompact);
  $('inverterDbStatus').textContent='Connected · '+membership.role;
- $('inverterDbSave').disabled=!['admin','editor'].includes(membership.role);$('inverterDbLoad').disabled=false;
+ $('inverterDbSave').disabled=!['admin','editor'].includes(membership.role);$('inverterDbLoad').disabled=false;await inverterRefreshMatching();
  return inverterDb;
 }
 async function inverterDbRun(action){
@@ -1209,16 +1224,58 @@ async function inverterDbRun(action){
    const metadata=loaded.metadata||{...state,monthly:[]};delete metadata.daily;
    $('inverterDbStatus').textContent='Preparing report · กำลังจัดเตรียมรายงาน';await browserYield(0);
    await compactPreviewRestoreRows(metadata,loaded.daily);
-   $('inverterDbStatus').textContent=`Loaded ${loaded.daily.length.toLocaleString()} · รอจับคู่ ${loaded.unmatched.length} ชื่อ`;
+   $('inverterDbStatus').textContent=`Loaded ${loaded.daily.length.toLocaleString()}`;await inverterRefreshMatching();
   }
  }catch(e){$('inverterDbStatus').textContent='Error · '+e.message;alert(e.message+'\nหากบันทึกหยุดระหว่างทาง รายการที่สำเร็จแล้วจะยังอยู่และนำเข้าซ้ำได้โดยไม่เพิ่มซ้ำ');}
  finally{inverterDbBusy=false;$('inverterDbConnect').disabled=false;$('inverterDbSave').disabled=!inverterDb||!['admin','editor'].includes(inverterDbRole);$('inverterDbLoad').disabled=!inverterDb;}
 }
 {
  const panel=document.createElement('div');panel.className='card-sub';panel.style.cssText='padding:8px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap';
- panel.innerHTML='<button type="button" class="btn small" id="inverterDbConnect">Connect Solar DB</button><button type="button" class="btn small" id="inverterDbSave" disabled>Save to DB</button><button type="button" class="btn small" id="inverterDbLoad" disabled>Open from DB</button><span id="inverterDbStatus">ยังไม่เชื่อมต่อ · ไม่อัปโหลดอัตโนมัติ</span>';
+ panel.innerHTML='<button type="button" class="btn small" id="inverterDbConnect">Connect Solar DB</button><button type="button" class="btn small" id="inverterDbSave" disabled>Save to DB</button><button type="button" class="btn small" id="inverterDbLoad" disabled>Open from DB</button><button type="button" class="btn small" id="inverterDbMatch" disabled>รอจับคู่</button><span id="inverterDbStatus">ยังไม่เชื่อมต่อ · ไม่อัปโหลดอัตโนมัติ</span>';
  document.querySelector('.topbar').after(panel);
+ $('inverterDbMatch').onclick=inverterOpenMatching;
  $('inverterDbConnect').onclick=()=>inverterDbRun('connect');$('inverterDbSave').onclick=()=>inverterDbRun('save');$('inverterDbLoad').onclick=()=>inverterDbRun('load');
+}
+
+let inverterMatchingData=null;
+async function inverterRefreshMatching(){
+ inverterMatchingData=await inverterDb.matching();
+ $('inverterDbMatch').textContent='รอจับคู่ '+inverterMatchingData.pending.length+' ชื่อ';$('inverterDbMatch').disabled=false;
+ return inverterMatchingData;
+}
+async function inverterOpenMatching(){
+ if(inverterDbBusy)return;
+ const button=$('inverterDbMatch');button.disabled=true;
+ try{
+  const data=await inverterRefreshMatching();
+  let dialog=$('inverterMatchDialog');if(!dialog){dialog=document.createElement('dialog');dialog.id='inverterMatchDialog';dialog.style.cssText='width:min(760px,94vw);max-height:85vh;overflow:auto;border:1px solid var(--line);border-radius:16px;padding:20px;background:var(--surface);color:var(--text);margin:auto';document.body.append(dialog);}
+  dialog.replaceChildren();
+  const heading=document.createElement('h2');heading.textContent='จับคู่ชื่อโครงการ · Central Data Hub';heading.style.fontSize='18px';dialog.append(heading);
+  const note=document.createElement('p');note.textContent='ชื่อจากไฟล์เดิมจะคงอยู่ จับคู่เฉพาะรายการที่ยังไม่ผูกโครงการ ไม่เปลี่ยนค่าผลิตหรือสูตรรายงาน · เฉพาะ Admin บันทึกได้';note.style.cssText='font-size:13px;line-height:1.6;margin:10px 0';dialog.append(note);
+  const message=document.createElement('p');message.setAttribute('role','status');dialog.append(message);
+  if(!data.pending.length){message.textContent='จับคู่ครบแล้ว';}
+  for(const row of data.pending){
+   const box=document.createElement('section');box.style.cssText='border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0';
+   const title=document.createElement('strong');title.textContent=row.name;title.style.overflowWrap='anywhere';box.append(title);
+   const count=document.createElement('p');count.textContent=row.count+' อินเวอร์เตอร์';count.style.cssText='font-size:12px;margin:5px 0';box.append(count);
+   const search=document.createElement('input');search.type='search';search.placeholder='ค้นหาโครงการในฐานข้อมูลกลาง';search.setAttribute('aria-label','ค้นหาโครงการสำหรับ '+row.name);search.style.cssText='width:100%;margin:6px 0;padding:9px;box-sizing:border-box';box.append(search);
+   const select=document.createElement('select');select.setAttribute('aria-label','โครงการกลางสำหรับ '+row.name);select.style.cssText='width:100%;padding:9px;margin:5px 0;box-sizing:border-box';box.append(select);
+   let selected='';const render=()=>{const term=search.value.trim().toLocaleLowerCase();select.replaceChildren(new Option('เลือกโครงการ — ไม่จับคู่อัตโนมัติ',''));for(const p of data.projects)if(p.id===selected||p.standard_name.toLocaleLowerCase().includes(term))select.add(new Option(p.standard_name+(p.capacity_kwp==null?'':' · '+p.capacity_kwp+' kWp'),p.id));select.value=selected;};render();search.oninput=render;
+   const save=document.createElement('button');save.type='button';save.className='btn small';save.textContent='ยืนยันการจับคู่';save.disabled=true;box.append(save);
+   select.onchange=()=>{selected=select.value;save.disabled=inverterDbRole!=='admin'||!selected;};
+   if(inverterDbRole!=='admin'){search.disabled=true;select.disabled=true;}
+   save.onclick=async()=>{
+    if(inverterDbBusy||inverterDbRole!=='admin'||!selected)return;
+    const target=data.projects.find(p=>p.id===selected);if(!target)return;
+    if(!await SolarCloud.confirmDialog('ยืนยันจับคู่โครงการ',row.name+' → '+target.standard_name+' · '+row.count+' อินเวอร์เตอร์ กรุณาตรวจ Phase / Meter ให้ตรงกัน',{confirmText:'ยืนยันจับคู่'}))return;
+    inverterDbBusy=true;save.disabled=true;select.disabled=true;search.disabled=true;
+    try{const result=await inverterDb.match(row.name,selected);message.textContent='บันทึกแล้ว '+result.changed+' อินเวอร์เตอร์ · '+target.standard_name;box.remove();await inverterRefreshMatching();}
+    catch(e){message.textContent=e.message;select.disabled=false;search.disabled=false;save.disabled=false;}
+    finally{inverterDbBusy=false;}
+   };dialog.append(box);
+  }
+  const close=document.createElement('button');close.type='button';close.className='btn small';close.textContent='ปิด';close.onclick=()=>dialog.close();dialog.append(close);dialog.showModal();
+ }catch(e){alert(e.message);}finally{button.disabled=!inverterDb;}
 }
 </script>
 </body>
