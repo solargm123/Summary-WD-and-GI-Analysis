@@ -365,6 +365,21 @@ body{zoom:1.1;min-height:calc(100vh / 1.1)}
  #trendTab .chart-container{height:320px}
 }
 </style>
+<style id="giTrendTableFitFix20261006">
+/* Keep Chart.js canvas inside its responsive chart box. */
+#trendTab .chart-container{position:relative;overflow:hidden;isolation:isolate}
+#trendTab #irrTrendChart{position:absolute;inset:0;display:block;width:100%!important;height:100%!important}
+#trendTab .trend-summary{position:relative;z-index:1;clear:both;margin-top:20px;background:var(--card-bg)}
+#trendTab .trend-summary-head{position:relative;background:var(--card-bg);flex-wrap:wrap}
+#trendTab .trend-summary-head h4{min-width:0;overflow-wrap:anywhere}
+#trendTab .trend-summary th{background:var(--input-bg)!important}
+#trendTab .trend-summary th:nth-child(1){width:4%}
+#trendTab .trend-summary th:nth-child(2){width:25%}
+#trendTab .trend-summary th:nth-child(3){width:17%}
+#trendTab .trend-summary th:nth-child(4),#trendTab .trend-summary th:nth-child(5){width:10%}
+#trendTab .trend-summary th:nth-child(6),#trendTab .trend-summary th:nth-child(7),#trendTab .trend-summary th:nth-child(8){width:11.333%}
+#trendTab .trend-summary th:nth-child(1),#trendTab .trend-summary td:nth-child(1){text-align:center;padding-left:4px;padding-right:4px}
+</style>
 </head>
 <body class="solar-gi">
 
