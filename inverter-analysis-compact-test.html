@@ -166,6 +166,7 @@ body.dark .inv-month-good,[data-theme=dark] .inv-month-good{color:#86efac!import
 @media(max-width:900px){.inv-monthly-table thead{display:none}.inv-monthly-table,.inv-monthly-table tbody,.inv-monthly-table tr{display:block}.inv-monthly-table tr{border-bottom:2px solid var(--line);display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.inv-monthly-table td{display:flex;flex-direction:column;border:0;min-width:0}.inv-monthly-table td:before{content:attr(data-label);font-size:11px;color:var(--muted)}.inv-monthly-table td[colspan]{grid-column:1/-1}}
 </style>
 <style>#inverterPreferenceActions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}#inverterPreferenceActions [hidden]{display:none!important}#inverterCCSaved{font-size:11px;color:var(--muted)}#mainCenterBack{white-space:nowrap}</style>
+<style id="inv-focus-ui">#compactPreviewSave,#compactPreviewOpen,#sideDelete{display:none!important}#inverterPreferenceActions{margin-left:0;gap:6px}#inverterCCSaved:empty{display:none}.inv-filter-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.inv-filter-head b{font-size:13px}.inv-filter-content[hidden]{display:none!important}.control-card.inv-filters-collapsed .inv-filter-head{margin-bottom:0}.inv-filter-toggle{min-height:30px;padding:5px 10px;font-size:12px}#page-daily .chart-shell{height:clamp(420px,52vh,620px)}#page-daily .chart-wrap{min-height:420px}#page-daily .page-head,#page-monthly .page-head{margin-bottom:12px}</style>
 </head>
 <body>
 <div class="shell" id="appShell">
@@ -205,7 +206,7 @@ body.dark .inv-month-good,[data-theme=dark] .inv-month-good{color:#86efac!import
   </section>
 
   <section class="page active" id="page-daily">
-   <div class="page-head"><div><div class="eyebrow">DAILY PERFORMANCE ANALYSIS</div><h1 class="page-title">Relative Performance Trend</h1><p class="subtitle">คำนวณ Unit (%) ใหม่จากพลังงานจำเพาะ ÷ พลังงานจำเพาะสูงสุดของโครงการในวันเดียวกัน และใช้ค่าต่ำสุดของ Unit (%) เมื่อ วันที่ + โครงการ + อุปกรณ์ มีหลายรายการ</p></div></div>
+   <div class="page-head"><div><div class="eyebrow">DAILY PERFORMANCE ANALYSIS</div><h1 class="page-title">Relative Performance Trend</h1></div></div>
    <div class="card source-strip"><div class="source-main"><div class="source-icon">ƒx</div><div><b>Daily calculation contract</b><small>ข้อมูลดิบเป็นแหล่งข้อมูลหลัก · ข้อมูลที่หายจะแสดงเป็นช่องว่าง ไม่ตีความเป็น 0% · อุปกรณ์ที่ถูกยกเว้นยังแสดงได้แต่ไม่ใช้เป็นค่าอ้างอิง</small></div></div><div class="source-tags" id="dailyTags"></div></div>
    <section class="card control-card"><div class="overview-mode" id="dailyViewMode" style="margin-bottom:12px"><button class="active" data-view="daily">Daily</button><button data-view="monthly">Monthly</button><button data-view="yearly">Yearly</button><button data-view="lifetime">Lifetime</button></div><div class="filters">
     <div class="field"><label id="dailyProjectLabel">Project</label><select class="control" id="dailyProject"></select></div>
@@ -221,7 +222,7 @@ body.dark .inv-month-good,[data-theme=dark] .inv-month-good{color:#86efac!import
   </section>
 
   <section class="page" id="page-monthly">
-   <div class="page-head"><div><div class="eyebrow">MONTHLY AVAILABILITY ANALYSIS</div><h1 class="page-title">Monthly Relative Availability</h1><p class="subtitle">รายงานรายเดือนใช้ระยะเวลาเชื่อมต่อกริดเพื่อหาค่าระยะเวลาอ้างอิงของแต่ละโครงการ แล้วคำนวณความพร้อมใช้งานสัมพัทธ์และชั่วโมงการทำงานที่สูญเสีย แยกจากประสิทธิภาพรายวัน</p></div><button class="btn small primary" id="simpleMonthlyReport">Monthly report · Easy to read</button></div>
+   <div class="page-head"><div><div class="eyebrow">MONTHLY AVAILABILITY ANALYSIS</div><h1 class="page-title">Monthly Relative Availability</h1></div><button class="btn small primary" id="simpleMonthlyReport">Monthly report · Easy to read</button></div>
    <section class="card control-card"><div class="filters" style="grid-template-columns:190px minmax(250px,1fr) minmax(280px,1fr) 160px 170px auto"><div class="field"><label>Monthly Source</label><select class="control" id="monthlySource"><option value="derived">Derived from Daily</option><option value="imported">Imported Monthly</option><option value="auto">Auto</option></select></div><div class="field"><label>Period · Multi-select</label><button class="multi-btn" id="monthlyPeriodBtn"><span id="monthlyPeriodLabel">—</span><span>⌄</span></button><div class="popover period-pop" id="monthlyPeriodPop"><div class="pop-head"><b>Select months</b><button class="btn small primary" id="monthlyPeriodDone">Apply</button></div><div class="period-picker-summary"><span>Selected months</span><b id="monthlyPeriodDraftSummary">—</b></div><div class="period-quick" id="monthlyPeriodQuick"><button data-action="latest">Latest</button><button data-action="last3">Last 3</button><button data-action="last6">Last 6</button><button data-action="latestYear">Latest Year</button><button data-action="all">All</button></div><div class="period-list" id="monthlyPeriodList"></div><div class="period-help">Select months, then press Apply once. Changing Project or Monthly Source keeps the selected month(s); missing data is shown instead of silently jumping to Latest.</div></div></div><div class="field"><label>Project</label><select class="control" id="monthlyProject"></select></div><div class="field"><label>Status</label><select class="control" id="monthlyStatus"><option value="all">All Status</option><option value="good">Good</option><option value="watch">Watch</option><option value="warning">Warning</option><option value="critical">Critical</option><option value="data">Data Issue</option></select></div><div class="field"><label>Reference</label><select class="control" id="monthlyRefQuick"><option value="p95">P95 Duration</option><option value="max">Maximum</option><option value="median">Median</option><option value="manual">Manual</option></select></div><button class="btn" id="monthlyReset">Reset</button></div><div class="filter-foot"><div class="chips"><span class="chip">Availability <b>Grid Duration ÷ Reference</b></span><span class="chip">Cap <b>100%</b></span><span class="chip">Lost Hours <b>max(Reference − Duration, 0)</b></span></div><div class="hint" id="monthlySourceHint">Derived from Daily จะสรุป Yield / Specific / Peak AC / Grid Duration จากข้อมูลรายวัน และไม่เขียนทับ Imported Monthly</div></div><div class="manual-ref-box hidden" id="manualMonthlyBox"><div><b>Manual Reference Duration</b><span id="manualRefContext">Select one Project</span></div><div class="manual-ref-actions"><input class="control" id="manualRefValue" type="number" min="0" step="0.01" placeholder="Hours" /><button class="btn primary" id="manualRefSave">Save</button><button class="btn" id="manualRefClear">Clear</button></div><small id="manualRefNote">Manual mode requires a value for each Project + Month. If blank, the engine temporarily falls back to P95 and shows this warning.</small></div></section>
    <div class="summary-grid five" id="monthlySummary"></div>
    <div class="review-grid" id="monthlyReviewGrid">
@@ -1622,7 +1623,7 @@ async function inverterSavePreferences(){
  const card=$('manualThresholdProject').closest('section.card');card.id='inverterManualThresholdCard';
  const batch=document.createElement('button');batch.id='inverterBatchOpen';batch.className='btn small';batch.onclick=inverterOpenBatch;card.querySelector('.card-head').append(batch);
  const cc=document.createElement('div');cc.id='inverterPreferenceActions';cc.innerHTML='<span id="inverterCCRole" hidden></span><button class="btn small primary" id="inverterCCSave"></button><span id="inverterCCSaved"></span>';
- const oldSearch=document.querySelector('.topbar .search');oldSearch.style.display='none';oldSearch.after(cc);
+ const oldSearch=document.querySelector('.topbar .search');oldSearch.style.display='none';document.querySelector('.topbar .actions').prepend(cc);
  for(const id of ['inverterDbStatus','inverterDbRefresh','inverterDbConnect','inverterDbMatch']){const node=$(id);node.hidden=true;cc.append(node);}
  $('inverterDbSave').closest('div').style.display='none';$('inverterCCSave').onclick=inverterSavePreferences;
  const modal=document.createElement('div');modal.id='inverterBatchModal';modal.className='modal';modal.innerHTML='<div class="modal-card" style="width:min(620px,100%)"><div class="modal-head"><b>Batch Threshold</b><button class="btn small" id="inverterBatchCancel">✕</button></div><div class="modal-body"><p id="inverterBatchTitle"></p><div id="inverterBatchTargets"></div><label class="inv-batch-choice"><input type="checkbox" id="inverterBatchOverwrite">'+tr('Replace existing values in this scope','แทนที่ค่าเดิมในขอบเขตนี้')+'</label></div><div class="modal-foot"><button class="btn primary" id="inverterBatchApply">'+tr('Apply to selected projects','คัดลอกไปยังโครงการที่เลือก')+'</button></div></div>';document.body.append(modal);
@@ -1693,5 +1694,23 @@ async function inverterBuildMatrixWorkbook(records){
 }
 
 </script>
+<script>
+(function(){
+ const entries=[];
+ for(const page of ['daily','monthly']){
+  const card=document.querySelector('#page-'+page+' .control-card');
+  const body=document.createElement('div');body.className='inv-filter-content';body.id='inv-'+page+'-filters';
+  while(card.firstChild)body.append(card.firstChild);
+  const header=document.createElement('div');header.className='inv-filter-head';
+  const label=document.createElement('b'),button=document.createElement('button');button.type='button';button.className='btn small inv-filter-toggle';button.id='inv-'+page+'-filter-toggle';button.setAttribute('aria-controls',body.id);button.setAttribute('aria-expanded','true');
+  const item={card,body,label,button};entries.push(item);
+  button.onclick=()=>{body.hidden=!body.hidden;card.classList.toggle('inv-filters-collapsed',body.hidden);button.setAttribute('aria-expanded',String(!body.hidden));updateLabels();};
+  header.append(label,button);card.append(header,body);
+ }
+ function updateLabels(){for(const item of entries){item.label.textContent=tr('Plant and Date','โครงการและช่วงเวลา');item.button.textContent=item.body.hidden?tr('Show filters','แสดงตัวกรอง'):tr('Hide filters','ซ่อนตัวกรอง');}}
+ const previous=applyLanguage;applyLanguage=function(){previous();updateLabels();};updateLabels();
+})();
+</script>
 </body>
 </html>
+
