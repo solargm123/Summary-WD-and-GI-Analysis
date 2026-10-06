@@ -72,7 +72,7 @@
     const {data,error}=await getClient().rpc('create_analysis_project',{p_workspace:m.workspace_id,p_analysis_type:type,p_name:(name||fallback).trim()});
     if(error)throw error;return data.id;
   }
-function analysisUrl(project){const page=project.analysis_type==='working_day'?'working-day-analysis.html':project.analysis_type==='global_irradiance'?'global-irradiance-analysis.html':'pr-report-r4.html';const version=project.analysis_type==='global_irradiance'?'20261005-pr-gi-theory1':project.analysis_type==='pr_report'?'20261005-pr-gi-theory1':'20261005-desktop110-1';return `${page}?v=${version}&project=${encodeURIComponent(project.id)}`}
+function analysisUrl(project){const page=project.analysis_type==='working_day'?'working-day-analysis.html':project.analysis_type==='global_irradiance'?'global-irradiance-analysis.html':'pr-report-r4.html';const version=project.analysis_type==='global_irradiance'?'20261005-pr-gi-theory1':project.analysis_type==='pr_report'?'20261005-pr-gi-theory1':'20261006-wd-render1';return `${page}?v=${version}&project=${encodeURIComponent(project.id)}`}
   async function signIn(email,password){const {data,error}=await getClient().auth.signInWithPassword({email,password});if(error)throw error;return data}
   async function signOut(){await getClient().auth.signOut();location.replace(indexUrl())}
   async function loadProject(id){

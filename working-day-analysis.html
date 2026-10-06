@@ -27,7 +27,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20261005-pr110-workflow1"></script>
+    <script src="cloud-core.js?v=20261006-wd-render1"></script>
     <style> 
         html, body, body *:not(i), button, input, select, option, textarea, table, th, td, code {
             font-family: 'Bai Jamjuree', Tahoma, Arial, sans-serif !important;
@@ -1954,7 +1954,7 @@ body.wd-theme-switching *::after{
             });
         }
 
-        function renderMonthSelectOptions(selectedKey, reaggregate = true) {
+        function renderMonthSelectOptions(selectedKey, reaggregate = true, render = true) {
             const selectEl = document.getElementById('monthSelect');
             selectEl.innerHTML = '';
             if (detectedMonths.length === 0) {
@@ -1970,7 +1970,7 @@ body.wd-theme-switching *::after{
             });
             if (!selectEl.value) selectEl.value = detectedMonths[0];
             document.getElementById('monthPickerLabel').textContent = monthYearLabel(selectEl.value);
-            if (reaggregate) return onMonthSelectChange();
+            if (reaggregate) return onMonthSelectChange({render});
             return Promise.resolve();
         }
 
@@ -2007,7 +2007,7 @@ body.wd-theme-switching *::after{
             finally { picker.disabled=false;picker.classList.remove('opacity-60','cursor-wait'); }
         }
 
-        async function onMonthSelectChange() {
+        async function onMonthSelectChange({render = true} = {}) {
             const select=document.getElementById('monthSelect'),val=select.value;
             if (val) {
                 if (activeMonthKey && activeMonthKey !== val) rememberCurrentMonthPlantState(activeMonthKey);
@@ -2023,7 +2023,7 @@ body.wd-theme-switching *::after{
                 applyMonthPlantState(val);
                 activeMonthKey = val;
                 WDPeriod.addFirstNotes();
-                calculateAndRender();
+                if(render)calculateAndRender();
             }
         }
 
@@ -2871,7 +2871,7 @@ body.wd-theme-switching *::after{
             }
           });
           const selected=state.selectedMonth||base.loadedMonth||detectedMonths[0];
-          await renderMonthSelectOptions(selected,true);
+          await renderMonthSelectOptions(selected,true,false);
           plantData.forEach(plant=>{
             const saved=overrides[plant.name.toLowerCase()],key=projectStableKey(plant);
             if(saved){
