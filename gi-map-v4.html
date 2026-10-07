@@ -283,7 +283,7 @@ html,body{max-width:100%;overflow-x:hidden}
  #gi-map-module .gimap-month-grid{grid-template-columns:repeat(6,minmax(0,1fr))}
 }
 </style>
-</head>
+<style>#gi-map-module .gimap-basemap-control{right:12px;bottom:78px}#gi-map-module .gimap-zoom-slider{display:flex;align-items:center;gap:7px;background:#fff;color:#233b4f;padding:7px;border:1px solid #dce4ea;border-radius:10px;box-shadow:0 2px 8px #172a3a26;font:600 11px 'Bai Jamjuree',sans-serif}#gi-map-module .gimap-zoom-slider input{width:125px;accent-color:#167b84;cursor:pointer}#gi-map-module .gimap-zoom-slider button{width:27px;height:27px;border:1px solid #dce4ea;border-radius:7px;background:#fff;color:#233b4f;font-size:17px;cursor:pointer}#gi-map-module .gimap-zoom-slider output{min-width:30px;text-align:center}</style></head>
 
 <body style="margin:0;height:100vh">
 
@@ -372,7 +372,7 @@ html,body{max-width:100%;overflow-x:hidden}
         <button class="gimap-btn" data-view-toggle="timeline" aria-expanded="true">ซ่อนเดือน</button>
       </nav>
       <div class="gimap-map" data-role="map"></div>
-      <div class="gimap-basemap-control"><select class="gimap-btn" data-role="basemap" aria-label="Map mode"><option value="street">แผนที่ถนน</option><option value="satellite">ภาพดาวเทียม</option></select></div>
+      <div class="gimap-basemap-control"><select class="gimap-btn" data-role="basemap" aria-label="Map mode"><option value="street">แผนที่ถนน</option><option value="satellite" selected>ภาพดาวเทียม</option></select></div>
 
       <div class="gimap-map-error" data-role="map-error">
         <div class="box">
@@ -921,9 +921,9 @@ html,body{max-width:100%;overflow-x:hidden}
     }
     const mapEl=$('[data-role="map"]');
     if(map){map.remove();map=null}
-    map=L.map(mapEl,{zoomControl:false,preferCanvas:true}).setView([13.3,101.0],6);
-    L.control.zoom({position:"bottomright"}).addTo(map);
-    const baseSelect=$('[data-role="basemap"]');function setBase(){if(baseLayer)map.removeLayer(baseLayer);const satellite=baseSelect.value==='satellite';baseLayer=L.tileLayer(satellite?'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}':options.tileUrl,{maxZoom:18,attribution:satellite?'Tiles © Esri — Sources: Esri, Maxar, Earthstar Geographics, and the GIS User Community':options.tileAttribution}).addTo(map);}baseLayer=null;setBase();baseSelect.onchange=setBase;
+    map=L.map(mapEl,{zoomControl:false,preferCanvas:true,minZoom:2,maxZoom:22,zoomSnap:.25,zoomDelta:.25,scrollWheelZoom:true,wheelPxPerZoomLevel:160,wheelDebounceTime:30}).setView([13.3,101.0],6);
+    const zoomControl=L.control({position:'bottomright'});zoomControl.onAdd=()=>{const box=L.DomUtil.create('div','gimap-zoom-slider');box.innerHTML='<button type="button" data-zoom-out aria-label="Zoom out">−</button><input type="range" min="2" max="22" step=".25" value="6" aria-label="Map zoom"><output>6</output><button type="button" data-zoom-in aria-label="Zoom in">+</button>';L.DomEvent.disableClickPropagation(box);L.DomEvent.disableScrollPropagation(box);const slider=box.querySelector('input'),value=box.querySelector('output');let frame=0;const sync=()=>{slider.value=map.getZoom();value.textContent=Number(map.getZoom()).toFixed(2).replace(/\.00$/,'');};slider.oninput=()=>{value.textContent=slider.value;cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>map.setZoom(Number(slider.value),{animate:false}));};box.querySelector('[data-zoom-out]').onclick=()=>map.setZoom(Math.max(2,map.getZoom()-.25),{animate:false});box.querySelector('[data-zoom-in]').onclick=()=>map.setZoom(Math.min(22,map.getZoom()+.25),{animate:false});map.on('zoomend',sync);return box;};zoomControl.addTo(map);
+    const baseSelect=$('[data-role="basemap"]');function setBase(){if(baseLayer)map.removeLayer(baseLayer);const satellite=baseSelect.value==='satellite';baseLayer=L.tileLayer(satellite?'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}':options.tileUrl,{maxZoom:22,maxNativeZoom:satellite?18:19,attribution:satellite?'Tiles © Esri — Sources: Esri, Maxar, Earthstar Geographics, and the GIS User Community':options.tileAttribution}).addTo(map);}baseLayer=null;setBase();baseSelect.onchange=setBase;
     markerLayer=L.layerGroup().addTo(map);
     compareLayer=L.layerGroup().addTo(map);
     map.on("moveend",()=>renderMarkers());
