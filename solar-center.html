@@ -160,6 +160,7 @@ html[data-fs-theme="light"] .central-source b{color:#24334a}
   <header class="workspace-head">
     <div class="brand-area"><div class="brand-mark"><i class="fa-solid fa-sun"></i></div><div class="brand-copy"><h1>Solar system Analysis Center</h1><div id="workspaceName" class="subtitle">Cloud Workspace</div></div></div>
     <div class="workspace-actions">
+      <button id="projectMapButton" class="small-btn" type="button" onclick="location.href='project-map-overview.html?v=20261007-project-map1'"><i class="fa-solid fa-map-location-dot"></i> Project Map Overview</button>
       <button id="manageMembersButton" class="small-btn hidden" onclick="openMembers()">สมาชิกและสิทธิ์</button>
       <button id="adminDataButton" class="small-btn hidden" onclick="openAdminData()">ศูนย์จัดการ Admin</button>
       <div class="user-area"><span id="currentUserAvatar" class="user-avatar">U</span><div><span id="currentUser" class="user-chip"></span><span id="currentRole" class="badge" style="display:block;margin-top:3px"></span></div></div>
@@ -519,6 +520,7 @@ boot();
 </script>
 <script src="unified-ui.js?v=20261001-scoped"></script>
 <script src="solar-controls.js?v=20261001-3"></script>
+<script>document.addEventListener('DOMContentLoaded',()=>{const button=document.getElementById('projectMapButton'),toolbar=document.querySelector('#workspaceView .workspace-actions .fs-ui-toolbar');if(button&&toolbar)toolbar.before(button)});</script>
 </body>
 </html>
 
