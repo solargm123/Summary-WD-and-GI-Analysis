@@ -363,6 +363,7 @@ html,body{max-width:100%;overflow-x:hidden}
 
     <main class="gimap-main">
       <nav class="gimap-view-controls" aria-label="แสดงหรือซ่อนส่วนประกอบ">
+        <select class="gimap-btn" data-role="basemap" aria-label="Map mode"><option value="street">แผนที่ถนน</option><option value="satellite">ภาพดาวเทียม</option></select>
         <label class="gimap-gi-switch"><input type="checkbox" data-role="show-all-gi"> <span>แสดงค่า GI ทั้งหมด</span></label>
         <button class="gimap-btn" data-view-toggle="sidebar" aria-expanded="true">ซ่อนตัวกรอง</button>
         <button class="gimap-btn" data-view-toggle="topbar" aria-expanded="true">ซ่อนสรุป</button>
@@ -499,7 +500,7 @@ html,body{max-width:100%;overflow-x:hidden}
   const monthsTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
   const monthsFull=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 
-  let root=null,map=null,markerLayer=null,compareLayer=null,bound=false;
+  let root=null,map=null,markerLayer=null,compareLayer=null,baseLayer=null,bound=false;
   let data=[];
   let options={
     tileUrl:"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -919,7 +920,7 @@ html,body{max-width:100%;overflow-x:hidden}
     if(map){map.remove();map=null}
     map=L.map(mapEl,{zoomControl:false,preferCanvas:true}).setView([13.3,101.0],6);
     L.control.zoom({position:"bottomright"}).addTo(map);
-    L.tileLayer(options.tileUrl,{maxZoom:18,attribution:options.tileAttribution}).addTo(map);
+    const baseSelect=$('[data-role="basemap"]');function setBase(){if(baseLayer)map.removeLayer(baseLayer);const satellite=baseSelect.value==='satellite';baseLayer=L.tileLayer(satellite?'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}':options.tileUrl,{maxZoom:18,attribution:satellite?'Tiles © Esri — Sources: Esri, Maxar, Earthstar Geographics, and the GIS User Community':options.tileAttribution}).addTo(map);}baseLayer=null;setBase();baseSelect.onchange=setBase;
     markerLayer=L.layerGroup().addTo(map);
     compareLayer=L.layerGroup().addTo(map);
     map.on("moveend",()=>renderMarkers());
@@ -1136,7 +1137,7 @@ html,body{max-width:100%;overflow-x:hidden}
 </script>
 
 <script src="gi-map-label-layout.js?v=20261005-map-formula-view1"></script>
-<script src="gi-map-language.js?v=20261005-map-formula-view1"></script>
+<script src="gi-map-language.js?v=20261007-basemap1"></script>
 <script src="gi-map-v4-live.js?v=20261005-map-formula-view1"></script>
 <script src="gi-map-filter-picker.js?v=20261005-map-formula-view1"></script>
 <script src="gi-map-location-ui.js?v=20261005-map-formula-view1"></script>

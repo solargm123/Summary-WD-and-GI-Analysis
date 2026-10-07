@@ -2,6 +2,7 @@
 'use strict';
 const root=document.getElementById('gi-map-module');let lang='th',queued=false;
 const pairs=[
+['แผนที่ถนน','Street map'],['ภาพดาวเทียม','Satellite'],
 ['ดูการคำนวณ','Calculation details'],['ค่าจริง = Average ของโครงการที่ตรวจ','Actual = selected project Average'],['ใช้ Average ของโครงการอ้างอิง B','Uses reference project B Average'],['ไม่รวมโครงการที่กำลังตรวจ · พิกัดซ้ำรวมเป็นหนึ่งจุดโดยใช้ Median ภายในจุด','Excludes the inspected project · Duplicate coordinates form one site using its internal Median'],['ค่าเกณฑ์ที่ระบบใช้','Reference used by the system'],['ข้อมูลไม่พอ จึงยังไม่ใช้ผลคำนวณเป็นเกณฑ์','Insufficient data: the candidate result is not used as a reference'],['ตัวเลขแสดง 6 ตำแหน่ง · คำนวณด้วยค่าจริงก่อนปัดเศษ','Values shown to 6 decimals · Calculated before rounding'],['ตัวกรองตารางไม่เปลี่ยนสมาชิกที่ใช้คำนวณ','Table filters do not change calculation members'],
 ['กรองจาก Average · เรียงระยะทางใกล้ไปไกล','Filter by Average · Nearest first'],
 ['ระดับความต่าง','Difference level'],['ทิศทางความต่าง','Difference direction'],['เขียว','Green'],['ส้ม','Orange'],['แดง','Red'],['ข้อมูลไม่พอ','Insufficient data'],['สูงกว่าค่าอ้างอิง','Higher than reference'],['ต่ำกว่าค่าอ้างอิง','Lower than reference'],['กรองจาก Average · เรียงความต่างมากไปน้อย','Filter by Average · Largest difference first'],['ไม่มีโครงการตรงกับตัวกรอง','No projects match these filters'],
