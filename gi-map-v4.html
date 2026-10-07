@@ -160,6 +160,8 @@
   #gi-map-module .gimap-month-grid{grid-template-columns:repeat(6,1fr)}
   #gi-map-module .gimap-detail{top:130px;right:10px;width:310px;max-height:calc(100% - 245px)}
 }
+
+#gi-map-module .gimap-basemap-control{position:absolute;right:54px;bottom:32px;z-index:800;max-width:calc(100% - 74px)}#gi-map-module .gimap-basemap-control select{width:142px;max-width:100%;height:34px;padding:5px 9px;font-size:11px;border-radius:9px;background:#fff;color:#233b4f;box-shadow:0 2px 8px #172a3a26}
 </style>
 <style>
 #gi-map-module .gimap-marker-label span{font-size:22px;line-height:1.05;color:var(--text);font-weight:700;margin:0}
@@ -363,13 +365,14 @@ html,body{max-width:100%;overflow-x:hidden}
 
     <main class="gimap-main">
       <nav class="gimap-view-controls" aria-label="แสดงหรือซ่อนส่วนประกอบ">
-        <select class="gimap-btn" data-role="basemap" aria-label="Map mode"><option value="street">แผนที่ถนน</option><option value="satellite">ภาพดาวเทียม</option></select>
+        
         <label class="gimap-gi-switch"><input type="checkbox" data-role="show-all-gi"> <span>แสดงค่า GI ทั้งหมด</span></label>
         <button class="gimap-btn" data-view-toggle="sidebar" aria-expanded="true">ซ่อนตัวกรอง</button>
         <button class="gimap-btn" data-view-toggle="topbar" aria-expanded="true">ซ่อนสรุป</button>
         <button class="gimap-btn" data-view-toggle="timeline" aria-expanded="true">ซ่อนเดือน</button>
       </nav>
       <div class="gimap-map" data-role="map"></div>
+      <div class="gimap-basemap-control"><select class="gimap-btn" data-role="basemap" aria-label="Map mode"><option value="street">แผนที่ถนน</option><option value="satellite">ภาพดาวเทียม</option></select></div>
 
       <div class="gimap-map-error" data-role="map-error">
         <div class="box">
