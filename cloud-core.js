@@ -52,6 +52,18 @@
     if(client)return client;
     if(!global.supabase?.createClient)throw new Error('Supabase client library could not be loaded.');
     client=global.supabase.createClient(CONFIG.url,CONFIG.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+    // Only simultaneous identical reads share a request. Writes and subsequent reads remain fresh.
+    const readRpcNames=new Set(['get_analysis_bootstrap','get_central_summary','get_working_day_month','get_global_irradiance_month','get_pr_project_starts','get_pr_report_page','get_pr_projects_page','get_central_analysis_payload']);
+    const readRequests=new Map(),rpc=client.rpc.bind(client);
+    client.rpc=function(name,args,options){
+      if(!readRpcNames.has(name))return rpc(name,args,options);
+      const key=JSON.stringify([localUserId,name,args||{},options||{}]);
+      if(readRequests.has(key))return readRequests.get(key);
+      const request=Promise.resolve().then(()=>rpc(name,args,options));
+      readRequests.set(key,request);
+      request.then(()=>{if(readRequests.get(key)===request)readRequests.delete(key)},()=>{if(readRequests.get(key)===request)readRequests.delete(key)});
+      return request;
+    };
     return client;
   }
   async function session(){const {data,error}=await getClient().auth.getSession();if(error)throw error;localUserId=data.session?.user?.id||null;return data.session}
@@ -400,8 +412,12 @@ function analysisUrl(project){const page=project.analysis_type==='working_day'?'
   }
   const CENTRAL_CACHE_DB='fusion-central-cache-v2',CENTRAL_CACHE_STORE='payloads';
   function cacheDb(){return new Promise((resolve,reject)=>{const request=indexedDB.open(CENTRAL_CACHE_DB,1);request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains(CENTRAL_CACHE_STORE))request.result.createObjectStore(CENTRAL_CACHE_STORE)};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)})}
-  async function cacheRead(key){try{const db=await cacheDb();return await new Promise((resolve,reject)=>{const tx=db.transaction(CENTRAL_CACHE_STORE,'readonly'),request=tx.objectStore(CENTRAL_CACHE_STORE).get(key);request.onsuccess=()=>resolve(request.result||null);request.onerror=()=>reject(request.error)})}catch{return null}}
-  async function cacheWrite(key,value){try{const db=await cacheDb();await new Promise((resolve,reject)=>{const tx=db.transaction(CENTRAL_CACHE_STORE,'readwrite');tx.objectStore(CENTRAL_CACHE_STORE).put(value,key);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch{}}
+  async function cacheRead(key){
+    let db;try{db=await cacheDb();return await new Promise((resolve,reject)=>{const tx=db.transaction(CENTRAL_CACHE_STORE,'readonly'),request=tx.objectStore(CENTRAL_CACHE_STORE).get(key);let value=null;request.onsuccess=()=>{value=request.result||null};tx.oncomplete=()=>resolve(value);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Cache read aborted'))})}catch{return null}finally{db?.close()}
+  }
+  async function cacheWrite(key,value){
+    let db;try{db=await cacheDb();await new Promise((resolve,reject)=>{const tx=db.transaction(CENTRAL_CACHE_STORE,'readwrite');tx.objectStore(CENTRAL_CACHE_STORE).put(value,key);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Cache write aborted'))})}catch{}finally{db?.close()}
+  }
   function cacheKey(workspace,type,summary){const variant=type==='pr_report'?'cursor-v2':type==='global_irradiance'?'province-v2':'v1';return [workspace,type,variant,summary?.updated_at||summary?.date_end||'current',summary?.record_count||0].join(':')}
   async function loadGiOverridesForPr(){
     if(!currentMembership?.workspace_id)return{};
