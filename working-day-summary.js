@@ -181,8 +181,8 @@ const WDReview = (() => {
   let reviewScope=null,pendingPathScope=null,deferredPathScope=null;
   function withReviewScope(fn){
     if(reviewScope)return fn(); // Reuse validation only within the current render; never across edits.
-    const previous=reviewScope,previousPaths=pendingPathScope,previousDeferred=deferredPathScope;reviewScope=new Map();pendingPathScope=SolarCloud.pendingSharedPaths?.()||[];deferredPathScope=SolarCloud.deferredSharedPaths?.()||[];
-    try{return fn()}finally{reviewScope=previous;pendingPathScope=previousPaths;deferredPathScope=previousDeferred}
+    const previous=reviewScope,previousPaths=pendingPathScope,previousDeferred=deferredPathScope,previousMetrics=wdMetricScope;if(!wdMetricScope)wdMetricScope=new Map();reviewScope=new Map();pendingPathScope=SolarCloud.pendingSharedPaths?.()||[];deferredPathScope=SolarCloud.deferredSharedPaths?.()||[];
+    try{return fn()}finally{reviewScope=previous;pendingPathScope=previousPaths;deferredPathScope=previousDeferred;wdMetricScope=previousMetrics}
   }
   let summaryShellHtml=null;
   const renderedHtml=new WeakMap();

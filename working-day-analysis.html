@@ -2820,7 +2820,7 @@ body.wd-theme-switching *::after{
 
         syncTableScrollbars();
     </script>
-    <script src="working-day-summary.js?v=20261006-wd-perf2"></script>
+    <script src="working-day-summary.js?v=20261007-wd-perf3"></script>
     <script src="working-day-period.js?v=20261002-collaboration2"></script>
     <script>
       const workingDayCloudAdapter={
@@ -2828,7 +2828,8 @@ body.wd-theme-switching *::after{
         presenceContext:()=>WDReview.presenceContext(),
         onPresence:(users,connected)=>WDReview.onPresence(users,connected),
         onSaved:(state,sent)=>{WDPeriod.syncSaved(state,sent);WDReview.onSaved(state,sent)},
-        capture(){
+        captureViewState(){return this.capture(false).userState;},
+        capture(includeBase=true){
           const selectedMonth=document.getElementById('monthSelect').value||null;
           const sunMode=document.querySelector('input[name="sunHoursMode"]:checked')?.value||'custom';
           rememberCurrentMonthPlantState(activeMonthKey);
@@ -2840,11 +2841,11 @@ body.wd-theme-switching *::after{
           Object.assign(overrides,WDReview.captureReviews());
           Object.assign(overrides,WDPeriod.capture());
           return {
-            baseData:{records:rawRecordsByFile.map(r=>r._sharedEnergyOriginal||r),detectedMonths:[...detectedMonths]},
+            baseData:includeBase?{records:rawRecordsByFile.map(r=>r._sharedEnergyOriginal||r),detectedMonths:[...detectedMonths]}:undefined,
             // Keep legacy period entries for synchronization; only versioned entries affect calculations.
             userState:{selectedMonth,visibleProjects:plantData.filter(p=>p.visible!==false).map(p=>p.name.toLowerCase()),lossFactor:'0.9',sunHoursTarget:document.getElementById('sunHoursTarget').value,sunHoursMode:sunMode,sunHoursCustom:document.getElementById('inputSunHoursCustom').value,monthLossStateVersion:restoredMonthLossStateVersion,overrides},
             periodKey:selectedMonth,
-            sourceFiles:[...new Set(rawRecordsByFile.map(record=>record.fileName).filter(Boolean))]
+            sourceFiles:includeBase?[...new Set(rawRecordsByFile.map(record=>record.fileName).filter(Boolean))]:undefined
           };
         },
         async restore(base,state){
