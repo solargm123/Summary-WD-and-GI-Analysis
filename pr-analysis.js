@@ -1,3 +1,6 @@
+/* PR Analysis paused; retain implementation for later use. */
+const PR_ANALYSIS_ENABLED=false;
+if(!PR_ANALYSIS_ENABLED){document.getElementById('analysisTab')?.classList.add('hidden');document.getElementById('analysisView')?.classList.add('hidden');}
 /* Read-only evidence analysis. Uses existing PR calculator; never updates source or reviews. */
 const PRAnalysis=(()=>{
  let seq=0,rows=[],evidence=[],lastProject='',lastMonth='',lastError='',lastExpected=0;
@@ -5,6 +8,7 @@ const PRAnalysis=(()=>{
  async function checked(q){const r=await q;if(r.error)throw r.error;return r.data||[]}
  async function pages(table,columns,filter){let out=[];for(let offset=0;;offset+=500){const part=await checked(filter(SolarCloud.getClient().from(table).select(columns)).range(offset,offset+499));out.push(...part);if(part.length<500)return out}}
  function open(){
+  if(!PR_ANALYSIS_ENABLED)return;
   ['overview','detail','data'].forEach(v=>{el(v+'View').classList.add('hidden');el(v+'Tab').classList.remove('active')});
   el('analysisView').classList.remove('hidden');el('analysisTab').classList.add('active');
   const prior=el('analysisProject').value,names=allProjectNames();el('analysisProject').replaceChildren(new Option(label('เลือกโครงการ','Select project'),''));

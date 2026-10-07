@@ -225,3 +225,6 @@ html[data-theme="dark"] body.solar-gi #mainTableContainer::-webkit-scrollbar-thu
 html[data-fs-theme="dark"] body.solar-pr .table-wrap::-webkit-scrollbar-thumb:horizontal{
   background:#8795a8;border-color:#253449;
 }
+
+/* PR Analysis paused: hide entry before scripts load. */
+body.solar-pr #analysisTab,body.solar-pr #analysisView{display:none!important}
