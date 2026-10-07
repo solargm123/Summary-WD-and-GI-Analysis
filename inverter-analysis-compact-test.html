@@ -1864,6 +1864,47 @@ async function invDockHistory(){
  renderDailyPickers();
 }
 </script>
+<script id="inverter-drag-threshold">
+// Project/month-specific preview. Dragging never commits until Apply.
+let invDragDraft=null,invDragActiveMonth='',invDragGesture=null;
+function invDragMonths(){return [...new Set(state.daily.filter(r=>r.project===ui.dailyProject&&(ui.dailyView==='lifetime'||ui.dailyView==='yearly'&&ui.selectedYears.has(r.date.slice(0,4))||['daily','monthly'].includes(ui.dailyView)&&ui.selectedMonths.has(r.date.slice(0,7)))).map(r=>r.date.slice(0,7)))].sort();}
+function invDragAllowed(){return ['admin','editor'].includes(inverterDbRole)&&!inverterDbBusy&&!inverterAutoRunning&&!inverterAutoPending;}
+function invDragClear(){invDragDraft=null;invDragGesture=null;$('invDragApply').hidden=$('invDragCancel').hidden=true;$('invDragHint').textContent=tr('Drag the amber handle, then Apply','ลากจุดสีส้ม แล้วกด Apply');}
+function invDragDraw(vw,devices){
+ const svg=$('dailySvg'),months=invDragMonths(),select=$('invDragMonth');if(!svg||!months.length){select.innerHTML='';return;}
+ if(!months.includes(invDragActiveMonth))invDragActiveMonth=months.at(-1);
+ select.innerHTML=months.map(m=>`<option value="${m}" ${m===invDragActiveMonth?'selected':''}>${esc(fmtMonth(m))}</option>`).join('');
+ select.disabled=!['admin','editor'].includes(inverterDbRole);
+ if(!['admin','editor'].includes(inverterDbRole))return;
+ const W=Math.max(360,svg.clientWidth||1280),H=Math.max(280,svg.clientHeight||470),left=62,right=W-26,top=24,bottom=H-52,keys=vw.keys;
+ let vals=[];for(const dev of devices)for(const key of keys){let r=vw.map.get(`${key}|${dev}`);if(r?.unit!=null)vals.push(r.unit);}
+ const axis=$('dailyAxis').value;let ymin=axis==='0'?0:axis==='80'?80:axis==='90'?90:Math.max(0,Math.floor(((vals.length?Math.min(...vals):95)-3)/5)*5);if(ymin>=100)ymin=95;
+ let indices=keys.map((k,i)=>k.slice(0,7)===invDragActiveMonth?i:-1).filter(i=>i>=0),x1=left,x2=right;
+ if(ui.dailyView!=='yearly'&&indices.length&&keys.length>1){const step=(right-left)/(keys.length-1);x1=Math.max(left,left+(indices[0]-.45)*step);x2=Math.min(right,left+(indices.at(-1)+.45)*step);}
+ const value=invDragDraft?.project===ui.dailyProject&&invDragDraft.month===invDragActiveMonth?invDragDraft.value:thresholdFor(ui.dailyProject,invDragActiveMonth+'-01');
+ const y=top+(100-Math.max(ymin,Math.min(100,value)))/(100-ymin)*(bottom-top),ns='http://www.w3.org/2000/svg',group=document.createElementNS(ns,'g');group.id='invDragHandle';
+ const band=document.createElementNS(ns,'rect');for(const [k,v]of Object.entries({x:x1,y:top,width:Math.max(10,x2-x1),height:bottom-top,fill:'var(--amber)',opacity:'.035','pointer-events':'none'}))band.setAttribute(k,v);group.append(band);
+ const line=document.createElementNS(ns,'line');for(const [k,v]of Object.entries({x1,x2,y1:y,y2:y,stroke:'var(--amber)','stroke-width':3,'pointer-events':'none'}))line.setAttribute(k,v);group.append(line);
+ const handle=document.createElementNS(ns,'circle');for(const [k,v]of Object.entries({cx:(x1+x2)/2,cy:y,r:9,fill:'var(--surface)',stroke:'var(--amber)','stroke-width':3,tabindex:0,role:'slider','aria-valuemin':1,'aria-valuemax':100,'aria-valuenow':value,'aria-label':fmtMonth(invDragActiveMonth)+' Threshold'}))handle.setAttribute(k,v);handle.style.cssText='cursor:ns-resize;touch-action:none';group.append(handle);
+ const label=document.createElementNS(ns,'text');for(const [k,v]of Object.entries({x:(x1+x2)/2+15,y:Math.max(top+13,y-12),fill:'var(--amber)','font-size':12,'font-weight':700,'pointer-events':'none'}))label.setAttribute(k,v);label.textContent=value.toFixed(1)+'%';group.append(label);svg.append(group);
+ function preview(next){invDragDraft={project:ui.dailyProject,month:invDragActiveMonth,daily:state.daily,value:Math.max(1,Math.min(100,Math.round(next*10)/10))};const yy=top+(100-Math.max(ymin,invDragDraft.value))/(100-ymin)*(bottom-top);line.setAttribute('y1',yy);line.setAttribute('y2',yy);handle.setAttribute('cy',yy);handle.setAttribute('aria-valuenow',invDragDraft.value);label.setAttribute('y',Math.max(top+13,yy-12));label.textContent=invDragDraft.value.toFixed(1)+'%';$('invDragApply').hidden=$('invDragCancel').hidden=false;$('invDragHint').textContent=fmtMonth(invDragActiveMonth)+' · '+invDragDraft.value.toFixed(1)+'%';}
+ handle.onpointerdown=e=>{if(!invDragAllowed())return;e.preventDefault();e.stopPropagation();handle.setPointerCapture(e.pointerId);invDragGesture={id:e.pointerId};};
+ handle.onpointermove=e=>{if(invDragGesture?.id!==e.pointerId)return;const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(svg.getScreenCTM().inverse());preview(100-(p.y-top)/(bottom-top)*(100-ymin));};
+ handle.onpointerup=handle.onpointercancel=e=>{invDragGesture=null;if(handle.hasPointerCapture(e.pointerId))handle.releasePointerCapture(e.pointerId);};
+ handle.onclick=e=>{e.preventDefault();e.stopPropagation();};handle.onkeydown=e=>{if(['ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();preview((invDragDraft?.value??value)+(e.key==='ArrowUp'?.1:-.1));}};
+}
+{
+ const dock=$('invDock'),actions=document.querySelector('.topbar .actions');if(dock&&actions)actions.prepend(dock);
+ const style=document.createElement('style');style.textContent='.topbar .actions{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:7px;min-width:0}#invDock{flex:0 1 auto;max-width:100%;margin:0;grid-column:auto!important}#invDragTools{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin:7px 0;font-size:12px;font-weight:600}#invDragTools select{width:auto;max-width:190px;font:inherit}#invDragTools button{font:inherit;padding:4px 9px}#invDragHint{color:var(--muted)}';document.head.append(style);
+ const tools=document.createElement('div');tools.id='invDragTools';tools.innerHTML='<select class="control" id="invDragMonth" aria-label="Threshold month"></select><span id="invDragHint"></span><button class="btn small primary" id="invDragApply" hidden></button><button class="btn small" id="invDragCancel" hidden></button>';$('dailySvg').before(tools);
+ $('invDragApply').textContent=tr('Apply','นำไปใช้');$('invDragCancel').textContent=tr('Cancel','ยกเลิก');invDragClear();
+ $('invDragMonth').onchange=e=>{invDragClear();invDragActiveMonth=e.target.value;renderDaily();};
+ $('invDragCancel').onclick=()=>{invDragClear();renderDaily();};
+ $('invDragApply').onclick=async()=>{const draft=invDragDraft;if(!draft||!invDragAllowed())return;if(draft.project!==ui.dailyProject||draft.daily!==state.daily||!invDragMonths().includes(draft.month)){invDragClear();renderDaily();return toast(tr('Selection changed; drag again','ข้อมูลที่เลือกเปลี่ยน กรุณาลากใหม่'));}const [year,month]=draft.month.split('-');state.settings.yearThresholds??={};state.settings.yearThresholds[draft.project]??={};state.settings.yearThresholds[draft.project][year]??={};state.settings.yearThresholds[draft.project][year][String(Number(month))]=draft.value;invDragClear();await recalcDailyQueued(()=>{});renderAll({dailyReady:true});invSchedulePreferences();};
+ const draw=drawDaily;drawDaily=function(vw,devices,selected){draw(vw,devices,selected);invDragDraw(vw,devices);};
+}
+
+</script>
 </body>
 </html>
 
