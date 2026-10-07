@@ -433,7 +433,31 @@ function analysisUrl(project){const page=project.analysis_type==='working_day'?'
   async function fetchPrReportMonth(month){
     if(!/^\d{4}-\d{2}$/.test(String(month||'')))return null;const start=month+'-01',endDate=new Date(start+'T00:00:00Z');endDate.setUTCMonth(endDate.getUTCMonth()+1);return fetchPrReportRange(start,endDate.toISOString().slice(0,10),month);
   }
+  function applySharedEnergyCorrections(records,overrides){
+    const corrections=new Map(Object.entries(overrides||{}).map(([key,value])=>[key.toLowerCase(),value]));
+    return (records||[]).map(input=>{
+      const original=input._sharedEnergyOriginal||input,r={...original};
+      const day=Number(r.recordDay),date=day>0&&r.monthKey?r.monthKey+'-'+String(day).padStart(2,'0'):null;
+      const correction=date?corrections.get(String(r.name||'').toLowerCase()+'|'+date):null;
+      if(!correction)return r;
+      let changed=false;
+      for(const field of ['pv','loss'])if(Object.hasOwn(correction,field)&&correction[field]!=null&&String(correction[field]).trim()!==''&&Number.isFinite(Number(correction[field]))&&Number(correction[field])>=0){r[field]=Number(correction[field]);r[field==='pv'?'pvAvailable':'lossAvailable']=true;changed=true;}
+      if(!changed)return r;
+      if(r.pv!==original.pv){const cap=Number(r.cap),oldPv=Number(original.pv),oldSpecific=Number(original.specEnergy);r.specEnergy=oldSpecific>0&&oldPv>0?oldSpecific*(r.pv/oldPv):cap>0?r.pv/cap:0;}
+      r._sharedEnergyOriginal={...original};return r;
+    });
+  }
+  async function loadSharedEnergyCorrections(){
+    if(!currentMembership?.workspace_id||!currentProject?.dataset_id)return {};
+    const {data,error}=await getClient().from('analysis_projects').select('user_state').eq('workspace_id',currentMembership.workspace_id).eq('dataset_id',currentProject.dataset_id).eq('analysis_type','pr_report').is('deleted_at',null).order('updated_at',{ascending:false}).limit(1).maybeSingle();
+    if(error)throw new Error('Cannot load shared PV Yield / Loss Due: '+error.message);
+    return cloneJson(data?.user_state?.recordOverrides||{});
+  }
   async function initAnalysis(expectedType,projectAdapter){
+    if(expectedType==='working_day'){
+      const restore=projectAdapter.restore.bind(projectAdapter);
+      projectAdapter={...projectAdapter,async restore(base,user){const corrections=await loadSharedEnergyCorrections();const payload={...base,records:applySharedEnergyCorrections(base?.records||[],corrections)};return restore(payload,user);}};
+    }
     adapter=projectAdapter;injectDock();setStatus('กำลังเชื่อมต่อ...','busy');const loading=document.createElement('div');loading.id='solarPageLoading';loading.innerHTML='<div><i class="fa-solid fa-spinner fa-spin"></i><b>กำลังเตรียมข้อมูล...</b><span>Loading central data</span></div>';loading.style.cssText='position:fixed;inset:0;z-index:30000;display:grid;place-items:center;background:#0f172ae8;color:#f8fafc;font-family:Bai Jamjuree,sans-serif;backdrop-filter:blur(5px)';loading.firstElementChild.style.cssText='display:grid;gap:8px;text-align:center;padding:24px';loading.querySelector('i').style.cssText='font-size:26px;color:#38bdf8';loading.querySelector('span').style.cssText='font-size:12px;color:#94a3b8';document.body.appendChild(loading);
     try{
       await requireSession();const id=projectId();if(!id)throw new Error('Project ID is missing. Open this page from Workspace.');
@@ -694,7 +718,7 @@ function analysisUrl(project){const page=project.analysis_type==='working_day'?'
     location.assign(indexUrl());
   }
   async function openCentralAnalysis(type,routeParams={}){const project=await ensureCentralProject(type);if(!project.dataset_id){const {data:dataset,error}=await getClient().from('shared_datasets').select('id').eq('workspace_id',(currentMembership||await membership()).workspace_id).order('updated_at',{ascending:false}).limit(1).maybeSingle();if(error)throw error;if(dataset){const attached=await getClient().rpc('attach_dataset_to_project',{p_project_id:project.id,p_dataset_id:dataset.id});if(attached.error)throw attached.error}}const target=new URL(analysisUrl(project),location.href);for(const key of ['prReturn','focusPlant','focusMonth','focusDate'])if(routeParams[key])target.searchParams.set(key,String(routeParams[key]));location.href=target.href}
-  global.SolarCloud={pendingSharedPaths:()=>pendingPatches().map(p=>p.path),deferredSharedPaths:()=>[...deferredSharedFields.values()].map(x=>x.path),refreshPresence:()=>updatePresence(true),collaborationActor:()=>presenceSession?{userId:presenceSession.userId,name:presenceSession.name}:null,isSharedValueSaved:(path,value)=>JSON.stringify(valueAtPath(lastSharedState,path))===JSON.stringify(value),CONFIG,dialog,notice,confirmDialog,setLanguage,getLanguage,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,closeHistory,datasets,useDataset,resolveConflict,downloadLocalDraft,reloadLatest,back:backToCenter,roleCanEdit,roleCanAdmin,centralDatasetStatus,databaseStorageStatus,loadCentralPeriod,loadCentralPrRange,loadCentralPrSummary,loadPrProjectRecords,loadCentralFullData,showPresence,useLatestConflict,keepMyConflict,prepareCentralUpload,commitCentralUpload,prepareCentralBatchUpload,commitCentralBatchUpload,uploadCentralDataset,openCentralAnalysis};
+  global.SolarCloud={applySharedEnergyCorrections,pendingSharedPaths:()=>pendingPatches().map(p=>p.path),deferredSharedPaths:()=>[...deferredSharedFields.values()].map(x=>x.path),refreshPresence:()=>updatePresence(true),collaborationActor:()=>presenceSession?{userId:presenceSession.userId,name:presenceSession.name}:null,isSharedValueSaved:(path,value)=>JSON.stringify(valueAtPath(lastSharedState,path))===JSON.stringify(value),CONFIG,dialog,notice,confirmDialog,setLanguage,getLanguage,getClient,session,requireSession,membership,listProjects,createProject,analysisUrl,signIn,signOut,loadProject,initAnalysis,scheduleSave,saveNow:()=>save('manual'),history,closeHistory,datasets,useDataset,resolveConflict,downloadLocalDraft,reloadLatest,back:backToCenter,roleCanEdit,roleCanAdmin,centralDatasetStatus,databaseStorageStatus,loadCentralPeriod,loadCentralPrRange,loadCentralPrSummary,loadPrProjectRecords,loadCentralFullData,showPresence,useLatestConflict,keepMyConflict,prepareCentralUpload,commitCentralUpload,prepareCentralBatchUpload,commitCentralBatchUpload,uploadCentralDataset,openCentralAnalysis};
 })(window);
 
 

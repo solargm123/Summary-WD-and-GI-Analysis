@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="cloud-core.js?v=20261006-ui-polish1"></script>
+    <script src="cloud-core.js?v=20261007-shared-energy1"></script>
     <style> 
         html, body, body *:not(i), button, input, select, option, textarea, table, th, td, code {
             font-family: 'Bai Jamjuree', Tahoma, Arial, sans-serif !important;
@@ -2840,7 +2840,7 @@ body.wd-theme-switching *::after{
           Object.assign(overrides,WDReview.captureReviews());
           Object.assign(overrides,WDPeriod.capture());
           return {
-            baseData:{records:rawRecordsByFile,detectedMonths:[...detectedMonths]},
+            baseData:{records:rawRecordsByFile.map(r=>r._sharedEnergyOriginal||r),detectedMonths:[...detectedMonths]},
             // Keep legacy period entries for synchronization; only versioned entries affect calculations.
             userState:{selectedMonth,visibleProjects:plantData.filter(p=>p.visible!==false).map(p=>p.name.toLowerCase()),lossFactor:'0.9',sunHoursTarget:document.getElementById('sunHoursTarget').value,sunHoursMode:sunMode,sunHoursCustom:document.getElementById('inputSunHoursCustom').value,monthLossStateVersion:restoredMonthLossStateVersion,overrides},
             periodKey:selectedMonth,
