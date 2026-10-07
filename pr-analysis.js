@@ -45,14 +45,34 @@ const PRAnalysis=(()=>{
   }catch(e){if(request===seq)el('analysisResult').textContent=label('วิเคราะห์ไม่สำเร็จ: ','Analysis failed: ')+e.message}
   finally{if(request===seq)el('analysisRun').disabled=false}
  }
- function render(error,expected){
-  const a=aggregate(rows),guarantee=guaranteeFor(lastProject,contractFor(lastProject,rows.at(-1)?.date||lastMonth+'-01').year),zero=evidence.filter(x=>x.pv===0),missing=evidence.filter(x=>x.pv==null),conflicts=evidence.filter(x=>x.pv===0&&x.inv?.pv>0),lossDays=rows.filter(r=>effectiveLoss(r)>0);
-  el('analysisResult').innerHTML='<h3>'+esc(lastProject)+' · '+esc(lastMonth)+'</h3><p>PR with loss <b>'+fmt(a.prLoss)+'%</b> · Guarantee '+fmt(guarantee)+'% · '+label('วันคำนวณ PR','PR calculation days')+' '+a.days+'</p><p>'+label('ใช้ตัวกรองวัน PR ปัจจุบัน และค่าที่แก้ไขแล้วจาก PR/Global','Uses current PR day filter and corrected PR/Global values')+'</p><ul><li>'+label('วันขาด PV Yield','Missing PV Yield days')+': '+missing.length+'</li><li>'+label('วัน PV Yield = 0','Zero PV Yield days')+': '+zero.length+'</li><li>'+label('วันที่ Plant/Inverter ขัดแย้ง','Conflicting Plant/Inverter days')+': '+conflicts.length+'</li><li>'+label('วันที่มี Loss Due — เปิดตรวจข้อจำกัดการส่งออก','Loss Due days — investigate export limitation')+': '+lossDays.length+'</li></ul><p class="muted">'+label('ผลนี้เป็นหลักฐานประกอบ ไม่ยืนยันสาเหตุอุปกรณ์เสียหรือแก้ WD อัตโนมัติ จำนวนวันเทียบเท่าที่ลดจากสมการ Loss ไม่ใช่วันที่ถูกตัด','Evidence only; no automatic WD changes or confirmed equipment diagnosis. Loss-equivalent days are not excluded calendar dates.')+'</p>'+ (error?'<p>'+esc(label('ข้อมูล Inverter โหลดไม่ได้: ','Inverter unavailable: ')+error)+'</p>':'');
-  const only=el('analysisOnlyIssues').checked;
-  el('analysisRows').innerHTML=evidence.filter(x=>!only||!x.used||x.pv==null).map(x=>{
-   const pv=x.pv==null?'—':x.pv.toFixed(3),loss=x.r?effectiveLoss(x.r).toFixed(3):'—',gi=x.r?effectiveGi(x.r).toFixed(3):'—',pr=x.r&&effectiveTheory(x.r)>0?(effectivePv(x.r)+effectiveLoss(x.r)*state.settings.lossFactor)/effectiveTheory(x.r)*100:NaN;
-   return '<tr><td>'+x.date+'</td><td>'+ (x.wdAvailable?x.used?label('นับ','Included'):label('ไม่นับ','Excluded'):'—')+'</td><td>'+pv+'</td><td>'+gi+'</td><td>'+loss+'</td><td>'+fmt(pr)+'</td><td>'+(x.r?included(x.r)?label('ใช้','Used'):label('ไม่ใช้','Excluded'):'—')+'</td><td>'+(x.inv?x.inv.pv.toFixed(3):'—')+'<small style="display:block">'+(x.inv?.count||0)+'/'+expected+'</small></td><td>'+esc(x.assessment)+'</td><td>'+esc(x.reason||state.dailyNotes[lastProject+'|'+x.date]?.text||'')+'</td></tr>';
-  }).join('');
+ function verdict(x){
+  if(!x.wdAvailable||x.pv==null)return 'unknown';
+  if(x.pv>0||x.inv?.pv>0)return 'watch';
+  return lastExpected>0&&x.inv?.count===lastExpected&&x.inv?.valid===lastExpected?'good':'unknown';
  }
- return{open,run,filter:()=>render(lastError,lastExpected),assessment};
+ function detail(index){
+  const x=evidence[index];if(!x)return;
+  el('analysisDetailTitle').textContent=lastProject+' · '+x.date;
+  const r=x.r,pr=r&&effectiveTheory(r)>0?(effectivePv(r)+effectiveLoss(r)*state.settings.lossFactor)/effectiveTheory(r)*100:NaN;
+  const fields=[['PV Yield (kWh)',x.pv==null?'—':x.pv.toFixed(3)],['GI (kWh/m²)',r?effectiveGi(r).toFixed(3):'—'],['Loss Due (kWh)',r?effectiveLoss(r).toFixed(3):'—'],['PR with loss',Number.isFinite(pr)?fmt(pr)+'%':'—'],[label('ใช้คำนวณ PR','PR inclusion'),r?included(r)?label('ใช้','Included'):label('ไม่ใช้','Excluded'):'—'],[label('Inverter ที่มีข้อมูล','Inverter records'),(x.inv?.count||0)+' / '+lastExpected],[label('เหตุผล WD','WD reason'),x.reason||'—'],['Note',state.dailyNotes[lastProject+'|'+x.date]?.text||'—']];
+  el('analysisDetailBody').innerHTML=fields.map(([k,v])=>'<div><span>'+esc(k)+'</span><b>'+esc(v)+'</b></div>').join('');
+  el('analysisDetailModal').classList.add('open');
+ }
+ function render(error,expected){
+  const a=aggregate(rows),g=guaranteeFor(lastProject,contractFor(lastProject,rows.at(-1)?.date||lastMonth+'-01').year),diff=a.prLoss-g;
+  el('analysisResult').innerHTML='<span>'+esc(lastProject)+' · '+esc(lastMonth)+'</span><span>PR with loss <b>'+fmt(a.prLoss)+'%</b></span><span>Guarantee <b>'+fmt(g)+'%</b></span><span class="'+(diff>=0?'pra-good':'pra-watch')+'">'+label(diff>=0?'สูงกว่าเกณฑ์ ':'ต่ำกว่าเกณฑ์ ',diff>=0?'Above guarantee ':'Below guarantee ')+fmt(Math.abs(diff))+' '+label('จุดเปอร์เซ็นต์','percentage points')+'</span>';
+  const groups=[
+   {title:label('ข้อมูล Plant ไม่ตรงกับ Inverter','Plant / inverter conflict'),items:evidence.filter(x=>x.pv===0&&x.inv?.pv>0),proof:label('Plant = 0 แต่ Inverter มีการผลิต','Plant = 0; inverter produced'),action:label('ตรวจรายงานต้นทาง','Check source report')},
+   {title:label('มีการผลิตในวันที่ WD ตัดออก','Producing day excluded by WD'),items:evidence.filter(x=>x.wdAvailable&&!x.used&&x.pv>0),proof:label('PV Yield มากกว่า 0','PV Yield above 0'),action:label('ตรวจเหตุผลที่ตัดวัน','Check exclusion reason')},
+   {title:label('ข้อมูล PV Yield ไม่ครบ','Missing PV Yield'),items:evidence.filter(x=>x.pv==null),proof:label('ไม่มีค่า PV Yield — ไม่ใช่ค่า 0','PV Yield missing — distinct from zero'),action:label('ตรวจหรือเติมข้อมูลก่อนสรุป','Verify missing records first')}
+  ];
+  el('analysisIssues').innerHTML=groups.filter(x=>x.items.length).map(x=>'<tr><td>'+esc(x.title)+'</td><td>'+x.items.map(d=>'<button class="pra-date" onclick="PRAnalysis.detail('+evidence.indexOf(d)+')">'+esc(d.date.slice(8))+'</button>').join(' ')+'</td><td>'+esc(x.proof)+'</td><td>'+esc(x.action)+'</td></tr>').join('')||'<tr><td colspan="4" class="pra-empty">'+label('ไม่พบประเด็นจากหลักฐานที่โหลดได้','No issues found in loaded evidence')+'</td></tr>';
+  const names={watch:label('ควรตรวจซ้ำ','Review needed'),unknown:label('ข้อมูลไม่พอ','Insufficient data'),good:label('มีหลักฐานรองรับ','Evidence supports exclusion')};
+  const excluded=evidence.filter(x=>!x.used);
+  el('analysisRows').innerHTML=excluded.filter(x=>!el('analysisOnlyIssues').checked||verdict(x)!=='good').map(x=>{
+   const v=verdict(x);return '<tr><td>'+esc(x.date)+'</td><td>'+(x.pv==null?'—':x.pv.toFixed(3))+'</td><td>'+(x.inv?x.inv.pv.toFixed(3):'—')+'</td><td>'+esc(x.reason||label('ไม่มีเหตุผลระบุ','No reason recorded'))+'</td><td><span class="pra-status pra-'+v+'">'+names[v]+'</span></td><td><button class="btn pra-detail" onclick="PRAnalysis.detail('+evidence.indexOf(x)+')" aria-label="'+label('ดูรายละเอียด','View details')+'">›</button></td></tr>';
+  }).join('')||'<tr><td colspan="6" class="pra-empty">'+label('ไม่มีวันที่ตรงกับตัวกรอง','No matching excluded days')+'</td></tr>';
+  el('analysisEvidenceHint').textContent=error?label('ข้อมูล Inverter โหลดไม่ได้: ','Inverter unavailable: ')+error:label('จำนวน Inverter อิงฐานข้อมูล ยังไม่ยืนยันว่าครบหน้างาน • ผลตรวจเป็นหลักฐานประกอบ ไม่แก้ WD อัตโนมัติ','Inverter inventory is not confirmed complete on site • Evidence only; no automatic WD changes');
+ }
+ return{open,run,detail,filter:()=>render(lastError,lastExpected),assessment};
 })();
