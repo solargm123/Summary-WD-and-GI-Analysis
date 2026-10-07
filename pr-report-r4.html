@@ -193,6 +193,20 @@ body.solar-pr .pr-difference.nodata{color:var(--muted)}
 #analysisView>.panel>p{flex:0 0 auto;margin:0;padding:0 2px!important;font-size:10px;line-height:1.5}
 @media(max-width:1050px){#analysisResult ul{grid-template-columns:repeat(2,minmax(0,1fr))}#analysisResult{max-height:170px}}
 @media(max-width:700px){#analysisView>.panel{height:auto!important;overflow:visible}#analysisView .table-wrap{flex:auto;max-height:55dvh;min-height:200px}#analysisView table{min-width:850px}#analysisProject{width:100%}#analysisView .panel-head .actions{width:100%}#analysisView .pra-field:first-child{flex:1 1 100%}}
+
+/* Table-first desktop analysis: keep evidence readable and summary compact. */
+#analysisView>.panel{padding:10px;gap:7px}
+#analysisView .panel-head{padding-bottom:7px}
+#analysisResult{flex:0 0 auto;min-height:0;max-height:110px;padding:7px 10px!important;font-size:11px;line-height:1.4}
+#analysisResult h3{font-size:12px;margin-bottom:3px}
+#analysisResult p{margin:3px 0}
+#analysisResult ul{display:flex;flex-wrap:wrap;gap:5px;margin:5px 0}
+#analysisResult li{padding:3px 7px;font-size:11px}
+#analysisView table{font-size:13px}
+#analysisView th{font-size:12px}
+#analysisView th,#analysisView td{padding:10px 8px}
+#analysisView .table-wrap{min-height:180px}
+@media(max-width:1050px){#analysisResult{max-height:95px}#analysisView table{font-size:12px}#analysisView th{font-size:11px}#analysisView th,#analysisView td{padding:9px 6px}}
 </style></head>
 <body class="solar-pr">
 <div class="app">
