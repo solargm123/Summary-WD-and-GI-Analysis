@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="th" data-theme="light">
 <head>
+<script src="inverter-shared-preferences.js?v=20261008-shared-threshold1"></script>
+<style>.inverter-shared-history{margin-top:14px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px}.inverter-shared-history summary{cursor:pointer;font-weight:700}.inverter-shared-history p{color:var(--muted);line-height:1.5}.inverter-shared-history th,.inverter-shared-history td{padding:7px 10px;text-align:left}</style>
 <!-- Inverter typography: shared Thai/English family, including SVG chart labels. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1288,6 +1290,7 @@ async function compactPreviewRestore(envelope){
 }
 async function compactPreviewRestoreRows(metadata,daily,onProgress,options={}){
  if(!metadata||!Array.isArray(metadata.monthly)||!Array.isArray(daily))throw Error('Invalid workspace data');
+ metadata=inverterDb?.prepareShared?inverterDb.prepareShared(metadata):metadata;
  state={...metadata,daily};if(!options.preserveUi){clearDailyUiState();clearMonthlyUiState();}await recalcDailyQueued(onProgress);if(!options.deferRender){setupDailySelection(true);renderAll({dailyReady:true});}
  return daily.length;
 }
@@ -1314,26 +1317,30 @@ window.InverterCompactPreview={pack:compactPreviewEnvelope,restore:compactPrevie
  function create(client,workspace,codec){
   const tick=()=>new Promise(r=>setTimeout(r,0));
   const recent=new Map();let cachedRows=0;let preferenceRevision;
+  const shared=InverterSharedPreferences.create(client,workspace);
   async function checked(request){const r=await request;if(r.error)throw r.error;return r.data;}
   async function pages(table,select,configure){let rows=[];for(let offset=0;;offset+=1000){let q=client.from(table).select(select).order('id').range(offset,offset+999);q=configure(q);const part=await checked(q);rows.push(...part);if(part.length<1000)return rows;await tick();}}
   async function user(){const {data,error}=await client.auth.getUser();if(error)throw error;if(!data.user)throw Error('Please sign in to Main Center first');return data.user.id;}
   async function save(state,onProgress=()=>{}){
    recent.clear();cachedRows=0;
-   const uid=await user();const prior=await checked(client.from('inverter_user_workspaces').select('revision').eq('workspace_id',workspace).eq('user_id',uid).maybeSingle());
+   const uid=await user();const prior=await checked(client.from('inverter_user_workspaces').select('metadata,revision').eq('workspace_id',workspace).eq('user_id',uid).maybeSingle());
    let added=0,skipped=0;
    for(let offset=0;offset<state.daily.length;offset+=500){
     const packed=codec.packDaily(state.daily.slice(offset,offset+500));
     const rows=packed.rows.map((a,i)=>[...packed.devices[a[0]],a[1],...a.slice(2,8),packed.sources[a[8]],a[9],offset+i]);
     const result=await checked(client.rpc('import_inverter_compact_batch',{p_workspace:workspace,p_rows:rows}));added+=result.added;skipped+=result.skipped;onProgress(Math.min(offset+500,state.daily.length),state.daily.length);await tick();
    }
-   const {daily,...metadata}=state;
+   const {daily,...viewMetadata}=state;
+   const metadata=await shared.personalMetadata(prior?.metadata||{},viewMetadata);
    let result;
    if(prior){result=await checked(client.from('inverter_user_workspaces').update({metadata,revision:prior.revision+1}).eq('workspace_id',workspace).eq('user_id',uid).eq('revision',prior.revision).select('revision'));if(result.length!==1)throw Error('Your saved workspace changed in another session; raw rows are safe. Keep your .iaw and reload before saving notes.');}
    else await checked(client.from('inverter_user_workspaces').insert({workspace_id:workspace,user_id:uid,metadata}));
+   preferenceRevision=prior?prior.revision+1:1;shared.saved(state);
    return {added,skipped};
   }
   async function load(onProgress=()=>{},options={mode:'all'}){
    const uid=await user();
+   await shared.load(!!options.refresh);
    const devices=await pages('inverter_devices','id,source_project_name,device_name,project_id',q=>q.eq('workspace_id',workspace));
    const sources=await pages('inverter_sources','id,name',q=>q.eq('workspace_id',workspace));
    const metadata=await checked(client.from('inverter_user_workspaces').select('metadata,revision').eq('workspace_id',workspace).eq('user_id',uid).maybeSingle());
@@ -1398,9 +1405,11 @@ window.InverterCompactPreview={pack:compactPreviewEnvelope,restore:compactPrevie
    const prior=await checked(client.from('inverter_user_workspaces').select('metadata,revision').eq('workspace_id',workspace).eq('user_id',uid).maybeSingle());
    if(preferenceRevision!==undefined&&(prior?.revision??null)!==preferenceRevision)throw Error('Settings changed in another session. Reopen the page before saving; raw data is safe. / การตั้งค่าถูกแก้จากอีกหน้าต่าง กรุณาเปิดหน้าใหม่ก่อนบันทึก');
    const metadata={...(prior?.metadata||{})};
-   for(const key of ['thresholds','settings','monthlyNotes','comments','events','exclusions','projectAliases','manualMonthlyRef'])if(state[key]!==undefined)metadata[key]=structuredClone(state[key]);
+   const personal=await shared.personalMetadata(prior?.metadata||{},state);
+   for(const key of ['thresholds','settings','monthlyNotes','comments','events','exclusions','projectAliases','manualMonthlyRef'])if(personal[key]!==undefined)metadata[key]=structuredClone(personal[key]);
    if(prior){const next=Number(prior.revision)+1;const changed=await checked(client.from('inverter_user_workspaces').update({metadata,revision:next}).eq('workspace_id',workspace).eq('user_id',uid).eq('revision',prior.revision).select('revision'));if(changed.length!==1)throw Error('Concurrent change detected. Reopen the page before saving.');preferenceRevision=next;}
    else{await checked(client.from('inverter_user_workspaces').insert({workspace_id:workspace,user_id:uid,metadata,revision:1}));preferenceRevision=1;}
+   shared.saved(state);
    return {revision:preferenceRevision};
   }
   async function matching(){
@@ -1418,7 +1427,7 @@ window.InverterCompactPreview={pack:compactPreviewEnvelope,restore:compactPrevie
    if(!changed.length)throw Error('รายการถูกจับคู่แล้ว หรือบัญชีนี้ไม่มีสิทธิ์ กรุณาโหลดรายการใหม่');
    return {changed:changed.length};
   }
-  return {save,savePreferences,load,matching,match,catalog};
+  return {save,savePreferences,load,matching,match,catalog,prepareShared:shared.prepare,renderShared:shared.render};
  }
  global.InverterDatabase={create};
 })(typeof window==='undefined'?globalThis:window);
@@ -2131,6 +2140,11 @@ select.inv-popup-source:hover{border-color:var(--primary);background:var(--prima
 })();
 </script>
 <style>.manual-threshold-controls{display:flex!important;flex-wrap:wrap;gap:12px}.manual-threshold-controls>.field{flex:1 1 180px;min-width:0}.manual-threshold-controls>.field:has(#manualThresholdProject){flex:2 1 280px}</style>
+<script>
+// Extend the existing editor, without adding another filter or Threshold page.
+const inverterSharedRenderMonths=renderThresholdMonths;
+renderThresholdMonths=function(...args){const result=inverterSharedRenderMonths.apply(this,args);inverterDb?.renderShared?.($('manualThresholdProject')?.value||'');return result;};
+</script>
 </body>
 </html>
 
