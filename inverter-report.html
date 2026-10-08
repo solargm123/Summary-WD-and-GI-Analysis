@@ -2012,6 +2012,72 @@ $('invAxisAuto').onclick=$('invAxisReset').onclick=reset;
 </script>
 
 
+
+<style id="inv-existing-popup-style">
+select.inv-popup-source{appearance:none!important;-webkit-appearance:none!important;background-image:none!important;text-align:left;padding-right:30px;cursor:pointer;border-radius:10px}
+select.inv-popup-source:hover{border-color:var(--primary);background:var(--primary-soft)}
+.inv-existing-picker{width:min(600px,92vw);max-height:80vh;padding:0;border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--text);box-shadow:var(--shadow);overflow:hidden}
+.inv-existing-picker::backdrop{background:rgba(4,12,24,.55)}
+.inv-existing-picker-head,.inv-existing-picker-foot{display:flex;align-items:center;gap:8px;padding:14px 18px;background:var(--surface2)}
+.inv-existing-picker-head{justify-content:space-between;border-bottom:1px solid var(--line)}.inv-existing-picker-head h2{font-size:18px;margin:0}
+.inv-existing-picker-body{padding:16px 18px}.inv-existing-picker-list{display:grid;gap:7px;margin-top:12px;max-height:43vh;overflow-y:auto}
+.inv-existing-picker-choice{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid var(--line);padding:10px 12px;background:var(--surface2);color:var(--text);border-radius:10px;font:inherit;font-size:13px;cursor:pointer}
+.inv-existing-picker-choice[aria-pressed="true"]{border-color:var(--primary);background:var(--primary-soft)}
+.inv-existing-picker-choice:hover{border-color:var(--primary)}.inv-existing-picker-choice span:first-child{width:18px;color:var(--primary);flex-shrink:0}
+.inv-existing-picker-foot{justify-content:flex-end;border-top:1px solid var(--line)}
+#periodPop.show,#devicePop.show,#monthlyPeriodPop.show{position:fixed!important;inset:auto!important;top:50%!important;left:50%!important;transform:translate(-50%,-50%)!important;width:min(680px,90vw)!important;max-height:78vh!important;z-index:10000!important;padding:16px!important;background:var(--surface)!important;border:1px solid var(--line)!important;border-radius:16px!important;box-shadow:0 0 0 100vmax rgba(4,12,24,.52),var(--shadow)!important}
+#periodPop .period-list,#devicePop .pop-list,#monthlyPeriodPop .period-list{max-height:45vh!important;overflow-y:auto!important}
+#periodPop .pop-head,#devicePop .pop-head,#monthlyPeriodPop .pop-head{background:var(--surface)!important;color:var(--text)!important}
+</style>
+<script id="inv-existing-filter-popups">
+(()=>{
+ const dialog=document.createElement('dialog');dialog.className='inv-existing-picker';dialog.id='invExistingPicker';
+ dialog.innerHTML='<div class="inv-existing-picker-head"><h2 id="invExistingPickerTitle"></h2><button class="btn small" type="button" id="invExistingPickerClose" aria-label="Close">×</button></div><div class="inv-existing-picker-body"><input type="search" class="control" id="invExistingPickerSearch" autocomplete="off"><div class="inv-existing-picker-list" id="invExistingPickerList"></div></div><div class="inv-existing-picker-foot"><button class="btn" id="invExistingPickerCancel" type="button"></button><button class="btn primary" id="invExistingPickerApply" type="button"></button></div>';
+ document.body.append(dialog);
+ let source=null,draft='',returnFocus=null;
+ function choices(){
+  if(!source)return;
+  const query=$('invExistingPickerSearch').value.toLowerCase(),list=$('invExistingPickerList');list.replaceChildren();
+  for(const option of source.options){
+   if(option.disabled||option.hidden||!option.text.toLowerCase().includes(query))continue;
+   const button=document.createElement('button');button.type='button';button.className='inv-existing-picker-choice';button.dataset.value=option.value;button.setAttribute('aria-pressed',String(option.value===draft));
+   const mark=document.createElement('span');mark.textContent=option.value===draft?'✓':'○';const text=document.createElement('span');text.textContent=option.text;button.append(mark,text);
+   button.onclick=()=>{draft=option.value;for(const b of list.children){const selected=b.dataset.value===draft;b.setAttribute('aria-pressed',String(selected));b.firstChild.textContent=selected?'✓':'○'}};list.append(button);
+  }
+  if(!list.children.length){const message=document.createElement('p');message.textContent=tr('No matching options','ไม่พบรายการ');list.append(message)}
+ }
+ function open(select){
+  if(select.disabled)return;source=select;draft=select.value;returnFocus=select;
+  for(const id of ['periodPop','devicePop','monthlyPeriodPop'])$(id)?.classList.remove('show');
+  $('invExistingPickerTitle').textContent=select.closest('.field')?.querySelector('label')?.textContent||tr('Select option','เลือกรายการ');
+  $('invExistingPickerSearch').value='';$('invExistingPickerSearch').placeholder=tr('Search…','ค้นหา…');$('invExistingPickerCancel').textContent=tr('Cancel','ยกเลิก');$('invExistingPickerApply').textContent=tr('Apply','นำไปใช้');
+  choices();dialog.showModal();$('invExistingPickerSearch').focus();
+ }
+ function close(){dialog.close();source=null;returnFocus?.focus()}
+ $('invExistingPickerClose').onclick=$('invExistingPickerCancel').onclick=close;
+ $('invExistingPickerSearch').oninput=choices;
+ dialog.addEventListener('cancel',()=>{source=null;returnFocus?.focus()});
+ dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)close()}});
+ $('invExistingPickerApply').onclick=()=>{
+  const target=source,value=draft;if(!target)return;
+  if(![...target.options].some(o=>o.value===value&&!o.disabled)){toast(tr('Please select an option','กรุณาเลือกรายการ'));return}
+  const changed=target.value!==value;target.value=value;close();
+  if(changed)target.dispatchEvent(new Event('change',{bubbles:true}));
+ };
+ for(const id of ['dailyProject','dailyDisplay','dailyAxis','monthlyProject','monthlyStatus']){
+  const select=$(id);if(!select)continue;
+  select.classList.add('inv-popup-source');select.setAttribute('aria-haspopup','dialog');select.setAttribute('aria-controls','invExistingPicker');
+  select.addEventListener('mousedown',e=>{if(e.button!==0)return;e.preventDefault();open(select)});
+  select.addEventListener('keydown',e=>{if(['Enter',' ','ArrowDown','ArrowUp'].includes(e.key)){e.preventDefault();open(select)}});
+  select.addEventListener('click',e=>{e.preventDefault();if(!dialog.open)open(select)});
+ }
+ for(const id of ['periodPop','devicePop','monthlyPeriodPop']){
+  const pop=$(id);if(!pop)continue;pop.setAttribute('role','dialog');pop.setAttribute('aria-modal','true');
+  const heading=pop.querySelector('.pop-head');if(heading){const closeButton=document.createElement('button');closeButton.type='button';closeButton.className='btn small';closeButton.textContent='×';closeButton.setAttribute('aria-label','Close');closeButton.onclick=e=>{e.stopPropagation();pop.classList.remove('show')};heading.append(closeButton)}
+ }
+ document.addEventListener('keydown',e=>{if(e.key==='Escape')for(const id of ['periodPop','devicePop','monthlyPeriodPop'])$(id)?.classList.remove('show')});
+})();
+</script>
 </body>
 </html>
 
