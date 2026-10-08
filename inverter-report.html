@@ -710,7 +710,7 @@ function renderMonthly(){
  $('monthlySource').value=state.settings.monthlyDataSource||'derived';let available=ensureMonthlyPeriodSelection();$('monthlyPeriodLabel').textContent=monthlyPeriodSummary(ui.monthlySelectedPeriods,available);$('monthlyRefQuick').value=state.settings.monthlyRefMethod;
  let src=monthlySourceMode(),hint=$('monthlySourceHint');if(hint)hint.textContent=src==='derived'?tr('Derived from Daily · only months/projects with Daily records are calculated.','สร้างจากรายวัน · คำนวณเฉพาะเดือน/โครงการที่มีข้อมูลรายวัน'):src==='imported'?tr('Imported Monthly · uses uploaded Monthly report records.','รายเดือนที่นำเข้า · ใช้ข้อมูลจากไฟล์ Monthly ที่อัปโหลดโดยตรง'):tr('Auto · Derived Daily is preferred per Month + Project + Inverter; Imported Monthly fills missing records.','อัตโนมัติ · ใช้ข้อมูลที่สร้างจากรายวันก่อนในระดับ เดือน + โครงการ + Inverter และใช้ Monthly ที่นำเข้ามาเติมรายการที่ขาด');
  let a=monthlySelectedAnalyses(),projects=workspaceProjects(),current=$('monthlyProject').value;$('monthlyProject').innerHTML='<option value="all">'+tr('All Projects','ทุกโครงการ')+'</option>'+projects.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');if(current!=='all'&&!projects.includes(current))current='all';if(!current)current='all';$('monthlyProject').value=current;
- let filterProject=current,statusFilter=$('monthlyStatus').value||'all',projectRows=a.filter(r=>filterProject==='all'||r.project===filterProject),filtered=projectRows.filter(r=>statusFilter==='all'||statusClass(r.status)===statusFilter);let sum=monthlySelectedProjectSummaries().filter(x=>filterProject==='all'||x.project===filterProject),valid=filtered.filter(r=>r.availability!=null),avg=valid.length?valid.reduce((s,r)=>s+r.availability,0)/valid.length:null,lost=valid.reduce((s,r)=>s+(r.lostHours||0),0),low=filtered.filter(r=>['Warning','Critical'].includes(r.status)).length,issues=filtered.filter(r=>r.status==='Data Issue').length;
+ let filterProject=current,statusFilter=$('monthlyStatus').value||'all',projectRows=a.filter(r=>filterProject==='all'||r.project===filterProject),filtered=projectRows.filter(r=>(statusFilter==='all'||statusClass(r.status)===statusFilter)&&(!(ui.monthlyDeviceFilter instanceof Set)||ui.monthlyDeviceFilter.has(r.project+'|'+r.device)));let sum=monthlySelectedProjectSummaries().filter(x=>filterProject==='all'||x.project===filterProject),valid=filtered.filter(r=>r.availability!=null),avg=valid.length?valid.reduce((s,r)=>s+r.availability,0)/valid.length:null,lost=valid.reduce((s,r)=>s+(r.lostHours||0),0),low=filtered.filter(r=>['Warning','Critical'].includes(r.status)).length,issues=filtered.filter(r=>r.status==='Data Issue').length;
  let projectsWithData=new Set(projectRows.map(r=>r.project)),displayProjects=new Set(filtered.map(r=>r.project)),noDataProjects=filterProject==='all'?Math.max(0,projects.length-projectsWithData.size):(projectRows.length?0:1),projectSub=statusFilter==='all'?`${noDataProjects} ${tr('project(s) with no data in selected period','โครงการไม่มีข้อมูลในช่วงที่เลือก')}`:tr('Projects matching the active Status filter','โครงการที่ตรงกับตัวกรองสถานะที่เลือก');$('monthlySummary').innerHTML=kpi('PROJECTS',statusFilter==='all'?projectsWithData.size:displayProjects.size,projectSub)+kpi('INVERTERS',filtered.length,tr('Monthly device records matching current filters','รายการ Inverter รายเดือนตามตัวกรองปัจจุบัน'))+kpi('AVG AVAILABILITY',pct(avg),tr('Average valid inverter in current filters','ค่าเฉลี่ย Inverter ที่ข้อมูลถูกต้องตามตัวกรอง'),'good-text')+kpi('LOW AVAILABILITY',low,tr('Warning / Critical in current filters','เตือน / วิกฤตตามตัวกรอง'),'bad-text')+kpi('LOST HOURS',fmt(lost,1)+' h',`${issues} ${tr('data issue(s)','ปัญหาข้อมูล')}`,'warn-text');
  $('monthlyProjectBody').innerHTML=sum.length?sum.map(x=>`<tr data-project="${esc(x.project)}"><td><b>${esc(x.project)}</b><small style="display:block;color:var(--muted)">${fmtMonth(x.period)}</small></td><td>${x.count}</td><td>${fmt(x.reference,2)} h</td><td class="${inverterMonthlyColor(x)}"><b>${pct(x.availability)}</b></td><td class="${inverterMonthlyColor(x)}">${fmt(x.lostHours,1)} h</td><td>${x.low}</td><td><span class="status ${statusClass(x.status)}">${inverterMonthlyLabel(x.availability)}</span></td></tr>`).join(''):`<tr><td colspan="7"><div class="empty">${tr('No Monthly data for the selected Project / Period. The project remains available in the filter.','ไม่มีข้อมูลรายเดือนสำหรับโครงการ / ช่วงเวลาที่เลือก แต่โครงการยังคงอยู่ในตัวกรอง')}</div></td></tr>`;
  $('monthlyProjectBody').querySelectorAll('tr[data-project]').forEach(tr=>tr.onclick=()=>{$('monthlyProject').value=tr.dataset.project;renderMonthly()});
@@ -2010,6 +2010,115 @@ $('invAxisAuto').onclick=$('invAxisReset').onclick=reset;
  explanation();
 })();
 </script>
+
+<script id="inv-unified-filters">
+(()=>{
+let draft=null;
+const names=()=>[...new Set([...(inverterMatchingData?.devices||[]).map(d=>d.source_project_name),...workspaceProjects()])].sort((a,b)=>a.localeCompare(b));
+const months=()=>[...new Set([...(inverterAutoCatalog?.months||[]),...workspaceDailyMonths(),...monthlyPeriods()])].sort();
+const deviceRows=p=>{
+ const map=new Map();
+ for(const d of inverterMatchingData?.devices||[])if(p==='all'||d.source_project_name===p)map.set(d.source_project_name+'|'+d.device_name,{project:d.source_project_name,device:d.device_name});
+ for(const r of [...state.daily,...state.monthly])if(p==='all'||r.project===p)map.set(r.project+'|'+r.device,{project:r.project,device:r.device});
+ return [...map.values()].sort((a,b)=>a.project.localeCompare(b.project)||a.device.localeCompare(b.device,undefined,{numeric:true}));
+};
+const dialog=document.createElement('dialog');dialog.id='invFilterDialog';
+dialog.innerHTML='<div class="inv-filter-head"><div><h2 id="invFilterTitle"></h2><p id="invFilterHelp"></p></div><button type="button" class="btn small" id="invFilterClose" aria-label="Close">×</button></div><div id="invFilterFields" class="inv-filter-fields"></div><div class="inv-filter-footer"><span id="invFilterCount"></span><button class="btn" id="invFilterCancel"></button><button class="btn primary" id="invFilterApply"></button></div>';
+document.body.append(dialog);
+const label=(en,th)=>tr(en,th),opt=(v,t,selected)=>'<option value="'+esc(v)+'" '+(v===selected?'selected':'')+'>'+esc(t)+'</option>';
+function count(){ $('invFilterCount').textContent=label('Selected: ','เลือก: ')+draft.months.size+label(' months · ',' เดือน · ')+draft.devices.size+label(' inverters',' อินเวอร์เตอร์'); }
+function renderLists(){
+ const period=$('invFilterMonths'),dev=$('invFilterDevices'),query=$('invFilterDeviceSearch')?.value.toLowerCase()||'';
+ period.innerHTML=months().map(m=>'<label class="inv-filter-check"><input type="checkbox" data-month="'+m+'" '+(draft.months.has(m)?'checked':'')+'>'+esc(fmtMonth(m))+'</label>').join('');
+ period.querySelectorAll('input').forEach(x=>x.onchange=()=>{if(x.checked)draft.months.add(x.dataset.month);else draft.months.delete(x.dataset.month);count()});
+ dev.innerHTML=deviceRows(draft.project).filter(r=>(r.project+' '+r.device).toLowerCase().includes(query)).map(r=>{const k=r.project+'|'+r.device;return '<label class="inv-filter-check"><input type="checkbox" data-device="'+esc(k)+'" '+(draft.devices.has(k)?'checked':'')+'><span>'+esc(r.device)+(draft.project==='all'?'<small>'+esc(inverterCentralNames.get(r.project)||r.project)+'</small>':'')+'</span></label>'}).join('')||'<p>'+label('No matching inverters','ไม่พบ Inverter')+'</p>';
+ dev.querySelectorAll('input').forEach(x=>x.onchange=()=>{if(x.checked)draft.devices.add(x.dataset.device);else draft.devices.delete(x.dataset.device);count()});count();
+}
+function fields(){
+ const ps=names(),daily=draft.page==='daily',years=[...new Set(months().map(m=>m.slice(0,4)))];
+ $('invFilterFields').innerHTML='<div class="field inv-filter-wide"><label>'+label('Project','โครงการ')+'</label><select class="control" id="invFilterProject">'+(daily?'':opt('all',label('All projects','ทุกโครงการ'),draft.project))+ps.map(p=>opt(p,inverterCentralNames.get(p)||p,draft.project)).join('')+'</select></div>'+
+ '<div class="field"><label>'+label('Display','การแสดงผล')+'</label><select class="control" id="invFilterDisplay">'+(daily?opt('all',label('All inverters','ทั้งหมด'),draft.display)+opt('review',label('Review only','เฉพาะต้องตรวจสอบ'),draft.display):$('monthlyStatus').innerHTML)+'</select></div>'+
+ '<div class="field"><label>'+label('Y-axis','แกนกราฟ')+'</label>'+(daily?'<select class="control" id="invFilterAxis">'+$('dailyAxis').innerHTML+'</select>':'<div class="inv-filter-info">'+label('Monthly view uses tables; no chart axis','หน้ารายเดือนเป็นตาราง ไม่มีแกนกราฟ')+'</div>')+'</div>'+
+ '<div class="field inv-filter-wide"><label>'+label('Period','ช่วงเวลา')+'</label><div class="inv-filter-quick"><button type="button" data-period="latest">'+label('Latest month','เดือนล่าสุด')+'</button><select id="invFilterYear">'+years.map(y=>opt(y,y,years.at(-1))).join('')+'</select><button type="button" data-period="year">'+label('Whole year','ทั้งปี')+'</button><button type="button" data-period="all">'+label('Lifetime','ตลอดอายุ')+'</button></div>'+
+ (daily?'<select class="control" id="invFilterView">'+['daily','monthly','yearly','lifetime'].map(v=>opt(v,({daily:label('Daily','รายวัน'),monthly:label('Monthly','รายเดือน'),yearly:label('Yearly','รายปี'),lifetime:label('Lifetime','ตลอดอายุ')})[v],draft.view)).join('')+'</select>':'')+
+ '<div id="invFilterMonths" class="inv-filter-list"></div></div>'+
+ '<div class="field inv-filter-wide"><label>Inverter</label><div class="inv-filter-quick"><input class="control" id="invFilterDeviceSearch" type="search" placeholder="'+label('Search inverter','ค้นหา Inverter')+'"><button type="button" id="invFilterAllDevices">'+label('Select all','เลือกทั้งหมด')+'</button><button type="button" id="invFilterNoDevices">'+label('Clear','ล้าง')+'</button></div><div id="invFilterDevices" class="inv-filter-list"></div></div>';
+ $('invFilterDisplay').value=draft.display;if(daily)$('invFilterAxis').value=draft.axis;
+ $('invFilterProject').onchange=e=>{draft.project=e.target.value;draft.devices=new Set(deviceRows(draft.project).map(r=>r.project+'|'+r.device));renderLists()};
+ $('invFilterDisplay').onchange=e=>draft.display=e.target.value;
+ if(daily){$('invFilterAxis').onchange=e=>draft.axis=e.target.value;$('invFilterView').onchange=e=>{draft.view=e.target.value;if(draft.view==='lifetime'){draft.months=new Set(months());renderLists()}}}
+ $('invFilterDeviceSearch').oninput=renderLists;
+ $('invFilterAllDevices').onclick=()=>{draft.devices=new Set(deviceRows(draft.project).map(r=>r.project+'|'+r.device));renderLists()};
+ $('invFilterNoDevices').onclick=()=>{draft.devices.clear();renderLists()};
+ dialog.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{const all=months();draft.months=new Set(b.dataset.period==='latest'?all.slice(-1):b.dataset.period==='year'?all.filter(m=>m.startsWith($('invFilterYear').value+'-')):all);if(daily&&b.dataset.period==='all'){draft.view='lifetime';$('invFilterView').value='lifetime'}else if(daily&&draft.view==='lifetime'){draft.view='daily';$('invFilterView').value='daily'}renderLists()});
+ renderLists();
+}
+function open(page){
+ const daily=page==='daily',project=daily?ui.dailyProject:($('monthlyProject').value||'all');
+ const selected=daily?new Set([...ui.selectedDevices].map(d=>project+'|'+d)):ui.monthlyDeviceFilter?new Set(ui.monthlyDeviceFilter):new Set(deviceRows(project).map(r=>r.project+'|'+r.device));
+ draft={page,project,view:ui.dailyView,months:new Set(daily?(ui.dailyView==='yearly'?months().filter(m=>ui.selectedYears.has(m.slice(0,4))):ui.dailyView==='lifetime'?months():ui.selectedMonths):ui.monthlySelectedPeriods),devices:selected,display:daily?$('dailyDisplay').value:$('monthlyStatus').value,axis:$('dailyAxis').value};
+ $('invFilterTitle').textContent=label('Filters · ','กรองข้อมูล · ')+(daily?'Daily':'Monthly');
+ $('invFilterHelp').textContent=label('Choose freely; data refreshes only after Apply.','เลือกข้อมูลได้ต่อเนื่อง ระบบจะโหลดเมื่อกดนำไปใช้เท่านั้น');
+ $('invFilterCancel').textContent=label('Cancel','ยกเลิก');$('invFilterApply').textContent=label('Apply','นำไปใช้');
+ fields();dialog.showModal();
+}
+function close(){dialog.close();draft=null}
+$('invFilterClose').onclick=$('invFilterCancel').onclick=close;dialog.addEventListener('cancel',()=>{draft=null});
+$('invFilterApply').onclick=()=>{
+ if(!draft.months.size){toast(label('Select at least one month','เลือกอย่างน้อย 1 เดือน'));return}
+ if(!draft.devices.size){toast(label('Select at least one inverter','เลือกอย่างน้อย 1 Inverter'));return}
+ const d=draft;close();
+ if(d.page==='daily'){
+  rememberDailyDeviceSelection(ui.dailyProject);ui.dailyProject=d.project;ui.dailyView=d.view;ui.selectedPoint=null;
+  ui.selectedMonths=new Set(d.months);ui.selectedYears=new Set([...d.months].map(m=>m.slice(0,4)));
+  ui.selectedDevices=new Set(deviceRows(d.project).filter(r=>d.devices.has(r.project+'|'+r.device)).map(r=>r.device));
+  ui.hiddenDevices=new Set();rememberDailyDeviceSelection(d.project);$('dailyDisplay').value=d.display;$('dailyAxis').value=d.axis;ui.dailyScale=null;
+  document.querySelectorAll('#dailyViewMode button').forEach(b=>b.classList.toggle('active',b.dataset.view===d.view));
+ }else{
+  $('monthlyProject').value=d.project;$('monthlyStatus').value=d.display;ui.monthlySelectedPeriods=new Set(d.months);ui.monthlyDeviceFilter=new Set(d.devices);
+ }
+ if(inverterAutoEnabled())inverterAutoRequest();else if(d.page==='daily')renderDaily();else renderMonthly();
+ if(typeof invRememberView==='function')invRememberView();
+ summary(d.page);thresholdSummary();
+};
+function summary(page){const daily=page==='daily',p=daily?ui.dailyProject:$('monthlyProject').value,ms=daily?ui.selectedMonths:ui.monthlySelectedPeriods;const node=$('invFilterSummary-'+page);if(node)node.textContent=(p==='all'?label('All projects','ทุกโครงการ'):inverterCentralNames.get(p)||p||'—')+' · '+ms.size+label(' months',' เดือน')}
+
+function thresholdSummary(){
+ const node=$('invFilterThreshold');if(!node)return;
+ const p=ui.dailyProject,selected=ui.dailyView==='yearly'?months().filter(m=>ui.selectedYears.has(m.slice(0,4))):ui.dailyView==='lifetime'?months():[...ui.selectedMonths];
+ const custom=selected.filter(m=>{const y=m.slice(0,4),n=String(Number(m.slice(5,7)));return Number.isFinite(state.settings.yearThresholds?.[p]?.[y]?.[n])||Number.isFinite(state.thresholds?.[p]?.[n])});
+ const values=[...new Set(selected.map(m=>thresholdFor(p,m+'-01')))];
+ node.textContent=custom.length?label('Custom threshold · ','Threshold กำหนดเอง · ')+custom.length+'/'+selected.length+label(' months',' เดือน')+': '+values.join(' / ')+'%':label('Default threshold','Threshold ค่าเริ่มต้น')+': '+state.settings.defaultThreshold+'%';
+ node.classList.toggle('custom',custom.length>0);
+ node.title=selected.map(m=>m+': '+thresholdFor(p,m+'-01')+'%').join('\n');
+}
+for(const page of ['daily','monthly']){
+ const card=$('page-'+page).querySelector('.control-card')||$('monthlyProject').closest('section');
+ card.classList.add('inv-popup-filter-card');
+ const bar=document.createElement('div');bar.className='inv-filter-bar';bar.innerHTML='<button class="btn primary" type="button" id="invFilterOpen-'+page+'">'+label('Filters','กรองข้อมูล')+'</button><span id="invFilterSummary-'+page+'"></span>';card.prepend(bar);$('invFilterOpen-'+page).onclick=()=>open(page);summary(page);
+}
+const badge=document.createElement('span');badge.id='invFilterThreshold';$('invFilterOpen-daily').parentElement.append(badge);
+const previousDaily=renderDaily,previousMonthly=renderMonthly;
+renderDaily=function(...args){const result=previousDaily.apply(this,args);summary('daily');thresholdSummary();return result};
+renderMonthly=function(...args){const result=previousMonthly.apply(this,args);summary('monthly');return result};
+thresholdSummary();
+})();
+</script>
+<style>
+.inv-popup-filter-card>.filters,.inv-popup-filter-card>#dailyViewMode,.inv-popup-filter-card>.filter-foot{display:none!important}
+.inv-filter-bar{display:flex;align-items:center;gap:12px;padding:2px 0;flex-wrap:wrap}.inv-filter-bar span{color:var(--muted);font-size:13px}
+#invFilterThreshold{padding:5px 9px;border:1px solid var(--line);border-radius:8px;font-size:12px}#invFilterThreshold.custom{background:var(--amber-soft);border-color:var(--amber);color:var(--text)}
+#invFilterDialog{width:min(760px,94vw);max-height:88vh;padding:0;border:1px solid var(--line);border-radius:18px;background:var(--surface);color:var(--text);overflow:hidden;box-shadow:var(--shadow)}
+#invFilterDialog::backdrop{background:rgba(4,12,24,.55)}
+.inv-filter-head,.inv-filter-footer{display:flex;align-items:center;gap:10px;padding:16px 20px;background:var(--surface2);flex-shrink:0}
+.inv-filter-head{justify-content:space-between;border-bottom:1px solid var(--line)}.inv-filter-head h2{margin:0;font-size:19px}.inv-filter-head p{margin:5px 0 0;color:var(--muted);font-size:12px}
+.inv-filter-fields{padding:18px 20px;max-height:calc(88vh - 160px);overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.inv-filter-wide{grid-column:1/-1}.inv-filter-footer{border-top:1px solid var(--line);justify-content:flex-end}.inv-filter-footer>span{margin-right:auto;font-size:12px;color:var(--muted)}
+.inv-filter-quick{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.inv-filter-quick button,.inv-filter-quick select{padding:6px 10px;border:1px solid var(--line);background:var(--surface2);color:var(--text);border-radius:9px;font:inherit;font-size:12px}.inv-filter-quick input{flex:1;min-width:160px}
+.inv-filter-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;max-height:190px;overflow-y:auto;padding:8px;border:1px solid var(--line);border-radius:12px;background:var(--surface2)}
+.inv-filter-check{display:flex!important;align-items:center;gap:8px;padding:8px;border-radius:8px;color:var(--text)!important;font-size:12px!important;cursor:pointer}.inv-filter-check:hover{background:var(--primary-soft)}.inv-filter-check input{accent-color:var(--primary);width:16px;height:16px;flex-shrink:0}.inv-filter-check small{display:block;color:var(--muted);font-size:10px}.inv-filter-info{padding:10px;color:var(--muted);background:var(--surface2);border-radius:10px;font-size:12px}
+@media(max-width:700px){.inv-filter-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
 </body>
 </html>
 
