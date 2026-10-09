@@ -1,0 +1,20 @@
+const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path'),assert=require('node:assert/strict');
+const context={console,Date,Map,Set,JSON,Number,Object,String,Error,document:{getElementById:()=>null}};context.globalThis=context;
+vm.runInNewContext(fs.readFileSync(path.resolve(__dirname,'../inverter-shared-preferences.js'),'utf8'),context);
+const api=context.InverterSharedPreferences;
+const data={users:[{user_id:'a',thresholds:{},yearThresholds:{Huamei:{2026:{5:92.1,6:90.8}}}},{user_id:'b',thresholds:{},yearThresholds:{Capsule:{2026:{8:90.1}}}}],history:[]};
+let requests=0;const shared=api.create({rpc:async()=>{requests++;return{data}}},'test-workspace');
+(async()=>{
+ await Promise.all([shared.load(),shared.load()]);assert.equal(requests,1);
+ const own={thresholds:{},settings:{giMin:3.5,yearThresholds:{Capsule:{2026:{8:90.1}}}}},view=shared.prepare(own);
+ assert.equal(view.settings.yearThresholds.Huamei[2026][5],92.1);assert.equal(view.settings.giMin,3.5);
+ assert.equal((await shared.personalMetadata(own,view)).settings.yearThresholds.Huamei,undefined);
+ view.settings.yearThresholds.Huamei[2026][5]=93;
+ const saved=await shared.personalMetadata(own,view);assert.equal(saved.settings.yearThresholds.Huamei[2026][5],93);assert.equal(saved.settings.yearThresholds.Huamei[2026][6],undefined);assert.equal(saved.settings.yearThresholds.Capsule[2026][8],90.1);
+ assert.equal(shared.prepare(view).settings.yearThresholds.Huamei[2026][5],93);
+ data.history=[{changes:[{path:['settings','yearThresholds','Huamei','2026','5'],before:92.1,after:94}]}];await assert.rejects(()=>shared.personalMetadata(own,view),/another user/);
+ assert.equal(api.combine(data).yearThresholds.Huamei[2026][5],94);
+ assert.equal(api.changes({thresholds:{}},{thresholds:{Empty:{}}}).length,0);
+ const failure=api.create({rpc:async()=>({error:new Error('offline')})},'test');await assert.rejects(()=>failure.load(),/offline/);
+ console.log('Shared thresholds: merge, personal-only writes, unsaved edits, conflict detection, audit order, empty scaffolds, network failure passed');
+})().catch(error=>{console.error(error.message);process.exitCode=1});
