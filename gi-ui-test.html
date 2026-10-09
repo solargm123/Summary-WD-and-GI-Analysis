@@ -1,0 +1,1628 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="dark">
+<head><meta http-equiv="Content-Security-Policy" content="connect-src 'none'; form-action 'none'; base-uri 'self'"><script src="solar-test-sandbox.js"></script>
+    <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FusionSolar Multi-Plant Analysis</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    
+
+    <script src="gi-average.js?v=20261005-map-formula-view1"></script>
+    <script src="gi-review.js?v=20260930-gi-province3"></script>
+    <style>
+        :root[data-theme="dark"] {
+            --bg-main: #1e293b; --card-bg: #334155; --card-border: #475569;
+            --dropzone-bg: linear-gradient(135deg, rgba(51, 65, 85, 0.9), rgba(30, 41, 59, 0.9));
+            --dropzone-border: #818cf8; --accent-yellow: #fbbf24; --accent-blue: #38bdf8;
+            --accent-green: #34d399; --accent-red: #f87171; --text-main: #f8fafc;
+            --text-muted: #cbd5e1; --input-bg: #0f172a; --hover-bg: rgba(255, 255, 255, 0.08);
+            --sticky-bg: #334155; --avg-bg: #453716; --normal-bg: #113e2d; --anomaly-bg: rgba(239, 68, 68, 0.45);
+        }
+
+        :root[data-theme="light"] {
+            --bg-main: #eef2f6; --card-bg: #f8fafc; --card-border: #cbd5e1;
+            --dropzone-bg: linear-gradient(135deg, #e2e8f0, #eef2f6);
+            --dropzone-border: #6366f1; --accent-yellow: #d97706; --accent-blue: #0284c7;
+            --accent-green: #059669; --accent-red: #dc2626; --text-main: #1e293b;
+            --text-muted: #475569; --input-bg: #e2e8f0; --hover-bg: rgba(0, 0, 0, 0.04);
+            --sticky-bg: #f8fafc; --avg-bg: #fef3c7; --normal-bg: #d1fae5; --anomaly-bg: rgba(220, 38, 38, 0.2);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Bai Jamjuree', sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-main); padding: 20px; min-height: 100vh; transition: background-color 0.3s ease; }
+        .container { max-width: 1650px; margin: 0 auto; }
+
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--card-border); flex-wrap: wrap; gap: 12px; }
+        .title-group { display: flex; align-items: center; gap: 12px; }
+        .logo-icon { background: linear-gradient(135deg, var(--accent-yellow), #f97316); color: #fff; padding: 8px; border-radius: 10px; display: flex; }
+        .header-titles h2 { font-size: 1.35rem; font-weight: 700; }
+        .header-titles p { font-size: 0.8rem; color: var(--text-muted); }
+        .header-controls { display: flex; align-items: center; gap: 10px; }
+
+        .nav-tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--card-border); padding-bottom: 8px; }
+        .tab-btn { background: var(--input-bg); color: var(--text-muted); border: 1px solid var(--card-border); padding: 8px 18px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
+        .tab-btn:hover { border-color: var(--accent-blue); color: var(--text-main); }
+        .tab-btn.active { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .top-grid { display: grid; grid-template-columns: 340px 1fr; gap: 16px; margin-bottom: 20px; }
+        @media (max-width: 1024px) { .top-grid { grid-template-columns: 1fr; } }
+
+        .card { background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; }
+
+        .upload-card { background: var(--dropzone-bg); border: 2px dashed var(--dropzone-border); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: all 0.2s; }
+        .upload-card:hover { border-color: var(--accent-blue); transform: translateY(-2px); }
+
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+        .metric-card { display: flex; flex-direction: column; justify-content: space-between; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); font-size: 0.78rem; }
+        .card-value { font-size: 1.5rem; font-weight: 700; margin-top: 6px; }
+        .card-unit { font-size: 0.75rem; color: var(--text-muted); margin-left: 4px; font-weight: 400; }
+
+        .btn { background: var(--accent-blue); color: #ffffff; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease; }
+        .btn-secondary { background: var(--input-bg); color: var(--text-main); border: 1px solid var(--card-border); }
+        .btn-danger { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); border: 1px solid var(--accent-red); }
+        .btn-edit { background: var(--accent-yellow); color: #000000; font-weight: 700; }
+        .btn-action { background: rgba(56, 189, 248, 0.15); color: var(--accent-blue); border: 1px solid var(--accent-blue); padding: 2px 6px; font-size: 0.7rem; border-radius: 4px; cursor: pointer; }
+        .btn-revert { background: rgba(245, 158, 11, 0.2); color: var(--accent-yellow); border: 1px solid var(--accent-yellow); padding: 2px 6px; font-size: 0.7rem; border-radius: 4px; cursor: pointer; }
+        .btn-theme { background: var(--input-bg); color: var(--text-main); border: 1px solid var(--card-border); padding: 6px; border-radius: 50%; }
+        .btn-xs { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; }
+        .btn:hover { opacity: 0.9; }
+
+        .status-filter-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+        .btn-filter-status { background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text-main); padding: 6px 12px; border-radius: 8px; font-size: 0.78rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; transition: all 0.2s; }
+        .btn-filter-status:hover { border-color: var(--accent-blue); }
+        .btn-filter-status.active { border-color: var(--accent-blue); background: rgba(56, 189, 248, 0.15); color: var(--accent-blue); }
+        
+        .badge-count { padding: 2px 6px; border-radius: 12px; font-size: 0.72rem; font-weight: 700; }
+        .badge-all { background: rgba(255, 255, 255, 0.15); color: var(--text-main); }
+        .badge-normal { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
+        .badge-abnormal { background: rgba(245, 158, 11, 0.2); color: var(--accent-yellow); }
+        .badge-notfound { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
+
+        .table-card { padding: 16px; }
+        .table-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
+        
+        .top-scroll-wrapper { width: 100%; overflow-x: auto; overflow-y: hidden; height: 14px; margin-bottom: 4px; }
+        .top-scroll-inner { height: 1px; }
+
+        .table-scroll-container { width: 100%; max-height: 72vh; min-height: 520px; overflow: auto; border-radius: 8px; border: 1px solid var(--card-border); position: relative; }
+
+        table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.8rem; text-align: left; table-layout: fixed; }
+        th, td { padding: 8px 10px; border-bottom: 1px solid var(--card-border); border-right: 1px solid var(--card-border); white-space: nowrap; height: 42px; box-sizing: border-box; }
+        th { background-color: var(--input-bg) !important; color: var(--text-muted); font-weight: 600; position: sticky; top: 0; z-index: 10; }
+
+        .col-status { position: sticky; left: 0px; width: 70px !important; z-index: 10; background: var(--sticky-bg) !important; text-align: center; }
+        .col-plant { position: sticky; left: 124px; width: 300px !important; z-index: 10; background: var(--sticky-bg) !important; }
+        .col-province { position: sticky; left: 424px; width: 165px !important; z-index: 10; background: var(--sticky-bg) !important; }
+        .col-avg { position: sticky; left: 589px; width: 95px !important; z-index: 10; background: var(--avg-bg) !important; }
+        .col-normal { position: sticky; left: 684px; width: 105px !important; z-index: 10; background: var(--normal-bg) !important; }
+        .col-kwp { position: sticky; left: 789px; width: 85px !important; z-index: 10; background: var(--sticky-bg) !important; box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.3); }
+        
+        .col-review { position:sticky;left:70px;width:54px!important;z-index:10;background:var(--sticky-bg)!important;text-align:center;padding:4px; }
+        .gi-review-btn,.gi-day-btn { display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;flex-shrink:0;border:1px solid var(--card-border);background:transparent;color:var(--text-muted);border-radius:5px;cursor:pointer;width:22px;height:22px;min-width:0!important;min-height:0!important;padding:0!important;line-height:1;box-shadow:none;transition:background .15s,border-color .15s,color .15s; }
+        .gi-review-btn i { font-size:12px!important;line-height:1;width:12px;height:12px;display:inline-flex;align-items:center;justify-content:center;margin:0!important; }
+        .gi-review-btn.reviewed,.gi-day-btn.accepted { color:var(--accent-green);border-color:color-mix(in srgb,var(--accent-green) 45%,var(--card-border));background:color-mix(in srgb,var(--accent-green) 10%,transparent); }
+        .gi-review-btn.recheck { color:var(--accent-yellow);border-color:color-mix(in srgb,var(--accent-yellow) 45%,var(--card-border)); }
+        .gi-review-btn:hover:not(:disabled),.gi-day-btn:hover:not(:disabled) { border-color:var(--accent-blue);background:color-mix(in srgb,var(--accent-blue) 12%,transparent); }
+        .gi-review-btn:focus-visible,.gi-day-btn:focus-visible { outline:2px solid var(--accent-blue);outline-offset:2px; }
+        .gi-review-btn:disabled,.gi-day-btn:disabled { opacity:.45;cursor:not-allowed; }
+        .gi-day-btn { width:18px;height:18px;margin-left:3px;border-radius:4px; }
+        .gi-day-btn i { font-size:10px!important;line-height:1;width:10px;height:10px;display:inline-flex;align-items:center;justify-content:center;margin:0!important; }
+        .gi-review-filter { background:var(--input-bg);color:var(--text-main);border:1px solid var(--card-border);border-radius:8px;padding:6px;font:inherit;max-width:170px; }
+        .accepted-cell { background:var(--normal-bg); }
+        .col-date { width: 100px !important; }
+        .col-note { width: 220px !important; }
+
+        th.col-status, th.col-review, th.col-plant, th.col-province, th.col-avg, th.col-normal, th.col-kwp { z-index: 30 !important; background-color: var(--input-bg) !important; }
+
+        .plant-cell-content { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 6px; }
+        .plant-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+
+        .number-col { text-align: right; }
+        .avg-col { background-color: var(--avg-bg) !important; color: var(--accent-yellow); font-weight: 700; }
+        .normal-col { background-color: var(--normal-bg) !important; color: var(--accent-green); font-weight: 700; }
+        .anomaly-cell { background-color: var(--anomaly-bg) !important; color: var(--accent-red) !important; font-weight: bold; }
+
+        .status-badge { display: inline-flex; align-items: center; justify-content: center; padding: 4px; border-radius: 50%; width: 26px; height: 26px; }
+        .status-normal { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
+        .status-abnormal { background: rgba(245, 158, 11, 0.2); color: var(--accent-yellow); }
+        .status-notfound { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
+
+        .cell-input { width: 75px; background: var(--input-bg); color: var(--accent-blue); border: 1px solid var(--accent-blue); border-radius: 4px; padding: 2px 4px; text-align: right; font-weight: bold; font-size: 0.8rem; }
+        .note-input { width: 100%; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--card-border); border-radius: 4px; padding: 4px 6px; font-size: 0.78rem; }
+        .province-button,.province-filter-select { width:100%; background:var(--input-bg); color:var(--text-main); border:1px solid var(--card-border); border-radius:8px; padding:6px 8px; font-size:.76rem; outline:none; }
+        .province-button { display:flex; align-items:center; justify-content:space-between; gap:6px; cursor:pointer; text-align:left; }
+        .province-button span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .province-filter-wrap { display:flex; align-items:center; gap:7px; min-width:245px; margin-left:6px; }
+        .province-filter-select { min-width:170px; cursor:pointer; display:flex;align-items:center;justify-content:space-between;gap:8px; }
+        #provinceModal .modal-content { width:min(92vw,520px); max-width:520px; }
+        .province-search { width:100%; min-height:44px; background:var(--input-bg); color:var(--text-main); border:1px solid var(--card-border); border-radius:10px; padding:10px 12px; outline:none; }
+        .province-option-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; max-height:52vh; overflow:auto; padding:2px; }
+        .province-option { background:var(--input-bg); color:var(--text-main); border:1px solid var(--card-border); border-radius:9px; padding:9px 10px; cursor:pointer; text-align:left; }
+        .province-option:hover,.province-option.active { border-color:var(--accent-blue); background:rgba(56,189,248,.14); color:var(--accent-blue); }
+        .province-option small { display:block; color:var(--text-muted); margin-top:2px; }
+
+        .threshold-box { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; background: var(--input-bg); padding: 4px 10px; border-radius: 8px; border: 1px solid var(--card-border); }
+        .threshold-box input { width: 50px; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--accent-yellow); text-align: center; border-radius: 4px; padding: 2px; font-weight: bold; }
+
+        /* Trend Tab Enhanced Styling */
+        .trend-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+        @media (max-width: 1024px) { .trend-grid { grid-template-columns: 1fr; } }
+        
+        .chart-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+        .stat-card { background: var(--input-bg); border: 1px solid var(--card-border); padding: 12px; border-radius: 8px; text-align: center; }
+        .stat-card .label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; }
+        .stat-card .val { font-size: 1.3rem; font-weight: 700; }
+        .stat-card .sub-info { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .chart-container { position: relative; height: 440px; width: 100%; }
+        .trend-mode-picker{min-width:160px;display:flex;flex-direction:column;gap:3px}.trend-mode-picker small{color:var(--text-muted);font-size:.66rem}.trend-mode-picker select{min-height:46px;background:var(--input-bg);color:var(--text-main);border:1px solid var(--card-border);border-radius:10px;padding:7px 11px;font:600 .78rem 'Bai Jamjuree',sans-serif;outline:none;cursor:pointer}
+        .trend-summary{margin-top:16px;border:1px solid var(--card-border);border-radius:12px;overflow:hidden;background:var(--input-bg)}
+        .trend-summary-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 13px;border-bottom:1px solid var(--card-border)}.trend-summary-head h4{margin:0;font-size:.88rem}.trend-summary-head span{font-size:.72rem;color:var(--text-muted)}
+        .trend-summary-scroll{max-height:380px;overflow:auto}.trend-summary table{min-width:960px;table-layout:auto}.trend-summary th{position:sticky;top:0;z-index:2;padding:9px 10px;white-space:nowrap}.trend-summary td{padding:8px 10px;border-bottom:1px solid var(--card-border);white-space:nowrap}.trend-summary td:nth-child(2){min-width:280px;white-space:normal}.trend-summary-empty{text-align:center;color:var(--text-muted);padding:24px!important}.province-option-row{display:flex;align-items:center;justify-content:space-between;gap:8px}.province-count{display:inline-grid;place-items:center;min-width:28px;height:22px;padding:0 7px;border-radius:999px;background:rgba(56,189,248,.14);color:var(--accent-blue);font-weight:700;font-size:.7rem}
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: var(--card-bg); border: 1px solid var(--card-border); width:min(96vw,980px); max-width:980px; max-height:90vh; border-radius:14px; padding:20px; display:flex; flex-direction:column; gap:16px; box-shadow:0 24px 70px rgba(0,0,0,.45); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; }
+        .modal-body { display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--card-border); padding-top: 10px; }
+
+        .filter-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+        .filter-item { display: flex; flex-direction: column; gap: 4px; }
+        .filter-item-header { display: flex; justify-content: space-between; align-items: center; }
+        .filter-item label { font-size: 0.78rem; color: var(--text-muted); }
+        .multi-select { background:var(--input-bg); border:1px solid var(--card-border); border-radius:8px; color:var(--text-main); padding:5px; height:128px; width:100%; outline:none; }
+        .multi-select option { padding:5px 7px; border-radius:4px; }
+        .filter-action { background:#0b172b; color:#fff; border:1px solid #536176; padding:5px 10px; border-radius:8px; font-size:.7rem; font-weight:700; cursor:pointer; display:inline-flex; gap:5px; align-items:center; }
+        .trend-control-section { border-top:1px solid var(--card-border); padding-top:12px; }
+        .trend-date-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        @media(max-width:720px){.filter-grid,.trend-date-grid{grid-template-columns:1fr}}
+        
+        .plant-list-container { background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 8px; height: 200px; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+        .plant-item { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; cursor: pointer; padding: 6px 10px; border-radius: 6px; user-select: none; }
+        .plant-item:hover { background: var(--hover-bg); }
+        .plant-item input { accent-color: var(--accent-blue); width: 16px; height: 16px; cursor: pointer; }
+        .plant-search-result { width: 100%; border: 1px solid transparent; background: transparent; color: var(--text-main); font: inherit; text-align: left; }
+        .plant-search-result.active { border-color: var(--accent-blue); background: rgba(56, 189, 248, 0.14); color: var(--accent-blue); }
+        .plant-search-result:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+        .search-input { background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 8px 12px; color: var(--text-main); outline: none; width: 100%; font-size: 0.8rem; }
+
+        /* Center-aligned analysis workspace UI */
+        body{background:radial-gradient(circle at 50% -180px,#18324f 0,var(--bg-main) 500px);padding:14px 20px 32px}
+        :root[data-theme="light"] body{background:radial-gradient(circle at 50% -180px,#dbeafe 0,var(--bg-main) 500px)}
+        header{position:sticky;top:10px;z-index:80;background:color-mix(in srgb,var(--card-bg) 92%,transparent);border:1px solid var(--card-border);border-radius:17px;padding:14px 17px;margin-bottom:14px;box-shadow:0 18px 45px rgba(2,6,23,.28);backdrop-filter:blur(12px)}
+        .logo-icon{width:42px;height:42px;align-items:center;justify-content:center;border-radius:12px}
+        .header-titles h2{font-size:1.2rem}.header-controls{flex-wrap:wrap;justify-content:flex-end}
+        .btn{border-radius:9px;padding:8px 13px}.btn-theme{width:34px;height:34px;justify-content:center}
+        .nav-tabs{width:max-content;max-width:100%;padding:5px;background:color-mix(in srgb,var(--card-bg) 90%,transparent);border:1px solid var(--card-border);border-radius:12px;margin-bottom:14px;overflow-x:auto}
+        .tab-btn{border:0;border-radius:8px;padding:8px 15px}.tab-btn.active{box-shadow:0 6px 18px rgba(56,189,248,.2)}
+        .card,.upload-card{border-radius:16px;box-shadow:0 10px 28px rgba(2,6,23,.16)}
+        :root[data-theme="light"] .card,:root[data-theme="light"] .upload-card{box-shadow:0 10px 28px rgba(15,23,42,.07)}
+        .metric-card{min-height:96px}.card-value{font-size:1.65rem}.table-card{padding:17px}
+        .table-scroll-container{border-radius:12px}.threshold-box,.search-input,.multi-select,.cell-input,.note-input{border-radius:8px}
+        .analysis-flow{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:0 0 14px}
+        .analysis-flow-step{display:flex;align-items:center;gap:10px;padding:10px 13px;background:color-mix(in srgb,var(--card-bg) 92%,transparent);border:1px solid var(--card-border);border-radius:12px}
+        .analysis-flow-step strong{width:27px;height:27px;flex:0 0 27px;display:grid;place-items:center;border-radius:8px;background:rgba(56,189,248,.14);color:var(--accent-blue);font-size:12px}
+        .analysis-flow-step span{font-size:11px;color:var(--text-muted)}
+        @media(max-width:760px){body{padding:8px}header{position:relative;top:0}.header-controls{width:100%;justify-content:flex-start}.analysis-flow{grid-template-columns:1fr}.top-grid{gap:10px}.metrics-grid{grid-template-columns:repeat(2,1fr)}}
+
+        /* GI UI polish v2: match the Working Day filter proportions and controls. */
+        #filterModal .modal-content{width:min(96vw,1040px);max-width:1040px;border-radius:18px;padding:24px;gap:18px}
+        #filterModal .modal-header h3{font-size:1.05rem;color:var(--accent-blue);display:flex;align-items:center;gap:8px}
+        #filterModal .modal-body>div{background:color-mix(in srgb,var(--input-bg) 72%,transparent);border:1px solid var(--card-border);border-radius:14px;padding:16px}
+        #filterModal .filter-grid{gap:14px}
+        #filterModal .filter-item{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:12px;gap:9px;min-width:0}
+        #filterModal .filter-item-header>label{font-size:.82rem;font-weight:700;color:var(--text-main)}
+        #filterModal .multi-select{height:156px;padding:8px;border-radius:10px;font-size:.82rem}
+        #filterModal .multi-select option{padding:7px 9px;margin:2px 0}
+        #filterModal .filter-action,#trendControlsCard .filter-action{min-height:32px;padding:6px 10px;border-radius:9px}
+        #filterModal .search-input{min-height:44px;font-size:.84rem;padding:10px 13px}
+        #filterModal .plant-list-container{height:230px;border-radius:12px;padding:10px}
+        #filterModal .modal-footer .btn{min-height:42px;padding:9px 18px}
+
+        #trendControlsCard{display:none!important;position:fixed;z-index:1200;left:50%;top:50%;transform:translate(-50%,-50%);width:min(94vw,620px);max-height:88vh;overflow:auto;padding:18px;border-radius:18px;gap:12px!important;box-shadow:0 30px 90px rgba(0,0,0,.65)}
+        #trendControlsCard.open{display:flex!important}
+        #trendPopupBackdrop{display:none;position:fixed;inset:0;z-index:1190;background:rgba(2,6,23,.72);backdrop-filter:blur(4px)}#trendPopupBackdrop.open{display:block}
+        .gi-toolbar{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-left:auto}
+        .gi-toolbar .province-filter-wrap{margin-left:0;min-width:230px}
+        @media(max-width:1350px){.status-filter-bar .gi-toolbar{flex:1 0 100%;justify-content:flex-start;margin-left:0;padding-top:4px}}
+        #trendControlsCard>h3{margin:0;padding:0 2px 11px;border-bottom:1px solid var(--card-border)}
+        #trendControlsCard .trend-control-section{border:1px solid var(--card-border);background:color-mix(in srgb,var(--input-bg) 72%,transparent);border-radius:13px;padding:13px;margin:0}
+        #trendControlsCard .trend-date-grid{gap:10px}
+        #trendControlsCard .trend-date-grid>div{background:var(--card-bg);border:1px solid var(--card-border);border-radius:11px;padding:10px;min-width:0}
+        #trendControlsCard .multi-select{height:142px;padding:7px;border-radius:10px}
+        #trendControlsCard .multi-select option{padding:6px 8px;margin:2px 0}
+        #trendControlsCard .search-input{min-height:42px;padding:9px 12px}
+        #trendControlsCard .plant-list-container{height:250px;border-radius:11px}
+        #trendControlsCard input[type="checkbox"]{width:17px;height:17px;accent-color:var(--accent-blue)}
+        .trend-toolbar{display:flex;align-items:flex-end;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+        .trend-popup-button{min-width:220px;min-height:46px;background:var(--input-bg);color:var(--text-main);border:1px solid var(--card-border);border-radius:10px;padding:7px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;font-weight:600}
+        .trend-popup-button small{display:block;color:var(--text-muted);font-size:.66rem;font-weight:500;text-align:left}.trend-popup-button span{text-align:left}
+        .trend-popup-button:hover{border-color:var(--accent-blue)}
+        .trend-toolbar .province-filter-wrap{min-width:350px;margin-left:0}.trend-toolbar .province-filter-select{min-height:46px}
+        #giHeaderActions .gi-theme-button{width:auto!important;min-width:88px;min-height:34px;justify-content:center;white-space:nowrap}
+        @media(max-width:1024px){.trend-grid{grid-template-columns:1fr}#trendControlsCard .trend-date-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+        @media(max-width:720px){#filterModal .modal-content{padding:14px}#filterModal .filter-grid,#trendControlsCard .trend-date-grid{grid-template-columns:1fr}#filterModal .multi-select,#trendControlsCard .multi-select{height:120px}}
+    </style>
+<link rel="stylesheet" href="unified-ui.css?v=20260927-scroll1">
+<style id="giRenderPerformance20260930">header,.modal-overlay,#trendPopupBackdrop{backdrop-filter:none!important}header{background:var(--card-bg)!important}</style><style id="giResourceBudget20261001">
+#giResourcePager{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;background:var(--card-bg);color:var(--text-main);font-size:12px;border:1px solid var(--card-border);border-radius:8px;margin-bottom:8px}
+#giResourcePager button{background:var(--card-bg);color:var(--text-main);border:1px solid var(--card-border);border-radius:6px;padding:3px 10px;cursor:pointer}
+#giResourcePager button:disabled{opacity:.35;cursor:default}#giResourcePager small{color:var(--text-muted)}
+</style><style id="giDesktopTable20261001">
+body{zoom:1.1;min-height:calc(100vh / 1.1)}
+/* Fixed dialogs use unscaled viewport coordinates, independently of workspace zoom. */
+.modal-overlay,#trendPopupBackdrop,#trendControlsCard{zoom:calc(1 / 1.1)}
+.modal-overlay{width:100vw;height:100vh}
+#trendPopupBackdrop{width:100vw;height:100vh}
+#trendControlsCard{left:50vw;top:50vh}
+.container,.tab-content,.table-card{min-width:0;max-width:100%}
+.table-card{padding:12px}
+#mainTableContainer{min-height:0;height:var(--gi-table-height,60vh);max-height:none;max-width:100%;overscroll-behavior:contain;scrollbar-gutter:stable}
+#topScrollWrapper{max-width:100%;height:14px}
+#mainTableContainer,#topScrollWrapper{scrollbar-width:thin;scrollbar-color:#88919f var(--input-bg)}
+#mainTableContainer::-webkit-scrollbar,#topScrollWrapper::-webkit-scrollbar{width:10px;height:10px}
+#mainTableContainer::-webkit-scrollbar-thumb,#topScrollWrapper::-webkit-scrollbar-thumb{background:#88919f;border:2px solid var(--input-bg);border-radius:8px}
+#resultTable{font-size:.8rem}
+#resultTable th,#resultTable td{height:36px;padding:6px 8px}
+#resultTable .col-status{width:48px!important;left:0}
+#resultTable .col-review{width:40px!important;left:48px;padding:4px}
+#resultTable .col-plant{width:240px!important;left:88px}
+#resultTable .col-province{width:130px!important;left:328px}
+#resultTable .col-avg{width:84px!important;left:458px}
+#resultTable .col-normal{width:92px!important;left:542px}
+#resultTable .col-kwp{width:80px!important;left:634px}
+#resultTable .col-date{width:96px!important}
+#resultTable .col-note{width:200px!important}
+@media(max-width:1400px){
+#resultTable td.col-province,#resultTable td.col-avg,#resultTable td.col-normal,#resultTable td.col-kwp{position:static;box-shadow:none}
+#resultTable th.col-province,#resultTable th.col-avg,#resultTable th.col-normal,#resultTable th.col-kwp{left:auto;z-index:10!important;box-shadow:none}
+}
+</style>
+<style id="giSummaryControls20261001">
+#giSummaryCards[hidden]{display:none!important}
+#giSummaryToggle{min-height:34px;font-weight:700;gap:8px}
+#provinceStatusFilter,#trendProvinceSel,.threshold-box,.threshold-box label,.threshold-box input{font-weight:700!important}
+#provinceStatusFilter,#trendProvinceSel{padding:8px 12px;min-height:36px;border-radius:10px}
+#provinceStatusFilter:hover,#trendProvinceSel:hover{border-color:var(--accent-blue)}
+#provinceStatusFilter:focus-visible,#trendProvinceSel:focus-visible,#giSummaryToggle:focus-visible{outline:2px solid var(--accent-blue);outline-offset:2px}
+.threshold-box{padding:6px 10px;min-height:36px;gap:8px}
+.threshold-box input{width:64px;min-height:28px;font:inherit;font-weight:700;padding:3px 6px}
+</style>
+<link rel="stylesheet" href="solar-controls.css?v=20261001-2">
+<style id="giProvinceIconRefine">
+.province-filter-select{justify-content:flex-start;gap:9px}
+.province-filter-select>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.province-pin{display:inline-grid;place-items:center;width:26px;height:26px;flex:0 0 26px;font-size:13px!important;margin:0!important;border-radius:8px;background:color-mix(in srgb,var(--accent-blue) 12%,transparent);color:var(--accent-blue)}
+.province-filter-select>.fa-chevron-down{font-size:10px!important;margin:0!important;opacity:.7}
+.province-modal-heading{display:flex;align-items:center;gap:9px;min-width:0}
+#provinceModal .modal-header button,#trendControlsCard>h3 button{width:32px;height:32px;min-height:32px;padding:0;display:grid;place-items:center;flex-shrink:0;font-size:14px}
+#closeTrendChartButton{margin-left:auto;min-height:36px}
+</style><style>
+.gi-trend-legend{display:flex;flex-wrap:wrap;gap:7px;align-items:center;max-height:160px;overflow:auto;margin:10px 0;padding:8px;border:1px solid var(--card-border);border-radius:10px;scrollbar-gutter:stable}
+.gi-series-toggle{display:inline-flex;align-items:center;gap:7px;padding:6px 9px;min-height:32px;border:1px solid var(--card-border);border-radius:8px;background:var(--input-bg);color:var(--text-main);font:700 12px 'Bai Jamjuree',sans-serif;cursor:pointer;text-align:left;max-width:100%}
+.gi-series-toggle>span:last-child{overflow-wrap:anywhere}
+.gi-series-swatch{width:12px;height:12px;flex:0 0 12px;border-radius:3px}
+.gi-series-toggle.is-hidden>span:last-child{text-decoration:line-through;opacity:.55}
+.gi-series-toggle.is-hidden .gi-series-swatch{opacity:.35}
+.gi-series-toggle:focus-visible{outline:2px solid var(--accent-blue);outline-offset:2px}
+</style><style>
+.gi-map-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.gi-map-toolbar .btn{font-size:.8rem;padding:8px 12px}.gi-map-layout{display:grid;grid-template-columns:260px minmax(360px,1fr) 290px;gap:12px;height:min(68vh,720px);min-height:420px}.gi-map-sidebar,#giMapCanvas{border:1px solid var(--card-border);border-radius:14px;overflow:auto;background:var(--card-bg);color:var(--text-main)}#giMapCanvas{position:relative;z-index:0}.gi-map-sidebar{padding:12px}.gi-map-sidebar input,.gi-map-toolbar input,.gi-map-toolbar textarea,.gi-map-toolbar select,.gi-map-match select{background:var(--input-bg);color:var(--text-main);border:1px solid var(--card-border);border-radius:8px;padding:8px;max-width:100%}.gi-map-sidebar input{width:100%;box-sizing:border-box;margin-bottom:10px}.gi-map-row{display:grid;grid-template-columns:1fr auto;gap:6px;width:100%;border:1px solid var(--card-border);border-radius:9px;background:var(--input-bg);color:var(--text-main);padding:10px;text-align:left;cursor:pointer;margin-bottom:7px;font-family:inherit}.gi-map-row small{grid-column:1/-1;color:var(--text-muted)}.gi-map-row:hover{border-color:var(--accent-blue)}.gi-map-muted{color:var(--text-muted);font-size:.8rem}.gi-map-extra{margin-top:12px;border:1px solid var(--card-border);border-radius:10px;padding:12px}.gi-map-extra summary{cursor:pointer;font-weight:700}.gi-map-match{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:8px;border-bottom:1px solid var(--card-border)}.gi-map-detail-card{padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid var(--card-border)}.gi-map-detail-card p{font-size:.86rem}.gi-map-detail-card small{color:var(--text-muted)}@media(max-width:1100px){.gi-map-layout{grid-template-columns:220px 1fr;height:auto}.gi-map-sidebar{max-height:60vh}#giMapCanvas{height:60vh;min-height:420px}#giMapDetail{grid-column:1/-1}}@media(max-width:700px){.gi-map-layout{display:flex;flex-direction:column}.gi-map-sidebar{max-height:230px}.gi-map-match{grid-template-columns:1fr}}
+</style>
+<style>.gi-map-layout{position:relative;grid-template-columns:220px minmax(0,1fr);height:72vh;min-height:460px}.gi-map-layout #giMapDetail{position:absolute;right:12px;top:12px;bottom:12px;width:min(300px,40%);z-index:800;box-shadow:0 8px 28px #0003;background:var(--input-bg)}#giMapDetail[hidden]{display:none!important}.gi-value-marker{background:transparent;border:0}.gi-value-pin{display:flex;align-items:center;justify-content:center;gap:4px;height:30px;border:2px solid var(--pin-color);border-radius:9px;background:#fff;color:var(--pin-color);box-shadow:0 2px 7px #0003;font-size:13px;font-weight:800;white-space:nowrap}.gi-value-pin small{font-size:9px}.gi-map-legend{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0;font-size:.8rem}.gi-map-legend span:before{content:"";display:inline-block;width:9px;height:9px;background:var(--level);border-radius:50%;margin-right:5px}@media(max-width:700px){.gi-map-layout #giMapDetail{width:auto;left:12px;top:100px}.gi-map-layout{height:auto;min-height:0}}</style>
+<style>
+#mapTab .gi-map-layout{display:block;position:relative;height:clamp(480px,74vh,950px);min-height:0;border-radius:20px;overflow:hidden;border:1px solid var(--card-border)}
+#mapTab #giMapCanvas{position:absolute;inset:0;height:100%;min-height:0;border:0;border-radius:0}
+#mapTab #giMapExplorer{position:absolute;left:16px;top:64px;bottom:65px;width:290px;z-index:800;display:flex;flex-direction:column;gap:9px;padding:15px;overflow:hidden;box-sizing:border-box}
+#giMapExplorer[hidden]{display:none!important}
+#mapTab .gi-map-sidebar{background:var(--card-bg);color:var(--text-main);border-radius:16px;box-shadow:0 6px 24px #0002}
+#mapTab .gi-map-panel-toggle{position:absolute;left:16px;top:16px;z-index:801;background:var(--card-bg);color:var(--text-main);border:1px solid var(--card-border);border-radius:12px;padding:8px 13px;box-shadow:0 3px 12px #0002}
+.gi-map-heading{display:flex;align-items:center;justify-content:space-between}.gi-map-heading h3{margin:0;font-size:19px;font-weight:800}.gi-map-heading span{border:1px solid var(--card-border);padding:4px 7px;border-radius:8px;font-size:11px}
+#giMapExplorer .gi-map-toolbar{gap:6px;font-size:11px}#giMapExplorer .btn{padding:6px 8px;font-size:11px;border-radius:9px}#giMapExplorer input{margin:0;border-radius:10px}#giMapExplorer #giMapCount{width:100%;font-size:11px;font-weight:700}#giMapExplorer #giMapPeriod{margin:0;font-size:10px}#giMapList{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
+#mapTab .gi-map-row{font-size:12px;padding:9px;border-radius:10px}#mapTab .gi-map-row small{font-size:10px}#mapTab .gi-map-layout #giMapDetail{right:16px;top:64px;bottom:65px;width:290px;background:var(--card-bg);box-sizing:border-box}
+#mapTab .gi-map-legend{position:absolute;bottom:12px;left:16px;max-width:calc(100% - 32px);box-sizing:border-box;z-index:800;background:var(--card-bg);color:var(--text-main);border:1px solid var(--card-border);border-radius:12px;padding:9px 12px;gap:10px;font-size:11px;margin:0;box-shadow:0 3px 12px #0002;pointer-events:none}
+#mapTab .leaflet-top.leaflet-left{left:auto;right:16px;top:8px}#mapTab .leaflet-control-attribution{font-size:9px}#mapTab #giMapMessage{font-size:11px;line-height:1.6;margin:8px 0}#mapTab .gi-map-extra{font-size:12px;margin-top:8px}
+@media(max-width:900px){#mapTab #giMapExplorer{width:250px}#mapTab .gi-map-layout #giMapDetail{width:260px}}
+@media(max-width:650px){#mapTab .gi-map-layout{height:76vh;min-height:460px}#mapTab #giMapExplorer{width:calc(100% - 32px);bottom:auto;max-height:48%}#mapTab .gi-map-layout #giMapDetail{left:16px;top:auto;bottom:65px;width:calc(100% - 32px);max-height:45%}#mapTab .gi-map-legend{font-size:9px;gap:6px}}
+</style>
+<link rel="icon" type="image/svg+xml" href="favicon.svg?v=20261002-field1">
+<link rel="icon" type="image/x-icon" sizes="16x16 32x32 48x48" href="favicon.ico?v=20261002-field1">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=20261002-field1">
+<style id="giTrendPcFit20261006">
+/* Irradiation trend PC fit: scoped to the chart tab only. */
+#trendTab{width:100%;max-width:100%;min-width:0}
+#trendTab .trend-grid{grid-template-columns:minmax(0,1fr);min-width:0}
+#trendTab .trend-grid>.card{min-width:0;max-width:100%;box-sizing:border-box}
+#trendTab .trend-toolbar{justify-content:flex-start;gap:8px;align-items:flex-end}
+#trendTab .trend-toolbar>*{min-width:0;max-width:100%;box-sizing:border-box}
+#trendTab .trend-mode-picker{flex:1 1 135px}
+#trendTab .trend-popup-button{min-width:0;flex:1 1 180px;min-height:40px;padding:6px 10px}
+#trendTab .trend-toolbar .province-filter-wrap{min-width:0;flex:1 1 190px;max-width:100%}
+#trendTab .trend-toolbar .province-filter-select{min-width:0;width:100%;min-height:40px}
+#trendTab .trend-mode-picker select{min-width:0;width:100%;min-height:40px}
+#trendTab #closeTrendChartButton{margin-left:0;flex:0 0 auto}
+#trendTab .chart-container{width:100%;max-width:100%;min-width:0;height:clamp(260px,calc(100dvh / 1.1 - 310px),560px)}
+#trendTab .chart-container canvas{max-width:100%}
+#trendTab .gi-trend-legend{max-width:100%;max-height:100px;overflow-x:hidden;overflow-wrap:anywhere}
+#trendTab .gi-trend-legend button{max-width:100%;white-space:normal}
+#trendTab .trend-summary-scroll{overflow-x:hidden}
+#trendTab .trend-summary table{width:100%;min-width:0;table-layout:fixed}
+#trendTab .trend-summary th,#trendTab .trend-summary td{white-space:normal;overflow-wrap:anywhere;padding:7px 8px}
+#trendTab .trend-summary td:nth-child(2){min-width:0}
+@media(max-width:900px){
+ #trendTab .trend-toolbar{gap:6px}
+ #trendTab .chart-container{height:320px}
+}
+</style>
+<style id="giTrendTableFitFix20261006">
+/* Keep Chart.js canvas inside its responsive chart box. */
+#trendTab .chart-container{position:relative;overflow:hidden;isolation:isolate}
+#trendTab #irrTrendChart{position:absolute;inset:0;display:block;width:100%!important;height:100%!important}
+#trendTab .trend-summary{position:relative;z-index:1;clear:both;margin-top:20px;background:var(--card-bg)}
+#trendTab .trend-summary-head{position:relative;background:var(--card-bg);flex-wrap:wrap}
+#trendTab .trend-summary-head h4{min-width:0;overflow-wrap:anywhere}
+#trendTab .trend-summary th{background:var(--input-bg)!important}
+#trendTab .trend-summary th:nth-child(1){width:4%}
+#trendTab .trend-summary th:nth-child(2){width:25%}
+#trendTab .trend-summary th:nth-child(3){width:17%}
+#trendTab .trend-summary th:nth-child(4),#trendTab .trend-summary th:nth-child(5){width:10%}
+#trendTab .trend-summary th:nth-child(6),#trendTab .trend-summary th:nth-child(7),#trendTab .trend-summary th:nth-child(8){width:11.333%}
+#trendTab .trend-summary th:nth-child(1),#trendTab .trend-summary td:nth-child(1){text-align:center;padding-left:4px;padding-right:4px}
+</style>
+<style id="gi-popup-polish">.gi-popup-close{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;flex:0 0 32px;padding:0;border:1px solid var(--card-border);border-radius:9px;background:var(--input-bg);color:var(--text-main);cursor:pointer}.gi-popup-close:hover{background:var(--hover-bg);color:var(--accent-blue)}.gi-popup-close>i{display:none!important}.gi-combined-options{display:grid;gap:10px}.gi-combined-options .btn-filter-status{justify-content:space-between;width:100%}.gi-combined-options select{width:100%;padding:10px;font:600 13px 'Bai Jamjuree',sans-serif}.gi-combined-options p{font-size:12px;color:var(--text-muted);margin:0}</style>
+<style id="giTrendLegendFocusStyle">
+#giTrendLegend .gi-series-toggle.is-focused{box-shadow:0 0 0 2px var(--accent-blue,#3b82f6);opacity:1}
+#giTrendLegend .gi-series-toggle.is-dimmed{opacity:.45}
+#giTrendLegend .gi-series-toggle:focus-visible{outline:2px solid var(--accent-blue,#3b82f6);outline-offset:2px}
+</style></head>
+<body class="solar-gi">
+
+<div class="container">
+    <header>
+        <div class="title-group">
+            <div class="logo-icon"><i class="fa-solid fa-sun"></i></div>
+            <div class="header-titles">
+                <h2>Global Irradiance Analysis</h2>
+                <p>ตรวจสอบ Irradiation รายวันและเปรียบเทียบประสิทธิภาพหลายโครงการ</p>
+            </div>
+        </div>
+        <div class="header-controls" id="giHeaderActions">
+            <button class="btn btn-secondary" onclick="toggleGiLanguage()"><i class="fa-solid fa-language"></i><span data-fs-lang-label>ภาษา</span></button>
+            <button class="btn" onclick="exportToExcel()"><i class="fa-solid fa-file-arrow-down"></i> ส่งออก Excel</button>
+            <button class="btn btn-secondary gi-theme-button" onclick="FusionUI.setTheme(FusionUI.getTheme()==='dark'?'light':'dark')"><i class="fa-solid" data-fs-theme-icon></i><span data-fs-theme-label>Light</span></button>
+        </div>
+    </header>
+
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('tableTab', this)"><i class="fa-solid fa-table"></i> ตารางข้อมูล</button>
+        <button class="tab-btn" onclick="switchTab('trendTab', this)"><i class="fa-solid fa-chart-line"></i> แนวโน้ม Irradiation</button>
+        <button class="tab-btn" onclick="GIMapLauncher.open(this)"><i class="fa-solid fa-map-location-dot"></i> Map overview</button>
+    </div>
+
+    <!-- TAB 1: DATA TABLE -->
+    <div id="tableTab" class="tab-content active">
+        <div class="top-grid" id="giSummaryCards">
+            <div class="upload-card" id="dropzone" style="cursor:default">
+                <i class="fa-solid fa-database" style="color: var(--accent-blue); margin-bottom: 6px;"></i>
+                <h4 id="uploadStatus" style="font-weight: 600; font-size: 0.9rem;">ข้อมูลกลางจาก Analysis Center</h4>
+                <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px;">หากต้องการเพิ่มข้อมูล กรุณากลับไปอัปโหลดที่หน้า Center</p>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="card metric-card">
+                    <div class="card-header"><span>โครงการที่เลือก</span><i class="fa-solid fa-building" style="color: var(--accent-blue)"></i></div>
+                    <div class="card-value"><span id="metricPlants">0</span><span class="card-unit">โครงการ</span></div>
+                </div>
+                <div class="card metric-card">
+                    <div class="card-header"><span>วันที่มีข้อมูล</span><i class="fa-solid fa-calendar-days" style="color: var(--accent-blue)"></i></div>
+                    <div class="card-value"><span id="metricTotalDays">0</span><span class="card-unit">วัน</span></div>
+                </div>
+                <div class="card metric-card">
+                    <div class="card-header"><span>Irradiation เฉลี่ยต่อวัน</span><i class="fa-solid fa-sun" style="color: var(--accent-yellow)"></i></div>
+                    <div class="card-value"><span id="metricAvgIrr">0.000</span><span class="card-unit">kWh/m²</span></div>
+                </div>
+                <div class="card metric-card">
+                    <div class="card-header"><span>สัดส่วนวันที่ค่าปกติ</span><i class="fa-solid fa-circle-check" style="color: var(--accent-green)"></i></div>
+                    <div class="card-value"><span id="metricNormalDaysRatio">0/0</span><span class="card-unit">วัน</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card table-card">
+            <div class="table-header-bar">
+                <h3><i class="fa-solid fa-table" style="color: var(--accent-blue);"></i> เปรียบเทียบ Global Irradiation รายวัน (kWh/m²) <small style="font-size:.65rem;color:var(--text-muted)">GI Review R1.2</small></h3>
+                <button type="button" id="giSummaryToggle" class="btn btn-secondary" aria-controls="giSummaryCards" aria-expanded="true" onclick="toggleGiSummary()"><i class="fa-solid fa-chevron-up" aria-hidden="true"></i><span data-solar-th="ซ่อนสรุป" data-solar-en="Hide summary">ซ่อนสรุป</span></button>
+            </div>
+
+            <div class="status-filter-bar">
+                <button type="button" id="giCombinedFilterButton" class="btn btn-secondary" onclick="openGiCombinedFilter()"><i class="fa-solid fa-filter" aria-hidden="true"></i><span id="giCombinedFilterLabel">สถานะและการตรวจ</span></button>
+                <div class="gi-toolbar">
+                    <div class="threshold-box">
+                        <label for="minIrr">ช่วงค่าปกติ:</label>
+                        <input type="number" id="minIrr" value="1.0" min="0" step="0.1" onchange="validateThresholds(); checkFileAndRun(renderTableAndMetrics)">
+                        <span>-</span>
+                        <input type="number" id="maxIrr" value="7.0" min="0" step="0.1" onchange="validateThresholds(); checkFileAndRun(renderTableAndMetrics)">
+                    </div>
+                    <button class="btn btn-secondary" onclick="checkFileAndRun(openFilterModal)"><i class="fa-solid fa-calendar-days"></i> <span data-solar-th="โครงการและช่วงเวลา" data-solar-en="Plant and Date">Plant and Date</span></button>
+                    <button class="btn btn-edit" id="toggleEditBtn" onclick="checkFileAndRun(toggleEditMode)"><i class="fa-solid fa-pen-to-square"></i> แก้ไขค่า Irradiation</button>
+                    <div class="province-filter-wrap">
+                        <span data-solar-th="จังหวัด:" data-solar-en="Province:" style="font-size:.78rem;color:var(--text-muted);font-weight:600;">จังหวัด:</span>
+                        <button id="provinceStatusFilter" type="button" class="province-filter-select" onclick="openProvinceFilterPopup('table')"><i class="fa-solid fa-location-dot province-pin" aria-hidden="true"></i><span id="provinceStatusFilterLabel">ทุกจังหวัด</span><i class="fa-solid fa-chevron-down"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="top-scroll-wrapper" id="topScrollWrapper"><div class="top-scroll-inner" id="topScrollInner"></div></div>
+            <div class="table-scroll-container" id="mainTableContainer">
+                <table id="resultTable">
+                    <thead>
+                        <tr id="tableHeader">
+                            <th class="col-status">Status</th>
+                            <th class="col-plant">Plant Name</th>
+                            <th class="col-province">Province</th>
+                            <th class="number-col avg-col col-avg">Average</th>
+                            <th class="number-col normal-col col-normal">Normal Day</th>
+                            <th class="number-col col-kwp">kWp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: TREND IRRADIATION -->
+    <div id="trendTab" class="tab-content">
+        <div class="trend-grid">
+            <div id="trendPopupBackdrop" onclick="closeTrendFilters()"></div>
+            <div class="card" id="trendControlsCard" style="flex-direction: column; gap: 14px;">
+                <h3 style="font-size: 0.95rem; display:flex; align-items:center; gap:6px; color: var(--accent-blue);">
+                    <i class="fa-solid fa-sliders"></i> <span id="trendPopupTitle">Trend Controls</span> <button class="btn btn-secondary" style="margin-left:auto" onclick="closeTrendFilters()">✕</button>
+                </h3>
+
+                <div class="trend-control-section" data-trend-popup-section="date">
+                    <label style="font-size: 0.78rem; color: var(--text-muted); font-weight:600; display:block; margin-bottom:4px;">Date Filter</label>
+                    <div class="trend-date-grid">
+                        <div id="trendYearFilterBox">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                                <label style="font-size: 0.72rem; color: var(--text-muted);">Year</label>
+                                <div>
+                                    <button class="filter-action" onclick="selectAllTrendOptions('trendYearSel', true)"><i class="fa-solid fa-filter"></i> ทั้งหมด</button>
+                                    <button class="filter-action" onclick="selectAllTrendOptions('trendYearSel', false)"><i class="fa-solid fa-filter-circle-xmark"></i> ล้าง</button>
+                                </div>
+                            </div>
+                            <select id="trendYearSel" class="multi-select" multiple onchange="updateTrendChart()"></select>
+                        </div>
+                        <div id="trendMonthFilterBox">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                                <label style="font-size: 0.72rem; color: var(--text-muted);">Month</label>
+                                <div>
+                                    <button class="filter-action" onclick="selectAllTrendOptions('trendMonthSel', true)"><i class="fa-solid fa-filter"></i> ทั้งหมด</button>
+                                    <button class="filter-action" onclick="selectAllTrendOptions('trendMonthSel', false)"><i class="fa-solid fa-filter-circle-xmark"></i> ล้าง</button>
+                                </div>
+                            </div>
+                            <select id="trendMonthSel" class="multi-select" multiple onchange="updateTrendChart()"></select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="trend-control-section" data-trend-popup-section="date">
+                    <label style="font-size: 0.78rem; color: var(--text-muted); font-weight:600; display:block; margin-bottom:4px;">Options</label>
+                    <label style="font-size: 0.78rem; display:flex; align-items:center; gap:6px; cursor:pointer;">
+                        <input type="checkbox" id="chkShowAvgLine" checked onchange="updateTrendChart()"> Show Baseline Avg Line
+                    </label>
+                </div>
+
+                <div class="trend-control-section" data-trend-popup-section="plants">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <label id="trendPlantSectionLabel" style="font-size: 0.78rem; color: var(--text-muted); font-weight:600;">
+                            เลือกโครงการ (<span id="trendSelectedCount" style="color: var(--accent-yellow);">0</span>/<span id="trendAvailableCount">0</span>)
+                        </label>
+                        <div style="display:flex;gap:6px"><button id="trendSelectAllBtn" class="filter-action" onclick="selectAllTrendPlants()">เลือกทั้งหมด</button><button id="trendDeselectAllBtn" class="filter-action" onclick="clearTrendPlants()">ไม่เลือกทั้งหมด</button></div>
+                    </div>
+                    <input type="text" id="searchTrendPlant" class="search-input" placeholder="ค้นหาชื่อโครงการ..." oninput="filterTrendPlantList()" style="margin-bottom: 6px;">
+                    <div class="plant-list-container" id="trendPlantListContainer" style="height: 220px;"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="trend-toolbar">
+                    <button type="button" id="closeTrendChartButton" class="btn btn-secondary" onclick="closeTrendChart()" aria-label="Close chart"><i class="fa-solid fa-xmark" aria-hidden="true"></i><span data-solar-th="ปิดกราฟ" data-solar-en="Close chart">ปิดกราฟ</span></button>
+                    <label class="trend-mode-picker"><small data-solar-th="รูปแบบกราฟ" data-solar-en="Chart view">รูปแบบกราฟ</small><select id="trendGranularitySel" onchange="setTrendGranularity(this.value)"><option value="daily">รายวัน / Daily</option><option value="monthly">รายเดือน / Monthly</option><option value="yearly">รายปี / Yearly</option></select></label>
+                    <button id="trendDatePickerButton" type="button" class="trend-popup-button" onclick="openTrendFilters('date')"><span><small id="trendDatePickerCaption">เลือกเดือน / ปี</small><strong id="trendDatePickerLabel">ทุกช่วงเวลา</strong></span><i class="fa-solid fa-calendar-days"></i></button>
+                    <button id="trendPlantPickerButton" type="button" class="trend-popup-button" onclick="openTrendFilters('plants')"><span><small id="trendPlantPickerCaption">โครงการ</small><strong><span id="trendPlantPickerText">เลือกโครงการ</span> <b id="trendPlantPickerCount">0/0</b></strong></span><i class="fa-solid fa-list-check"></i></button>
+                    <div class="province-filter-wrap"><span data-solar-th="จังหวัด:" data-solar-en="Province:" style="font-weight:700">จังหวัด:</span><button id="trendProvinceSel" type="button" class="province-filter-select" onclick="openProvinceFilterPopup('trend')"><i class="fa-solid fa-location-dot province-pin" aria-hidden="true"></i><span id="trendProvinceLabel">ทุกจังหวัด</span><i class="fa-solid fa-chevron-down"></i></button></div>
+                </div>
+                <div class="chart-stats-grid">
+                    <div class="stat-card">
+                        <div class="label">Min Irr (Selected)</div>
+                        <div class="val" id="chartMinVal" style="color: var(--accent-red);">0.000</div>
+                        <div class="sub-info" id="chartMinInfo">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Mean Avg (Selected)</div>
+                        <div class="val" id="chartAvgVal" style="color: var(--accent-yellow);">0.000</div>
+                        <div class="sub-info">Selected Plants Overall</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Max Irr (Selected)</div>
+                        <div class="val" id="chartMaxVal" style="color: var(--accent-green);">0.000</div>
+                        <div class="sub-info" id="chartMaxInfo">-</div>
+                    </div>
+                </div>
+
+                <div id="giTrendLegend" class="gi-trend-legend" aria-label="Chart projects"></div>
+                <div class="chart-container">
+                    <canvas id="irrTrendChart"></canvas>
+                </div>
+                <div class="trend-summary">
+                    <div class="trend-summary-head"><h4 id="trendSummaryTitle">ตารางสรุป GI ของโครงการที่เลือก</h4><span id="trendSummaryMeta">-</span></div>
+                    <div class="trend-summary-scroll"><table><thead><tr id="trendSummaryHeader"></tr></thead><tbody id="trendSummaryBody"></tbody></table></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="giCombinedFilterModal" onclick="if(event.target===this)closeGiCombinedFilter()"><div class="modal-content" style="max-width:480px"><div class="modal-header"><h3 data-solar-th="สถานะข้อมูลและการตรวจ" data-solar-en="Data status and review">สถานะข้อมูลและการตรวจ</h3><button type="button" class="gi-popup-close" onclick="closeGiCombinedFilter()" aria-label="ปิด / Close"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div><div class="modal-body gi-combined-options">                <span data-solar-th="กรองตามสถานะ:" data-solar-en="Filter by status:" style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">กรองตามสถานะ:</span>
+                <button class="btn-filter-status active" id="btnFilterAll" onclick="setStatusFilter('ALL')">ทุกโครงการ <span class="badge-count badge-all" id="countAll">0</span></button>
+                <button class="btn-filter-status" id="btnFilterNormal" onclick="setStatusFilter('NORMAL')"><i class="fa-solid fa-circle-check" style="color: var(--accent-green)"></i> ปกติ <span class="badge-count badge-normal" id="countNormal">0</span></button>
+                <button class="btn-filter-status" id="btnFilterAbnormal" onclick="setStatusFilter('ABNORMAL')"><i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-yellow)"></i> ผิดปกติ <span class="badge-count badge-abnormal" id="countAbnormal">0</span></button>
+                <button class="btn-filter-status" id="btnFilterNotFound" onclick="setStatusFilter('NOT_FOUND')"><i class="fa-solid fa-circle-question" style="color: var(--accent-red)"></i> ไม่พบข้อมูล <span class="badge-count badge-notfound" id="countNotFound">0</span></button>
+                <select id="giReviewFilter" class="gi-review-filter" aria-label="Monthly review status" onchange="activeReviewFilter=this.value;renderTableAndMetrics();syncGiCombinedLabel()"><option value="ALL">สถานะตรวจ · ทั้งหมด</option><option value="reviewed">ตรวจแล้ว</option><option value="unreviewed">ยังไม่ตรวจ</option><option value="recheck">ต้องตรวจซ้ำ</option></select>
+<p id="giCombinedReviewHint"></p></div><div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="resetGiCombinedFilter()" data-solar-th="ล้างตัวกรอง" data-solar-en="Reset filters">ล้างตัวกรอง</button><button type="button" class="btn" onclick="closeGiCombinedFilter()" data-solar-th="เสร็จสิ้น" data-solar-en="Done">เสร็จสิ้น</button></div></div></div>
+
+<!-- Modal Filter -->
+<div class="modal-overlay" id="filterModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-sliders"></i> <span data-solar-th="โครงการและช่วงเวลา" data-solar-en="Plant and Date">Plant and Date</span></h3>
+            <button type="button" class="gi-popup-close" onclick="closeFilterModal()" aria-label="ปิด / Close"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        </div>
+        <div class="modal-body">
+            <div>
+                <h4 style="font-size: 0.85rem; margin-bottom: 6px; color: var(--accent-blue);">1. Select Date Range</h4>
+                <div class="filter-grid">
+                    <div class="filter-item">
+                        <div class="filter-item-header">
+                            <label>Year</label>
+                            <div><button class="filter-action" onclick="selectAllOptions('yearFilter', true)"><i class="fa-solid fa-filter"></i> ทั้งหมด</button> <button class="filter-action" onclick="selectAllOptions('yearFilter', false)"><i class="fa-solid fa-filter-circle-xmark"></i> ล้าง</button></div>
+                        </div>
+                        <select id="yearFilter" class="multi-select" multiple onchange="onIrrPeriodFilterChange()"></select>
+                    </div>
+                    <div class="filter-item">
+                        <div class="filter-item-header">
+                            <label>Month</label>
+                            <div><button class="filter-action" onclick="selectAllOptions('monthFilter', true)"><i class="fa-solid fa-filter"></i> ทั้งหมด</button> <button class="filter-action" onclick="selectAllOptions('monthFilter', false)"><i class="fa-solid fa-filter-circle-xmark"></i> ล้าง</button></div>
+                        </div>
+                        <select id="monthFilter" class="multi-select" multiple onchange="onIrrPeriodFilterChange()"></select>
+                    </div>
+                    <div class="filter-item">
+                        <div class="filter-item-header">
+                            <label>Day</label>
+                            <div><button class="filter-action" onclick="selectAllOptions('dayFilter', true)"><i class="fa-solid fa-filter"></i> ทั้งหมด</button> <button class="filter-action" onclick="selectAllOptions('dayFilter', false)"><i class="fa-solid fa-filter-circle-xmark"></i> ล้าง</button></div>
+                        </div>
+                        <select id="dayFilter" class="multi-select" multiple onchange="renderTableAndMetrics()"></select>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <h4 style="font-size: 0.85rem; color: var(--accent-blue);">2. Select Plants (<span id="selectedCount">0</span>/<span id="totalCount">0</span>)</h4>
+                    <div style="display: flex; gap: 6px;">
+                        <button class="btn btn-secondary" style="font-size: 0.72rem;" onclick="toggleSelectAll(true)">Select All</button>
+                        <button class="btn btn-secondary" style="font-size: 0.72rem;" onclick="toggleSelectAll(false)">Deselect All</button>
+                    </div>
+                </div>
+                <input type="text" id="searchPlant" class="search-input" placeholder="Search plant name..." onclick="clearPlantSearch(this)" oninput="filterPlantList()" style="margin-bottom: 8px;">
+                <div id="plantSearchHint" style="font-size:.72rem;color:var(--text-muted);margin:-2px 0 8px;display:none;"></div>
+                <div class="plant-list-container" id="plantListContainer"></div>
+            </div>
+        </div>
+        <div class="modal-footer"><button class="btn" onclick="applyFilterModal()">Apply & Close</button></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="provinceModal" onclick="if(event.target===this)closeProvincePopup()">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="province-modal-heading"><i class="fa-solid fa-location-dot province-pin" aria-hidden="true"></i><span id="provinceModalTitle">เลือกจังหวัด / Select province</span></h3>
+            <button type="button" class="gi-popup-close" onclick="closeProvincePopup()" aria-label="ปิด / Close"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        </div>
+        <input id="provinceSearch" class="province-search" type="search" placeholder="ค้นหาจังหวัด / Search province" oninput="renderProvinceOptions()">
+        <div id="provinceOptionList" class="province-option-list"></div>
+    </div>
+</div>
+
+<script>
+    try { } catch(e) {}
+
+    let currentTheme = localStorage.getItem('fusionTheme') || 'dark';
+    document.documentElement.setAttribute('data-theme', currentTheme);
+
+    function toggleTheme() {
+        currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        localStorage.setItem('fusionTheme', currentTheme);
+        if (trendChart) updateTrendChart();
+    }
+
+    let allPlantsSet = new Set(), selectedPlants = new Set(), datesSet = new Set(), sourceFileNames = [];
+    let availableIrrMonths = [], loadedIrrMonth = null, giFullDataLoaded = false, giPeriodLoading = false;
+    let plantMasterData = {}, originalPlantData = {}, copiedIrrData = null, persistentProvinceByPlant = {};
+    let giMonthlyNotes = {};
+    let giReviewByPlant = {}, savedGiOverrides = {}, activeReviewFilter = "ALL";
+    let isEditMode = false, isFileUploaded = false, activeStatusFilter = 'ALL', activeProvinceFilter = 'ALL', activeTrendProvinceFilter = 'ALL', currentProvincePlant = null, currentProvinceMode='plant';
+
+    let THAI_PROVINCES=['ไม่ระบุ','กรุงเทพมหานคร','กระบี่','กาญจนบุรี','กาฬสินธุ์','กำแพงเพชร','ขอนแก่น','จันทบุรี','ฉะเชิงเทรา','ชลบุรี','ชัยนาท','ชัยภูมิ','ชุมพร','เชียงราย','เชียงใหม่','ตรัง','ตราด','ตาก','นครนายก','นครปฐม','นครพนม','นครราชสีมา','นครศรีธรรมราช','นครสวรรค์','นนทบุรี','นราธิวาส','น่าน','บึงกาฬ','บุรีรัมย์','ปทุมธานี','ประจวบคีรีขันธ์','ปราจีนบุรี','ปัตตานี','พระนครศรีอยุธยา','พะเยา','พังงา','พัทลุง','พิจิตร','พิษณุโลก','เพชรบุรี','เพชรบูรณ์','แพร่','ภูเก็ต','มหาสารคาม','มุกดาหาร','แม่ฮ่องสอน','ยโสธร','ยะลา','ร้อยเอ็ด','ระนอง','ระยอง','ราชบุรี','ลพบุรี','ลำปาง','ลำพูน','เลย','ศรีสะเกษ','สกลนคร','สงขลา','สตูล','สมุทรปราการ','สมุทรสงคราม','สมุทรสาคร','สระแก้ว','สระบุรี','สิงห์บุรี','สุโขทัย','สุพรรณบุรี','สุราษฎร์ธานี','สุรินทร์','หนองคาย','หนองบัวลำภู','อ่างทอง','อำนาจเจริญ','อุดรธานี','อุตรดิตถ์','อุทัยธานี','อุบลราชธานี'];
+    const EN_PROVINCES=['Not specified','Bangkok','Krabi','Kanchanaburi','Kalasin','Kamphaeng Phet','Khon Kaen','Chanthaburi','Chachoengsao','Chon Buri','Chai Nat','Chaiyaphum','Chumphon','Chiang Rai','Chiang Mai','Trang','Trat','Tak','Nakhon Nayok','Nakhon Pathom','Nakhon Phanom','Nakhon Ratchasima','Nakhon Si Thammarat','Nakhon Sawan','Nonthaburi','Narathiwat','Nan','Bueng Kan','Buri Ram','Pathum Thani','Prachuap Khiri Khan','Prachin Buri','Pattani','Phra Nakhon Si Ayutthaya','Phayao','Phang Nga','Phatthalung','Phichit','Phitsanulok','Phetchaburi','Phetchabun','Phrae','Phuket','Maha Sarakham','Mukdahan','Mae Hong Son','Yasothon','Yala','Roi Et','Ranong','Rayong','Ratchaburi','Lop Buri','Lampang','Lamphun','Loei','Si Sa Ket','Sakon Nakhon','Songkhla','Satun','Samut Prakan','Samut Songkhram','Samut Sakhon','Sa Kaeo','Saraburi','Sing Buri','Sukhothai','Suphan Buri','Surat Thani','Surin','Nong Khai','Nong Bua Lam Phu','Ang Thong','Amnat Charoen','Udon Thani','Uttaradit','Uthai Thani','Ubon Ratchathani'];
+    const PROVINCE_EN=Object.fromEntries(THAI_PROVINCES.map((name,index)=>[name,EN_PROVINCES[index]]));
+    const PROVINCE_ALIASES={'กรุงเทพมหานคร':['bangkok'],'ชลบุรี':['chon buri','chonburi'],'ระยอง':['rayong'],'สมุทรปราการ':['samut prakan'],'สมุทรสาคร':['samut sakhon'],'นครปฐม':['nakhon pathom'],'ปทุมธานี':['pathum thani','pathumthani'],'พระนครศรีอยุธยา':['ayutthaya'],'ฉะเชิงเทรา':['chachoengsao'],'จันทบุรี':['chanthaburi'],'นครราชสีมา':['nakhon ratchasima','korat'],'เพชรบุรี':['phetchaburi'],'ภูเก็ต':['phuket'],'พะเยา':['phayao'],'สระบุรี':['saraburi'],'ราชบุรี':['ratchaburi'],'นนทบุรี':['nonthaburi'],'เชียงใหม่':['chiang mai'],'เชียงราย':['chiang rai'],'สงขลา':['songkhla'],'ขอนแก่น':['khon kaen']};
+    const normalizeProvinceText=value=>String(value||'').toLowerCase().replace(/[.,()/_-]+/g,' ').replace(/\s+/g,' ').trim();
+    async function loadSharedProvinceCatalog(){
+        try{
+            if(!window.SolarCloud||!await SolarCloud.session())return;
+            const member=await SolarCloud.membership();
+            const {data,error}=await SolarCloud.getClient().from('province_catalog').select('name_th,name_en').eq('workspace_id',member.workspace_id).order('name_th');
+            if(error)throw error;
+            if(!data?.length)return;
+            THAI_PROVINCES=['ไม่ระบุ',...data.map(row=>row.name_th)];
+            data.forEach(row=>{PROVINCE_EN[row.name_th]=row.name_en||row.name_th});
+            renderProvinceFilterOptions();
+        syncGiReviewLabels();
+            if(document.getElementById('provinceModal')?.style.display==='flex')renderProvinceOptions();
+        }catch(err){console.warn('Shared province list unavailable; retaining the local province list',err)}
+    }
+    void loadSharedProvinceCatalog();
+    function detectProvince(address){const source=normalizeProvinceText(address);if(!source)return 'ไม่ระบุ';const thai=THAI_PROVINCES.slice(1).sort((a,b)=>b.length-a.length).find(name=>source.includes(normalizeProvinceText(name)));if(thai)return thai;const padded=` ${source} `;for(const [province,english] of Object.entries(PROVINCE_EN)){const key=normalizeProvinceText(english);if(province!=='ไม่ระบุ'&&key&&padded.includes(` ${key} `))return province}for(const [province,aliases] of Object.entries(PROVINCE_ALIASES))if(aliases.some(alias=>padded.includes(` ${normalizeProvinceText(alias)} `)))return province;return 'ไม่ระบุ'}
+    const giLanguage=()=>window.FusionUI?.getLanguage?.()||document.documentElement.lang||'th';
+    const provinceLabel=name=>giLanguage()==='en'?(PROVINCE_EN[name]||name):name;
+    function toggleGiLanguage(){setTimeout(()=>window.GiMap?.render(),0);FusionUI.setLanguage(FusionUI.getLanguage()==='th'?'en':'th');renderPlantList();renderProvinceFilterOptions();updateTrendToolbarLabels();updateTrendPopupLanguage();if(isFileUploaded)renderTableAndMetrics();if(document.getElementById('provinceModal').style.display==='flex')renderProvinceOptions()}
+    function openProvincePopup(plant){currentProvinceMode='plant';currentProvincePlant=plant;document.getElementById('provinceSearch').value='';document.getElementById('provinceModal').style.display='flex';renderProvinceOptions();setTimeout(()=>document.getElementById('provinceSearch').focus(),0)}
+    function openProvinceFilterPopup(mode='table'){currentProvinceMode=mode;currentProvincePlant=null;document.getElementById('provinceSearch').value='';document.getElementById('provinceModal').style.display='flex';renderProvinceOptions();setTimeout(()=>document.getElementById('provinceSearch').focus(),0)}
+    function closeProvincePopup(){document.getElementById('provinceModal').style.display='none';currentProvincePlant=null;currentProvinceMode='plant'}
+    function trendProvinceCounts(){const counts={};allPlantsSet.forEach(name=>{const province=plantMasterData[name]?.province||'ไม่ระบุ';counts[province]=(counts[province]||0)+1});return counts}
+    function renderProvinceOptions(){
+        const query=document.getElementById('provinceSearch').value.trim().toLowerCase();
+        const selected=currentProvinceMode==='table'?activeProvinceFilter:currentProvinceMode==='trend'?activeTrendProvinceFilter:(plantMasterData[currentProvincePlant]?.province||'ไม่ระบุ');
+        const counts=currentProvinceMode==='plant'?null:trendProvinceCounts();
+        const usedTrendProvinces=counts?Object.keys(counts).filter(name=>counts[name]>0).sort((a,b)=>provinceLabel(a).localeCompare(provinceLabel(b))):[];
+        const names=currentProvinceMode==='plant'?THAI_PROVINCES:['ALL',...usedTrendProvinces];
+        const total=counts?Object.values(counts).reduce((sum,value)=>sum+value,0):0;
+        document.getElementById('provinceOptionList').innerHTML=names.filter(name=>{const label=name==='ALL'?(giLanguage()==='en'?'All provinces':'ทุกจังหวัด'):provinceLabel(name);return !query||name.toLowerCase().includes(query)||label.toLowerCase().includes(query)||(PROVINCE_EN[name]||'').toLowerCase().includes(query)}).map(name=>{
+            const label=name==='ALL'?(giLanguage()==='en'?'All provinces':'ทุกจังหวัด'):provinceLabel(name),secondary=name==='ALL'?'All':(giLanguage()==='en'?name:PROVINCE_EN[name]),count=name==='ALL'?total:(counts?.[name]||0);
+            return `<button class="province-option ${name===selected?'active':''}" onclick="selectProvince('${name}')"><span class="province-option-row"><i class="fa-solid fa-location-dot province-pin" aria-hidden="true"></i><span>${escapeHtml(label)}</span>${counts?`<b class="province-count">${count}</b>`:''}</span><small>${escapeHtml(secondary||'')}</small></button>`
+        }).join('')
+    }
+    function selectProvince(value){if(currentProvinceMode==='table'){setProvinceFilter(value);closeProvincePopup()}else if(currentProvinceMode==='trend'){activeTrendProvinceFilter=value||'ALL';selectedTrendPlants=new Set(trendAvailablePlants());syncTrendProvinceSelect();renderTrendPlantList();updateTrendChart();closeProvincePopup()}else{updateProvinceData(currentProvincePlant,value);closeProvincePopup();renderTableAndMetrics()}}
+    function renderProvinceFilterOptions(){const used=[...new Set([...allPlantsSet].map(name=>plantMasterData[name]?.province||'ไม่ระบุ'))].sort((a,b)=>provinceLabel(a).localeCompare(provinceLabel(b)));if(activeProvinceFilter!=='ALL'&&!used.includes(activeProvinceFilter))activeProvinceFilter='ALL';const label=document.getElementById('provinceStatusFilterLabel');if(label)label.textContent=activeProvinceFilter==='ALL'?(giLanguage()==='en'?'All provinces':'ทุกจังหวัด'):provinceLabel(activeProvinceFilter);syncTrendProvinceSelect()}
+
+    let trendChart = null, selectedTrendPlants = new Set(), restoredTrendYears = [], restoredTrendMonths = [], trendGranularity='daily';
+    const chartColors = [
+        '#38bdf8', '#34d399', '#f87171', '#a78bfa', '#f472b6',
+        '#38cae4', '#f97316', '#10b981', '#6366f1', '#e11d48',
+        '#84cc16', '#06b6d4', '#d946ef', '#f59e0b', '#14b8a6',
+        '#8b5cf6', '#ec4899', '#64748b', '#0284c7', '#d97706'
+    ];
+
+    function checkFileAndRun(actionFn) {
+        if (!isFileUploaded) { SolarCloud.notice("ยังไม่มีข้อมูล","กรุณาอัปโหลดไฟล์ Excel ก่อน","danger"); return; }
+        actionFn();
+    }
+
+    function toggleGiSummary(){
+        const cards=document.getElementById('giSummaryCards'),button=document.getElementById('giSummaryToggle');
+        cards.hidden=!cards.hidden;
+        button.setAttribute('aria-expanded',String(!cards.hidden));
+        button.querySelector('i').className='fa-solid '+(cards.hidden?'fa-chevron-down':'fa-chevron-up');
+        const label=button.querySelector('span');
+        label.dataset.solarTh=cards.hidden?'แสดงสรุป':'ซ่อนสรุป';
+        label.dataset.solarEn=cards.hidden?'Show summary':'Hide summary';
+        label.textContent=giText(label.dataset.solarTh,label.dataset.solarEn);
+        scheduleGiScrollWidth();
+    }
+    let giTabRequest=0;
+    async function switchTab(tabId, btnEl) {
+        const tabRequest=++giTabRequest;
+        closeTrendFilters();
+        if(tabId!=='mapTab')window.GiMap?.close();
+        if(tabId!=='trendTab'&&trendChart){trendChart.destroy();trendChart=null}
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        btnEl.classList.add('active');
+        if(tabId==='mapTab'){await GiMap.open();return}
+        if (tabId === 'trendTab') {
+            try {
+                if (!giFullDataLoaded) {
+                    await SolarCloud.loadCentralFullData();
+                    giFullDataLoaded = true;
+                }
+                if(tabRequest!==giTabRequest)return;
+                initTrendControls();
+                updateTrendChart();
+            } catch (error) {
+                SolarCloud.notice('เปิด Trend ไม่สำเร็จ', error.message || String(error), 'danger');
+            }
+        }
+    }
+
+    function validateThresholds() {
+        const minInput = document.getElementById('minIrr'), maxInput = document.getElementById('maxIrr');
+        let minVal = parseFloat(minInput.value) || 0, maxVal = parseFloat(maxInput.value) || 0;
+        if (minVal < 0) minInput.value = 0;
+        if (maxVal < minVal) maxInput.value = minVal;
+    }
+
+    let selectedPlantSearchResult = null;
+    function openFilterModal() { renderPlantList(); document.getElementById('filterModal').style.display = 'flex'; }
+    function closeFilterModal() { selectedPlantSearchResult = null; document.getElementById('filterModal').style.display = 'none'; }
+    function applyFilterModal() {
+        if (document.getElementById('searchPlant').value.trim()) {
+            const matches = searchedPlants();
+            const plants = selectedPlantSearchResult && matches.includes(selectedPlantSearchResult) ? [selectedPlantSearchResult] : matches;
+            selectedPlants.clear();
+            plants.forEach(plant => selectedPlants.add(plant));
+            renderPlantList();
+            renderTableAndMetrics();
+        }
+        closeFilterModal();
+    }
+    function openTrendFilters(mode='date'){
+        document.querySelectorAll('[data-trend-popup-section]').forEach(section=>section.style.display=section.dataset.trendPopupSection===mode?'block':'none');
+        document.getElementById('trendPopupTitle').textContent=mode==='plants'?(giLanguage()==='en'?'Select plants':'เลือกโครงการ'):(giLanguage()==='en'?'Select month / year':'เลือกเดือน / ปี');
+        document.getElementById('trendControlsCard').classList.add('open');document.getElementById('trendPopupBackdrop').classList.add('open');
+        updateTrendPopupLanguage();if(mode==='plants'){document.getElementById('searchTrendPlant').value='';renderTrendPlantList()}
+    }
+    function closeTrendChart(){const button=document.querySelector('.tab-btn[onclick*="tableTab"]');if(button)switchTab('tableTab',button)}
+    document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.getElementById('trendControlsCard').classList.contains('open'))closeTrendFilters()});
+    function closeTrendFilters(){document.getElementById('trendControlsCard').classList.remove('open');document.getElementById('trendPopupBackdrop').classList.remove('open')}
+
+    function toggleEditMode() {
+        isEditMode = !isEditMode;
+        const btn = document.getElementById('toggleEditBtn');
+        btn.className = isEditMode ? 'btn btn-secondary' : 'btn btn-edit';
+        btn.innerHTML = isEditMode ? `<i class="fa-solid fa-check"></i> Done Editing` : `<i class="fa-solid fa-pen-to-square"></i> Edit Daily Irradiation`;
+        renderTableAndMetrics();
+    }
+
+    function syncGiCombinedLabel(){
+        const status={ALL:giText('ทั้งหมด','All projects'),NORMAL:giText('ปกติ','Normal'),ABNORMAL:giText('ผิดปกติ','Abnormal'),NOT_FOUND:giText('ไม่พบข้อมูล','Not found')};
+        const review={ALL:giText('ตรวจ · ทั้งหมด','Review · All'),reviewed:giText('ตรวจแล้ว','Reviewed'),unreviewed:giText('ยังไม่ตรวจ','Unreviewed'),recheck:giText('ต้องตรวจซ้ำ','Needs recheck')};
+        document.getElementById('giCombinedFilterLabel').textContent=status[activeStatusFilter]+' · '+review[activeReviewFilter];
+        document.getElementById('giCombinedReviewHint').textContent=document.getElementById('giReviewFilter').disabled?giText('เลือกหนึ่งเดือนเพื่อใช้ตัวกรองสถานะตรวจ','Select one month to filter review status'):'';
+    }
+    function openGiCombinedFilter(){syncGiReviewLabels();syncStatusFilterButtons();syncGiCombinedLabel();document.getElementById('giCombinedFilterModal').style.display='flex';}
+    function closeGiCombinedFilter(){document.getElementById('giCombinedFilterModal').style.display='none';}
+    function resetGiCombinedFilter(){activeStatusFilter='ALL';activeReviewFilter='ALL';syncStatusFilterButtons();syncGiReviewLabels();renderTableAndMetrics();syncGiCombinedLabel();}
+    document.addEventListener('keydown',event=>{if(event.key==='Escape')closeGiCombinedFilter()});
+    function syncStatusFilterButtons() {
+        document.querySelectorAll('.btn-filter-status').forEach(btn => btn.classList.remove('active'));
+        const ids = {ALL:'btnFilterAll', NORMAL:'btnFilterNormal', ABNORMAL:'btnFilterAbnormal', NOT_FOUND:'btnFilterNotFound'};
+        document.getElementById(ids[activeStatusFilter] || ids.ALL).classList.add('active');syncGiCombinedLabel();
+    }
+
+    function setStatusFilter(status) {
+        activeStatusFilter = status;
+        syncStatusFilterButtons();
+        renderTableAndMetrics();
+    }
+
+    function setProvinceFilter(province) {
+        activeProvinceFilter = province || 'ALL';
+        selectedPlantSearchResult=null;document.getElementById('searchPlant').value='';
+        selectedPlants=new Set(tableAvailablePlants());
+        renderPlantList();
+        renderProvinceFilterOptions();
+        renderTableAndMetrics();
+    }
+
+    const topScrollWrapper = document.getElementById('topScrollWrapper');
+    const mainTableContainer = document.getElementById('mainTableContainer');
+    topScrollWrapper.addEventListener('scroll', () => { if(Math.abs(mainTableContainer.scrollLeft-topScrollWrapper.scrollLeft)>1)mainTableContainer.scrollLeft=topScrollWrapper.scrollLeft; },{passive:true});
+    mainTableContainer.addEventListener('scroll', () => { if(Math.abs(topScrollWrapper.scrollLeft-mainTableContainer.scrollLeft)>1)topScrollWrapper.scrollLeft=mainTableContainer.scrollLeft; },{passive:true});
+
+    let giWidthFrame=0;function scheduleGiScrollWidth(){if(!giWidthFrame)giWidthFrame=requestAnimationFrame(()=>{giWidthFrame=0;syncTopScrollWidth()})}
+    function syncTopScrollWidth() {
+        const table = document.getElementById('resultTable');
+        if (!table) return;
+        const available=window.innerHeight-Math.max(16,mainTableContainer.getBoundingClientRect().top)-28;
+        const pageZoom=parseFloat(getComputedStyle(document.body).zoom)||1;
+        const height=Math.max(180,Math.min(window.innerHeight*.72,available)/pageZoom);
+        const value=Math.round(height)+'px';
+        if(mainTableContainer.style.getPropertyValue('--gi-table-height')!==value)mainTableContainer.style.setProperty('--gi-table-height',value);
+        // Match scroll ranges even when the table has a vertical scrollbar.
+        document.getElementById('topScrollInner').style.width = Math.max(topScrollWrapper.clientWidth,mainTableContainer.scrollWidth+topScrollWrapper.clientWidth-mainTableContainer.clientWidth)+'px';
+        topScrollWrapper.scrollLeft=mainTableContainer.scrollLeft;
+    }
+
+    window.addEventListener('resize',scheduleGiScrollWidth,{passive:true});
+    if(typeof ResizeObserver!=='undefined'){
+        const giTableSizeObserver=new ResizeObserver(scheduleGiScrollWidth);
+        giTableSizeObserver.observe(mainTableContainer);
+        giTableSizeObserver.observe(document.getElementById('resultTable'));
+    }
+    scheduleGiScrollWidth();
+    const dropzone = document.getElementById('dropzone');
+    dropzone.addEventListener('dragover', (e) => e.preventDefault());
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+    });
+
+    async function handleFiles(files) {
+        if (!files || !files.length) return;
+        sourceFileNames = Array.from(files).map(file => file.name);
+        document.getElementById('uploadStatus').innerText = `Processing ${files.length} file(s)...`;
+        for (let file of files) {
+            let dateMatch = file.name.match(/\d{2,4}[.-]\d{2}[.-]\d{2,4}/);
+            let dateStr = dateMatch ? dateMatch[0] : file.name.replace(/\.[^/.]+$/, "");
+            await parseFile(file, dateStr);
+        }
+        isFileUploaded = true;
+        document.getElementById('uploadStatus').innerText = `Loaded ${datesSet.size} central day(s) from Center`;
+        populateDateFilters(); renderPlantList(); renderTableAndMetrics();
+        selectedTrendPlants.clear();
+        Array.from(allPlantsSet).slice(0, 5).forEach(p => selectedTrendPlants.add(p));
+    }
+
+    function parseFile(file, dateStr) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+                    if (rows && rows.length > 0) {
+                        let headerIdx = -1, nameIdx = 0, addressIdx = -1, capIdx = 2, irrIdx = 3, fileDateFound = null;
+
+                        for (let i = 0; i < Math.min(15, rows.length); i++) {
+                            const r = rows[i];
+                            if (!Array.isArray(r)) continue;
+                            r.forEach((c, idx) => {
+                                if (!c) return;
+                                const str = String(c).trim().toLowerCase();
+                                let cellDateMatch = String(c).match(/\d{4}[.-]\d{2}[.-]\d{2}/) || String(c).match(/\d{2}[.-]\d{2}[.-]\d{4}/);
+                                if (cellDateMatch && !fileDateFound) fileDateFound = cellDateMatch[0];
+                                if (str.includes('plant name') || str === 'plant') { nameIdx = idx; headerIdx = i; }
+                                if (str === 'address' || str.includes('plant address')) addressIdx = idx;
+                                if (str.includes('capacity') || str.includes('kwp')) capIdx = idx;
+                                if (str.includes('irradiation') || str.includes('kwh/㎡')) irrIdx = idx;
+                            });
+                        }
+
+                        if (headerIdx === -1) headerIdx = 1;
+                        let formattedDate = standardizeDate(fileDateFound || dateStr);
+                        datesSet.add(formattedDate);
+
+                        for (let i = headerIdx + 1; i < rows.length; i++) {
+                            const row = rows[i];
+                            if (!row || !row[nameIdx]) continue;
+                            const pName = String(row[nameIdx]).trim();
+                            if (!pName || pName.toLowerCase().includes('total') || pName === 'Plant Report') continue;
+
+                            const cap = parseFloat(row[capIdx]) || 0;
+                            const irr = parseFloat(row[irrIdx]) || 0;
+                            const address = addressIdx >= 0 ? String(row[addressIdx] || '').trim() : '';
+
+                            if (!allPlantsSet.has(pName)) { allPlantsSet.add(pName); selectedPlants.add(pName); }
+                            if (!plantMasterData[pName]) plantMasterData[pName] = { capacity: cap, address, province: detectProvince(address), note: '', dates: {} };
+                            if (!originalPlantData[pName]) originalPlantData[pName] = { capacity: cap, address, province: detectProvince(address), note: '', dates: {} };
+
+                            if (cap > 0) { plantMasterData[pName].capacity = cap; originalPlantData[pName].capacity = cap; }
+                            if (address) { plantMasterData[pName].address = address; originalPlantData[pName].address = address; }
+                            invalidateGiValue(pName,formattedDate,irr);
+                            plantMasterData[pName].dates[formattedDate] = irr;
+                            originalPlantData[pName].dates[formattedDate] = irr;
+                        }
+                    }
+                } catch (err) { console.error(err); }
+                resolve();
+            };
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    function standardizeDate(str) {
+        let parts = str.split(/[.-]/);
+        if (parts.length === 3) {
+            if (parts[0].length === 4) return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+            else if (parts[2].length === 4) return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        }
+        return str;
+    }
+
+    function populateDateFilters() {
+        const yearSel = document.getElementById('yearFilter'), monthSel = document.getElementById('monthFilter'), daySel = document.getElementById('dayFilter');
+        let years = new Set(), months = new Set(), days = new Set();
+        const periodSource = availableIrrMonths.length ? availableIrrMonths : Array.from(datesSet).map(d => d.slice(0,7));
+        periodSource.forEach(period => {
+            const parts = String(period).split('-');
+            if (parts.length >= 2) { years.add(parts[0]); months.add(parts[1]); }
+        });
+        datesSet.forEach(d => {
+            const parts = d.split('-');
+            if (parts.length === 3) days.add(parts[2]);
+        });
+        yearSel.innerHTML = Array.from(years).sort().map(y => `<option value="${y}">${y}</option>`).join('');
+        monthSel.innerHTML = Array.from(months).sort().map(m => `<option value="${m}">Month ${m}</option>`).join('');
+        daySel.innerHTML = Array.from(days).sort().map(d => `<option value="${d}">Day ${d}</option>`).join('');
+    }
+
+    function selectAllOptions(selectId, selectAll) {
+        const selectEl = document.getElementById(selectId);
+        Array.from(selectEl.options).forEach(opt => opt.selected = selectAll);
+        renderTableAndMetrics();
+    }
+
+    async function onIrrPeriodFilterChange() {
+        renderTableAndMetrics();
+        if (giPeriodLoading) return;
+        const years = irrSelection('yearFilter'), months = irrSelection('monthFilter');
+        if (years.length !== 1 || months.length !== 1) return;
+        const requested = years[0] + '-' + months[0];
+        if (requested === loadedIrrMonth || !availableIrrMonths.includes(requested)) return;
+        giPeriodLoading = true;renderTableAndMetrics();
+        try {
+            await SolarCloud.loadCentralPeriod(requested);
+        } catch (error) {
+            SolarCloud.notice('โหลดเดือนไม่สำเร็จ', error.message || String(error), 'danger');
+        } finally {
+            giPeriodLoading = false;renderTableAndMetrics();
+        }
+    }
+
+    function getFilteredDates() {
+        const selYears = Array.from(document.getElementById('yearFilter').selectedOptions).map(o => o.value);
+        const selMonths = Array.from(document.getElementById('monthFilter').selectedOptions).map(o => o.value);
+        const selDays = Array.from(document.getElementById('dayFilter').selectedOptions).map(o => o.value);
+
+        return Array.from(datesSet).filter(d => {
+            let parts = d.split('-');
+            return (selYears.length === 0 || selYears.includes(parts[0])) &&
+                   (selMonths.length === 0 || selMonths.includes(parts[1])) &&
+                   (selDays.length === 0 || selDays.includes(parts[2]));
+        }).sort();
+    }
+
+    function tableAvailablePlants(){return Array.from(allPlantsSet).filter(plant=>activeProvinceFilter==='ALL'||(plantMasterData[plant]?.province||'ไม่ระบุ')===activeProvinceFilter).sort()}
+    function searchedPlants() {
+        const query = document.getElementById('searchPlant').value.trim().toLocaleLowerCase();
+        return tableAvailablePlants().filter(plant => !query || plant.toLocaleLowerCase().includes(query));
+    }
+
+    function renderPlantList() {
+        const container = document.getElementById('plantListContainer');
+        container.innerHTML = '';
+        const searching = !!document.getElementById('searchPlant').value.trim();
+        const plants = searchedPlants();
+        document.getElementById('totalCount').innerText = tableAvailablePlants().length;
+
+        plants.forEach((plant, idx) => {
+            if (searching) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'plant-item plant-search-result';
+                button.textContent = plant;
+                button.setAttribute('aria-label', `${giLanguage()==='en'?'Show plant':'แสดงโครงการ'} ${plant}`);
+                if (selectedPlantSearchResult === plant || (!selectedPlantSearchResult && selectedPlants.size === 1 && selectedPlants.has(plant))) button.classList.add('active');
+                button.onclick = () => selectSearchedPlant(plant);
+                container.appendChild(button);
+                return;
+            }
+            const id = `chk_${idx}`;
+            const label = document.createElement('label');
+            label.className = 'plant-item';
+            label.setAttribute('for', id);
+            label.innerHTML = `<input type="checkbox" id="${id}" value="${escapeHtml(plant)}" ${selectedPlants.has(plant) ? 'checked' : ''} onchange="onPlantCheckChange(this)"><span>${escapeHtml(plant)}</span>`;
+            container.appendChild(label);
+        });
+        if (searching && !plants.length) {
+            const empty = document.createElement('div');
+            empty.style.cssText = 'padding:16px;text-align:center;color:var(--text-muted);font-size:.78rem';
+            empty.textContent = giLanguage()==='en' ? 'No matching plants' : 'ไม่พบโครงการที่ค้นหา';
+            container.appendChild(empty);
+        }
+        document.getElementById('selectedCount').innerText = tableAvailablePlants().filter(plant=>selectedPlants.has(plant)).length;
+        const hint = document.getElementById('plantSearchHint');
+        hint.style.display = searching ? 'block' : 'none';
+        if (searching) hint.textContent = giLanguage()==='en'
+            ? `Apply & Close will show ${selectedPlantSearchResult ? 1 : plants.length} matching plant(s). Choose a name for one plant; the status filter stays active.`
+            : `กด Apply & Close เพื่อแสดง ${selectedPlantSearchResult ? 1 : plants.length} โครงการที่พบ หรือกดชื่อเพื่อเลือกโครงการเดียว ตัวกรองสถานะจะคงเดิม`;
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function filterPlantList() { selectedPlantSearchResult = null; renderPlantList(); }
+
+    function clearPlantSearch(input) {
+        if (!input.value) return;
+        input.value = '';
+        selectedPlantSearchResult = null;
+        renderPlantList();
+    }
+
+    function selectSearchedPlant(plant) {
+        selectedPlantSearchResult = plant;
+        renderPlantList();
+    }
+
+    function onPlantCheckChange(cb) {
+        if (cb.checked) selectedPlants.add(cb.value);
+        else selectedPlants.delete(cb.value);
+        document.getElementById('selectedCount').innerText = tableAvailablePlants().filter(plant=>selectedPlants.has(plant)).length;
+        renderTableAndMetrics();
+    }
+
+    function toggleSelectAll(select) {
+        selectedPlantSearchResult = null;
+        selectedPlants.clear();
+        if (select) searchedPlants().forEach(plant => selectedPlants.add(plant));
+        renderPlantList();
+        renderTableAndMetrics();
+    }
+
+    function invalidateGiValue(plant,date,next){
+        if(GiReview.valueKey(plantMasterData[plant]?.dates?.[date])===GiReview.valueKey(next))return;
+        const review=giReviewByPlant[plant];if(!review)return;
+        if(review.days?.[date])review.days[date]={...review.days[date],confirmed:false};
+        const month=date.slice(0,7);if(review.months?.[month]?.reviewed)review.months[month]={...review.months[month],needsRecheck:true};
+    }
+    function invalidateGiReplacement(plant,next){
+        for(const date of new Set([...Object.keys(plantMasterData[plant]?.dates||{}),...Object.keys(next||{})]))invalidateGiValue(plant,date,next?.[date]);
+    }
+    function updateCellData(plantKey, date, val) {
+        const num = parseFloat(val);
+        if (!plantMasterData[plantKey]) return;
+        if(Number.isFinite(num)&&num<0){SolarCloud.notice(giText('ค่าแสงต้องไม่ติดลบ','Irradiance cannot be negative'),'','danger');renderTableAndMetrics();return}
+        invalidateGiValue(plantKey,date,Number.isFinite(num)?num:undefined);
+        if (!isNaN(num)) plantMasterData[plantKey].dates[date] = num;
+        else delete plantMasterData[plantKey].dates[date];
+        renderTableAndMetrics();
+    }
+
+    function updateNoteData(plantKey,val,month){if(!month||giPeriodLoading||!plantMasterData[plantKey]||!SolarCloud.roleCanEdit())return;giMonthlyNotes[plantKey]||={};giMonthlyNotes[plantKey][month]=val;SolarCloud.scheduleSave('gi_monthly_note');}
+    function updateProvinceData(plantKey,val){if(plantMasterData[plantKey]){const province=val||'ไม่ระบุ';plantMasterData[plantKey].province=province;persistentProvinceByPlant[plantKey]=province}}
+
+    function copyPlantIrr(plantKey) {
+        if (plantMasterData[plantKey]) {
+            copiedIrrData = {...plantMasterData[plantKey].dates};
+            SolarCloud.notice("คัดลอกข้อมูลแล้ว",`คัดลอกค่า Irradiation จาก “${plantKey}” แล้ว`,"success");
+            renderTableAndMetrics();
+        }
+    }
+
+    function pastePlantIrr(plantKey) {
+        if (!copiedIrrData) return SolarCloud.notice("ยังไม่มีข้อมูลที่คัดลอก","กรุณาคัดลอกค่า Irradiation จากโครงการต้นทางก่อน","danger");
+        if (plantMasterData[plantKey]) {
+            invalidateGiReplacement(plantKey,copiedIrrData);
+            plantMasterData[plantKey].dates = {...copiedIrrData};
+            renderTableAndMetrics();
+        }
+    }
+
+    function restorePlantData(plantKey) {
+        if (originalPlantData[plantKey]) {
+            invalidateGiReplacement(plantKey,originalPlantData[plantKey].dates);
+            plantMasterData[plantKey] = {...originalPlantData[plantKey],dates:{...originalPlantData[plantKey].dates}};
+            renderTableAndMetrics();
+        }
+    }
+
+    const giText=(th,en)=>giLanguage()==='en'?en:th;
+    function reviewMonth(dateList){const months=[...new Set(dateList.map(date=>date.slice(0,7)))];return months.length===1?months[0]:null}
+    function plantMonthSnapshot(plant,month){return GiReview.monthSnapshot(plantMasterData[plant]?.dates||{},[...datesSet],month)}
+    function monthlyReviewStatus(plant,month){if(!month)return 'unreviewed';const entry=giReviewByPlant[plant]?.months?.[month],status=GiReview.monthStatus(entry,plantMonthSnapshot(plant,month));if(status==='recheck')entry.needsRecheck=true;return status}
+    function syncGiReviewLabels(){
+        const labels=[giText('สถานะตรวจ · ทั้งหมด','Review · All'),giText('ตรวจแล้ว','Reviewed'),giText('ยังไม่ตรวจ','Unreviewed'),giText('ต้องตรวจซ้ำ','Needs recheck')];
+        const select=document.getElementById('giReviewFilter');const singleMonth=reviewMonth(getFilteredDates());select.disabled=!singleMonth;select.title=singleMonth?'':giText('เลือกหนึ่งเดือนเพื่อกรองสถานะตรวจ','Select one month to filter reviews');if(!singleMonth)activeReviewFilter='ALL';Array.from(select.options).forEach((option,i)=>option.textContent=labels[i]);select.value=activeReviewFilter;syncGiCombinedLabel();
+    }
+    async function confirmGiDay(plant,date){
+        if(!SolarCloud.roleCanEdit())return;
+        const value=plantMasterData[plant]?.dates?.[date];if(!GiReview.valid(value))return;
+        const review=giReviewByPlant[plant]||{days:{},months:{}},entry=review.days?.[date],accepted=GiReview.confirmed(entry,value);
+        const ok=await SolarCloud.confirmDialog(giText(accepted?'ยกเลิกการรับรองค่าแสง':'ยืนยันค่าแสงถูกต้อง',accepted?'Revoke GI acceptance':'Confirm correct irradiance'),`${plant} · ${date} · ${Number(value).toFixed(3)} kWh/m²
+${giText('รับรองเฉพาะวันนี้เพื่อคำนวณ GI; PR ยังต้องผ่านเกณฑ์ GI/Specific','Accept this day for GI calculations; PR still requires GI/Specific thresholds')}`,{confirmText:giText(accepted?'ยกเลิกการรับรอง':'ยืนยัน',accepted?'Revoke':'Confirm')});
+        if(!ok||!SolarCloud.roleCanEdit()||GiReview.valueKey(plantMasterData[plant]?.dates?.[date])!==GiReview.valueKey(value))return;
+        const actor=SolarCloud.collaborationActor();if(!actor?.userId){SolarCloud.notice(giText('ยังยืนยันไม่ได้','Cannot confirm yet'),giText('รอเชื่อมต่อผู้ใช้งานแล้วลองอีกครั้ง','Wait for user connection and retry'),'danger');return}
+        // Re-read after the dialog: a remote restore may have refreshed the shared state.
+        const latest=giReviewByPlant[plant]||{days:{},months:{}};latest.days||={};latest.days[date]={confirmed:!accepted,valueKey:GiReview.valueKey(value),userId:actor.userId,name:actor.name,at:new Date().toISOString()};giReviewByPlant[plant]=latest;
+        renderTableAndMetrics();SolarCloud.scheduleSave('gi_daily_acceptance');
+    }
+    async function confirmGiMonth(plant){
+        if(!SolarCloud.roleCanEdit())return;
+        const month=reviewMonth(getFilteredDates());if(!month)return;
+        const values=plantMasterData[plant]?.dates||{};if(!Object.entries(values).some(([date,value])=>date.startsWith(month+'-')&&GiReview.valid(value)))return;
+        const snapshot=plantMonthSnapshot(plant,month),entry=giReviewByPlant[plant]?.months?.[month],reviewed=monthlyReviewStatus(plant,month)==='reviewed';
+        const ok=await SolarCloud.confirmDialog(giText(reviewed?'ยกเลิกสถานะตรวจแล้ว':'ยืนยันตรวจรายเดือน',reviewed?'Clear monthly review':'Confirm monthly review'),`${plant} · ${month}
+${giText('สถานะนี้ไม่ปลด Alarm และไม่รับรองค่ารายวัน','This status does not clear alarms or accept daily values')}${entry?.at?'\n'+entry.name+' · '+entry.at:''}`,{confirmText:giText(reviewed?'ยกเลิกสถานะ':'ตรวจแล้ว',reviewed?'Clear review':'Reviewed')});
+        if(!ok||!SolarCloud.roleCanEdit()||snapshot!==plantMonthSnapshot(plant,month))return;
+        const actor=SolarCloud.collaborationActor();if(!actor?.userId)return;
+        const review=giReviewByPlant[plant]||{days:{},months:{}};review.months||={};review.months[month]={reviewed:!reviewed,snapshot,userId:actor.userId,name:actor.name,at:new Date().toISOString()};giReviewByPlant[plant]=review;
+        renderTableAndMetrics();SolarCloud.scheduleSave('gi_monthly_review');
+    }
+
+    let giPlantPage=0,giDatePage=0,giPageKey='',giExportRendering=false;
+    function giPageRange(total,page,size){const pages=Math.max(1,Math.ceil(total/size));page=Math.max(0,Math.min(page,pages-1));return {page,pages,start:page*size,end:Math.min(total,(page+1)*size)}}
+    function moveGiPage(kind,step){if(kind==='plants')giPlantPage=Math.max(0,giPlantPage+step);else giDatePage=Math.max(0,giDatePage+step);renderTableAndMetrics()}
+    function renderGiPager(plants,dates){
+        let bar=document.getElementById('giResourcePager');if(!bar){bar=document.createElement('div');bar.id='giResourcePager';const scroll=document.getElementById('topScrollWrapper');scroll.parentNode.insertBefore(bar,scroll)}
+        const p=giPageRange(plants,giPlantPage,40),d=giPageRange(dates,giDatePage,31);giPlantPage=p.page;giDatePage=d.page;
+        const en=giLanguage()==='en';bar.innerHTML=`<span>${en?'Projects':'โครงการ'} ${plants?p.start+1:0}–${p.end}/${plants}</span><button type="button" onclick="moveGiPage('plants',-1)" ${!p.page?'disabled':''}>‹</button><button type="button" onclick="moveGiPage('plants',1)" ${p.page+1>=p.pages?'disabled':''}>›</button><span>${en?'Dates':'วันที่'} ${dates?d.start+1:0}–${d.end}/${dates}</span><button type="button" onclick="moveGiPage('dates',-1)" ${!d.page?'disabled':''}>‹</button><button type="button" onclick="moveGiPage('dates',1)" ${d.page+1>=d.pages?'disabled':''}>›</button><small>${en?'Summary and Excel include all filtered data':'สรุปและ Excel รวมข้อมูลที่กรองทั้งหมด'}</small>`;
+    }
+    function renderTableAndMetrics() {
+        window.GiMap?.render();
+        if (!isFileUploaded) return;
+        syncGiReviewLabels();
+
+        const dateList = getFilteredDates();
+        const pageKey=JSON.stringify([dateList,[...selectedPlants].sort(),activeProvinceFilter,activeStatusFilter,activeReviewFilter]);
+        if(pageKey!==giPageKey){giPlantPage=0;giDatePage=0;giPageKey=pageKey}
+        const windowDates=giExportRendering?dateList:dateList.slice(giDatePage*31,giDatePage*31+31),visibleDates=new Set(windowDates);
+        let matchedPlants=0;
+        const canEdit=SolarCloud.roleCanEdit();
+        renderProvinceFilterOptions();
+        const headerTr = document.getElementById('tableHeader');
+        const tbody = document.getElementById('tableBody');
+        const minIrr = parseFloat(document.getElementById('minIrr').value) || 0;
+        const maxIrr = parseFloat(document.getElementById('maxIrr').value) || 99;
+
+        const selectedReviewMonth=reviewMonth(dateList);
+        let headerHtml = `<th class="col-status">Status</th><th class="col-review" title="${giText('ตรวจโครงการรายเดือน ไม่ปลด Alarm','Monthly review does not clear alarms')}">${giText('ตรวจ','Review')}</th><th class="col-plant">Plant Name</th><th class="col-province">${giLanguage()==='en'?'Province':'จังหวัด'}</th><th class="number-col avg-col col-avg">Average</th><th class="number-col normal-col col-normal">Normal Day</th><th class="number-col col-kwp">kWp</th>`;
+        windowDates.forEach(d => { headerHtml += `<th class="number-col col-date" style="color:var(--accent-blue)">${d}</th>`; });
+        headerHtml += `<th class="col-note">Note</th>`;
+        if(headerTr.innerHTML!==headerHtml)headerTr.innerHTML = headerHtml;
+
+        let totalValidIrrSum = 0, totalValidCount = 0, totalNormalDaysCount = 0;
+        let countNormal = 0, countAbnormal = 0, countNotFound = 0;
+        const rowFragment=document.createDocumentFragment();
+
+        const provincePlants=Array.from(selectedPlants).filter(plant=>activeProvinceFilter==='ALL'||(plantMasterData[plant]?.province||'ไม่ระบุ')===activeProvinceFilter).sort();
+        provincePlants.forEach(plant => {
+            const pData = plantMasterData[plant];
+            if (!pData) return;
+
+            let plantValidIrrSum = 0, plantValidDays = 0, plantNormalDays = 0;
+            let missingDaysCount = 0, anomalyDaysCount = 0, dayCellsHtml = '';
+
+            dateList.forEach(d => {
+                const irrVal = pData.dates[d];
+                const hasValue = GiReview.valid(irrVal);
+                
+                if (hasValue) {
+                    const isNormal = irrVal >= minIrr && irrVal <= maxIrr;
+                    const acceptance=giReviewByPlant[plant]?.days?.[d],accepted=GiReview.confirmed(acceptance,irrVal);if(acceptance?.confirmed&&!accepted)acceptance.confirmed=false;
+                    const cellClass = isNormal ? 'number-col col-date' : accepted?'number-col col-date accepted-cell':'number-col col-date anomaly-cell';
+
+                    if (isNormal || accepted) {
+                        plantValidIrrSum += irrVal; plantValidDays++; plantNormalDays++;
+                        totalValidIrrSum += irrVal; totalValidCount++; totalNormalDaysCount++;
+                    } else { anomalyDaysCount++; }
+
+                    if(!visibleDates.has(d))return;
+                    const dayButton=(!isNormal||acceptance)?`<button type="button" class="gi-day-btn ${accepted?'accepted':''}" data-plant="${escapeHtml(plant)}" data-date="${d}" ${canEdit?'':'disabled'} title="${escapeHtml(giText(accepted?'รับรองแล้ว':'ยืนยันค่าถูกต้อง',accepted?'Accepted':'Confirm correct value')+(acceptance?' · '+acceptance.name+' · '+acceptance.at:''))}" aria-label="${escapeHtml(giText('ยืนยันค่าแสง','Confirm irradiance')+' '+plant+' '+d)}"><i class="fa-solid fa-check" aria-hidden="true"></i></button>`:'';
+                    if (isEditMode) {
+                        dayCellsHtml += `<td class="${cellClass}"><input type="number" step="0.001" class="cell-input data-irr-input" data-plant="${escapeHtml(plant)}" data-date="${d}" value="${irrVal.toFixed(3)}"></td>`;
+                    } else { dayCellsHtml += `<td class="${cellClass}">${irrVal.toFixed(3)}${dayButton}</td>`; }
+                } else {
+                    missingDaysCount++;
+                    if(!visibleDates.has(d))return;
+                    if (isEditMode) {
+                        dayCellsHtml += `<td class="number-col col-date"><input type="number" step="0.001" class="cell-input data-irr-input" data-plant="${escapeHtml(plant)}" data-date="${d}" placeholder="-"></td>`;
+                    } else { dayCellsHtml += `<td class="number-col col-date" style="color:var(--text-muted)">-</td>`; }
+                }
+            });
+
+            let statusCategory = 'NORMAL', statusBadgeHtml = '';
+            if (missingDaysCount > 0) {
+                statusCategory = 'NOT_FOUND'; countNotFound++;
+                statusBadgeHtml = `<span class="status-badge status-notfound" title="Missing ${missingDaysCount} day(s)"><i data-lucide="help-circle" size="16"></i></span>`;
+            } else if (anomalyDaysCount > 0) {
+                statusCategory = 'ABNORMAL'; countAbnormal++;
+                statusBadgeHtml = `<span class="status-badge status-abnormal" title="Out of range ${anomalyDaysCount} day(s)"><i data-lucide="alert-triangle" size="16"></i></span>`;
+            } else {
+                statusCategory = 'NORMAL'; countNormal++;
+                statusBadgeHtml = `<span class="status-badge status-normal" title="All values normal"><i data-lucide="check-circle" size="16"></i></span>`;
+            }
+
+            const monthStatus=monthlyReviewStatus(plant,selectedReviewMonth);
+            if(activeReviewFilter!=='ALL'&&(!selectedReviewMonth||activeReviewFilter!==monthStatus))return;
+            if (activeStatusFilter !== 'ALL' && activeStatusFilter !== statusCategory) return;
+            const rowNumber=matchedPlants++;
+            if(!giExportRendering&&(rowNumber<giPlantPage*40||rowNumber>=(giPlantPage+1)*40))return;
+            const plantAvgIrr = GiAverage.calculate(pData.dates,dateList,{min:minIrr,max:maxIrr,acceptances:giReviewByPlant[plant]?.days}).average??0;
+
+            let actionBtns = isEditMode ? `
+                <button class="btn-action btn-copy" data-plant="${escapeHtml(plant)}">Copy</button>
+                <button class="btn-action btn-paste" data-plant="${escapeHtml(plant)}">Paste</button>
+                <button class="btn-revert btn-restore" data-plant="${escapeHtml(plant)}">↺</button>
+            ` : '';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="col-status">${statusBadgeHtml}</td>
+                <td class="col-review"><button type="button" class="gi-review-btn ${monthStatus}" data-plant="${escapeHtml(plant)}" ${selectedReviewMonth&&Object.entries(pData.dates).some(([date,value])=>date.startsWith(selectedReviewMonth+'-')&&GiReview.valid(value))&&canEdit?'':'disabled'} title="${escapeHtml(selectedReviewMonth?giText(monthStatus==='reviewed'?'ตรวจแล้ว':monthStatus==='recheck'?'ต้องตรวจซ้ำ':'ยังไม่ตรวจ',monthStatus==='reviewed'?'Reviewed':monthStatus==='recheck'?'Needs recheck':'Unreviewed')+' · '+selectedReviewMonth+(giReviewByPlant[plant]?.months?.[selectedReviewMonth]?.at?' · '+giReviewByPlant[plant].months[selectedReviewMonth].name+' · '+giReviewByPlant[plant].months[selectedReviewMonth].at:''):giText('เลือกเพียงหนึ่งเดือนเพื่อยืนยันหรือกรอง','Select one month to review or filter'))}" aria-label="${escapeHtml(giText('ตรวจรายเดือน','Monthly review')+' '+plant)}"><i class="${monthStatus==='recheck'?'fa-solid fa-rotate-right':monthStatus==='reviewed'?'fa-regular fa-square-check':'fa-regular fa-square'}" aria-hidden="true"></i></button></td>
+                <td class="col-plant">
+                    <div class="plant-cell-content">
+                        <span class="plant-name-text" title="${escapeHtml(plant)}"><strong>${escapeHtml(plant)}</strong></span>
+                        <div style="display:flex; gap:4px;">${actionBtns}</div>
+                    </div>
+                </td>
+                <td class="col-province"><button class="province-button" data-plant="${escapeHtml(plant)}" onclick="openProvincePopup(this.dataset.plant)" title="${escapeHtml(pData.address||'')}"><i class="fa-solid fa-location-dot province-pin" aria-hidden="true"></i><span>${escapeHtml(provinceLabel(pData.province||'ไม่ระบุ'))}</span><i class="fa-solid fa-chevron-down"></i></button></td>
+                <td class="number-col avg-col col-avg">${plantAvgIrr.toFixed(3)}</td>
+                <td class="number-col normal-col col-normal" title="${giText('ค่าปกติหรือรับรองรายวันแล้ว','In range or accepted daily values')}">${plantNormalDays} / ${dateList.length}</td>
+                <td class="number-col col-kwp">${pData.capacity.toLocaleString()}</td>
+                ${dayCellsHtml}
+                <td class="col-note"><input type="text" class="note-input data-note-input" data-plant="${escapeHtml(plant)}" data-month="${selectedReviewMonth||''}" value="${escapeHtml(giMonthlyNotes[plant]?.[selectedReviewMonth]||'')}" placeholder="${giText(selectedReviewMonth?'Note '+selectedReviewMonth:'เลือกหนึ่งเดือนเพื่อกรอกโน้ต',selectedReviewMonth?'Note '+selectedReviewMonth:'Select one month to add note')}" ${!selectedReviewMonth||giPeriodLoading||!canEdit?'disabled':''} title="${escapeHtml(pData.note?giText('หมายเหตุเดิมของโครงการ: ','Legacy project note: ')+pData.note:'')}"></td>
+            `;
+            rowFragment.appendChild(tr);
+        });
+        tbody.replaceChildren(rowFragment);
+
+        if (!tbody.children.length) {
+            const tr = document.createElement('tr');
+            const message = selectedPlants.size && activeStatusFilter !== 'ALL'
+                ? (giLanguage()==='en'?'The selected plant does not match the current status filter.':'โครงการที่เลือกไม่ตรงกับสถานะที่กรองอยู่')
+                : (giLanguage()==='en'?'No plants match the current filters.':'ไม่พบโครงการตามตัวกรองที่เลือก');
+            tr.innerHTML = `<td colspan="${windowDates.length + 8}" style="text-align:center;padding:20px;color:var(--text-muted)">${message}</td>`;
+            tbody.appendChild(tr);
+        }
+        if(!giExportRendering&&giPlantPage*40>=matchedPlants&&giPlantPage>0){giPlantPage=Math.max(0,Math.ceil(matchedPlants/40)-1);return renderTableAndMetrics()}
+        if(!giExportRendering)renderGiPager(matchedPlants,dateList.length);
+        bindDynamicEvents();
+        document.getElementById('countAll').innerText = provincePlants.length;
+        document.getElementById('countNormal').innerText = countNormal;
+        document.getElementById('countAbnormal').innerText = countAbnormal;
+        document.getElementById('countNotFound').innerText = countNotFound;
+
+        document.getElementById('metricPlants').innerText = provincePlants.length;
+        document.getElementById('metricTotalDays').innerText = dateList.length;
+        document.getElementById('metricAvgIrr').innerText = totalValidCount > 0 ? (totalValidIrrSum / totalValidCount).toFixed(3) : "0.000";
+        document.getElementById('metricNormalDaysRatio').innerText = `${totalNormalDaysCount}/${provincePlants.length * dateList.length}`;
+
+        try { lucide.createIcons(); } catch(e) {}
+        scheduleGiScrollWidth();
+    }
+
+    function bindDynamicEvents() {
+        const body=document.getElementById('tableBody');if(body.dataset.delegated)return;body.dataset.delegated='true';
+        body.addEventListener('click',e=>{const button=e.target.closest('button');if(!button||!body.contains(button))return;const p=button.dataset.plant;
+            if(button.classList.contains('gi-day-btn'))confirmGiDay(p,button.dataset.date);
+            else if(button.classList.contains('gi-review-btn'))confirmGiMonth(p);
+            else if(button.classList.contains('btn-copy'))copyPlantIrr(p);
+            else if(button.classList.contains('btn-paste'))pastePlantIrr(p);
+            else if(button.classList.contains('btn-restore'))restorePlantData(p);
+        });
+        body.addEventListener('input',e=>{const input=e.target;if(input.classList.contains('data-note-input'))updateNoteData(input.dataset.plant,input.value,input.dataset.month);});
+        body.addEventListener('change',e=>{const input=e.target,p=input.dataset.plant;
+            if(input.classList.contains('data-irr-input'))updateCellData(p,input.dataset.date,input.value);
+            else if(input.classList.contains('data-note-input'))updateNoteData(p,input.value,input.dataset.month);
+        });
+    }
+
+    /* ---------------- ENHANCED TREND CHART FUNCTIONS ---------------- */
+    function initTrendControls() {
+        const yearSel = document.getElementById('trendYearSel'), monthSel = document.getElementById('trendMonthSel');
+        let years = new Set(), months = new Set();
+        datesSet.forEach(d => {
+            let parts = d.split('-');
+            if (parts.length === 3) { years.add(parts[0]); months.add(parts[1]); }
+        });
+        yearSel.innerHTML = Array.from(years).sort().map(y => `<option value="${y}" ${!restoredTrendYears.length||restoredTrendYears.includes(y)?'selected':''}>${y}</option>`).join('');
+        monthSel.innerHTML = Array.from(months).sort().map(m => `<option value="${m}" ${!restoredTrendMonths.length||restoredTrendMonths.includes(m)?'selected':''}>Month ${m}</option>`).join('');
+        document.getElementById('trendGranularitySel').value=trendGranularity;updateTrendControlVisibility();syncTrendProvinceSelect();updateTrendToolbarLabels();
+        renderTrendPlantList();
+    }
+
+    function syncTrendProvinceSelect(){const label=document.getElementById('trendProvinceLabel');if(!label)return;const counts=trendProvinceCounts();if(activeTrendProvinceFilter!=='ALL'&&!counts[activeTrendProvinceFilter])activeTrendProvinceFilter='ALL';const count=activeTrendProvinceFilter==='ALL'?Object.values(counts).reduce((sum,value)=>sum+value,0):(counts[activeTrendProvinceFilter]||0),name=activeTrendProvinceFilter==='ALL'?(giLanguage()==='en'?'All provinces':'ทุกจังหวัด'):provinceLabel(activeTrendProvinceFilter);label.textContent=`${name} (${count})`}
+    function trendAvailablePlants(){return Array.from(allPlantsSet).filter(plant=>activeTrendProvinceFilter==='ALL'||(plantMasterData[plant]?.province||'ไม่ระบุ')===activeTrendProvinceFilter).sort()}
+    function updateTrendControlVisibility(){const monthBox=document.getElementById('trendMonthFilterBox');if(monthBox)monthBox.style.display=trendGranularity==='daily'?'block':'none'}
+    function setTrendGranularity(value){trendGranularity=['daily','monthly','yearly'].includes(value)?value:'daily';updateTrendControlVisibility();updateTrendChart()}
+    function updateTrendPopupLanguage(){
+        const en=giLanguage()==='en',label=document.getElementById('trendPlantSectionLabel'),count=document.getElementById('trendSelectedCount'),available=document.getElementById('trendAvailableCount');
+        if(label&&count&&available)label.innerHTML=`${en?'Select Plants':'เลือกโครงการ'} (<span id="trendSelectedCount" style="color:var(--accent-yellow)">${selectedTrendPlants.size}</span>/<span id="trendAvailableCount">${trendAvailablePlants().length}</span>)`;
+        const selectAll=document.getElementById('trendSelectAllBtn'),clearAll=document.getElementById('trendDeselectAllBtn'),search=document.getElementById('searchTrendPlant');
+        if(selectAll)selectAll.textContent=en?'Select All':'เลือกทั้งหมด';if(clearAll)clearAll.textContent=en?'Deselect All':'ไม่เลือกทั้งหมด';if(search)search.placeholder=en?'Search plant...':'ค้นหาชื่อโครงการ...';
+    }
+    function updateTrendToolbarLabels(){
+        const years=Array.from(document.getElementById('trendYearSel')?.selectedOptions||[]).map(option=>option.value),months=Array.from(document.getElementById('trendMonthSel')?.selectedOptions||[]).map(option=>option.value);
+        const allYears=document.getElementById('trendYearSel')?.options.length||0,allMonths=document.getElementById('trendMonthSel')?.options.length||0;
+        const monthNames=giLanguage()==='en'?['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']:['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+        let dateLabel=giLanguage()==='en'?'All periods':'ทุกช่วงเวลา';
+        if(trendGranularity==='daily'&&years.length===1&&months.length===1)dateLabel=`${monthNames[Math.max(0,Number(months[0])-1)]} ${years[0]}`;
+        else if(trendGranularity==='daily'&&(years.length!==allYears||months.length!==allMonths))dateLabel=giLanguage()==='en'?`${years.length} year · ${months.length} month`:`${years.length} ปี · ${months.length} เดือน`;
+        else if(trendGranularity!=='daily'&&years.length===1)dateLabel=years[0];
+        else if(trendGranularity!=='daily'&&years.length!==allYears)dateLabel=giLanguage()==='en'?`${years.length} years`:`${years.length} ปี`;
+        const dateNode=document.getElementById('trendDatePickerLabel');if(dateNode)dateNode.textContent=dateLabel;
+        const plantNode=document.getElementById('trendPlantPickerCount');if(plantNode)plantNode.textContent=`${selectedTrendPlants.size}/${trendAvailablePlants().length}`;
+        const dateCaption=document.getElementById('trendDatePickerCaption'),plantCaption=document.getElementById('trendPlantPickerCaption'),plantText=document.getElementById('trendPlantPickerText'),viewName=trendGranularity==='daily'?(giLanguage()==='en'?'Daily':'รายวัน'):trendGranularity==='monthly'?(giLanguage()==='en'?'Monthly':'รายเดือน'):(giLanguage()==='en'?'Yearly':'รายปี');
+        if(dateCaption)dateCaption.textContent=trendGranularity==='daily'?(giLanguage()==='en'?'Select month / year':'เลือกเดือน / ปี'):(giLanguage()==='en'?`Select year · ${viewName}`:`เลือกปี · ${viewName}`);if(plantCaption)plantCaption.textContent=giLanguage()==='en'?'Plants':'โครงการ';if(plantText)plantText.textContent=giLanguage()==='en'?'Select plants':'เลือกโครงการ';
+    }
+
+    function selectAllTrendOptions(selectId, selectAll) {
+        const selectEl = document.getElementById(selectId);
+        Array.from(selectEl.options).forEach(opt => opt.selected = selectAll);
+        updateTrendChart();
+    }
+
+    function renderTrendPlantList() {
+        const container = document.getElementById('trendPlantListContainer');
+        container.innerHTML = '';
+        const sorted = trendAvailablePlants();
+
+        sorted.forEach((plant, idx) => {
+            const id = `t_chk_${idx}`;
+            const label = document.createElement('label');
+            label.className = 'plant-item';
+            label.setAttribute('for', id);
+            label.innerHTML = `<input type="checkbox" id="${id}" value="${escapeHtml(plant)}" ${selectedTrendPlants.has(plant) ? 'checked' : ''} onchange="onTrendPlantCheckChange(this)"><span>${escapeHtml(plant)}</span>`;
+            container.appendChild(label);
+        });
+        document.getElementById('trendSelectedCount').innerText = selectedTrendPlants.size;
+        document.getElementById('trendAvailableCount').innerText = sorted.length;
+        updateTrendToolbarLabels();
+    }
+
+    function filterTrendPlantList() {
+        const q = document.getElementById('searchTrendPlant').value.toLowerCase();
+        document.querySelectorAll('#trendPlantListContainer .plant-item').forEach(el => {
+            el.style.display = el.innerText.toLowerCase().includes(q) ? 'flex' : 'none';
+        });
+    }
+
+    function onTrendPlantCheckChange(cb) {
+        if (cb.checked) {
+            selectedTrendPlants.add(cb.value);
+        } else {
+            selectedTrendPlants.delete(cb.value);
+        }
+        document.getElementById('trendSelectedCount').innerText = selectedTrendPlants.size;
+        updateTrendToolbarLabels();
+        updateTrendChart();
+    }
+
+    function clearTrendPlants() {
+        selectedTrendPlants.clear();
+        document.querySelectorAll('#trendPlantListContainer input').forEach(cb => cb.checked = false);
+        document.getElementById('trendSelectedCount').innerText = '0';
+        updateTrendToolbarLabels();
+        updateTrendChart();
+    }
+
+    function selectAllTrendPlants(){selectedTrendPlants=new Set(trendAvailablePlants());renderTrendPlantList();updateTrendToolbarLabels();updateTrendChart()}
+
+    function trendPeriodKey(date){return trendGranularity==='daily'?date:trendGranularity==='monthly'?date.slice(0,7):date.slice(0,4)}
+    function trendModeLabel(){return trendGranularity==='daily'?(giLanguage()==='en'?'Daily':'รายวัน'):trendGranularity==='monthly'?(giLanguage()==='en'?'Monthly':'รายเดือน'):(giLanguage()==='en'?'Yearly':'รายปี')}
+    function renderTrendSummaryTable(rows,periodCount){
+        const en=giLanguage()==='en',header=document.getElementById('trendSummaryHeader'),body=document.getElementById('trendSummaryBody'),title=document.getElementById('trendSummaryTitle'),meta=document.getElementById('trendSummaryMeta');
+        title.textContent=en?'Selected project GI summary':'ตารางสรุป GI ของโครงการที่เลือก';
+        meta.textContent=en?`${trendModeLabel()} · ${periodCount} periods · ${rows.length} projects`:`${trendModeLabel()} · ${periodCount} ช่วง · ${rows.length} โครงการ`;
+        header.innerHTML=`<th>#</th><th>${en?'Project':'โครงการ'}</th><th>${en?'Province':'จังหวัด'}</th><th>${en?'Periods':'ช่วงข้อมูล'}</th><th>${en?'Data days':'วันที่มีข้อมูล'}</th><th>Min GI</th><th>${en?'Average GI':'GI เฉลี่ย'}</th><th>Max GI</th>`;
+        body.innerHTML=rows.length?rows.map((row,index)=>`<tr><td>${index+1}</td><td>${escapeHtml(row.plant)}</td><td>${escapeHtml(provinceLabel(row.province))}</td><td>${row.periods}</td><td>${row.days}</td><td>${row.min==null?'-':row.min.toFixed(3)}</td><td>${row.avg==null?'-':row.avg.toFixed(3)}</td><td>${row.max==null?'-':row.max.toFixed(3)}</td></tr>`).join(''):`<tr><td colspan="8" class="trend-summary-empty">${en?'No data for the selected filters':'ไม่พบข้อมูลตามตัวกรองที่เลือก'}</td></tr>`;
+    }
+
+
+    let giTrendFocusLabel=null,giTrendFocusFrame=0;
+    const giTrendFocusPlugin={
+        id:'giTrendLegendFocus',
+        beforeDatasetDraw(chart,args){
+            const focused=chart.$giTrendFocus;
+            if(!focused)return;
+            chart.ctx.save();
+            const selected=chart.data.datasets[args.index].label===focused;
+            if(!selected)chart.ctx.globalAlpha*=.16;
+            const line=args.meta.dataset;
+            if(selected&&line){args.meta.$giFocusOptions=line.options;line.options={...line.options,borderWidth:(Number(line.options.borderWidth)||2)+2};}
+        },
+        afterDatasetDraw(chart,args){
+            if(!chart.$giTrendFocus)return;
+            if(args.meta.$giFocusOptions){args.meta.dataset.options=args.meta.$giFocusOptions;delete args.meta.$giFocusOptions;}
+            chart.ctx.restore();
+        },
+        afterDestroy(){cancelAnimationFrame(giTrendFocusFrame);giTrendFocusFrame=0;giTrendFocusLabel=null;}
+    };
+    function focusGiTrendSeries(label){
+        const chart=trendChart,box=document.getElementById('giTrendLegend');
+        if(!chart)return;
+        const index=chart.data.datasets.findIndex(d=>d.label===label);
+        const next=index>=0&&chart.isDatasetVisible(index)?label:null;
+        if(chart.$giTrendFocus===next)return;
+        giTrendFocusLabel=next;chart.$giTrendFocus=next;
+        box?.querySelectorAll('[data-gi-series]').forEach(button=>{button.classList.toggle('is-focused',button.dataset.giSeries===next);button.classList.toggle('is-dimmed',!!next&&button.dataset.giSeries!==next);});
+        cancelAnimationFrame(giTrendFocusFrame);
+        giTrendFocusFrame=requestAnimationFrame(()=>{giTrendFocusFrame=0;if(trendChart===chart)chart.draw();});
+    }
+
+    function renderGiTrendLegend(chart){
+        const box=document.getElementById('giTrendLegend');if(!box)return;
+        box.innerHTML=chart.data.datasets.map((dataset,index)=>{
+            const visible=chart.isDatasetVisible(index);
+            return `<button type="button" class="gi-series-toggle ${visible?'':'is-hidden'}" data-gi-series="${escapeHtml(dataset.label)}" aria-pressed="${visible}" title="${escapeHtml(dataset.label)}"><span class="gi-series-swatch" style="background:${dataset.borderColor}"></span><span>${escapeHtml(dataset.label)}</span></button>`;
+        }).join('');
+        if(!box.dataset.bound){
+            box.dataset.bound='true';
+            box.addEventListener('click',event=>{const button=event.target.closest('[data-gi-series]');if(!button||!box.contains(button)||!trendChart)return;focusGiTrendSeries(null);onTrendLegendClick(event,{text:button.dataset.giSeries},{chart:trendChart});});
+            box.addEventListener('pointerover',event=>{const button=event.target.closest('[data-gi-series]');if(button&&box.contains(button))focusGiTrendSeries(button.dataset.giSeries);});
+            box.addEventListener('pointerout',event=>{const next=event.relatedTarget?.closest?.('[data-gi-series]');focusGiTrendSeries(next&&box.contains(next)?next.dataset.giSeries:null);});
+            box.addEventListener('focusin',event=>{const button=event.target.closest('[data-gi-series]');if(button)focusGiTrendSeries(button.dataset.giSeries);});
+            box.addEventListener('focusout',event=>{const next=event.relatedTarget?.closest?.('[data-gi-series]');focusGiTrendSeries(next&&box.contains(next)?next.dataset.giSeries:null);});
+        }
+    }
+    function onTrendLegendClick(event,item,legend){
+        const chart=legend.chart;
+        const index=chart.data.datasets.findIndex(d=>d.label===item.text);if(index<0)return;
+        chart.setDatasetVisibility(index,!chart.isDatasetVisible(index));
+        chart.update('none');renderGiTrendLegend(chart);
+    }
+
+    function updateTrendChart() {
+        if(!document.getElementById('trendTab').classList.contains('active'))return;
+        const yearNode=document.getElementById('trendYearSel'),monthNode=document.getElementById('trendMonthSel');
+        if(!yearNode||!monthNode)return;
+        const selYears=Array.from(yearNode.selectedOptions).map(o=>o.value),selMonths=Array.from(monthNode.selectedOptions).map(o=>o.value);
+        restoredTrendYears=[...selYears];restoredTrendMonths=[...selMonths];
+        const showAvgLine=document.getElementById('chkShowAvgLine').checked;
+        updateTrendToolbarLabels();
+
+        const filteredDates=Array.from(datesSet).filter(date=>{const parts=date.split('-'),yearOk=!selYears.length||selYears.includes(parts[0]),monthOk=trendGranularity!=='daily'||!selMonths.length||selMonths.includes(parts[1]);return yearOk&&monthOk}).sort();
+        const periods=[...new Set(filteredDates.map(trendPeriodKey))].sort(),selected=Array.from(selectedTrendPlants).filter(plant=>activeTrendProvinceFilter==='ALL'||(plantMasterData[plant]?.province||'ไม่ระบุ')===activeTrendProvinceFilter).sort();
+        const periodAverage=Object.fromEntries(periods.map(period=>[period,{sum:0,count:0}]));
+        const hiddenLabels=new Set(trendChart?trendChart.data.datasets.filter((d,i)=>!trendChart.isDatasetVisible(i)).map(d=>d.label):[]);
+        const datasets=[],summaryRows=[];
+        
+        let minObj={val:Infinity,plant:'-',date:'-'},maxObj={val:-Infinity,plant:'-',date:'-'},totalValSum=0,totalValCount=0;
+
+        selected.forEach((plant,index)=>{
+            const pData=plantMasterData[plant];if(!pData)return;
+            const buckets=Object.fromEntries(periods.map(period=>[period,{sum:0,count:0}]));let dayCount=0;
+            filteredDates.forEach(date=>{const numeric=Number(pData.dates?.[date]);if(pData.dates?.[date]===undefined||pData.dates?.[date]===null||!Number.isFinite(numeric))return;const bucket=buckets[trendPeriodKey(date)];bucket.sum+=numeric;bucket.count++;dayCount++});
+            const dataPoints=periods.map(period=>buckets[period].count?buckets[period].sum/buckets[period].count:null),valid=dataPoints.filter(value=>value!==null&&Number.isFinite(value));
+            dataPoints.forEach((value,periodIndex)=>{if(value===null)return;const period=periods[periodIndex];totalValSum+=value;totalValCount++;periodAverage[period].sum+=value;periodAverage[period].count++;if(value<minObj.val)minObj={val:value,plant,date:period};if(value>maxObj.val)maxObj={val:value,plant,date:period}});
+            summaryRows.push({plant,province:pData.province||'ไม่ระบุ',periods:valid.length,days:dayCount,min:valid.length?Math.min(...valid):null,avg:valid.length?valid.reduce((sum,value)=>sum+value,0)/valid.length:null,max:valid.length?Math.max(...valid):null});
+            datasets.push({label:plant,data:dataPoints,borderColor:chartColors[index%chartColors.length],backgroundColor:chartColors[index%chartColors.length],hidden:hiddenLabels.has(plant),pointStyle:['circle','triangle','rect','rectRot','crossRot'][index%5],tension:.15,spanGaps:true,borderWidth:2,pointRadius:dataPoints.length>120?0:trendGranularity==='daily'?2:3,pointHoverRadius:5});
+        });
+
+        if(showAvgLine&&selected.length){const avgPoints=periods.map(period=>periodAverage[period].count?periodAverage[period].sum/periodAverage[period].count:null);datasets.unshift({isBaseline:true,hidden:hiddenLabels.has(`★ Baseline ${trendModeLabel()} Avg`),label:`★ Baseline ${trendModeLabel()} Avg`,data:avgPoints,borderColor:'#fbbf24',borderDash:[5,5],borderWidth:2.5,pointRadius:0,fill:false,order:-1})}
+        renderTrendSummaryTable(summaryRows,periods.length);
+
+        if(totalValCount){document.getElementById('chartMinVal').innerText=minObj.val.toFixed(3);document.getElementById('chartMinInfo').innerText=`${minObj.plant} (${minObj.date})`;document.getElementById('chartMaxVal').innerText=maxObj.val.toFixed(3);document.getElementById('chartMaxInfo').innerText=`${maxObj.plant} (${maxObj.date})`;document.getElementById('chartAvgVal').innerText=(totalValSum/totalValCount).toFixed(3)}
+        else{document.getElementById('chartMinVal').innerText='0.000';document.getElementById('chartMinInfo').innerText='-';document.getElementById('chartMaxVal').innerText='0.000';document.getElementById('chartMaxInfo').innerText='-';document.getElementById('chartAvgVal').innerText='0.000'}
+
+        const isDark=document.documentElement.getAttribute('data-theme')==='dark',textColor=isDark?'#cbd5e1':'#475569',gridColor=isDark?'#47556944':'#cbd5e177';
+        if(trendChart){focusGiTrendSeries(null);trendChart.data.labels=periods;trendChart.data.datasets=datasets;trendChart.options.plugins.legend.labels.color=textColor;trendChart.options.scales.x.ticks.color=textColor;trendChart.options.scales.y.ticks.color=textColor;trendChart.options.scales.x.grid.color=gridColor;trendChart.options.scales.y.grid.color=gridColor;trendChart.options.scales.y.title.color=textColor;datasets.forEach((d,i)=>trendChart.setDatasetVisibility(i,!hiddenLabels.has(d.label)));trendChart.update('none');renderGiTrendLegend(trendChart);return}
+        const ctx=document.getElementById('irrTrendChart').getContext('2d');
+        trendChart=new Chart(ctx,{type:'line',plugins:[giTrendFocusPlugin],data:{labels:periods,datasets},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false,position:'top',onClick:onTrendLegendClick,labels:{usePointStyle:true,color:textColor,font:{family:'Bai Jamjuree',size:11},boxWidth:12}},tooltip:{animation:false,itemSort:(a,b)=>(Number(b.raw)||0)-(Number(a.raw)||0),callbacks:{label:context=>` ${context.dataset.label}: ${context.raw!==null&&Number.isFinite(Number(context.raw))?Number(context.raw).toFixed(3):'-'} kWh/m²`}}},scales:{x:{ticks:{color:textColor,font:{family:'Bai Jamjuree'}},grid:{color:gridColor}},y:{title:{display:true,text:'Average Global Irradiation (kWh/m²)',color:textColor,font:{family:'Bai Jamjuree'}},ticks:{color:textColor,font:{family:'Bai Jamjuree'}},grid:{color:gridColor},beginAtZero:true}}}});
+        
+        renderGiTrendLegend(trendChart);
+    }
+
+    async function resetData() {
+        if (!isFileUploaded) return SolarCloud.notice("ยังไม่มีข้อมูล","กรุณาอัปโหลดไฟล์ Excel ก่อน","danger");
+        const ok=await SolarCloud.confirmDialog("ล้างข้อมูลทั้งหมด","ข้อมูลที่นำเข้าและค่าที่แก้ไขในหน้านี้จะถูกล้าง",{tone:"danger",icon:"!",confirmText:"ล้างข้อมูล"});
+        if (ok) {
+            allPlantsSet.clear(); selectedPlants.clear(); datesSet.clear(); selectedTrendPlants.clear(); sourceFileNames = [];
+            plantMasterData = {}; originalPlantData = {}; copiedIrrData = null; giReviewByPlant={};giMonthlyNotes={};savedGiOverrides={};activeReviewFilter='ALL';isFileUploaded = false;
+            activeStatusFilter = 'ALL'; activeProvinceFilter = 'ALL';
+            document.querySelectorAll('.btn-filter-status').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btnFilterAll').classList.add('active');
+
+            document.getElementById('uploadStatus').innerText = "อัปโหลด Plant Report (.xlsx/.csv)";
+            document.getElementById('fileInput').value = '';
+            renderPlantList();
+            document.getElementById('tableBody').innerHTML = '';
+            document.getElementById('metricPlants').innerText = '0';
+            document.getElementById('metricTotalDays').innerText = '0';
+            document.getElementById('metricAvgIrr').innerText = '0.000';
+            document.getElementById('metricNormalDaysRatio').innerText = '0/0';
+            
+            document.getElementById('countAll').innerText = '0';
+            document.getElementById('countNormal').innerText = '0';
+            document.getElementById('countAbnormal').innerText = '0';
+            document.getElementById('countNotFound').innerText = '0';
+
+            if (trendChart) trendChart.destroy();
+        }
+    }
+
+        let xlsxLoaderPromise=null;
+            function ensureXlsx(){
+                if(window.XLSX)return Promise.resolve(window.XLSX);
+                if(xlsxLoaderPromise)return xlsxLoaderPromise;
+                xlsxLoaderPromise=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';script.onload=()=>resolve(window.XLSX);script.onerror=()=>reject(new Error('ไม่สามารถโหลดเครื่องมือส่งออก Excel ได้'));document.head.appendChild(script)});
+                return xlsxLoaderPromise;
+            }
+    
+            async function exportToExcel() {
+        try{await ensureXlsx()}catch(error){SolarCloud.notice('ส่งออกไม่ได้',error.message,'danger');return}
+        if (!isFileUploaded) return SolarCloud.notice("ยังไม่มีข้อมูล","กรุณาอัปโหลดไฟล์ Excel ก่อน","danger");
+        if (!selectedPlants.size) return SolarCloud.notice('ยังไม่ได้เลือกโครงการ','กรุณาเลือกอย่างน้อย 1 โครงการก่อนส่งออก','danger');
+        try{giExportRendering=true;renderTableAndMetrics();const wb=XLSX.utils.table_to_book(document.getElementById('resultTable'),{sheet:'Irradiation Summary'});XLSX.writeFile(wb,'FusionSolar_Irradiation_Report.xlsx')}
+        finally{giExportRendering=false;renderTableAndMetrics()}
+
+    }
+</script>
+<script>
+  const irrSelection=id=>Array.from(document.getElementById(id)?.selectedOptions||[]).map(option=>option.value);
+  const globalIrradianceCloudAdapter={
+    capture(){
+      const overrides=structuredClone(savedGiOverrides);
+      Object.keys(plantMasterData).forEach(name=>{
+        const current=plantMasterData[name],original=originalPlantData[name]||{capacity:0,province:'ไม่ระบุ',note:'',dates:{}};
+        const changedDates={...(savedGiOverrides[name]?.dates||{})};
+        const dates=new Set([...Object.keys(original.dates||{}),...Object.keys(current.dates||{})]);
+        dates.forEach(date=>{const a=current.dates?.[date],b=original.dates?.[date];if(a!==b)changedDates[date]=a===undefined?null:a;else delete changedDates[date]});
+        if(current.capacity!==original.capacity||(current.province||'ไม่ระบุ')!==(original.province||'ไม่ระบุ')||(current.note||'')!==(original.note||'')||Object.keys(changedDates).length||giReviewByPlant[name]||Object.keys(giMonthlyNotes[name]||{}).length)overrides[name]={capacity:current.capacity,province:current.province||'ไม่ระบุ',note:current.note||'',dates:changedDates,...(giMonthlyNotes[name]?{monthlyNotes:structuredClone(giMonthlyNotes[name])}:{}),...(giReviewByPlant[name]?{giReview:giReviewByPlant[name]}:{})};
+        else delete overrides[name];
+      });
+      const sortedDates=[...datesSet].sort();
+      return {
+        baseData:{plants:originalPlantData,dates:sortedDates,availableMonths:[...availableIrrMonths],loadedMonth:loadedIrrMonth,sourceFiles:[...sourceFileNames]},
+        userState:{overrides,provinceOverrides:{...persistentProvinceByPlant},selectedPlants:[...selectedPlants],allPlantsSelected:selectedPlants.size===allPlantsSet.size&&[...allPlantsSet].every(name=>selectedPlants.has(name)),selectedTrendPlants:[...selectedTrendPlants],minIrr:document.getElementById('minIrr').value,maxIrr:document.getElementById('maxIrr').value,activeStatusFilter,activeProvinceFilter,activeTrendProvinceFilter,activeReviewFilter,selectedPeriod:loadedIrrMonth,fullDataLoaded:giFullDataLoaded,filters:{years:irrSelection('yearFilter'),months:irrSelection('monthFilter'),days:irrSelection('dayFilter')},trendFilters:{years:document.getElementById('trendYearSel')?.options.length?irrSelection('trendYearSel'):[...restoredTrendYears],months:document.getElementById('trendMonthSel')?.options.length?irrSelection('trendMonthSel'):[...restoredTrendMonths],granularity:trendGranularity}},
+        periodKey:sortedDates.length?sortedDates[0].slice(0,7):null,
+        sourceFiles:[...sourceFileNames]
+      };
+    },
+    async restore(base,state){
+      savedGiOverrides=structuredClone(state.overrides||{});giReviewByPlant={};giMonthlyNotes={};
+      Object.entries(savedGiOverrides).forEach(([name,entry])=>{if(entry.monthlyNotes)giMonthlyNotes[name]=structuredClone(entry.monthlyNotes);if(entry.giReview)giReviewByPlant[name]=structuredClone(entry.giReview)});
+      activeReviewFilter=state.activeReviewFilter||'ALL';
+      originalPlantData=structuredClone(base.plants||{});
+      Object.values(originalPlantData).forEach(plant=>{plant.address=plant.address||'';plant.province=plant.province||detectProvince(plant.address)});
+      plantMasterData=Object.fromEntries(Object.entries(originalPlantData).map(([name,plant])=>[name,{...plant,dates:{...plant.dates}}]));
+      allPlantsSet=new Set(Object.keys(plantMasterData));datesSet=new Set(base.dates||[]);
+      availableIrrMonths=Array.isArray(base.availableMonths)?base.availableMonths:[...new Set((base.dates||[]).map(date=>String(date).slice(0,7)))].sort().reverse();
+      loadedIrrMonth=base.loadedMonth||state.selectedPeriod||null;
+      giFullDataLoaded=!!state.fullDataLoaded&&!base.loadedMonth;
+      persistentProvinceByPlant={...(state.provinceOverrides||{})};
+      Object.entries(state.overrides||{}).forEach(([name,saved])=>{if(saved.province)persistentProvinceByPlant[name]=saved.province;if(!plantMasterData[name])return;if(saved.capacity!=null)plantMasterData[name].capacity=saved.capacity;if(saved.province)plantMasterData[name].province=saved.province;if(saved.note!=null)plantMasterData[name].note=saved.note;Object.entries(saved.dates||{}).forEach(([date,value])=>{if(!datesSet.has(date))return;if(value===null)delete plantMasterData[name].dates[date];else plantMasterData[name].dates[date]=value})});
+      Object.entries(persistentProvinceByPlant).forEach(([name,province])=>{if(plantMasterData[name])plantMasterData[name].province=province||'ไม่ระบุ'});
+      const basePlantNames=Object.keys(plantMasterData),savedSelectedPlants=Array.isArray(state.selectedPlants)?state.selectedPlants:basePlantNames;
+      selectedPlants=state.allPlantsSelected===false?new Set(savedSelectedPlants.filter(name=>allPlantsSet.has(name))):new Set(basePlantNames);
+      selectedTrendPlants=new Set(Array.isArray(state.selectedTrendPlants)?state.selectedTrendPlants:[]);
+      if(state.minIrr!=null)document.getElementById('minIrr').value=state.minIrr;if(state.maxIrr!=null)document.getElementById('maxIrr').value=state.maxIrr;
+      activeStatusFilter=state.activeStatusFilter||'ALL';activeProvinceFilter=state.activeProvinceFilter||'ALL';activeTrendProvinceFilter=state.activeTrendProvinceFilter||'ALL';restoredTrendYears=Array.isArray(state.trendFilters?.years)?state.trendFilters.years:[];restoredTrendMonths=Array.isArray(state.trendFilters?.months)?state.trendFilters.months:[];trendGranularity=['daily','monthly','yearly'].includes(state.trendFilters?.granularity)?state.trendFilters.granularity:'daily';isFileUploaded=Object.keys(plantMasterData).length>0;
+      syncStatusFilterButtons();
+      sourceFileNames=Array.isArray(base.sourceFiles)?base.sourceFiles:[];
+      populateDateFilters();
+      const filters=state.filters||{};[['yearFilter',filters.years],['monthFilter',filters.months],['dayFilter',filters.days]].forEach(([id,values])=>{if(!Array.isArray(values))return;Array.from(document.getElementById(id).options).forEach(option=>option.selected=values.includes(option.value))});
+      renderPlantList();renderTableAndMetrics();
+      document.getElementById('uploadStatus').innerText=`Loaded ${datesSet.size} central day(s) from Center`;
+    }
+  };
+
+    function prReturnDestination(saved,token,currentHref){if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(saved?.projectId||''))throw new Error('PR project ID is missing or invalid');const target=new URL('pr-report-r4.html',currentHref);target.searchParams.set('v','20261005-pr-gi-theory1');target.searchParams.set('project',saved.projectId);target.searchParams.set('prReturn',token);return target}
+    async function openPrGiTarget(){const query=new URLSearchParams(location.search),token=query.get('prReturn'),month=query.get('focusMonth'),plant=query.get('focusPlant');if(!token)return;let saved;try{saved=JSON.parse(sessionStorage.getItem(`solar.prGiReturn.${token}`)||'null')}catch{return}if(!saved||Date.now()-saved.createdAt>7200000)return;const button=document.createElement('button');button.id='returnPrCalculation';button.className='btn';button.textContent=giLanguage()==='en'?'Back to PR · current view':'กลับ PR · สถานะเดิม';button.style.cssText='position:fixed;bottom:18px;right:24px;z-index:9000;background:var(--card-bg,#fff);color:var(--text-color,#1e293b);border:1px solid #64748b;border-radius:10px;padding:10px 14px;font-family:inherit;font-weight:700;box-shadow:0 4px 14px #0002';button.onclick=async()=>{button.disabled=true;try{if(SolarCloud.pendingSharedPaths().length){await SolarCloud.saveNow();if(SolarCloud.pendingSharedPaths().length)throw new Error('ยังบันทึก GI ไม่สำเร็จ กรุณาบันทึกหรือจัดการค่าที่ขัดแย้งก่อน')}const target=prReturnDestination(saved,token,location.href);location.href=target.href}catch(error){SolarCloud.notice('กลับ PR ไม่สำเร็จ',error.message,'danger');button.disabled=false}};document.body.appendChild(button);if(/^\d{4}-\d{2}$/.test(month||'')&&month!==loadedIrrMonth)await SolarCloud.loadCentralPeriod(month);activeStatusFilter='ALL';activeReviewFilter='ALL';activeProvinceFilter='ALL';if(allPlantsSet.has(plant))selectedPlants=new Set([plant]);else SolarCloud.notice('ไม่พบโครงการใน GI',plant||'','danger');[['yearFilter',month?.slice(0,4)],['monthFilter',month?.slice(5,7)]].forEach(([id,value])=>{if(value)[...document.getElementById(id).options].forEach(o=>o.selected=o.value===value)});[...document.getElementById('dayFilter').options].forEach(o=>o.selected=true);syncStatusFilterButtons();renderPlantList();renderTableAndMetrics()}
+
+  SolarCloud.initAnalysis('global_irradiance',globalIrradianceCloudAdapter).then(openPrGiTarget).catch(error=>SolarCloud.notice('เปิด GI ไม่สำเร็จ',error.message,'danger'));
+</script>
+<script src="unified-ui.js?v=20261001-scoped"></script>
+<script src="solar-controls.js?v=20261001-3"></script>
+<script src="gi-map-peer.js?v=20261002-map-ui2"></script>
+<script src="gi-map.js?v=20261005-map-formula-view1"></script>
+<script src="gi-map-data.js?v=20261005-map-formula-view1"></script>
+<script src="gi-map-launcher.js?v=20261007-basemap1"></script>
+<script src="solar-test-controls.js"></script></body>
+</html>
+
+
+
+
+
+

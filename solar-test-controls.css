@@ -1,0 +1,18 @@
+/* Scoped to detached copies; never loaded by live pages. */
+html.solar-ui-test{--sut-bg:#fff;--sut-text:#243650;--sut-line:#ccd7e5;--sut-blue:#216fe8;--sut-soft:#eef4fd}
+html.solar-ui-test.sut-dark{--sut-bg:#19283e;--sut-text:#e5eefc;--sut-line:#465872;--sut-blue:#69a7ff;--sut-soft:#243b59}
+.solar-ui-test button,.solar-ui-test select,.solar-ui-test input,.solar-ui-test textarea{font-family:'Bai Jamjuree',sans-serif!important}
+.solar-ui-test .btn,.solar-ui-test .wd-header-action,.solar-ui-test .trend-popup-button,.solar-ui-test .province-filter-select,.solar-ui-test .province-button,.solar-ui-test .status-filter,.solar-ui-test .panel-toggle,.solar-ui-test .inv-popup-source{border-radius:8px!important;font-weight:600!important;font-size:13px!important;min-height:36px!important;line-height:1.25!important;gap:7px!important;transition:background-color .12s,border-color .12s,color .12s!important;transform:none!important}
+.solar-ui-test .btn:not(.primary):not(.success):not(.danger):not(.active):not(.export):not(.good):not(.abnormal):not(.watch):not(.status-filter){background:var(--sut-bg)!important;color:var(--sut-text)!important;border:1px solid var(--sut-line)!important}
+.solar-ui-test .btn.primary{background:#216fe8!important;color:#fff!important;border:1px solid #216fe8!important}
+.solar-ui-test button.sut-export{background:#16804b!important;color:#fff!important;border:1px solid #16804b!important}
+.solar-ui-test button i{font-size:15px!important;flex-shrink:0}
+.solar-ui-test select:not([multiple]){border:1px solid var(--sut-line)!important;border-radius:8px!important;padding:7px 28px 7px 10px!important;background-color:var(--sut-bg)!important;color:var(--sut-text)!important;font-size:13px!important;min-height:36px!important}
+.solar-ui-test td .btn,.solar-ui-test td select{min-height:30px!important;font-size:12px!important}
+.solar-ui-test :is(.modal-card,.modal-content,.inv-existing-picker){border-radius:12px!important;border:1px solid var(--sut-line)!important;background:var(--sut-bg)!important;color:var(--sut-text)!important}
+.solar-ui-test :is(.modal-head,.modal-header,.inv-existing-picker-head){background:var(--sut-bg)!important;color:var(--sut-text)!important;border-bottom:1px solid var(--sut-line)!important;padding:14px 16px!important}
+.solar-ui-test :is(.modal-head,.modal-header,.inv-existing-picker-head) h2{font-size:18px!important;font-weight:700!important}
+.solar-ui-test :is(.modal-foot,.modal-footer,.inv-existing-picker-foot){background:var(--sut-bg)!important;border-top:1px solid var(--sut-line)!important;padding:12px 16px!important;gap:8px!important}
+.solar-ui-test button:focus-visible,.solar-ui-test select:focus-visible{outline:2px solid var(--sut-blue)!important;outline-offset:2px!important}
+#sut-notice{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:2147483646;display:flex;gap:8px;align-items:center;max-width:calc(100vw - 24px);padding:6px 10px;border-radius:8px;background:#fff7df;color:#694900;border:1px solid #cfb977;font:600 12px 'Bai Jamjuree',sans-serif;box-shadow:0 4px 18px #0002}#sut-notice a{color:inherit;text-decoration:underline;white-space:nowrap}#sut-notice button{background:transparent;border:0;color:inherit;font-size:18px;cursor:pointer}.solar-ui-test [data-sut-disabled]{opacity:.6}
+@media(prefers-reduced-motion:reduce){.solar-ui-test *{transition:none!important}}
