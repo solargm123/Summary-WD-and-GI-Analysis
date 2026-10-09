@@ -1151,7 +1151,7 @@ body.wd-theme-switching *::after{
             
             <!-- Quick Actions & Theme Switcher -->
             <div id="wdHeaderActions" class="flex flex-wrap items-center justify-end gap-2">
-                <button id="wdProjectSearchButton" type="button" onclick="openWdProjectSearch()" class="wd-header-action wd-header-action-dark" aria-haspopup="dialog" aria-controls="projectSelectorModal"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><span id="wdProjectSearchText" data-solar-th="ค้นหาโครงการ" data-solar-en="Search projects">ค้นหาโครงการ</span></button>
+                <label class="wd-header-action wd-header-action-dark" style="width:220px;max-width:100%;cursor:text"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input id="searchInput" type="search" aria-label="Search projects" placeholder="ค้นหาชื่อโครงการ..." oninput="scheduleWdInlineSearch(event)" onkeydown="if(event.key==='Enter'&&!event.isComposing){event.preventDefault();clearTimeout(wdInlineSearchTimer);calculateAndRender()}" style="width:100%;min-width:0;border:0;background:transparent;color:inherit;outline:none;font:inherit"></label>
                 <button id="languageButton" onclick="toggleLanguage()" class="wd-header-action wd-header-action-dark" title="Change language">
                     <i class="fa-solid fa-language" aria-hidden="true"></i>
                     <span id="languageButtonText">EN</span>
@@ -1346,7 +1346,7 @@ body.wd-theme-switching *::after{
                     <button onclick="openProjectSelector()" class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg px-3 py-2 flex items-center gap-2">
                         <i class="fa-solid fa-list-check text-blue-500"></i><span>เลือกโครงการ</span><strong id="selectedProjectCount" class="text-blue-600">0</strong>
                     </button>
-                    <input type="hidden" id="searchInput" value="">
+
                 </div>
             </div>
 
@@ -1582,9 +1582,11 @@ body.wd-theme-switching *::after{
 
         function syncTableScrollbars() { /* Single native table scrollbar. */ }
 
-        function openWdProjectSearch() {
-            openProjectSelector();
-            requestAnimationFrame(() => { const input=document.getElementById('projectPopupSearch');input.focus({preventScroll:true});input.select(); });
+        let wdInlineSearchTimer;
+        function scheduleWdInlineSearch(event) {
+            if(event.isComposing)return;
+            clearTimeout(wdInlineSearchTimer);
+            wdInlineSearchTimer=setTimeout(calculateAndRender,250);
         }
 
         function openProjectSelector() {
@@ -1822,7 +1824,7 @@ body.wd-theme-switching *::after{
         }
 
         function applyLanguage() {
-            document.getElementById("wdProjectSearchText").textContent = currentLanguage === "th" ? "ค้นหาโครงการ" : "Search projects";
+            document.getElementById("searchInput").setAttribute("aria-label",currentLanguage === "th" ? "ค้นหาโครงการ" : "Search projects");
             document.getElementById('languageButtonText').textContent = currentLanguage === 'th' ? 'EN' : 'ไทย';
             document.getElementById('themeText').textContent = document.documentElement.classList.contains('dark') ? 'Light' : 'Dark';
             document.getElementById('searchInput').placeholder = t('search');
