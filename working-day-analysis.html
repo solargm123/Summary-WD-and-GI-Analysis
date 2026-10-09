@@ -1151,6 +1151,7 @@ body.wd-theme-switching *::after{
             
             <!-- Quick Actions & Theme Switcher -->
             <div id="wdHeaderActions" class="flex flex-wrap items-center justify-end gap-2">
+                <button id="wdProjectSearchButton" type="button" onclick="openWdProjectSearch()" class="wd-header-action wd-header-action-dark" aria-haspopup="dialog" aria-controls="projectSelectorModal"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><span id="wdProjectSearchText" data-solar-th="ค้นหาโครงการ" data-solar-en="Search projects">ค้นหาโครงการ</span></button>
                 <button id="languageButton" onclick="toggleLanguage()" class="wd-header-action wd-header-action-dark" title="Change language">
                     <i class="fa-solid fa-language" aria-hidden="true"></i>
                     <span id="languageButtonText">EN</span>
@@ -1581,6 +1582,11 @@ body.wd-theme-switching *::after{
 
         function syncTableScrollbars() { /* Single native table scrollbar. */ }
 
+        function openWdProjectSearch() {
+            openProjectSelector();
+            requestAnimationFrame(() => { const input=document.getElementById('projectPopupSearch');input.focus({preventScroll:true});input.select(); });
+        }
+
         function openProjectSelector() {
             document.getElementById('projectPopupSearch').value = document.getElementById('searchInput').value;
             renderProjectSelectorList();
@@ -1816,6 +1822,7 @@ body.wd-theme-switching *::after{
         }
 
         function applyLanguage() {
+            document.getElementById("wdProjectSearchText").textContent = currentLanguage === "th" ? "ค้นหาโครงการ" : "Search projects";
             document.getElementById('languageButtonText').textContent = currentLanguage === 'th' ? 'EN' : 'ไทย';
             document.getElementById('themeText').textContent = document.documentElement.classList.contains('dark') ? 'Light' : 'Dark';
             document.getElementById('searchInput').placeholder = t('search');
