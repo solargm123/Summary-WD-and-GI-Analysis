@@ -2145,7 +2145,7 @@ select.inv-popup-source:hover{border-color:var(--primary);background:var(--prima
 const inverterSharedRenderMonths=renderThresholdMonths;
 renderThresholdMonths=function(...args){const result=inverterSharedRenderMonths.apply(this,args);inverterDb?.renderShared?.($('manualThresholdProject')?.value||'');return result;};
 </script>
-<script>inverterStartup=async()=>{};inverterAutoEnabled=()=>false;state.demo=true;state.daily=SolarUITest.rows.flatMap((r,n)=>[1,2,3].map(i=>({date:r.date,project:r.project,device:'INV-'+i,capacity:r.capacity/3,yield:r.pv/3,specific:r.specific*(1-i*.01),maxSpecific:r.specific,unit:100-i,gridDuration:8-i*.05,gi:r.gi,status:'Good',eligibleForStats:true,source:'UI TEST'})));state.monthly=[];ui.dailyProject=SolarUITest.projects[0];setupDailySelection(true);renderAll();inverterStartupRunning=false;document.getElementById('inverterDbStatus').textContent='UI TEST · ข้อมูลจำลอง';</script><script src="solar-test-controls.js"></script></body>
+<script>inverterStartup=async()=>{};inverterAutoEnabled=()=>false;state.demo=true;state.daily=SolarUITest.rows.flatMap((r,n)=>[1,2,3].map(i=>({date:r.date,project:r.project,device:'INV-'+i,capacity:r.capacity/3,yield:r.pv/3,specific:r.specific*(1-i*.01),maxSpecific:r.specific,unit:100-i,gridDuration:8-i*.05,gi:r.gi,status:'Good',eligibleForStats:true,source:'UI TEST'})));state.monthly=[];ui.dailyProject=SolarUITest.projects[0];setupDailySelection(true);renderAll();inverterStartupRunning=false;document.getElementById('inverterDbStatus').textContent='UI TEST · ข้อมูลจำลอง';</script><script src="solar-test-controls.js"></script><script src="solar-test-interactions-v3.js"></script></body>
 </html>
 
 

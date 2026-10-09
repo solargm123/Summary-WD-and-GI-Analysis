@@ -643,7 +643,7 @@ document.addEventListener('DOMContentLoaded',()=>{syncStickyRows();if('ResizeObs
 (()=>{let frame=0;function fit(){cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{const section=document.getElementById('analysisView');if(!section||section.classList.contains('hidden'))return;const panel=section.querySelector('.panel');if(innerWidth<=700){panel.style.removeProperty('height');return}const rect=panel.getBoundingClientRect(),scale=rect.width/panel.offsetWidth||1,height=Math.max(260,(innerHeight-rect.top-14)/scale),value=Math.floor(height)+'px';if(panel.style.height!==value)panel.style.height=value})}
 addEventListener('resize',fit,{passive:true});document.addEventListener('click',fit);const section=document.getElementById('analysisView');new MutationObserver(fit).observe(section,{attributes:true,attributeFilter:['class']});const header=document.querySelector('.topbar');if(header&&typeof ResizeObserver!=='undefined')new ResizeObserver(fit).observe(header);fit();
 })();
-</script><script src="solar-test-controls.js"></script></body>
+</script><script src="solar-test-controls.js"></script><script src="solar-test-interactions-v3.js"></script></body>
 </html>
 
 
