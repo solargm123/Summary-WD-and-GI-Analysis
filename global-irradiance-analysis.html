@@ -613,7 +613,7 @@ body{zoom:1.1;min-height:calc(100vh / 1.1)}
                             <label>Day</label>
                             <div><button class="filter-action" onclick="selectAllOptions('dayFilter', true)"><i class="fa-solid fa-filter"></i> ทั้งหมด</button> <button class="filter-action" onclick="selectAllOptions('dayFilter', false)"><i class="fa-solid fa-filter-circle-xmark"></i> ล้าง</button></div>
                         </div>
-                        <select id="dayFilter" class="multi-select" multiple onchange="renderTableAndMetrics()"></select>
+                    <select id="dayFilter" class="multi-select" multiple onchange="onIrrPeriodFilterChange()"></select>
                     </div>
                 </div>
             </div>
@@ -630,7 +630,7 @@ body{zoom:1.1;min-height:calc(100vh / 1.1)}
                 <div class="plant-list-container" id="plantListContainer"></div>
             </div>
         </div>
-        <div class="modal-footer"><button class="btn" onclick="applyFilterModal()">Apply & Close</button></div>
+        <div class="modal-footer"><button class="btn btn-secondary" onclick="closeFilterModal()">ยกเลิก / Cancel</button><button class="btn" onclick="applyFilterModal()">Apply & Close</button></div>
     </div>
 </div>
 
@@ -766,20 +766,31 @@ body{zoom:1.1;min-height:calc(100vh / 1.1)}
     }
 
     let selectedPlantSearchResult = null;
-    function openFilterModal() { renderPlantList(); document.getElementById('filterModal').style.display = 'flex'; }
-    function closeFilterModal() { selectedPlantSearchResult = null; document.getElementById('filterModal').style.display = 'none'; }
-    function applyFilterModal() {
-        if (document.getElementById('searchPlant').value.trim()) {
-            const matches = searchedPlants();
-            const plants = selectedPlantSearchResult && matches.includes(selectedPlantSearchResult) ? [selectedPlantSearchResult] : matches;
-            selectedPlants.clear();
-            plants.forEach(plant => selectedPlants.add(plant));
-            renderPlantList();
-            renderTableAndMetrics();
-        }
-        closeFilterModal();
+    let giFilterDraft = null, giFilterBefore = null;
+    const giPickerPlants = () => giFilterDraft || selectedPlants;
+    function openFilterModal() {
+        giFilterDraft = new Set(selectedPlants);
+        giFilterBefore = Object.fromEntries(['yearFilter','monthFilter','dayFilter'].map(id=>[id,Array.from(document.getElementById(id).selectedOptions,o=>o.value)]));
+        document.getElementById('searchPlant').value='';
+        renderPlantList(); document.getElementById('filterModal').style.display = 'flex';
     }
+    function closeFilterModal() {
+        if(giFilterBefore) for(const [id,values] of Object.entries(giFilterBefore)) Array.from(document.getElementById(id).options).forEach(o=>o.selected=values.includes(o.value));
+        giFilterDraft=null;giFilterBefore=null;selectedPlantSearchResult = null; document.getElementById('filterModal').style.display = 'none';
+    }
+    async function applyFilterModal() {
+        if(!giFilterDraft)return;
+        selectedPlants=new Set(giFilterDraft);
+        giFilterBefore=null;closeFilterModal();
+        await onIrrPeriodFilterChange();
+    }
+    let trendFilterDraft=null,trendFilterBefore=null;
+    const trendPickerPlants=()=>trendFilterDraft||selectedTrendPlants;
     function openTrendFilters(mode='date'){
+        trendFilterDraft=new Set(selectedTrendPlants);
+        trendFilterBefore={years:irrSelection('trendYearSel'),months:irrSelection('trendMonthSel'),average:document.getElementById('chkShowAvgLine').checked};
+        let actions=document.getElementById('trendDraftActions');
+        if(!actions){actions=document.createElement('div');actions.id='trendDraftActions';actions.style.cssText='display:flex;justify-content:flex-end;gap:8px;margin-top:12px';actions.innerHTML='<button class="btn btn-secondary" onclick="closeTrendFilters()">ยกเลิก / Cancel</button><button class="btn" onclick="applyTrendFilters()">นำไปใช้ / Apply</button>';document.getElementById('trendControlsCard').appendChild(actions)}
         document.querySelectorAll('[data-trend-popup-section]').forEach(section=>section.style.display=section.dataset.trendPopupSection===mode?'block':'none');
         document.getElementById('trendPopupTitle').textContent=mode==='plants'?(giLanguage()==='en'?'Select plants':'เลือกโครงการ'):(giLanguage()==='en'?'Select month / year':'เลือกเดือน / ปี');
         document.getElementById('trendControlsCard').classList.add('open');document.getElementById('trendPopupBackdrop').classList.add('open');
@@ -787,7 +798,8 @@ body{zoom:1.1;min-height:calc(100vh / 1.1)}
     }
     function closeTrendChart(){const button=document.querySelector('.tab-btn[onclick*="tableTab"]');if(button)switchTab('tableTab',button)}
     document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.getElementById('trendControlsCard').classList.contains('open'))closeTrendFilters()});
-    function closeTrendFilters(){document.getElementById('trendControlsCard').classList.remove('open');document.getElementById('trendPopupBackdrop').classList.remove('open')}
+    function closeTrendFilters(){if(trendFilterBefore){for(const [id,values] of [['trendYearSel',trendFilterBefore.years],['trendMonthSel',trendFilterBefore.months]])Array.from(document.getElementById(id).options).forEach(o=>o.selected=values.includes(o.value));document.getElementById('chkShowAvgLine').checked=trendFilterBefore.average}trendFilterDraft=null;trendFilterBefore=null;document.getElementById('trendControlsCard').classList.remove('open');document.getElementById('trendPopupBackdrop').classList.remove('open')}
+    function applyTrendFilters(){if(!trendFilterDraft)return;selectedTrendPlants=new Set(trendFilterDraft);trendFilterBefore=null;closeTrendFilters();updateTrendToolbarLabels();updateTrendChart()}
 
     function toggleEditMode() {
         isEditMode = !isEditMode;
@@ -966,10 +978,11 @@ body{zoom:1.1;min-height:calc(100vh / 1.1)}
     function selectAllOptions(selectId, selectAll) {
         const selectEl = document.getElementById(selectId);
         Array.from(selectEl.options).forEach(opt => opt.selected = selectAll);
-        renderTableAndMetrics();
+        if(!giFilterDraft) renderTableAndMetrics();
     }
 
     async function onIrrPeriodFilterChange() {
+        if(giFilterDraft)return;
         renderTableAndMetrics();
         if (giPeriodLoading) return;
         const years = irrSelection('yearFilter'), months = irrSelection('monthFilter');
@@ -987,9 +1000,9 @@ body{zoom:1.1;min-height:calc(100vh / 1.1)}
     }
 
     function getFilteredDates() {
-        const selYears = Array.from(document.getElementById('yearFilter').selectedOptions).map(o => o.value);
-        const selMonths = Array.from(document.getElementById('monthFilter').selectedOptions).map(o => o.value);
-        const selDays = Array.from(document.getElementById('dayFilter').selectedOptions).map(o => o.value);
+        const selYears = giFilterBefore?.yearFilter || Array.from(document.getElementById('yearFilter').selectedOptions).map(o => o.value);
+        const selMonths = giFilterBefore?.monthFilter || Array.from(document.getElementById('monthFilter').selectedOptions).map(o => o.value);
+        const selDays = giFilterBefore?.dayFilter || Array.from(document.getElementById('dayFilter').selectedOptions).map(o => o.value);
 
         return Array.from(datesSet).filter(d => {
             let parts = d.split('-');
@@ -1013,22 +1026,11 @@ body{zoom:1.1;min-height:calc(100vh / 1.1)}
         document.getElementById('totalCount').innerText = tableAvailablePlants().length;
 
         plants.forEach((plant, idx) => {
-            if (searching) {
-                const button = document.createElement('button');
-                button.type = 'button';
-                button.className = 'plant-item plant-search-result';
-                button.textContent = plant;
-                button.setAttribute('aria-label', `${giLanguage()==='en'?'Show plant':'แสดงโครงการ'} ${plant}`);
-                if (selectedPlantSearchResult === plant || (!selectedPlantSearchResult && selectedPlants.size === 1 && selectedPlants.has(plant))) button.classList.add('active');
-                button.onclick = () => selectSearchedPlant(plant);
-                container.appendChild(button);
-                return;
-            }
             const id = `chk_${idx}`;
             const label = document.createElement('label');
             label.className = 'plant-item';
             label.setAttribute('for', id);
-            label.innerHTML = `<input type="checkbox" id="${id}" value="${escapeHtml(plant)}" ${selectedPlants.has(plant) ? 'checked' : ''} onchange="onPlantCheckChange(this)"><span>${escapeHtml(plant)}</span>`;
+            label.innerHTML = `<input type="checkbox" id="${id}" value="${escapeHtml(plant)}" ${giPickerPlants().has(plant) ? 'checked' : ''} onchange="onPlantCheckChange(this)"><span>${escapeHtml(plant)}</span>`;
             container.appendChild(label);
         });
         if (searching && !plants.length) {
@@ -1037,12 +1039,12 @@ body{zoom:1.1;min-height:calc(100vh / 1.1)}
             empty.textContent = giLanguage()==='en' ? 'No matching plants' : 'ไม่พบโครงการที่ค้นหา';
             container.appendChild(empty);
         }
-        document.getElementById('selectedCount').innerText = tableAvailablePlants().filter(plant=>selectedPlants.has(plant)).length;
+        document.getElementById('selectedCount').innerText = tableAvailablePlants().filter(plant=>giPickerPlants().has(plant)).length;
         const hint = document.getElementById('plantSearchHint');
         hint.style.display = searching ? 'block' : 'none';
         if (searching) hint.textContent = giLanguage()==='en'
-            ? `Apply & Close will show ${selectedPlantSearchResult ? 1 : plants.length} matching plant(s). Choose a name for one plant; the status filter stays active.`
-            : `กด Apply & Close เพื่อแสดง ${selectedPlantSearchResult ? 1 : plants.length} โครงการที่พบ หรือกดชื่อเพื่อเลือกโครงการเดียว ตัวกรองสถานะจะคงเดิม`;
+            ? 'Search only narrows this list. Apply shows checked projects; status filters stay active.'
+            : 'ค้นหาเฉพาะในรายการ กดนำไปใช้เพื่อแสดงโครงการที่ติ๊กไว้ ตัวกรองสถานะคงเดิม';
     }
 
     function escapeHtml(str) {
@@ -1065,18 +1067,17 @@ body{zoom:1.1;min-height:calc(100vh / 1.1)}
     }
 
     function onPlantCheckChange(cb) {
-        if (cb.checked) selectedPlants.add(cb.value);
-        else selectedPlants.delete(cb.value);
-        document.getElementById('selectedCount').innerText = tableAvailablePlants().filter(plant=>selectedPlants.has(plant)).length;
-        renderTableAndMetrics();
+        if (cb.checked) giPickerPlants().add(cb.value);
+        else giPickerPlants().delete(cb.value);
+        document.getElementById('selectedCount').innerText = tableAvailablePlants().filter(plant=>giPickerPlants().has(plant)).length;
+        if(!giFilterDraft) renderTableAndMetrics();
     }
 
     function toggleSelectAll(select) {
         selectedPlantSearchResult = null;
-        selectedPlants.clear();
-        if (select) searchedPlants().forEach(plant => selectedPlants.add(plant));
+        searchedPlants().forEach(plant => select ? giPickerPlants().add(plant) : giPickerPlants().delete(plant));
         renderPlantList();
-        renderTableAndMetrics();
+        if(!giFilterDraft) renderTableAndMetrics();
     }
 
     function invalidateGiValue(plant,date,next){
@@ -1372,10 +1373,10 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
             const label = document.createElement('label');
             label.className = 'plant-item';
             label.setAttribute('for', id);
-            label.innerHTML = `<input type="checkbox" id="${id}" value="${escapeHtml(plant)}" ${selectedTrendPlants.has(plant) ? 'checked' : ''} onchange="onTrendPlantCheckChange(this)"><span>${escapeHtml(plant)}</span>`;
+            label.innerHTML = `<input type="checkbox" id="${id}" value="${escapeHtml(plant)}" ${trendPickerPlants().has(plant) ? 'checked' : ''} onchange="onTrendPlantCheckChange(this)"><span>${escapeHtml(plant)}</span>`;
             container.appendChild(label);
         });
-        document.getElementById('trendSelectedCount').innerText = selectedTrendPlants.size;
+        document.getElementById('trendSelectedCount').innerText = trendPickerPlants().size;
         document.getElementById('trendAvailableCount').innerText = sorted.length;
         updateTrendToolbarLabels();
     }
@@ -1389,24 +1390,24 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
 
     function onTrendPlantCheckChange(cb) {
         if (cb.checked) {
-            selectedTrendPlants.add(cb.value);
+            trendPickerPlants().add(cb.value);
         } else {
-            selectedTrendPlants.delete(cb.value);
+            trendPickerPlants().delete(cb.value);
         }
-        document.getElementById('trendSelectedCount').innerText = selectedTrendPlants.size;
+        document.getElementById('trendSelectedCount').innerText = trendPickerPlants().size;
         updateTrendToolbarLabels();
         updateTrendChart();
     }
 
     function clearTrendPlants() {
-        selectedTrendPlants.clear();
+        trendPickerPlants().clear();
         document.querySelectorAll('#trendPlantListContainer input').forEach(cb => cb.checked = false);
         document.getElementById('trendSelectedCount').innerText = '0';
         updateTrendToolbarLabels();
         updateTrendChart();
     }
 
-    function selectAllTrendPlants(){selectedTrendPlants=new Set(trendAvailablePlants());renderTrendPlantList();updateTrendToolbarLabels();updateTrendChart()}
+    function selectAllTrendPlants(){if(trendFilterDraft)trendFilterDraft=new Set(trendAvailablePlants());else selectedTrendPlants=new Set(trendAvailablePlants());renderTrendPlantList();updateTrendToolbarLabels();updateTrendChart()}
 
     function trendPeriodKey(date){return trendGranularity==='daily'?date:trendGranularity==='monthly'?date.slice(0,7):date.slice(0,4)}
     function trendModeLabel(){return trendGranularity==='daily'?(giLanguage()==='en'?'Daily':'รายวัน'):trendGranularity==='monthly'?(giLanguage()==='en'?'Monthly':'รายเดือน'):(giLanguage()==='en'?'Yearly':'รายปี')}
@@ -1473,6 +1474,7 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
     }
 
     function updateTrendChart() {
+        if(trendFilterDraft)return;
         if(!document.getElementById('trendTab').classList.contains('active'))return;
         const yearNode=document.getElementById('trendYearSel'),monthNode=document.getElementById('trendMonthSel');
         if(!yearNode||!monthNode)return;
@@ -1559,7 +1561,7 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
     }
 </script>
 <script>
-  const irrSelection=id=>Array.from(document.getElementById(id)?.selectedOptions||[]).map(option=>option.value);
+  const irrSelection=id=>giFilterBefore?.[id]||(id==='trendYearSel'?trendFilterBefore?.years:id==='trendMonthSel'?trendFilterBefore?.months:null)||Array.from(document.getElementById(id)?.selectedOptions||[]).map(option=>option.value);
   const globalIrradianceCloudAdapter={
     capture(){
       const overrides=structuredClone(savedGiOverrides);
@@ -1618,8 +1620,9 @@ ${giText('สถานะนี้ไม่ปลด Alarm และไม่ร
 <script src="gi-map.js?v=20261005-map-formula-view1"></script>
 <script src="gi-map-data.js?v=20261005-map-formula-view1"></script>
 <script src="gi-map-launcher.js?v=20261007-basemap1"></script>
-</body>
+<script src="solar-applied-filters.js"></script></body>
 </html>
+
 
 
 

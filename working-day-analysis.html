@@ -1590,13 +1590,15 @@ body.wd-theme-switching *::after{
             wdInlineSearchTimer=setTimeout(calculateAndRender,250);
         }
 
+        let projectVisibilityDraft = null;
         function openProjectSelector() {
-            document.getElementById('projectPopupSearch').value = document.getElementById('searchInput').value;
+            projectVisibilityDraft = new Map(plantData.map(p => [p.id, p.visible !== false]));
+            document.getElementById('projectPopupSearch').value = '';
             renderProjectSelectorList();
             document.getElementById('projectSelectorModal').classList.remove('hidden');
         }
 
-        function closeProjectSelector() { document.getElementById('projectSelectorModal').classList.add('hidden'); }
+        function closeProjectSelector() { projectVisibilityDraft = null; document.getElementById('projectSelectorModal').classList.add('hidden'); }
 
         function renderProjectSelectorList() {
             const query = (document.getElementById('projectPopupSearch').value || '').toLowerCase().trim();
@@ -1604,18 +1606,20 @@ body.wd-theme-switching *::after{
             list.innerHTML = '';
             const matches = plantData.filter(p => p.name.toLowerCase().includes(query));
             document.getElementById('projectSearchCount').textContent = `${currentLanguage==='th'?'พบ':'Found'} ${matches.length} / ${plantData.length}`;
-            document.getElementById('projectSearchApply').textContent = currentLanguage==='th'?'ค้นหาและแสดง':'Search and display';
+            document.getElementById('projectSearchApply').textContent = currentLanguage==='th'?'นำรายการที่เลือกไปแสดง':'Apply selected projects';
             if (!matches.length) list.textContent = currentLanguage==='th'?'ไม่พบโครงการที่ตรงกับคำค้น':'No matching projects';
             matches.forEach(plant => {
                 const label = document.createElement('label');
                 label.className = 'flex items-center gap-3 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer';
-                label.innerHTML = `<input type="checkbox" ${plant.visible ? 'checked' : ''} onchange="togglePlantFromPopup(${plant.id}, this.checked)" class="rounded text-blue-600"><span>${escapeHtml(plant.name)}<small class="wd-project-status" data-wd-status="${plant.id}">${WDReview.statusHtml(plant)}</small></span>`;
+                label.innerHTML = `<input type="checkbox" ${(projectVisibilityDraft?.get(plant.id) ?? plant.visible) ? 'checked' : ''} onchange="togglePlantFromPopup(${plant.id}, this.checked)" class="rounded text-blue-600"><span>${escapeHtml(plant.name)}<small class="wd-project-status" data-wd-status="${plant.id}">${WDReview.statusHtml(plant)}</small></span>`;
                 list.appendChild(label);
             });
         }
 
         function applyProjectSearch() {
-            document.getElementById('searchInput').value = document.getElementById('projectPopupSearch').value.trim();
+            if (!projectVisibilityDraft) return;
+            plantData.forEach(p => { if (projectVisibilityDraft.has(p.id)) p.visible = projectVisibilityDraft.get(p.id); });
+            document.getElementById('searchInput').value = '';
             closeProjectSelector();
             calculateAndRender();
         }
@@ -1630,16 +1634,14 @@ body.wd-theme-switching *::after{
         }
 
         function togglePlantFromPopup(id, checked) {
-            const plant = plantData.find(p => p.id === id);
-            if (plant) plant.visible = checked;
-            calculateAndRender();
+            if (projectVisibilityDraft) projectVisibilityDraft.set(id, checked);
         }
 
         function setAllProjectsVisible(visible) {
             const query = (document.getElementById('projectPopupSearch').value || '').toLowerCase().trim();
-            plantData.filter(p => p.name.toLowerCase().includes(query)).forEach(p => p.visible = visible);
+            if (!projectVisibilityDraft) return;
+            plantData.filter(p => p.name.toLowerCase().includes(query)).forEach(p => projectVisibilityDraft.set(p.id, visible));
             renderProjectSelectorList();
-            calculateAndRender();
         }
 
         function projectStableKey(plant) { return String(plant?.projectId || plant?.projectKey || ('name:'+(plant?.name||'').toLowerCase())); }
@@ -3020,8 +3022,9 @@ body.wd-theme-switching *::after{
 
 <script src="unified-ui.js?v=20261006-wd-perf2"></script>
 <script src="solar-controls.js?v=20261001-3"></script>
-</body>
+<script src="solar-applied-filters.js"></script></body>
 </html>
+
 
 
 
