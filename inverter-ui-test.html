@@ -1600,7 +1600,7 @@ async function inverterAutoDrain(){
   await compactPreviewRestoreRows(metadata,daily,pct=>$('inverterDbStatus').textContent=`Preparing report ${Math.round(pct)}%`,{preserveUi:true,deferRender:true});
   if(request.version!==inverterAutoVersion)continue;
   ui.dailyView=request.view;ui.selectedYears=new Set(request.years);ui.selectedMonths=new Set(request.months);ui.monthlySelectedPeriods=new Set(request.months);
-  if(!request.monthly){ui.dailyProject=request.project||'';setupDailySelection(false);ui.selectedDevices=new Set(request.devices.filter(d=>dailyDevices(ui.dailyProject).includes(d)));if(!ui.selectedDevices.size)ui.selectedDevices=new Set(dailyDevices(ui.dailyProject));ui.dailyProject=request.project||'';}
+  if(!request.monthly){ui.dailyProject=request.project||'';const remembered=ui.dailyDeviceMemory?.[ui.dailyProject];const wanted=Array.isArray(remembered)?remembered:request.devices;ui.selectedDevices=new Set(wanted.filter(d=>dailyDevices(ui.dailyProject).includes(d)));setupDailySelection(false);ui.dailyProject=request.project||'';}
   else{$('monthlyProject').value=request.project||'all';}
   renderAll({dailyReady:true});ui.selectedMonths=new Set(request.months);ui.selectedYears=new Set(request.years);ui.monthlySelectedPeriods=new Set(request.months);if(!request.monthly)ui.dailyProject=request.project||'';inverterAutoProjects();if(request.monthly){$('monthlyProject').value=request.project||'all';$('monthlyPeriodLabel').textContent=monthlyPeriodSummary(ui.monthlySelectedPeriods,monthlySelectablePeriods());}else renderDailyPickers();inverterUpdateScope();inverterAutoFailed=false;$('inverterDbSave').disabled=!['admin','editor'].includes(inverterDbRole)||!!inverterDbScope.project||inverterDbScope.mode!=='all';$('inverterDbStatus').textContent=`Loaded ${daily.length.toLocaleString()} · ${((performance.now()-started)/1000).toFixed(1)} s${daily.length?'':' · ไม่มีข้อมูลในช่วงที่เลือก / No data in selected scope'}`;
  }}catch(e){failed=true;inverterAutoFailed=true;for(const host of document.querySelectorAll('.inverter-loading')){host.setAttribute('aria-busy','false');host.querySelector('.inverter-loading-cover').textContent='โหลดไม่สำเร็จ · เลือกตัวกรองอีกครั้ง / Load failed; select filters again';}$('inverterDbStatus').textContent='Error · '+e.message;toast(e.message);}
@@ -2145,7 +2145,7 @@ select.inv-popup-source:hover{border-color:var(--primary);background:var(--prima
 const inverterSharedRenderMonths=renderThresholdMonths;
 renderThresholdMonths=function(...args){const result=inverterSharedRenderMonths.apply(this,args);inverterDb?.renderShared?.($('manualThresholdProject')?.value||'');return result;};
 </script>
-<script>inverterStartup=async()=>{};inverterAutoEnabled=()=>false;state.demo=true;state.daily=SolarUITest.rows.flatMap((r,n)=>[1,2,3].map(i=>({date:r.date,project:r.project,device:'INV-'+i,capacity:r.capacity/3,yield:r.pv/3,specific:r.specific*(1-i*.01),maxSpecific:r.specific,unit:100-i,gridDuration:8-i*.05,gi:r.gi,status:'Good',eligibleForStats:true,source:'UI TEST'})));state.monthly=[];ui.dailyProject=SolarUITest.projects[0];setupDailySelection(true);renderAll();inverterStartupRunning=false;document.getElementById('inverterDbStatus').textContent='UI TEST · ข้อมูลจำลอง';</script><script src="solar-test-controls.js"></script><script src="solar-test-interactions-v3.js"></script></body>
+<script src="solar-applied-filters.js"></script><script src="solar-test-controls.js"></script></body>
 </html>
 
 

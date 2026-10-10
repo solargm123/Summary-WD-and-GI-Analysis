@@ -15,3 +15,5 @@ date,task_type,primary_skill,files_read,files_changed,tool_calls,commits,rework_
 2026-09-30,gi-review-workflow,calculation-lock+ui-consistency+regression-guard,13,9,35,1,2,yes,no,"Added separate daily GI acceptance and monthly review; partial-month metadata retained; isolated DOM and PR threshold checks passed; Solar DB connector unavailable"
 2026-09-30,gi-review-icons,ui-consistency+regression-guard,6,6,12,1,0,no,yes,"Compact Font Awesome controls; prevented duplicate auto-injected icons; existing GI workflow and icon decorator regression passed"
 2026-09-30,gi-province-scope,ui-consistency+regression-guard,6,6,10,1,1,no,no,"Scoped province choices and plant picker; removed selected-plant-dependent province reset; province and GI regression passed"
+2026-10-10,filter-transactions,solar-safety-agent+ui-consistency,18,14,30,1,1,no,no,"Isolated staging: GI WD drafts; PR record multi-select and personal state; Inverter remembered selection; targeted tests pass; pre-existing PR workflow assertion reproduced on baseline; browser verification pending"
+

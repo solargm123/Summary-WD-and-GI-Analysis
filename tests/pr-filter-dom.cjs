@@ -1,0 +1,13 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),{JSDOM}=require('jsdom');
+const html=fs.readFileSync('pr-report-r4.html','utf8'),dom=new JSDOM(html,{runScripts:'outside-only',url:'https://example.invalid/pr-report-r4.html'}),w=dom.window;
+w.SolarCloud={getLanguage:()=> 'th',setLanguage(){},roleCanEdit:()=>false};w.Chart=function(){};w.Chart.defaults={font:{}};w.requestAnimationFrame=f=>f();w.matchMedia=()=>({matches:false});
+let main=[...w.document.querySelectorAll('script:not([src])')].find(s=>s.textContent.includes('function effectivePv')).textContent;
+main=main.split('\n').filter(l=>!l.startsWith("document.addEventListener('DOMContentLoaded'")).join('\n');vm.runInContext(main,dom.getInternalVMContext());
+const run=code=>vm.runInContext(code,dom.getInternalVMContext());
+run(`selectedProject='Alpha';compareProjects=new Set(['Alpha','Beta']);recordFilterApplied={project:'',status:'pass'};renderDetailTable=function(){ };openRecordsFilter()`);
+assert.equal(w.document.querySelectorAll('#recordProjectChoices input[type=checkbox]').length,3);
+run(`toggleRecordProject('Beta',false)`);assert.equal(run('recordFilterApplied.status'),'pass');assert.equal(run('recordFilterApplied.projects'),undefined);
+run('applyRecordsFilter()');assert.equal(JSON.stringify(run('recordFilterApplied.projects')),JSON.stringify(['Alpha']));assert.equal(run('recordFilterApplied.status'),'pass');assert.equal(run('compareProjects.size'),2);
+run(`openRecordsFilter();toggleRecordProject('Beta',true);closeModal('recordFilterModal')`);assert.equal(JSON.stringify(run('recordFilterApplied.projects')),JSON.stringify(['Alpha']));
+run(`openRecordsFilter();$('recordProjectSearch').value='Beta';renderRecordProjectChoices()`);assert.equal(w.document.querySelectorAll('#recordProjectChoices input').length,2);assert.equal(run("recordProjectsDraft.has('Alpha')"),true);
+console.log('PASS: actual PR DOM multiselect, Apply/Cancel, preserved search-hidden selections and table-only filtering.');dom.window.close();
